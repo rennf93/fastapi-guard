@@ -1,4 +1,12 @@
 from setuptools import setup, find_packages
+import pathlib
+
+
+
+HERE = pathlib.Path(__file__).parent
+README = (HERE / "README.md").read_text()
+
+
 
 setup(
     name="fastapi_guard",
@@ -19,7 +27,7 @@ setup(
     author="Renzo Franceschini",
     author_email="rennf93@gmail.com",
     description="A security library for FastAPI to control IPs, log requests, and detect penetration attempts.",
-    long_description=open("README.md").read(),
+    long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/rennf93/fastapi_guard",
     classifiers=[
