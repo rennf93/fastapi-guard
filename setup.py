@@ -7,7 +7,15 @@ setup(
     install_requires=[
         "fastapi",
         "uvicorn",
+        "aiohttp",
     ],
+    extras_require={
+        "dev": [
+            "pytest",
+            "pytest-asyncio",
+            "pytest-mock",
+        ],
+    },
     author="Renzo Franceschini",
     author_email="rennf93@gmail.com",
     description="A security library for FastAPI to control IPs, log requests, and detect penetration attempts.",
@@ -20,4 +28,5 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.10',
+    include_package_data=True,
 )

@@ -3,6 +3,13 @@ from typing import Set, List
 
 
 class SusPatterns:
+    """
+    A singleton class that manages suspicious patterns for security checks.
+
+    This class maintains two sets of patterns: default patterns and custom patterns.
+    It provides methods to add, remove, and retrieve patterns.
+    """
+
     _instance = None
 
     custom_patterns: Set[str] = set()
@@ -141,12 +148,25 @@ class SusPatterns:
     ]
 
     def __new__(cls):
+        """
+        Ensure only one instance of SusPatterns is created (singleton pattern).
+
+        Returns:
+            SusPatterns: The single instance of the SusPatterns class.
+        """
         if cls._instance is None:
             cls._instance = super(SusPatterns, cls).__new__(cls)
         return cls._instance
 
     @classmethod
     async def add_pattern(cls, pattern: str, custom: bool = False) -> None:
+        """
+        Add a new pattern to either the custom or default patterns list.
+
+        Args:
+            pattern (str): The pattern to be added.
+            custom (bool, optional): If True, add to custom patterns; otherwise, add to default patterns. Defaults to False.
+        """
         if custom:
             if pattern not in cls.custom_patterns:
                 cls.custom_patterns.add(pattern)
@@ -156,6 +176,13 @@ class SusPatterns:
 
     @classmethod
     async def remove_pattern(cls, pattern: str, custom: bool = False) -> None:
+        """
+        Remove a pattern from either the custom or default patterns list.
+
+        Args:
+            pattern (str): The pattern to be removed.
+            custom (bool, optional): If True, remove from custom patterns; otherwise, remove from default patterns. Defaults to False.
+        """
         if custom:
             if pattern in cls.custom_patterns:
                 cls.custom_patterns.discard(pattern)
@@ -165,4 +192,10 @@ class SusPatterns:
 
     @classmethod
     async def get_all_patterns(cls) -> List[str]:
+        """
+        Retrieve all patterns, including both default and custom patterns.
+
+        Returns:
+            List[str]: A list containing all default and custom patterns.
+        """
         return cls.patterns + list(cls.custom_patterns)
