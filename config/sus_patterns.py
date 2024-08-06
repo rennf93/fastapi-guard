@@ -142,11 +142,23 @@ class SusPatterns:
         return cls._instance
 
     @classmethod
-    def add_pattern(cls, pattern: str):
-        if pattern not in cls.patterns:
-            cls.patterns.append(pattern)
+    def add_pattern(cls, pattern: str, custom: bool = False):
+        if custom:
+            if pattern not in cls.custom_patterns:
+                cls.custom_patterns.append(pattern)
+        else:
+            if pattern not in cls.patterns:
+                cls.patterns.append(pattern)
 
     @classmethod
-    def remove_pattern(cls, pattern: str):
-        if pattern in cls.patterns:
-            cls.patterns.remove(pattern)
+    def remove_pattern(cls, pattern: str, custom: bool = False):
+        if custom:
+            if pattern in cls.custom_patterns:
+                cls.custom_patterns.remove(pattern)
+        else:
+            if pattern in cls.patterns:
+                cls.patterns.remove(pattern)
+
+    @classmethod
+    def get_all_patterns(cls):
+        return cls.patterns + cls.custom_patterns
