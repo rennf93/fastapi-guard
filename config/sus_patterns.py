@@ -1,9 +1,13 @@
+from typing import Set, List
+
+
+
 class SusPatterns:
     _instance = None
 
-    custom_patterns = []
+    custom_patterns: Set[str] = set()
 
-    patterns = [
+    patterns: List[str] = [
         # XSS
         r"<script.*?>.*?</script.*?>",
         r"javascript:",
@@ -142,23 +146,23 @@ class SusPatterns:
         return cls._instance
 
     @classmethod
-    def add_pattern(cls, pattern: str, custom: bool = False):
+    async def add_pattern(cls, pattern: str, custom: bool = False) -> None:
         if custom:
             if pattern not in cls.custom_patterns:
-                cls.custom_patterns.append(pattern)
+                cls.custom_patterns.add(pattern)
         else:
             if pattern not in cls.patterns:
                 cls.patterns.append(pattern)
 
     @classmethod
-    def remove_pattern(cls, pattern: str, custom: bool = False):
+    async def remove_pattern(cls, pattern: str, custom: bool = False) -> None:
         if custom:
             if pattern in cls.custom_patterns:
-                cls.custom_patterns.remove(pattern)
+                cls.custom_patterns.discard(pattern)
         else:
             if pattern in cls.patterns:
                 cls.patterns.remove(pattern)
 
     @classmethod
-    def get_all_patterns(cls):
-        return cls.patterns + cls.custom_patterns
+    async def get_all_patterns(cls) -> List[str]:
+        return cls.patterns + list(cls.custom_patterns)

@@ -1,10 +1,11 @@
 # fastapi_guard/utils.py
-import logging
-import re
+import aiohttp
+from config.sus_patterns import SusPatterns
 from fastapi import Request
 from guard.models import SecurityConfig
-from config.sus_patterns import SusPatterns
-import requests
+import logging
+import re
+from typing import Dict, Any
 
 
 
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 
-def is_user_agent_allowed(user_agent: str, config: SecurityConfig) -> bool:
+async def is_user_agent_allowed(user_agent: str, config: SecurityConfig) -> bool:
     for pattern in config.blocked_user_agents:
         if re.search(pattern, user_agent, re.IGNORECASE):
             return False
@@ -25,35 +26,39 @@ def is_user_agent_allowed(user_agent: str, config: SecurityConfig) -> bool:
 
 
 
-def get_ip_country(ip: str) -> str:
-    response = requests.get(f"https://ipinfo.io/{ip}/country")
-    return response.text.strip()
+async def get_ip_country(ip: str) -> str:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"https://ipinfo.io/{ip}/country") as response:
+            return (await response.text()).strip()
 
 
 
-def is_ip_allowed(ip: str, config: SecurityConfig) -> bool:
+async def is_ip_allowed(ip: str, config: SecurityConfig) -> bool:
     if ip in config.blacklist:
         return False
-    if config.whitelist and ip not in config.whitelist:
-        return False
+    if isinstance(config.whitelist, list) and config.whitelist:
+        if ip in config.whitelist:
+            return True
+        else:
+            return False
     if config.blocked_countries:
-        country = get_ip_country(ip)
+        country = await get_ip_country(ip)
         if country in config.blocked_countries:
             return False
     return True
 
 
 
-def log_request(request: Request):
+async def log_request(request: Request) -> None:
     client_ip = request.client.host
     method = request.method
     url = str(request.url)
-    headers = dict(request.headers)
+    headers: Dict[str, Any] = dict(request.headers)
     logger.info(f"Request from {client_ip}: {method} {url} - Headers: {headers}")
 
 
 
-def log_suspicious_activity(request: Request, reason: str):
+async def log_suspicious_activity(request: Request, reason: str):
     client_ip = request.client.host
     method = request.method
     url = str(request.url)

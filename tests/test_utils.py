@@ -1,9 +1,9 @@
 from config.sus_patterns import SusPatterns
-from guard.utils import is_ip_allowed, is_user_agent_allowed, log_request, detect_penetration_attempt
-from guard.models import SecurityConfig
-from guard.middleware import SecurityMiddleware
-from fastapi import FastAPI, Request, status
+from fastapi import Request, FastAPI, status
 from fastapi.testclient import TestClient
+from guard.middleware import SecurityMiddleware
+from guard.models import SecurityConfig
+from guard.utils import is_ip_allowed, is_user_agent_allowed, log_request, detect_penetration_attempt
 import logging
 import pytest
 import time
@@ -21,19 +21,44 @@ def security_config():
 
 
 
-def test_is_ip_allowed(security_config):
-    assert is_ip_allowed("127.0.0.1", security_config) == True
-    assert is_ip_allowed("192.168.1.1", security_config) == False
-    assert is_ip_allowed("10.0.0.1", security_config) == False
+# Utility Function Tests
+@pytest.mark.asyncio
+async def test_is_ip_allowed(security_config, mocker):
+    mocker.patch('guard.utils.get_ip_country', return_value='CN')
+    assert await is_ip_allowed("127.0.0.1", security_config) == True
+    assert await is_ip_allowed("192.168.1.1", security_config) == False
+    assert await is_ip_allowed("10.0.0.1", security_config) == False
+    assert await is_ip_allowed("8.8.8.8", security_config) == False
 
 
 
-def test_is_user_agent_allowed(security_config):
-    assert is_user_agent_allowed("goodbot", security_config) == True
-    assert is_user_agent_allowed("badbot", security_config) == False
+@pytest.mark.asyncio
+async def test_is_user_agent_allowed(security_config):
+    assert await is_user_agent_allowed("goodbot", security_config) == True
+    assert await is_user_agent_allowed("badbot", security_config) == False
 
 
 
+@pytest.mark.asyncio
+async def test_log_request(caplog):
+    async def receive():
+        return {"type": "http.request", "body": b""}
+
+    request = Request(scope={
+        "type": "http",
+        "method": "GET",
+        "path": "/",
+        "headers": [(b"user-agent", b"test-agent")],
+        "query_string": b"",
+        "client": ("127.0.0.1", 12345),
+    }, receive=receive)
+    with caplog.at_level(logging.INFO):
+        await log_request(request)
+        assert "Request from 127.0.0.1: GET / - Headers: {'user-agent': 'test-agent'}" in caplog.text
+
+
+
+# Penetration Attempt Detection Tests
 @pytest.mark.asyncio
 async def test_detect_penetration_attempt():
     async def receive():
@@ -255,54 +280,41 @@ async def test_detect_penetration_attempt_http_header_injection():
 
 
 
+# Custom Pattern Tests
 @pytest.mark.asyncio
-async def test_log_request(caplog):
-    async def receive():
-        return {"type": "http.request", "body": b""}
-
-    request = Request(scope={
-        "type": "http",
-        "method": "GET",
-        "path": "/",
-        "headers": [(b"user-agent", b"test-agent")],
-        "query_string": b"",
-        "client": ("127.0.0.1", 12345),
-    }, receive=receive)
-    with caplog.at_level(logging.INFO):
-        log_request(request)
-        assert "Request from 127.0.0.1: GET / - Headers: {'user-agent': 'test-agent'}" in caplog.text
-
-
-
-def test_add_pattern():
+async def test_add_pattern():
     sus_patterns = SusPatterns()
     new_pattern = r"new_pattern"
-    sus_patterns.add_pattern(new_pattern, custom=True)
+    await sus_patterns.add_pattern(new_pattern, custom=True)
     assert new_pattern in sus_patterns.custom_patterns
 
 
 
-def test_remove_pattern():
+@pytest.mark.asyncio
+async def test_remove_pattern():
     sus_patterns = SusPatterns()
     pattern_to_remove = r"new_pattern"
-    sus_patterns.add_pattern(pattern_to_remove, custom=True)
-    sus_patterns.remove_pattern(pattern_to_remove, custom=True)
+    await sus_patterns.add_pattern(pattern_to_remove, custom=True)
+    await sus_patterns.remove_pattern(pattern_to_remove, custom=True)
     assert pattern_to_remove not in sus_patterns.custom_patterns
 
 
 
-def test_get_all_patterns():
+@pytest.mark.asyncio
+async def test_get_all_patterns():
     sus_patterns = SusPatterns()
     default_patterns = sus_patterns.patterns
     custom_pattern = r"custom_pattern"
-    sus_patterns.add_pattern(custom_pattern, custom=True)
-    all_patterns = sus_patterns.get_all_patterns()
+    await sus_patterns.add_pattern(custom_pattern, custom=True)
+    all_patterns = await sus_patterns.get_all_patterns()
     assert custom_pattern in all_patterns
     assert all(pattern in all_patterns for pattern in default_patterns)
 
 
 
-def test_rate_limiting():
+# Middleware Tests
+@pytest.mark.asyncio
+async def test_rate_limiting():
     app = FastAPI()
     config = SecurityConfig()
     app.add_middleware(SecurityMiddleware, config=config, rate_limit=2, rate_limit_window=1)
@@ -329,9 +341,12 @@ def test_rate_limiting():
 
 
 
-def test_ip_whitelist_blacklist():
+@pytest.mark.asyncio
+async def test_ip_whitelist_blacklist(mocker):
+    mocker.patch('guard.utils.get_ip_country', return_value='CN')
+    mocker.patch('guard.utils.is_ip_allowed', side_effect=[True, False, False, False])
     app = FastAPI()
-    config = SecurityConfig(whitelist=["127.0.0.1"], blacklist=["192.168.1.1"])
+    config = SecurityConfig(whitelist=["127.0.0.1"], blacklist=["192.168.1.1"], blocked_countries=["CN"])
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -349,9 +364,13 @@ def test_ip_whitelist_blacklist():
     response = client.get("/", headers={"X-Forwarded-For": "10.0.0.1"})
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    response = client.get("/", headers={"X-Forwarded-For": "8.8.8.8"})
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_user_agent_filtering():
+
+@pytest.mark.asyncio
+async def test_user_agent_filtering():
     app = FastAPI()
     config = SecurityConfig(blocked_user_agents=[r"badbot"])
     app.add_middleware(SecurityMiddleware, config=config)
