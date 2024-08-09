@@ -37,9 +37,28 @@ class IPBanManager:
             return True
         return False
 
+    async def reset(self):
+        """
+        Reset the banned IPs.
+        """
+        self.banned_ips.clear()
+
+
+
 ip_ban_manager = IPBanManager()
 
-def setup_custom_logging(log_file: str):
+
+
+async def reset_global_state():
+    """
+    Reset all global state.
+    """
+    global ip_ban_manager
+    ip_ban_manager = IPBanManager()
+
+
+
+async def setup_custom_logging(log_file: str):
     """
     Setup custom logging for the application.
     """
@@ -49,6 +68,8 @@ def setup_custom_logging(log_file: str):
     logger.addHandler(file_handler)
     logger.setLevel(logging.INFO)
     return logger
+
+
 
 async def log_request(request: Request, logger):
     """
@@ -126,18 +147,17 @@ async def is_ip_allowed(ip: str, config: SecurityConfig) -> bool:
     Returns:
         bool: True if the IP is allowed, False otherwise.
     """
-    if ip in config.blacklist:
+    if config.blacklist and ip in config.blacklist:
         return False
-    if isinstance(config.whitelist, list) and config.whitelist:
-        if ip in config.whitelist:
-            return True
-        else:
-            return False
+    if config.whitelist:
+        return ip in config.whitelist
     if config.blocked_countries:
         country = await get_ip_country(ip)
         if country in config.blocked_countries:
             return False
     return True
+
+
 
 async def detect_penetration_attempt(request: Request) -> bool:
     """
