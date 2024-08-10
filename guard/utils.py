@@ -1,5 +1,6 @@
 # fastapi_guard/utils.py
 import aiohttp
+from cachetools import TTLCache
 from config.sus_patterns import SusPatterns
 from fastapi import Request
 from guard.models import SecurityConfig
@@ -18,17 +19,29 @@ class IPBanManager:
         """
         Initialize the IPBanManager.
         """
-        self.banned_ips: Dict[str, float] = {}
+        self.banned_ips = TTLCache(
+            maxsize=10000,
+            ttl=3600
+        )
 
-    async def ban_ip(self, ip: str, duration: int):
+    async def ban_ip(
+        self,
+        ip: str,
+        duration: int
+    ):
         """
-        Ban an IP address for a specified duration.
+        Ban an IP address for
+        a specified duration.
         """
         self.banned_ips[ip] = time.time() + duration
 
-    async def is_ip_banned(self, ip: str) -> bool:
+    async def is_ip_banned(
+        self,
+        ip: str
+    ) -> bool:
         """
-        Check if an IP address is banned.
+        Check if an IP
+        address is banned.
         """
         if ip in self.banned_ips:
             if time.time() > self.banned_ips[ip]:
@@ -60,23 +73,33 @@ async def reset_global_state():
 
 async def setup_custom_logging(log_file: str):
     """
-    Setup custom logging for the application.
+    Setup custom logging
+    for the application.
     """
     logger = logging.getLogger(__name__)
     file_handler = logging.FileHandler(log_file)
-    file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    file_handler.setFormatter(
+        logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(message)s'
+        )
+    )
     logger.addHandler(file_handler)
     logger.setLevel(logging.INFO)
     return logger
 
 
 
-async def log_request(request: Request, logger):
+async def log_request(
+    request: Request,
+    logger
+):
     """
-    Log the details of an incoming request.
+    Log the details of
+    an incoming request.
 
     Args:
-        request (Request): The FastAPI request object.
+        request (Request):
+            The FastAPI request object.
     """
     client_ip = request.client.host
     method = request.method
@@ -86,13 +109,21 @@ async def log_request(request: Request, logger):
 
 
 
-async def log_suspicious_activity(request: Request, reason: str, logger):
+async def log_suspicious_activity(
+    request: Request,
+    reason: str,
+    logger
+):
     """
-    Log suspicious activity detected in a request.
+    Log suspicious activity
+    detected in a request.
 
     Args:
-        request (Request): The FastAPI request object.
-        reason (str): The reason for flagging the activity as suspicious.
+        request (Request):
+            The FastAPI request object.
+        reason (str):
+            The reason for flagging
+            the activity as suspicious.
     """
     client_ip = request.client.host
     method = request.method
@@ -102,19 +133,30 @@ async def log_suspicious_activity(request: Request, reason: str, logger):
 
 
 
-async def is_user_agent_allowed(user_agent: str, config: SecurityConfig) -> bool:
+async def is_user_agent_allowed(
+    user_agent: str,
+    config: SecurityConfig
+) -> bool:
     """
-    Check if the user agent is allowed based on the security configuration.
+    Check if the user agent is allowed
+    based on the security configuration.
 
     Args:
-        user_agent (str): The user agent string to check.
-        config (SecurityConfig): The security configuration object.
+        user_agent (str):
+            The user agent string to check.
+        config (SecurityConfig):
+            The security configuration object.
 
     Returns:
-        bool: True if the user agent is allowed, False otherwise.
+        bool: True if the user agent
+              is allowed, False otherwise.
     """
     for pattern in config.blocked_user_agents:
-        if re.search(pattern, user_agent, re.IGNORECASE):
+        if re.search(
+            pattern,
+            user_agent,
+            re.IGNORECASE
+        ):
             return False
     return True
 
@@ -122,30 +164,44 @@ async def is_user_agent_allowed(user_agent: str, config: SecurityConfig) -> bool
 
 async def get_ip_country(ip: str) -> str:
     """
-    Get the country associated with the given IP address.
+    Get the country associated
+    with the given IP address.
 
     Args:
-        ip (str): The IP address to look up.
+        ip (str):
+            The IP address to look up.
 
     Returns:
-        str: The country code associated with the IP address.
+        str:
+            The country code associated with the IP address.
     """
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"https://ipinfo.io/{ip}/country") as response:
-            return (await response.text()).strip()
+        async with session.get(
+            f"https://ipinfo.io/{ip}/country"
+        ) as response:
+            return (
+                await response.text()
+            ).strip()
 
 
 
-async def is_ip_allowed(ip: str, config: SecurityConfig) -> bool:
+async def is_ip_allowed(
+    ip: str,
+    config: SecurityConfig
+) -> bool:
     """
-    Check if the IP address is allowed based on the security configuration.
+    Check if the IP address is allowed
+    based on the security configuration.
 
     Args:
-        ip (str): The IP address to check.
-        config (SecurityConfig): The security configuration object.
+        ip (str):
+            The IP address to check.
+        config (SecurityConfig):
+            The security configuration object.
 
     Returns:
-        bool: True if the IP is allowed, False otherwise.
+        bool:
+            True if the IP is allowed, False otherwise.
     """
     if config.blacklist and ip in config.blacklist:
         return False
@@ -161,25 +217,32 @@ async def is_ip_allowed(ip: str, config: SecurityConfig) -> bool:
 
 async def detect_penetration_attempt(request: Request) -> bool:
     """
-    Detect potential penetration attempts in the request.
+    Detect potential penetration
+    attempts in the request.
 
-    This function checks various parts of the request (query params, body, path, headers)
-    against a list of suspicious patterns to identify potential security threats.
+    This function checks various
+    parts of the request
+    (query params, body, path, headers)
+    against a list of suspicious
+    patterns to identify potential security threats.
 
     Args:
-        request (Request): The FastAPI request object to analyze.
+        request (Request):
+            The FastAPI request object to analyze.
 
     Returns:
-        bool: True if a potential attack is detected, False otherwise.
+        bool:
+            True if a potential attack is
+            detected, False otherwise.
     """
 
-    suspicious_patterns = SusPatterns().patterns
+    suspicious_patterns = await SusPatterns().get_all_compiled_patterns()
 
     # Query params
     query_params = request.query_params
     for key, value in query_params.items():
         for pattern in suspicious_patterns:
-            if re.search(pattern, value, re.IGNORECASE):
+            if pattern.search(value):
                 logging.warning(f"Potential attack detected from {request.client.host}: {key}={value}")
                 return True
 
@@ -187,14 +250,14 @@ async def detect_penetration_attempt(request: Request) -> bool:
     body = await request.body()
     body_str = body.decode('utf-8')
     for pattern in suspicious_patterns:
-        if re.search(pattern, body_str, re.IGNORECASE):
+        if pattern.search(body_str):
             logging.warning(f"Potential attack detected from {request.client.host}: {body_str}")
             return True
 
     # Path
     path = request.url.path
     for pattern in suspicious_patterns:
-        if re.search(pattern, path, re.IGNORECASE):
+        if pattern.search(path):
             logging.warning(f"Potential attack detected from {request.client.host}: {path}")
             return True
 
@@ -202,7 +265,7 @@ async def detect_penetration_attempt(request: Request) -> bool:
     headers = request.headers
     for key, value in headers.items():
         for pattern in suspicious_patterns:
-            if re.search(pattern, value, re.IGNORECASE):
+            if pattern.search(value):
                 logging.warning(f"Potential attack detected from {request.client.host}: {key}={value}")
                 return True
 

@@ -1,7 +1,6 @@
 import asyncio
 from config.sus_patterns import SusPatterns
 from fastapi import Request, FastAPI, status
-from fastapi.testclient import TestClient
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
 from guard.utils import (
@@ -25,6 +24,7 @@ import pytest
 @pytest.fixture(autouse=True)
 async def reset_state():
     await reset_global_state()
+    SusPatterns._instance = None
     yield
 
 
@@ -41,7 +41,9 @@ def security_config():
         whitelist=["127.0.0.1"],
         blacklist=["192.168.1.1"],
         blocked_countries=["CN"],
-        blocked_user_agents=[r"badbot"],
+        blocked_user_agents=[
+            r"badbot"
+        ],
         auto_ban_threshold=3,
         auto_ban_duration=300,
         custom_log_file="test_log.log",
@@ -165,43 +167,45 @@ async def test_automatic_ip_ban(reset_state):
             "message": "Hello World"
         }
 
-    client = TestClient(app)
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    ) as client:
+        for _ in range(config.auto_ban_threshold):
+            response = await client.get(
+                "/",
+                headers={
+                    "X-Forwarded-For": "192.168.1.2"
+                }
+            )
+            assert response.status_code == status.HTTP_200_OK
 
-    for _ in range(3):
-        response = client.get(
+        # This should trigger the automatic ban
+        response = await client.get(
             "/",
             headers={
                 "X-Forwarded-For": "192.168.1.2"
             }
         )
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    # This should trigger the automatic ban
-    response = client.get(
-        "/",
-        headers={
-            "X-Forwarded-For": "192.168.1.2"
-        }
-    )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-    # Ensure the IP remains banned
-    response = client.get(
-        "/",
-        headers={
-            "X-Forwarded-For": "192.168.1.2"
-        }
-    )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-    # Ensure other IPs are not affected
-    response = client.get(
-        "/",
-        headers={
-            "X-Forwarded-For": "192.168.1.3"
+        # Ensure the IP remains banned
+        response = await client.get(
+            "/",
+            headers={
+                "X-Forwarded-For": "192.168.1.2"
             }
-    )
-    assert response.status_code == status.HTTP_200_OK
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+        # Ensure other IPs are not affected
+        response = await client.get(
+            "/",
+            headers={
+                "X-Forwarded-For": "192.168.1.3"
+                }
+        )
+        assert response.status_code == status.HTTP_200_OK
 
 
 
@@ -233,36 +237,38 @@ async def test_custom_error_responses():
             "message": "Hello World"
         }
 
-    client = TestClient(app)
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    ) as client:
+        # Test blacklisted IP
+        response = await client.get(
+            "/",
+            headers={
+                "X-Forwarded-For": "192.168.1.3"
+            }
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.text == "Custom Forbidden"
 
-    # Test blacklisted IP
-    response = client.get(
-        "/",
-        headers={
-            "X-Forwarded-For": "192.168.1.3"
-        }
-    )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert response.text == "Custom Forbidden"
+        # Test rate limiting
+        for _ in range(5):
+            response = await client.get(
+                "/",
+                headers={
+                    "X-Forwarded-For": "192.168.1.4"
+                }
+            )
+            assert response.status_code == status.HTTP_200_OK
 
-    # Test rate limiting
-    for _ in range(5):
-        response = client.get(
+        response = await client.get(
             "/",
             headers={
                 "X-Forwarded-For": "192.168.1.4"
             }
         )
-        assert response.status_code == status.HTTP_200_OK
-
-    response = client.get(
-        "/",
-        headers={
-            "X-Forwarded-For": "192.168.1.4"
-        }
-    )
-    assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
-    assert response.text == "Custom Too Many Requests"
+        assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+        assert response.text == "Custom Too Many Requests"
 
 
 
@@ -508,7 +514,8 @@ async def test_detect_penetration_attempt_command_injection():
 @pytest.mark.asyncio
 async def test_detect_penetration_attempt_ssrf():
     """
-    Test the detect_penetration_attempt function with an SSRF attempt.
+    Test the detect_penetration_attempt
+    function with an SSRF attempt.
     """
     async def receive():
         return {
@@ -705,8 +712,7 @@ async def test_detect_penetration_attempt_http_header_injection():
 @pytest.mark.asyncio
 async def test_add_pattern():
     """
-    Test adding a custom
-    pattern to SusPatterns.
+    Test adding a custom pattern to SusPatterns.
     """
     sus_patterns = SusPatterns()
     new_pattern = r"new_pattern"
@@ -715,14 +721,15 @@ async def test_add_pattern():
         custom=True
     )
     assert new_pattern in sus_patterns.custom_patterns
+    all_patterns = await sus_patterns.get_all_patterns()
+    assert new_pattern in all_patterns
 
 
 
 @pytest.mark.asyncio
 async def test_remove_pattern():
     """
-    Test removing a custom
-    pattern from SusPatterns.
+    Test removing a custom pattern from SusPatterns.
     """
     sus_patterns = SusPatterns()
     pattern_to_remove = r"new_pattern"
@@ -741,8 +748,7 @@ async def test_remove_pattern():
 @pytest.mark.asyncio
 async def test_get_all_patterns():
     """
-    Test retrieving all patterns
-    (default and custom) from SusPatterns.
+    Test retrieving all patterns (default and custom) from SusPatterns.
     """
     sus_patterns = SusPatterns()
     default_patterns = sus_patterns.patterns
@@ -764,8 +770,8 @@ async def test_get_all_patterns():
 @pytest.mark.asyncio
 async def test_rate_limiting():
     """
-    Test the rate limiting
-    functionality of the SecurityMiddleware.
+    Test the rate limiting functionality
+    of the SecurityMiddleware.
     """
     app = FastAPI()
     config = SecurityConfig()
@@ -780,21 +786,23 @@ async def test_rate_limiting():
     async def read_root():
         return {"message": "Hello World"}
 
-    client = TestClient(app)
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    ) as client:
+        response = await client.get("/")
+        assert response.status_code == status.HTTP_200_OK
 
-    response = client.get("/")
-    assert response.status_code == status.HTTP_200_OK
+        response = await client.get("/")
+        assert response.status_code == status.HTTP_200_OK
 
-    response = client.get("/")
-    assert response.status_code == status.HTTP_200_OK
+        response = await client.get("/")
+        assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
 
-    response = client.get("/")
-    assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+        await asyncio.sleep(1)
 
-    await asyncio.sleep(1)
-
-    response = client.get("/")
-    assert response.status_code == status.HTTP_200_OK
+        response = await client.get("/")
+        assert response.status_code == status.HTTP_200_OK
 
 
 
@@ -814,31 +822,33 @@ async def test_ip_whitelist_blacklist():
     async def read_root():
         return {"message": "Hello World"}
 
-    client = TestClient(app)
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    ) as client:
+        response = await client.get(
+            "/",
+            headers={
+                "X-Forwarded-For": "127.0.0.1"
+            }
+        )
+        assert response.status_code == status.HTTP_200_OK
 
-    response = client.get(
-        "/",
-        headers={
-            "X-Forwarded-For": "127.0.0.1"
-        }
-    )
-    assert response.status_code == status.HTTP_200_OK
+        response = await client.get(
+            "/",
+            headers={
+                "X-Forwarded-For": "192.168.1.1"
+            }
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    response = client.get(
-        "/",
-        headers={
-            "X-Forwarded-For": "192.168.1.1"
-        }
-    )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-    response = client.get(
-        "/",
-        headers={
-            "X-Forwarded-For": "10.0.0.1"
-        }
-    )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+        response = await client.get(
+            "/",
+            headers={
+                "X-Forwarded-For": "10.0.0.1"
+            }
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 
@@ -865,23 +875,25 @@ async def test_user_agent_filtering():
             "message": "Hello World"
         }
 
-    client = TestClient(app)
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    ) as client:
+        response = await client.get(
+            "/",
+            headers={
+                "User-Agent": "goodbot"
+            }
+        )
+        assert response.status_code == status.HTTP_200_OK
 
-    response = client.get(
-        "/",
-        headers={
-            "User-Agent": "goodbot"
-        }
-    )
-    assert response.status_code == status.HTTP_200_OK
-
-    response = client.get(
-        "/",
-        headers={
-            "User-Agent": "badbot"
-        }
-    )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+        response = await client.get(
+            "/",
+            headers={
+                "User-Agent": "badbot"
+            }
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 
@@ -929,7 +941,7 @@ async def test_rate_limiting_multiple_ips(
 
     async with AsyncClient(
         transport=ASGITransport(app=app),
-        base_url="http://testserver"
+        base_url="http://test"
     ) as client:
         # IP 1
         for i in range(1, 4):
@@ -1006,34 +1018,36 @@ async def test_user_agent_filtering_edge_cases():
             "message": "Hello World"
         }
 
-    client = TestClient(app)
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    ) as client:
+        # Case insensitive match
+        response = await client.get(
+            "/",
+            headers={
+                "User-Agent": "BadBot"
+            }
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    # Case insensitive match
-    response = client.get(
-        "/",
-        headers={
-            "User-Agent": "BadBot"
-        }
-    )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+        # Partial match
+        response = await client.get(
+            "/",
+            headers={
+                "User-Agent": "badbot123"
+            }
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    # Partial match
-    response = client.get(
-        "/",
-        headers={
-            "User-Agent": "badbot123"
-        }
-    )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-    # No match
-    response = client.get(
-        "/",
-        headers={
-            "User-Agent": "goodbot"
-        }
-    )
-    assert response.status_code == status.HTTP_200_OK
+        # No match
+        response = await client.get(
+            "/",
+            headers={
+                "User-Agent": "goodbot"
+            }
+        )
+        assert response.status_code == status.HTTP_200_OK
 
 
 
@@ -1150,29 +1164,31 @@ async def test_middleware_multiple_configs():
             "message": "Hello World"
         }
 
-    client = TestClient(app)
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    ) as client:
+        # Test user agent filtering
+        response = await client.get(
+            "/",
+            headers={
+                "User-Agent": "badbot"
+            }
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    # Test user agent filtering
-    response = client.get(
-        "/",
-        headers={
-            "User-Agent": "badbot"
-        }
-    )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-    # Test IP whitelist/blacklist
-    response = client.get(
-        "/",
-        headers={
-            "X-Forwarded-For": "127.0.0.1"
-        }
-    )
-    assert response.status_code == status.HTTP_200_OK
-    response = client.get(
-        "/",
-        headers={
-            "X-Forwarded-For": "192.168.1.1"
-        }
-    )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+        # Test IP whitelist/blacklist
+        response = await client.get(
+            "/",
+            headers={
+                "X-Forwarded-For": "127.0.0.1"
+            }
+        )
+        assert response.status_code == status.HTTP_200_OK
+        response = await client.get(
+            "/",
+            headers={
+                "X-Forwarded-For": "192.168.1.1"
+            }
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN

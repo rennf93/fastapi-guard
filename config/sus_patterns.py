@@ -1,13 +1,16 @@
+import re
 from typing import Set, List
-
 
 
 class SusPatterns:
     """
-    A singleton class that manages suspicious patterns for security checks.
+    A singleton class that manages suspicious
+    patterns for security checks.
 
-    This class maintains two sets of patterns: default patterns and custom patterns.
-    It provides methods to add, remove, and retrieve patterns.
+    This class maintains two sets of patterns:
+    default patterns and custom patterns.
+    It provides methods to add, remove,
+    and retrieve patterns.
     """
 
     _instance = None
@@ -149,53 +152,124 @@ class SusPatterns:
 
     def __new__(cls):
         """
-        Ensure only one instance of SusPatterns is created (singleton pattern).
+        Ensure only one instance of SusPatterns
+        is created (singleton pattern).
 
         Returns:
-            SusPatterns: The single instance of the SusPatterns class.
+            SusPatterns: The single instance
+            of the SusPatterns class.
         """
         if cls._instance is None:
-            cls._instance = super(SusPatterns, cls).__new__(cls)
+            cls._instance = super(
+                SusPatterns,
+                cls
+            ).__new__(cls)
+            cls._instance.compiled_patterns = [
+                re.compile(
+                    pattern, re.IGNORECASE
+                ) for pattern in cls.patterns
+            ]
+            cls._instance.compiled_custom_patterns = set()
         return cls._instance
 
     @classmethod
-    async def add_pattern(cls, pattern: str, custom: bool = False) -> None:
+    async def add_pattern(
+        cls,
+        pattern: str,
+        custom: bool = False
+    ) -> None:
         """
-        Add a new pattern to either the custom or default patterns list.
+        Add a new pattern to either the custom or
+        default patterns list.
 
         Args:
             pattern (str): The pattern to be added.
-            custom (bool, optional): If True, add to custom patterns; otherwise, add to default patterns. Defaults to False.
+            custom (bool, optional): If True, add
+            to custom patterns; otherwise, add to
+            default patterns. Defaults to False.
         """
+        compiled_pattern = re.compile(
+            pattern,
+            re.IGNORECASE
+        )
         if custom:
-            if pattern not in cls.custom_patterns:
-                cls.custom_patterns.add(pattern)
+            cls._instance.compiled_custom_patterns.add(
+                compiled_pattern
+            )
+            cls._instance.custom_patterns.add(
+                pattern
+            )
         else:
-            if pattern not in cls.patterns:
-                cls.patterns.append(pattern)
+            cls._instance.compiled_patterns.append(
+                compiled_pattern
+            )
+            cls._instance.patterns.append(
+                pattern
+            )
 
     @classmethod
-    async def remove_pattern(cls, pattern: str, custom: bool = False) -> None:
+    async def remove_pattern(
+        cls,
+        pattern: str,
+        custom: bool = False
+    ) -> None:
         """
-        Remove a pattern from either the custom or default patterns list.
+        Remove a pattern from either the
+        custom or default patterns list.
 
         Args:
             pattern (str): The pattern to be removed.
-            custom (bool, optional): If True, remove from custom patterns; otherwise, remove from default patterns. Defaults to False.
+            custom (bool, optional): If True, remove
+            from custom patterns; otherwise, remove
+            from default patterns. Defaults to False.
         """
+        compiled_pattern = re.compile(
+            pattern,
+            re.IGNORECASE
+        )
         if custom:
-            if pattern in cls.custom_patterns:
-                cls.custom_patterns.discard(pattern)
+            cls._instance.compiled_custom_patterns.discard(
+                compiled_pattern
+            )
+            cls._instance.custom_patterns.discard(
+                pattern
+            )
         else:
-            if pattern in cls.patterns:
-                cls.patterns.remove(pattern)
+            cls._instance.compiled_patterns = [
+                p for p in cls._instance.compiled_patterns
+                if p.pattern != pattern
+            ]
+            cls._instance.patterns = [
+                p for p in cls._instance.patterns
+                if p != pattern
+            ]
 
     @classmethod
     async def get_all_patterns(cls) -> List[str]:
         """
-        Retrieve all patterns, including both default and custom patterns.
+        Retrieve all patterns, including
+        both default and custom patterns.
 
         Returns:
-            List[str]: A list containing all default and custom patterns.
+            List[str]: A list containing
+            all default and custom patterns.
         """
-        return cls.patterns + list(cls.custom_patterns)
+        return cls._instance.patterns + list(
+            cls._instance.custom_patterns
+        )
+
+    @classmethod
+    async def get_all_compiled_patterns(
+        cls
+    ) -> List[re.Pattern]:
+        """
+        Retrieve all compiled patterns,
+        including both default and custom patterns.
+
+        Returns:
+            List[re.Pattern]: A list containing
+            all default and custom compiled patterns.
+        """
+        return cls._instance.compiled_patterns + list(
+            cls._instance.compiled_custom_patterns
+        )

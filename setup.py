@@ -16,6 +16,7 @@ setup(
         "fastapi",
         "uvicorn",
         "aiohttp",
+        "cachetools",
     ],
     extras_require={
         "dev": [
