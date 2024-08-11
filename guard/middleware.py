@@ -14,6 +14,7 @@ from guard.utils import (
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
 from typing import Callable, Awaitable
+from config.ip2.ip2location_config import download_ip2location_database
 
 
 
@@ -68,6 +69,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             maxsize=10000,
             ttl=3600
         )
+
+        download_ip2location_database()
 
     async def setup_logger(self):
         if self.logger is None:
@@ -227,3 +230,4 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     async def reset(self):
         self.request_counts.clear()
         self.ip_request_counts.clear()
+        

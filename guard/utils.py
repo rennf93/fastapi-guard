@@ -1,6 +1,6 @@
 # fastapi_guard/utils.py
-import aiohttp
 from cachetools import TTLCache
+from config.ip2.ip2location_config import get_ip2location_database
 from config.sus_patterns import SusPatterns
 from fastapi import Request
 from guard.models import SecurityConfig
@@ -164,24 +164,21 @@ async def is_user_agent_allowed(
 
 async def get_ip_country(ip: str) -> str:
     """
-    Get the country associated
-    with the given IP address.
+    Get the country associated with the given IP address using IP2Location database.
 
     Args:
-        ip (str):
-            The IP address to look up.
+        ip (str): The IP address to look up.
 
     Returns:
-        str:
-            The country code associated with the IP address.
+        str: The country code associated with the IP address.
     """
-    async with aiohttp.ClientSession() as session:
-        async with session.get(
-            f"https://ipinfo.io/{ip}/country"
-        ) as response:
-            return (
-                await response.text()
-            ).strip()
+    ip2location = get_ip2location_database()
+    try:
+        result = ip2location.get_country_short(ip)
+        return result if result != "-" else ""
+    except Exception as e:
+        logging.error(f"Error getting country for IP {ip}: {str(e)}")
+        return ""
 
 
 
