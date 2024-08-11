@@ -8,6 +8,7 @@ import logging
 import re
 import time
 from typing import Dict, Any
+import aiohttp
 
 
 
@@ -33,7 +34,9 @@ class IPBanManager:
         Ban an IP address for
         a specified duration.
         """
-        self.banned_ips[ip] = time.time() + duration
+        self.banned_ips[
+            ip
+        ] = time.time() + duration
 
     async def is_ip_banned(
         self,
@@ -71,7 +74,9 @@ async def reset_global_state():
 
 
 
-async def setup_custom_logging(log_file: str):
+async def setup_custom_logging(
+    log_file: str
+):
     """
     Setup custom logging
     for the application.
@@ -105,7 +110,10 @@ async def log_request(
     method = request.method
     url = str(request.url)
     headers: Dict[str, Any] = dict(request.headers)
-    logger.info(f"Request from {client_ip}: {method} {url} - Headers: {headers}")
+    message = f"Request from"
+    details = f"{message} {client_ip}: {method} {url}"
+    reason_message = f"Headers: {headers}"
+    logger.info(f"{details} - {reason_message}")
 
 
 
@@ -129,7 +137,10 @@ async def log_suspicious_activity(
     method = request.method
     url = str(request.url)
     headers = dict(request.headers)
-    logger.warning(f"Suspicious activity detected from {client_ip}: {method} {url} - Reason: {reason} - Headers: {headers}")
+    message = "Suspicious activity detected from "
+    details = f"{message} {client_ip}: {method} {url}"
+    reason_message = f"Reason: {reason} - Headers: {headers}"
+    logger.warning(f"{details} - {reason_message}")
 
 
 
@@ -162,23 +173,56 @@ async def is_user_agent_allowed(
 
 
 
-async def get_ip_country(ip: str) -> str:
+async def get_ip_country(
+    ip: str,
+    config: SecurityConfig
+) -> str:
     """
-    Get the country associated with the given IP address using IP2Location database.
+    Get the country associated with the given
+    IP address using IP2Location database
+    or ipinfo.io as a fallback.
 
     Args:
-        ip (str): The IP address to look up.
+        ip (str):
+            The IP address to look up.
+        config (SecurityConfig):
+            The security configuration.
 
     Returns:
-        str: The country code associated with the IP address.
+        str:
+            The country code associated
+            with the IP address.
     """
-    ip2location = get_ip2location_database()
-    try:
-        result = ip2location.get_country_short(ip)
-        return result if result != "-" else ""
-    except Exception as e:
-        logging.error(f"Error getting country for IP {ip}: {str(e)}")
-        return ""
+    if config.use_ip2location:
+        ip2location = get_ip2location_database(config)
+        if ip2location is not None:
+            try:
+                result = ip2location.get_country_short(ip)
+                if result and result != "-":
+                    return result
+            except Exception as e:
+                type = "IP2Location"
+                message = f"Error getting country for IP {ip}"
+                reason_message = f"Reason: {str(e)}"
+                logging.error(f"{type} - {message} - {reason_message}")
+
+    if config.use_ipinfo_fallback:
+        try:
+            async with aiohttp.ClientSession(
+                ) as session:
+                async with session.get(
+                    f"https://ipinfo.io/{ip}/json"
+                ) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        return data.get("country", "")
+        except Exception as e:
+            type = "ipinfo.io"
+            message = f"Error getting country for IP {ip}"
+            reason_message = f"Reason: {str(e)}"
+            logging.error(f"{type} - {message} - {reason_message}")
+
+    return ""
 
 
 
@@ -205,14 +249,19 @@ async def is_ip_allowed(
     if config.whitelist:
         return ip in config.whitelist
     if config.blocked_countries:
-        country = await get_ip_country(ip)
+        country = await get_ip_country(
+            ip,
+            config
+        )
         if country in config.blocked_countries:
             return False
     return True
 
 
 
-async def detect_penetration_attempt(request: Request) -> bool:
+async def detect_penetration_attempt(
+    request: Request
+) -> bool:
     """
     Detect potential penetration
     attempts in the request.
@@ -233,14 +282,18 @@ async def detect_penetration_attempt(request: Request) -> bool:
             detected, False otherwise.
     """
 
-    suspicious_patterns = await SusPatterns().get_all_compiled_patterns()
+    suspicious_patterns = await SusPatterns(
+        ).get_all_compiled_patterns()
 
     # Query params
     query_params = request.query_params
     for key, value in query_params.items():
         for pattern in suspicious_patterns:
             if pattern.search(value):
-                logging.warning(f"Potential attack detected from {request.client.host}: {key}={value}")
+                message = f"Potential attack detected from"
+                details = f"{request.client.host}: {key}={value}"
+                reason_message = f"Suspicious pattern: {pattern.pattern}"
+                logging.warning(f"{message} {details} - {reason_message}")
                 return True
 
     # Body
@@ -248,14 +301,20 @@ async def detect_penetration_attempt(request: Request) -> bool:
     body_str = body.decode('utf-8')
     for pattern in suspicious_patterns:
         if pattern.search(body_str):
-            logging.warning(f"Potential attack detected from {request.client.host}: {body_str}")
+            message = f"Potential attack detected from"
+            details = f"{request.client.host}: {body_str}"
+            reason_message = f"Suspicious pattern: {pattern.pattern}"
+            logging.warning(f"{message} {details} - {reason_message}")
             return True
 
     # Path
     path = request.url.path
     for pattern in suspicious_patterns:
         if pattern.search(path):
-            logging.warning(f"Potential attack detected from {request.client.host}: {path}")
+            message = f"Potential attack detected from"
+            details = f"{request.client.host}: {path}"
+            reason_message = f"Suspicious pattern: {pattern.pattern}"
+            logging.warning(f"{message} {details} - {reason_message}")
             return True
 
     # Headers
@@ -263,7 +322,10 @@ async def detect_penetration_attempt(request: Request) -> bool:
     for key, value in headers.items():
         for pattern in suspicious_patterns:
             if pattern.search(value):
-                logging.warning(f"Potential attack detected from {request.client.host}: {key}={value}")
+                message = f"Potential attack detected from"
+                details = f"{request.client.host}: {key}={value}"
+                reason_message = f"Suspicious pattern: {pattern.pattern}"
+                logging.warning(f"{message} {details} - {reason_message}")
                 return True
 
     return False

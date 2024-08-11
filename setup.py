@@ -17,6 +17,7 @@ setup(
         "uvicorn",
         "aiohttp",
         "cachetools",
+        "IP2Location",
     ],
     extras_require={
         "dev": [

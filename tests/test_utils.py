@@ -32,10 +32,12 @@ async def reset_state():
 @pytest.fixture
 def security_config():
     """
-    Fixture to create a SecurityConfig object for testing.
+    Fixture to create a
+    SecurityConfig object for testing.
 
     Returns:
-        SecurityConfig: A configured SecurityConfig object.
+        SecurityConfig:
+            A configured SecurityConfig object.
     """
     return SecurityConfig(
         whitelist=["127.0.0.1"],
@@ -748,7 +750,8 @@ async def test_remove_pattern():
 @pytest.mark.asyncio
 async def test_get_all_patterns():
     """
-    Test retrieving all patterns (default and custom) from SusPatterns.
+    Test retrieving all patterns
+    (default and custom) from SusPatterns.
     """
     sus_patterns = SusPatterns()
     default_patterns = sus_patterns.patterns
@@ -1073,8 +1076,14 @@ async def test_ip_geolocation(mocker):
         return_value=mock_response
     )
 
+    config = SecurityConfig(
+        use_ip2location=True,
+        use_ipinfo_fallback=True
+    )
+
     country = await get_ip_country(
-        "8.8.8.8"
+        ip="8.8.8.8",
+        config=config
     )
     assert country == "US"
 

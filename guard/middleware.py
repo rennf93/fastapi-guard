@@ -1,5 +1,7 @@
 # fastapi_guard/middleware.py
+import asyncio
 from cachetools import TTLCache
+from config.ip2.ip2location_config import download_ip2location_database, start_periodic_update_check
 from fastapi import Request, Response, status
 from guard.models import SecurityConfig
 from guard.utils import (
@@ -14,7 +16,6 @@ from guard.utils import (
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
 from typing import Callable, Awaitable
-from config.ip2.ip2location_config import download_ip2location_database
 
 
 
@@ -70,7 +71,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             ttl=3600
         )
 
-        download_ip2location_database()
+        if self.config.use_ip2location:
+            download_ip2location_database(self.config)
+            asyncio.create_task(start_periodic_update_check(self.config))
 
     async def setup_logger(self):
         if self.logger is None:
@@ -230,4 +233,3 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     async def reset(self):
         self.request_counts.clear()
         self.ip_request_counts.clear()
-        

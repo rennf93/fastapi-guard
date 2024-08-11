@@ -10,7 +10,8 @@ class SecurityConfig(BaseModel):
 
     This class defines the structure for security configuration,
     including IP whitelists and blacklists, blocked countries,
-    blocked user agents, rate limiting, and automatic IP banning.
+    blocked user agents, rate limiting, automatic IP banning,
+    and IP2Location settings.
     """
 
     whitelist: Optional[List[str]] = None
@@ -57,4 +58,34 @@ class SecurityConfig(BaseModel):
     rate_limit: int = 100
     """
     int: The maximum number of requests allowed per minute from a single IP.
+    """
+
+    use_ip2location: bool = False
+    """
+    bool: Whether to use the IP2Location database for IP geolocation.
+    """
+
+    ip2location_db_path: Optional[str] = None
+    """
+    Optional[str]: The path to the IP2Location database file.
+    """
+
+    ip2location_auto_download: bool = False
+    """
+    bool: Whether to automatically download the IP2Location database if it's not found.
+    """
+
+    ip2location_auto_update: bool = False
+    """
+    bool: Whether to automatically update the IP2Location database periodically.
+    """
+
+    ip2location_update_interval: int = 24
+    """
+    int: The interval in hours for automatic IP2Location database updates.
+    """
+
+    use_ipinfo_fallback: bool = True
+    """
+    bool: Whether to use ipinfo.io as a fallback for IP geolocation when IP2Location fails.
     """
