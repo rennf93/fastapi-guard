@@ -1,6 +1,6 @@
 import asyncio
 from config.sus_patterns import SusPatterns
-from fastapi import Request, FastAPI, status
+from fastapi import Request, FastAPI, status, Response
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
 from guard.utils import (
@@ -1201,3 +1201,140 @@ async def test_middleware_multiple_configs():
             }
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+
+@pytest.mark.asyncio
+async def test_https_enforcement():
+    """
+    Test the HTTPS enforcement
+    functionality of the SecurityMiddleware.
+    """
+    app = FastAPI()
+    config = SecurityConfig(enforce_https=True)
+    app.add_middleware(
+        SecurityMiddleware,
+        config=config
+    )
+
+    @app.get("/")
+    async def read_root():
+        return {
+            "message": "Hello World"
+        }
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    ) as client:
+        response = await client.get("/")
+        assert response.status_code == status.HTTP_301_MOVED_PERMANENTLY
+        assert response.headers[
+            "location"
+        ].startswith("https://")
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="https://test"
+    ) as client:
+        response = await client.get("/")
+        assert response.status_code == status.HTTP_200_OK
+
+
+
+@pytest.mark.asyncio
+async def test_custom_request_check():
+    """
+    Test the custom request check
+    functionality of the SecurityMiddleware.
+    """
+    app = FastAPI()
+
+    async def custom_check(
+        request: Request
+    ):
+        if request.headers.get(
+            "X-Custom-Header"
+        ) == "block":
+            return Response(
+                "Custom block",
+                status_code=status.HTTP_403_FORBIDDEN
+            )
+        return None
+
+    config = SecurityConfig(
+        custom_request_check=custom_check
+    )
+    app.add_middleware(
+        SecurityMiddleware,
+        config=config
+    )
+
+    @app.get("/")
+    async def read_root():
+        return {
+            "message": "Hello World"
+        }
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    ) as client:
+        response = await client.get(
+            "/",
+            headers={
+                "X-Custom-Header": "block"
+            }
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.text == "Custom block"
+
+        response = await client.get(
+            "/",
+            headers={
+                "X-Custom-Header": "allow"
+            }
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+
+
+@pytest.mark.asyncio
+async def test_custom_response_modifier():
+    """
+    Test the custom response modifier
+    functionality of the SecurityMiddleware.
+    """
+    app = FastAPI()
+
+    async def custom_modifier(
+        response: Response
+    ):
+        response.headers[
+            "X-Custom-Header"
+        ] = "modified"
+        return response
+
+    config = SecurityConfig(
+        custom_response_modifier=custom_modifier
+    )
+    app.add_middleware(
+        SecurityMiddleware,
+        config=config
+    )
+
+    @app.get("/")
+    async def read_root():
+        return {
+            "message": "Hello World"
+        }
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    ) as client:
+        response = await client.get("/")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.headers[
+            "X-Custom-Header"
+        ] == "modified"

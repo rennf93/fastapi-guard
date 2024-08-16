@@ -1,8 +1,12 @@
 # fastapi_guard/middleware.py
 import asyncio
 from cachetools import TTLCache
-from config.ip2.ip2location_config import download_ip2location_database, start_periodic_update_check
+from config.ip2.ip2location_config import (
+    download_ip2location_database,
+    start_periodic_update_check
+)
 from fastapi import Request, Response, status
+from fastapi.responses import RedirectResponse
 from guard.models import SecurityConfig
 from guard.utils import (
     detect_penetration_attempt,
@@ -107,6 +111,15 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             Response: The response object, either
             from the next handler or a security-related response.
         """
+        if self.config.enforce_https and request.url.scheme == "http":
+            https_url = request.url.replace(
+                scheme="https"
+            )
+            return RedirectResponse(
+                https_url,
+                status_code=301
+            )
+
         if self.logger is None:
             await self.setup_logger()
         client_ip = request.headers.get(
@@ -191,6 +204,14 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 default_message="Potential attack detected"
             )
 
+        # Custom request check
+        if self.config.custom_request_check:
+            custom_response = await self.config.custom_request_check(
+                request
+            )
+            if custom_response:
+                return custom_response
+
         # Automatic IP ban check
         if client_ip not in self.ip_request_counts:
             self.ip_request_counts[client_ip] = 1
@@ -214,6 +235,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 )
 
         response = await call_next(request)
+
+        # Custom response modifier
+        if self.config.custom_response_modifier:
+            response = await self.config.custom_response_modifier(
+                response
+            )
+
         return response
 
     async def create_error_response(
