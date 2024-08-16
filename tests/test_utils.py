@@ -52,7 +52,14 @@ def security_config():
         custom_error_responses={
             403: "Custom Forbidden",
             429: "Custom Too Many Requests"
-        }
+        },
+        enable_cors=True,
+        cors_allow_origins=["https://example.com"],
+        cors_allow_methods=["GET", "POST"],
+        cors_allow_headers=["*"],
+        cors_allow_credentials=True,
+        cors_expose_headers=["X-Custom-Header"],
+        cors_max_age=600
     )
 
 
@@ -954,7 +961,7 @@ async def test_rate_limiting_multiple_ips(
                     "X-Forwarded-For": "192.168.1.1"
                 }
             )
-            print(f"IP 1, Request {i}: {response.status_code}")
+            logging.info(f"IP 1, Request {i}: {response.status_code}")
             assert response.status_code == (
                 status.HTTP_200_OK
                 if i <= 2
@@ -969,7 +976,7 @@ async def test_rate_limiting_multiple_ips(
                     "X-Forwarded-For": "192.168.1.5"
                 }
             )
-            print(f"IP 2, Request {i}: {response.status_code}")
+            logging.info(f"IP 2, Request {i}: {response.status_code}")
             assert response.status_code == (
                 status.HTTP_200_OK
                 if i <= 2
@@ -983,7 +990,7 @@ async def test_rate_limiting_multiple_ips(
                 "X-Forwarded-For": "192.168.1.1"
             }
         )
-        print(f"IP 1, Request 4: {response.status_code}")
+        logging.info(f"IP 1, Request 4: {response.status_code}")
         assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
 
         # Ensure IP 2 is still rate limited
@@ -993,7 +1000,7 @@ async def test_rate_limiting_multiple_ips(
                 "X-Forwarded-For": "192.168.1.5"
             }
         )
-        print(f"IP 2, Request 4: {response.status_code}")
+        logging.info(f"IP 2, Request 4: {response.status_code}")
         assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
 
 
@@ -1338,3 +1345,105 @@ async def test_custom_response_modifier():
         assert response.headers[
             "X-Custom-Header"
         ] == "modified"
+
+
+
+@pytest.mark.asyncio
+async def test_cors_configuration():
+    app = FastAPI()
+    config = SecurityConfig(
+        enable_cors=True,
+        cors_allow_origins=["https://example.com"],
+        cors_allow_methods=["GET", "POST"],
+        cors_allow_headers=["X-Custom-Header"],
+        cors_allow_credentials=True,
+        cors_expose_headers=["X-Custom-Header"],
+        cors_max_age=600
+    )
+
+    cors_added = SecurityMiddleware.configure_cors(
+        app,
+        config
+    )
+    assert cors_added, "CORS middleware was not added"
+
+    client = AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    )
+    response = await client.options(
+        "/",
+        headers={
+            "Origin": "https://example.com",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "X-Custom-Header"
+        }
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.headers["access-control-allow-origin"] == "https://example.com"
+    assert "GET" in response.headers["access-control-allow-methods"]
+    assert "X-Custom-Header" in response.headers["access-control-allow-headers"]
+
+    if "access-control-expose-headers" in response.headers:
+        assert "X-Custom-Header" in response.headers["access-control-expose-headers"]
+    else:
+        logging.warning("Warning: access-control-expose-headers not present in response")
+
+    assert response.headers["access-control-max-age"] == "600"
+
+
+
+@pytest.mark.asyncio
+async def test_cors_disabled():
+    """
+    Test that CORS is not configured
+    when disabled in SecurityConfig.
+    """
+    app = FastAPI()
+    config = SecurityConfig(enable_cors=False)
+
+    disabled_cors = SecurityMiddleware.configure_cors(
+        app,
+        config
+    )
+
+    assert not disabled_cors, "CORS middleware was added"
+
+
+
+@pytest.mark.asyncio
+async def test_cors_default_settings():
+    """
+    Test CORS configuration
+    with default settings.
+    """
+    app = FastAPI()
+    config = SecurityConfig(enable_cors=True)
+
+    SecurityMiddleware.configure_cors(
+        app,
+        config
+    )
+
+    # Create a test client
+    client = AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    )
+
+    # Deafault CORS preflight request
+    response = await client.options(
+        "/",
+        headers={
+            "Origin": "https://example.com",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "X-Custom-Header"
+        }
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.headers["access-control-allow-origin"] == "*"
+    assert "GET" in response.headers["access-control-allow-methods"]
+    assert "POST" in response.headers["access-control-allow-methods"]
+    assert "PUT" in response.headers["access-control-allow-methods"]
+    assert "DELETE" in response.headers["access-control-allow-methods"]
+    assert response.headers["access-control-allow-headers"] == "X-Custom-Header"

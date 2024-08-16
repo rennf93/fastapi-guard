@@ -5,7 +5,8 @@ from config.ip2.ip2location_config import (
     download_ip2location_database,
     start_periodic_update_check
 )
-from fastapi import Request, Response, status
+from fastapi import FastAPI, Request, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from guard.models import SecurityConfig
 from guard.utils import (
@@ -76,8 +77,14 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         )
 
         if self.config.use_ip2location:
-            download_ip2location_database(self.config)
-            asyncio.create_task(start_periodic_update_check(self.config))
+            download_ip2location_database(
+                self.config
+            )
+            asyncio.create_task(
+                start_periodic_update_check(
+                    self.config
+                )
+            )
 
     async def setup_logger(self):
         if self.logger is None:
@@ -261,3 +268,31 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     async def reset(self):
         self.request_counts.clear()
         self.ip_request_counts.clear()
+
+    @staticmethod
+    def configure_cors(
+        app: FastAPI,
+        config: SecurityConfig
+    ) -> bool:
+        """
+        Configure FastAPI's CORS middleware
+        based on SecurityConfig.
+        """
+        if config.enable_cors:
+            cors_params = {
+                "allow_origins": config.cors_allow_origins,
+                "allow_methods": config.cors_allow_methods,
+                "allow_headers": config.cors_allow_headers,
+                "allow_credentials": config.cors_allow_credentials,
+                "max_age": config.cors_max_age,
+            }
+
+            if config.cors_expose_headers:
+                cors_params["expose_headers"] = config.cors_expose_headers
+
+            app.add_middleware(
+                CORSMiddleware,
+                **cors_params
+            )
+            return True
+        return False

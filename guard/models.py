@@ -12,7 +12,7 @@ class SecurityConfig(BaseModel):
     This class defines the structure for security configuration,
     including IP whitelists and blacklists, blocked countries,
     blocked user agents, rate limiting, automatic IP banning,
-    IP2Location settings, HTTPS enforcement, and custom hooks.
+    IP2Location settings, HTTPS enforcement, custom hooks, and CORS settings.
     """
 
     whitelist: Optional[List[str]] = None
@@ -152,4 +152,53 @@ class SecurityConfig(BaseModel):
     ]]:
         A custom function to modify
         the response before it's sent.
+    """
+
+    enable_cors: bool = False
+    """
+    bool:
+        Whether to enable CORS.
+    """
+
+    cors_allow_origins: List[str] = ["*"]
+    """
+    List[str]:
+        A list of origins that
+        are allowed to access the API.
+    """
+
+    cors_allow_methods: List[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    """
+    List[str]:
+        A list of methods that
+        are allowed to access the API.
+    """
+
+    cors_allow_headers: List[str] = ["*"]
+    """
+    List[str]:
+        A list of headers that are
+        allowed in CORS requests.
+    """
+
+    cors_allow_credentials: bool = False
+    """
+    bool:
+        Whether to allow credentials
+        in CORS requests.
+    """
+
+    cors_expose_headers: List[str] = []
+    """
+    List[str]:
+        A list of headers that
+        are exposed in CORS responses.
+    """
+
+    cors_max_age: int = 600
+    """
+    int:
+        The maximum age in seconds
+        that the results of a preflight
+        request can be cached.
     """

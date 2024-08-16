@@ -24,6 +24,7 @@ setup(
             "pytest",
             "pytest-asyncio",
             "pytest-mock",
+            "httpx",
         ],
     },
     author="Renzo Franceschini",
