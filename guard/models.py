@@ -4,7 +4,6 @@ from pydantic import BaseModel
 from typing import Dict, List, Optional, Callable, Awaitable
 
 
-
 class SecurityConfig(BaseModel):
     """
     Configuration model for security settings.
@@ -129,7 +128,9 @@ class SecurityConfig(BaseModel):
         If True, all HTTP requests will be redirected to HTTPS.
     """
 
-    custom_request_check: Optional[Callable[[Request], Awaitable[Optional[Response]]]] = None
+    custom_request_check: Optional[
+        Callable[[Request], Awaitable[Optional[Response]]]
+    ] = None
     """
     Optional[
         Callable[[Request],

@@ -2,10 +2,8 @@ from setuptools import setup, find_packages
 import pathlib
 
 
-
 HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
-
 
 
 setup(
@@ -38,6 +36,6 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.10',
+    python_requires=">=3.10",
     include_package_data=True,
 )

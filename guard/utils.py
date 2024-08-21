@@ -11,37 +11,25 @@ from typing import Dict, Any
 import aiohttp
 
 
-
 class IPBanManager:
     """
     A class for managing IP bans.
     """
+
     def __init__(self):
         """
         Initialize the IPBanManager.
         """
-        self.banned_ips = TTLCache(
-            maxsize=10000,
-            ttl=3600
-        )
+        self.banned_ips = TTLCache(maxsize=10000, ttl=3600)
 
-    async def ban_ip(
-        self,
-        ip: str,
-        duration: int
-    ):
+    async def ban_ip(self, ip: str, duration: int):
         """
         Ban an IP address for
         a specified duration.
         """
-        self.banned_ips[
-            ip
-        ] = time.time() + duration
+        self.banned_ips[ip] = time.time() + duration
 
-    async def is_ip_banned(
-        self,
-        ip: str
-    ) -> bool:
+    async def is_ip_banned(self, ip: str) -> bool:
         """
         Check if an IP
         address is banned.
@@ -60,9 +48,7 @@ class IPBanManager:
         self.banned_ips.clear()
 
 
-
 ip_ban_manager = IPBanManager()
-
 
 
 async def reset_global_state():
@@ -73,10 +59,7 @@ async def reset_global_state():
     ip_ban_manager = IPBanManager()
 
 
-
-async def setup_custom_logging(
-    log_file: str
-):
+async def setup_custom_logging(log_file: str):
     """
     Setup custom logging
     for the application.
@@ -84,20 +67,14 @@ async def setup_custom_logging(
     logger = logging.getLogger(__name__)
     file_handler = logging.FileHandler(log_file)
     file_handler.setFormatter(
-        logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(message)s'
-        )
+        logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     )
     logger.addHandler(file_handler)
     logger.setLevel(logging.INFO)
     return logger
 
 
-
-async def log_request(
-    request: Request,
-    logger
-):
+async def log_request(request: Request, logger):
     """
     Log the details of
     an incoming request.
@@ -116,12 +93,7 @@ async def log_request(
     logger.info(f"{details} - {reason_message}")
 
 
-
-async def log_suspicious_activity(
-    request: Request,
-    reason: str,
-    logger
-):
+async def log_suspicious_activity(request: Request, reason: str, logger):
     """
     Log suspicious activity
     detected in a request.
@@ -143,11 +115,7 @@ async def log_suspicious_activity(
     logger.warning(f"{details} - {reason_message}")
 
 
-
-async def is_user_agent_allowed(
-    user_agent: str,
-    config: SecurityConfig
-) -> bool:
+async def is_user_agent_allowed(user_agent: str, config: SecurityConfig) -> bool:
     """
     Check if the user agent is allowed
     based on the security configuration.
@@ -163,20 +131,12 @@ async def is_user_agent_allowed(
               is allowed, False otherwise.
     """
     for pattern in config.blocked_user_agents:
-        if re.search(
-            pattern,
-            user_agent,
-            re.IGNORECASE
-        ):
+        if re.search(pattern, user_agent, re.IGNORECASE):
             return False
     return True
 
 
-
-async def get_ip_country(
-    ip: str,
-    config: SecurityConfig
-) -> str:
+async def get_ip_country(ip: str, config: SecurityConfig) -> str:
     """
     Get the country associated with the given
     IP address using IP2Location database
@@ -208,11 +168,8 @@ async def get_ip_country(
 
     if config.use_ipinfo_fallback:
         try:
-            async with aiohttp.ClientSession(
-                ) as session:
-                async with session.get(
-                    f"https://ipinfo.io/{ip}/json"
-                ) as response:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"https://ipinfo.io/{ip}/json") as response:
                     if response.status == 200:
                         data = await response.json()
                         return data.get("country", "")
@@ -225,11 +182,7 @@ async def get_ip_country(
     return ""
 
 
-
-async def is_ip_allowed(
-    ip: str,
-    config: SecurityConfig
-) -> bool:
+async def is_ip_allowed(ip: str, config: SecurityConfig) -> bool:
     """
     Check if the IP address is allowed
     based on the security configuration.
@@ -249,19 +202,13 @@ async def is_ip_allowed(
     if config.whitelist:
         return ip in config.whitelist
     if config.blocked_countries:
-        country = await get_ip_country(
-            ip,
-            config
-        )
+        country = await get_ip_country(ip, config)
         if country in config.blocked_countries:
             return False
     return True
 
 
-
-async def detect_penetration_attempt(
-    request: Request
-) -> bool:
+async def detect_penetration_attempt(request: Request) -> bool:
     """
     Detect potential penetration
     attempts in the request.
@@ -282,8 +229,7 @@ async def detect_penetration_attempt(
             detected, False otherwise.
     """
 
-    suspicious_patterns = await SusPatterns(
-        ).get_all_compiled_patterns()
+    suspicious_patterns = await SusPatterns().get_all_compiled_patterns()
 
     # Query params
     query_params = request.query_params
@@ -298,7 +244,7 @@ async def detect_penetration_attempt(
 
     # Body
     body = await request.body()
-    body_str = body.decode('utf-8')
+    body_str = body.decode("utf-8")
     for pattern in suspicious_patterns:
         if pattern.search(body_str):
             message = f"Potential attack detected from"

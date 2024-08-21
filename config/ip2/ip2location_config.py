@@ -8,9 +8,9 @@ import zipfile
 
 
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from guard.models import SecurityConfig
-
 
 
 IP2_CONFIG_PATH = "./config/ip2/files"
@@ -19,22 +19,17 @@ DOWNLOAD_URL = f"https://download.ip2location.com/lite/{DB_FILENAME}.ZIP"
 VERSION_FILE = f"{IP2_CONFIG_PATH}/ip2location_version.txt"
 
 
-
 ip2location_db = None
 
 
-
-def get_ip2location_database(
-    config: 'SecurityConfig'
-):
+def get_ip2location_database(config: "SecurityConfig"):
     """
     Get the IP2Location database object.
     """
     global ip2location_db
     if ip2location_db is None:
         db_path = config.ip2location_db_path or os.path.join(
-            IP2_CONFIG_PATH,
-            DB_FILENAME
+            IP2_CONFIG_PATH, DB_FILENAME
         )
         try:
             ip2location_db = IP2Location(db_path)
@@ -44,7 +39,6 @@ def get_ip2location_database(
             logging.error(f"{message} - {reason_message}")
             ip2location_db = None
     return ip2location_db
-
 
 
 def check_for_updates():
@@ -64,15 +58,14 @@ def check_for_updates():
         return False
 
     last_modified = datetime.strptime(
-        response.headers['Last-Modified'],
-        "%a, %d %b %Y %H:%M:%S GMT"
+        response.headers["Last-Modified"], "%a, %d %b %Y %H:%M:%S GMT"
     ).replace(tzinfo=timezone.utc)
 
     if os.path.exists(VERSION_FILE):
-        with open(VERSION_FILE, 'r') as f:
-            current_version = datetime.fromisoformat(
-                f.read().strip()
-            ).replace(tzinfo=timezone.utc)
+        with open(VERSION_FILE, "r") as f:
+            current_version = datetime.fromisoformat(f.read().strip()).replace(
+                tzinfo=timezone.utc
+            )
 
         if last_modified <= current_version:
             print("Database is up to date.")
@@ -82,10 +75,7 @@ def check_for_updates():
     return True
 
 
-
-def download_ip2location_database(
-    config: 'SecurityConfig'
-):
+def download_ip2location_database(config: "SecurityConfig"):
     """
     Download and extract the latest IP2Location
     database if an update is available.
@@ -99,22 +89,16 @@ def download_ip2location_database(
     response = requests.get(DOWNLOAD_URL)
 
     if response.status_code == 200:
-        zip_path = os.path.join(
-            IP2_CONFIG_PATH,
-            f"{DB_FILENAME}.ZIP"
-        )
+        zip_path = os.path.join(IP2_CONFIG_PATH, f"{DB_FILENAME}.ZIP")
         with open(zip_path, "wb") as f:
             f.write(response.content)
 
-        with zipfile.ZipFile(
-            zip_path,
-            "r"
-        ) as zip_ref:
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(IP2_CONFIG_PATH)
 
         os.remove(zip_path)
 
-        with open(VERSION_FILE, 'w') as f:
+        with open(VERSION_FILE, "w") as f:
             f.write(datetime.now(timezone.utc).isoformat())
 
         logging.info("IP2Location db downloaded successfully.")
@@ -124,19 +108,14 @@ def download_ip2location_database(
         logging.error(f"{message} - {reason_message}")
 
 
-
-async def periodic_update_check(
-    interval_hours=24
-):
+async def periodic_update_check(interval_hours=24):
     """
     Periodically check for updates
     and download the new database if available.
     """
     while True:
         try:
-            await asyncio.sleep(
-                interval_hours * 3600
-            )
+            await asyncio.sleep(interval_hours * 3600)
             if check_for_updates():
                 download_ip2location_database()
 
@@ -146,10 +125,7 @@ async def periodic_update_check(
             break
 
 
-
-async def start_periodic_update_check(
-    config: 'SecurityConfig'
-):
+async def start_periodic_update_check(config: "SecurityConfig"):
     """
     Start the periodic update
     check in the background.
@@ -158,9 +134,7 @@ async def start_periodic_update_check(
         return None
 
     task = asyncio.create_task(
-        periodic_update_check(
-            config.ip2location_update_interval
-        )
+        periodic_update_check(config.ip2location_update_interval)
     )
 
     def handle_task_done(future):

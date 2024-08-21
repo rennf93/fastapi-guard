@@ -27,7 +27,6 @@ class SusPatterns:
         r"document\.cookie",
         r"document\.write",
         r"window\.location",
-
         # SQL Injection
         r"SELECT\s+.*\s+FROM\s+.*",
         r"UNION\s+SELECT\s+.*",
@@ -42,7 +41,6 @@ class SusPatterns:
         r"EXEC\s+.*",
         r"CAST\s*\(.*\s+AS\s+.*\)",
         r"CONVERT\s*\(.*\s+USING\s+.*\)",
-
         # Directory Traversal
         r"\.\./",
         r"\.\.\\",
@@ -52,36 +50,29 @@ class SusPatterns:
         r"/proc/self/environ",
         r"/windows/win.ini",
         r"/boot.ini",
-
         # Command Injection
         r"\b(?:ls|cat|rm|mv|cp|chmod|chown|sudo|su)\b",
         r"\b(?:wget|curl|nc|ncat|telnet|ssh|ftp)\b",
         r"\b(?:ping|traceroute|nslookup|dig)\b",
         r"\b(?:ifconfig|ipconfig|netstat)\b",
         r"\b(?:uname|whoami|id|pwd)\b",
-
         # Sensitive File Access
         r"\b(?:passwd|shadow|group)\b",
         r"\b(?:\.env|\.git|\.svn|\.hg|\.DS_Store)\b",
         r"\b(?:phpinfo|setup\.php|config\.php|admin\.php)\b",
         r"\b(?:sitemap\.xml|robots\.txt|security\.txt)\b",
-
         # Common Admin Paths
         r"\b(?:solr|admin|cgi-bin|wp-admin|wp-login)\b",
-
         # Common Query Parameters
         r"\b(?:query|show|diagnostics|status|action)\b",
         r"\b(?:format=json|wt=json)\b",
-
         # HTTP Method Tampering
         r"OPTIONS",
         r"TRACE",
         r"CONNECT",
-
         # Path Traversal
         r"\.\./",
         r"\.\.\\",
-
         # File Inclusion
         r"file://",
         r"php://",
@@ -89,36 +80,29 @@ class SusPatterns:
         r"zip://",
         r"rar://",
         r"expect://",
-
         # LDAP Injection
         r"\(\|\(.*?\=\*\)\)",
         r"\(\&\(.*?\=\*\)\)",
-
         # XML Injection
         r"<!DOCTYPE\s+.*?>",
         r"<\?xml\s+.*?>",
         r"<!ENTITY\s+.*?>",
-
         # SSRF (Server-Side Request Forgery)
         r"http://localhost",
         r"http://127\.0\.0\.1",
         r"http://169\.254\.169\.254",
         r"http://metadata\.google\.internal",
-
         # Open Redirect
         r"//",
         r"/\.\./",
         r"/\.\.\\",
-
         # CRLF Injection
         r"%0d%0a",
         r"%0d",
         r"%0a",
-
         # Path Manipulation
         r"\.\./",
         r"\.\.\\",
-
         # Shell Injection
         r";",
         r"&",
@@ -126,20 +110,15 @@ class SusPatterns:
         r"`",
         r"\$\(.*?\)",
         r"\$\{.*?\}",
-
         # NoSQL Injection
         r"\{\s*['\"]?\$.*?['\"]?\s*:\s*.*?\s*\}",
-
         # JSON Injection
         r"\{\s*\"\$.*?\"\s*:\s*.*?\s*\}",
-
         # HTTP Header Injection
         r"\r\n",
         r"\n",
-
         # File Upload
         r"Content-Disposition: form-data; name=\".*?\"; filename=\".*?\.(php|exe|sh|bat)\"",
-
         # Other
         r"eval\(",
         r"base64_decode\(",
@@ -160,24 +139,15 @@ class SusPatterns:
             of the SusPatterns class.
         """
         if cls._instance is None:
-            cls._instance = super(
-                SusPatterns,
-                cls
-            ).__new__(cls)
+            cls._instance = super(SusPatterns, cls).__new__(cls)
             cls._instance.compiled_patterns = [
-                re.compile(
-                    pattern, re.IGNORECASE
-                ) for pattern in cls.patterns
+                re.compile(pattern, re.IGNORECASE) for pattern in cls.patterns
             ]
             cls._instance.compiled_custom_patterns = set()
         return cls._instance
 
     @classmethod
-    async def add_pattern(
-        cls,
-        pattern: str,
-        custom: bool = False
-    ) -> None:
+    async def add_pattern(cls, pattern: str, custom: bool = False) -> None:
         """
         Add a new pattern to either the custom or
         default patterns list.
@@ -188,31 +158,16 @@ class SusPatterns:
             to custom patterns; otherwise, add to
             default patterns. Defaults to False.
         """
-        compiled_pattern = re.compile(
-            pattern,
-            re.IGNORECASE
-        )
+        compiled_pattern = re.compile(pattern, re.IGNORECASE)
         if custom:
-            cls._instance.compiled_custom_patterns.add(
-                compiled_pattern
-            )
-            cls._instance.custom_patterns.add(
-                pattern
-            )
+            cls._instance.compiled_custom_patterns.add(compiled_pattern)
+            cls._instance.custom_patterns.add(pattern)
         else:
-            cls._instance.compiled_patterns.append(
-                compiled_pattern
-            )
-            cls._instance.patterns.append(
-                pattern
-            )
+            cls._instance.compiled_patterns.append(compiled_pattern)
+            cls._instance.patterns.append(pattern)
 
     @classmethod
-    async def remove_pattern(
-        cls,
-        pattern: str,
-        custom: bool = False
-    ) -> None:
+    async def remove_pattern(cls, pattern: str, custom: bool = False) -> None:
         """
         Remove a pattern from either the
         custom or default patterns list.
@@ -223,26 +178,15 @@ class SusPatterns:
             from custom patterns; otherwise, remove
             from default patterns. Defaults to False.
         """
-        compiled_pattern = re.compile(
-            pattern,
-            re.IGNORECASE
-        )
+        compiled_pattern = re.compile(pattern, re.IGNORECASE)
         if custom:
-            cls._instance.compiled_custom_patterns.discard(
-                compiled_pattern
-            )
-            cls._instance.custom_patterns.discard(
-                pattern
-            )
+            cls._instance.compiled_custom_patterns.discard(compiled_pattern)
+            cls._instance.custom_patterns.discard(pattern)
         else:
             cls._instance.compiled_patterns = [
-                p for p in cls._instance.compiled_patterns
-                if p.pattern != pattern
+                p for p in cls._instance.compiled_patterns if p.pattern != pattern
             ]
-            cls._instance.patterns = [
-                p for p in cls._instance.patterns
-                if p != pattern
-            ]
+            cls._instance.patterns = [p for p in cls._instance.patterns if p != pattern]
 
     @classmethod
     async def get_all_patterns(cls) -> List[str]:
@@ -254,14 +198,10 @@ class SusPatterns:
             List[str]: A list containing
             all default and custom patterns.
         """
-        return cls._instance.patterns + list(
-            cls._instance.custom_patterns
-        )
+        return cls._instance.patterns + list(cls._instance.custom_patterns)
 
     @classmethod
-    async def get_all_compiled_patterns(
-        cls
-    ) -> List[re.Pattern]:
+    async def get_all_compiled_patterns(cls) -> List[re.Pattern]:
         """
         Retrieve all compiled patterns,
         including both default and custom patterns.
