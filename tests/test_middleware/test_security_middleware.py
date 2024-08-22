@@ -1,10 +1,13 @@
-import pytest
 import asyncio
 from fastapi import FastAPI, Request, Response, status
-from httpx import AsyncClient
-from httpx._transports.asgi import ASGITransport
+from guard.cloud_ips import cloud_ip_ranges
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
+from httpx import AsyncClient
+from httpx._transports.asgi import ASGITransport
+import pytest
+import time
+from unittest.mock import patch
 
 
 @pytest.mark.asyncio
@@ -301,3 +304,81 @@ async def test_cors_configuration():
         print("Warning: access-control-expose-headers not present in response")
 
     assert response.headers["access-control-max-age"] == "600"
+
+
+@pytest.mark.asyncio
+async def test_cloud_ip_blocking():
+    app = FastAPI()
+    config = SecurityConfig(block_cloud_providers={"AWS", "GCP", "Azure"})
+    app.add_middleware(SecurityMiddleware, config=config)
+
+    @app.get("/")
+    async def read_root():
+        return {"message": "Hello World"}
+
+    with patch.object(cloud_ip_ranges, "is_cloud_ip", return_value=True):
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get(
+                "/", headers={"X-Forwarded-For": "13.59.255.255"}
+            )
+            assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    with patch.object(cloud_ip_ranges, "is_cloud_ip", return_value=False):
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get("/", headers={"X-Forwarded-For": "8.8.8.8"})
+            assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.asyncio
+async def test_cloud_ip_refresh():
+    app = FastAPI()
+    config = SecurityConfig(block_cloud_providers={"AWS", "GCP", "Azure"})
+    middleware = SecurityMiddleware(app, config)
+
+    # Set the initial last_cloud_ip_refresh to a time more than 24 hours ago
+    initial_refresh_time = time.time() - 86401
+    middleware.last_cloud_ip_refresh = initial_refresh_time
+
+    with patch.object(cloud_ip_ranges, "refresh") as mock_refresh, patch.object(
+        cloud_ip_ranges, "is_cloud_ip", return_value=False
+    ) as mock_is_cloud_ip:
+
+        async def receive():
+            return {"type": "http.request", "body": b""}
+
+        request = Request(
+            scope={
+                "type": "http",
+                "method": "GET",
+                "path": "/",
+                "headers": [(b"x-forwarded-for", b"192.168.1.1")],
+                "client": ("192.168.1.1", 12345),
+                "query_string": b"",
+                "server": ("testserver", 80),
+                "scheme": "http",
+            }
+        )
+        request._receive = receive
+
+        async def mock_call_next(request):
+            return Response("OK")
+
+        response = await middleware.dispatch(request, mock_call_next)
+
+        # Assertions
+        mock_refresh.assert_called_once()
+        mock_is_cloud_ip.assert_called_once_with("192.168.1.1", {"AWS", "GCP", "Azure"})
+        assert middleware.last_cloud_ip_refresh > initial_refresh_time
+        assert middleware.last_cloud_ip_refresh <= time.time()
+        assert isinstance(response, Response)
+        assert response.status_code == 200
+        assert response.body == b"OK"
+
+    # Verify that a second request within 24 hours doesn't trigger another refresh
+    with patch.object(cloud_ip_ranges, "refresh") as mock_refresh:
+        await middleware.dispatch(request, mock_call_next)
+        mock_refresh.assert_not_called()

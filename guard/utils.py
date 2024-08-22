@@ -9,6 +9,7 @@ import re
 import time
 from typing import Dict, Any
 import aiohttp
+from guard.cloud_ips import cloud_ip_ranges
 
 
 class IPBanManager:
@@ -201,10 +202,16 @@ async def is_ip_allowed(ip: str, config: SecurityConfig) -> bool:
         return False
     if config.whitelist:
         return ip in config.whitelist
+    # if config.whitelist and ip not in config.whitelist:
+    #     return False
     if config.blocked_countries:
         country = await get_ip_country(ip, config)
         if country in config.blocked_countries:
             return False
+    if config.block_cloud_providers and cloud_ip_ranges.is_cloud_ip(
+        ip, config.block_cloud_providers
+    ):
+        return False
     return True
 
 

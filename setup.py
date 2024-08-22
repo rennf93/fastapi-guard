@@ -11,18 +11,20 @@ setup(
     version="0.1.0",
     packages=find_packages(),
     install_requires=[
-        "fastapi",
-        "uvicorn",
         "aiohttp",
         "cachetools",
+        "fastapi",
+        "ipaddress",
         "IP2Location",
+        "requests",
+        "uvicorn",
     ],
     extras_require={
         "dev": [
+            "httpx",
             "pytest",
             "pytest-asyncio",
             "pytest-mock",
-            "httpx",
         ],
     },
     author="Renzo Franceschini",

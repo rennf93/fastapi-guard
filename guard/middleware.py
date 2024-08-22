@@ -8,6 +8,7 @@ from config.ip2.ip2location_config import (
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from guard.cloud_ips import cloud_ip_ranges
 from guard.models import SecurityConfig
 from guard.utils import (
     detect_penetration_attempt,
@@ -65,6 +66,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self.request_counts = TTLCache(maxsize=10000, ttl=rate_limit_window)
         self.logger = None
         self.ip_request_counts = TTLCache(maxsize=10000, ttl=3600)
+        self.last_cloud_ip_refresh = 0
 
         if self.config.use_ip2location:
             download_ip2location_database(self.config)
@@ -185,6 +187,21 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     default_message="IP address banned",
                 )
 
+        # Refresh cloud IP ranges periodically
+        if self.config.block_cloud_providers:
+            current_time = time.time()
+            if current_time - self.last_cloud_ip_refresh > 86400:
+                await self.refresh_cloud_ip_ranges()
+
+            if cloud_ip_ranges.is_cloud_ip(
+                client_ip, self.config.block_cloud_providers
+            ):
+                await log_suspicious_activity(request, "Cloud IP blocked", self.logger)
+                return await self.create_error_response(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    default_message="Access from cloud IPs is not allowed",
+                )
+
         response = await call_next(request)
 
         # Custom response modifier
@@ -192,6 +209,10 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             response = await self.config.custom_response_modifier(response)
 
         return response
+
+    async def refresh_cloud_ip_ranges(self):
+        await asyncio.to_thread(cloud_ip_ranges.refresh)
+        self.last_cloud_ip_refresh = time.time()
 
     async def create_error_response(
         self, status_code: int, default_message: str

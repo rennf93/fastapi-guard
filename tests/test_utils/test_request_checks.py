@@ -1,4 +1,5 @@
 from fastapi import Request
+from guard.utils import cloud_ip_ranges
 from guard.models import SecurityConfig
 from guard.utils import (
     is_ip_allowed,
@@ -388,3 +389,22 @@ async def test_get_ip_country(mocker):
 
     country = await get_ip_country("2.2.2.2", config)
     assert country == ""
+
+
+@pytest.mark.asyncio
+async def test_is_ip_allowed_cloud_providers(security_config, mocker):
+    """
+    Test the is_ip_allowed function with cloud provider IP blocking.
+    """
+    mocker.patch("guard.utils.get_ip_country", return_value="US")
+    mocker.patch.object(
+        cloud_ip_ranges,
+        "is_cloud_ip",
+        side_effect=lambda ip, providers: ip.startswith("13."),
+    )
+
+    config = SecurityConfig(block_cloud_providers={"AWS"})
+
+    assert await is_ip_allowed("127.0.0.1", config) == True
+    assert await is_ip_allowed("13.59.255.255", config) == False  # AWS IP
+    assert await is_ip_allowed("8.8.8.8", config) == True  # Non-cloud IP

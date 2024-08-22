@@ -1,7 +1,7 @@
 # fastapi_guard/models.py
 from fastapi import Request, Response
 from pydantic import BaseModel
-from typing import Dict, List, Optional, Callable, Awaitable
+from typing import Dict, List, Optional, Callable, Awaitable, Set
 
 
 class SecurityConfig(BaseModel):
@@ -11,7 +11,8 @@ class SecurityConfig(BaseModel):
     This class defines the structure for security configuration,
     including IP whitelists and blacklists, blocked countries,
     blocked user agents, rate limiting, automatic IP banning,
-    IP2Location settings, HTTPS enforcement, custom hooks, and CORS settings.
+    IP2Location settings, HTTPS enforcement, custom hooks, CORS settings,
+    and blocking of cloud provider IPs.
     """
 
     whitelist: Optional[List[str]] = None
@@ -202,4 +203,11 @@ class SecurityConfig(BaseModel):
         The maximum age in seconds
         that the results of a preflight
         request can be cached.
+    """
+
+    block_cloud_providers: Optional[Set[str]] = None
+    """
+    Optional[Set[str]]:
+        A set of cloud provider names to block.
+        Supported values: 'AWS', 'GCP', 'Azure'
     """
