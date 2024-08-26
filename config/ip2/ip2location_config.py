@@ -22,7 +22,10 @@ VERSION_FILE = f"{IP2_CONFIG_PATH}/ip2location_version.txt"
 ip2location_db = None
 
 
-def get_ip2location_database(config: "SecurityConfig"):
+
+def get_ip2location_database(
+    config: "SecurityConfig"
+) -> IP2Location:
     """
     Get the IP2Location database object.
     """
@@ -41,7 +44,8 @@ def get_ip2location_database(config: "SecurityConfig"):
     return ip2location_db
 
 
-def check_for_updates():
+
+def check_for_updates() -> bool:
     """
     Check if there's a new version
     of the IP2Location database available.
@@ -63,7 +67,9 @@ def check_for_updates():
 
     if os.path.exists(VERSION_FILE):
         with open(VERSION_FILE, "r") as f:
-            current_version = datetime.fromisoformat(f.read().strip()).replace(
+            current_version = datetime.fromisoformat(
+                f.read().strip()
+            ).replace(
                 tzinfo=timezone.utc
             )
 
@@ -75,7 +81,10 @@ def check_for_updates():
     return True
 
 
-def download_ip2location_database(config: "SecurityConfig"):
+
+def download_ip2location_database(
+    config: "SecurityConfig"
+):
     """
     Download and extract the latest IP2Location
     database if an update is available.
@@ -99,7 +108,11 @@ def download_ip2location_database(config: "SecurityConfig"):
         os.remove(zip_path)
 
         with open(VERSION_FILE, "w") as f:
-            f.write(datetime.now(timezone.utc).isoformat())
+            f.write(
+                datetime.now(
+                    timezone.utc
+                ).isoformat()
+            )
 
         logging.info("IP2Location db downloaded successfully.")
     else:
@@ -108,7 +121,10 @@ def download_ip2location_database(config: "SecurityConfig"):
         logging.error(f"{message} - {reason_message}")
 
 
-async def periodic_update_check(interval_hours=24):
+
+async def periodic_update_check(
+    interval_hours: int = 24
+):
     """
     Periodically check for updates
     and download the new database if available.
@@ -125,7 +141,10 @@ async def periodic_update_check(interval_hours=24):
             break
 
 
-async def start_periodic_update_check(config: "SecurityConfig"):
+
+async def start_periodic_update_check(
+    config: "SecurityConfig"
+):
     """
     Start the periodic update
     check in the background.
@@ -134,7 +153,9 @@ async def start_periodic_update_check(config: "SecurityConfig"):
         return None
 
     task = asyncio.create_task(
-        periodic_update_check(config.ip2location_update_interval)
+        periodic_update_check(
+            config.ip2location_update_interval
+        )
     )
 
     def handle_task_done(future):

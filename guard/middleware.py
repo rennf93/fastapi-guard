@@ -98,6 +98,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             Response: The response object, either
             from the next handler or a security-related response.
         """
+        client_ip = request.client.host
+
         if self.config.enforce_https and request.url.scheme == "http":
             https_url = request.url.replace(scheme="https")
             return RedirectResponse(https_url, status_code=301)
@@ -139,7 +141,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 self.request_counts[client_ip] += 1
                 if self.request_counts[client_ip] > self.rate_limit:
                     await log_suspicious_activity(
-                        request, "Rate limit exceeded", self.logger
+                        request, f"Rate limit exceeded: {client_ip}", self.logger
                     )
                     return await self.create_error_response(
                         status_code=status.HTTP_429_TOO_MANY_REQUESTS,

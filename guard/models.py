@@ -54,23 +54,23 @@ class SecurityConfig(BaseModel):
     auto_ban_duration: int = 86400
     """
     int:
-        The duration in seconds for which an IP
-        address should be banned after
+        The duration in seconds for which
+        an IP address should be banned after
         reaching the auto-ban threshold.
     """
 
     custom_log_file: Optional[str] = None
     """
     Optional[str]:
-        The path to a custom log
-        file for logging security events.
+        The path to a custom log file
+        for logging security events.
     """
 
     custom_error_responses: Dict[int, str] = {}
     """
     Dict[int, str]:
-        A dictionary of custom error responses
-        for specific HTTP status codes.
+        A dictionary of custom error
+        responses for specific HTTP status codes.
     """
 
     rate_limit: int = 100
@@ -90,8 +90,8 @@ class SecurityConfig(BaseModel):
     ip2location_db_path: Optional[str] = None
     """
     Optional[str]:
-        The path to the
-        IP2Location database file.
+        The path to the IP2Location
+        database file.
     """
 
     ip2location_auto_download: bool = False

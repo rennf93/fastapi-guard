@@ -1,15 +1,15 @@
 # fastapi_guard/utils.py
+import aiohttp
 from cachetools import TTLCache
 from config.ip2.ip2location_config import get_ip2location_database
 from config.sus_patterns import SusPatterns
 from fastapi import Request
+from guard.cloud_ips import cloud_ip_ranges
 from guard.models import SecurityConfig
 import logging
 import re
 import time
 from typing import Dict, Any
-import aiohttp
-from guard.cloud_ips import cloud_ip_ranges
 
 
 class IPBanManager:
@@ -21,16 +21,26 @@ class IPBanManager:
         """
         Initialize the IPBanManager.
         """
-        self.banned_ips = TTLCache(maxsize=10000, ttl=3600)
+        self.banned_ips = TTLCache(
+            maxsize=10000,
+            ttl=3600
+        )
 
-    async def ban_ip(self, ip: str, duration: int):
+    async def ban_ip(
+        self,
+        ip: str,
+        duration: int
+    ):
         """
         Ban an IP address for
         a specified duration.
         """
         self.banned_ips[ip] = time.time() + duration
 
-    async def is_ip_banned(self, ip: str) -> bool:
+    async def is_ip_banned(
+        self,
+        ip: str
+    ) -> bool:
         """
         Check if an IP
         address is banned.
@@ -60,7 +70,9 @@ async def reset_global_state():
     ip_ban_manager = IPBanManager()
 
 
-async def setup_custom_logging(log_file: str):
+async def setup_custom_logging(
+    log_file: str
+) -> logging.Logger:
     """
     Setup custom logging
     for the application.
@@ -75,7 +87,10 @@ async def setup_custom_logging(log_file: str):
     return logger
 
 
-async def log_request(request: Request, logger):
+async def log_request(
+    request: Request,
+    logger: logging.Logger
+):
     """
     Log the details of
     an incoming request.
@@ -83,6 +98,8 @@ async def log_request(request: Request, logger):
     Args:
         request (Request):
             The FastAPI request object.
+        logger (logging.Logger):
+            The logger instance to use.
     """
     client_ip = request.client.host
     method = request.method
@@ -94,7 +111,11 @@ async def log_request(request: Request, logger):
     logger.info(f"{details} - {reason_message}")
 
 
-async def log_suspicious_activity(request: Request, reason: str, logger):
+async def log_suspicious_activity(
+    request: Request,
+    reason: str,
+    logger: logging.Logger
+):
     """
     Log suspicious activity
     detected in a request.
@@ -105,6 +126,8 @@ async def log_suspicious_activity(request: Request, reason: str, logger):
         reason (str):
             The reason for flagging
             the activity as suspicious.
+        logger (logging.Logger):
+            The logger instance to use.
     """
     client_ip = request.client.host
     method = request.method
@@ -116,7 +139,10 @@ async def log_suspicious_activity(request: Request, reason: str, logger):
     logger.warning(f"{details} - {reason_message}")
 
 
-async def is_user_agent_allowed(user_agent: str, config: SecurityConfig) -> bool:
+async def is_user_agent_allowed(
+    user_agent: str,
+    config: SecurityConfig
+) -> bool:
     """
     Check if the user agent is allowed
     based on the security configuration.
@@ -137,7 +163,10 @@ async def is_user_agent_allowed(user_agent: str, config: SecurityConfig) -> bool
     return True
 
 
-async def get_ip_country(ip: str, config: SecurityConfig) -> str:
+async def get_ip_country(
+    ip: str,
+    config: SecurityConfig
+) -> str:
     """
     Get the country associated with the given
     IP address using IP2Location database
@@ -183,7 +212,10 @@ async def get_ip_country(ip: str, config: SecurityConfig) -> str:
     return ""
 
 
-async def is_ip_allowed(ip: str, config: SecurityConfig) -> bool:
+async def is_ip_allowed(
+    ip: str,
+    config: SecurityConfig
+) -> bool:
     """
     Check if the IP address is allowed
     based on the security configuration.
@@ -215,7 +247,9 @@ async def is_ip_allowed(ip: str, config: SecurityConfig) -> bool:
     return True
 
 
-async def detect_penetration_attempt(request: Request) -> bool:
+async def detect_penetration_attempt(
+    request: Request
+) -> bool:
     """
     Detect potential penetration
     attempts in the request.
