@@ -6,7 +6,9 @@ import logging
 
 def fetch_aws_ip_ranges() -> Set[ipaddress.IPv4Network]:
     try:
-        response = requests.get("https://ip-ranges.amazonaws.com/ip-ranges.json")
+        response = requests.get(
+            "https://ip-ranges.amazonaws.com/ip-ranges.json"
+        )
         response.raise_for_status()
         data = response.json()
         return {
@@ -21,7 +23,9 @@ def fetch_aws_ip_ranges() -> Set[ipaddress.IPv4Network]:
 
 def fetch_gcp_ip_ranges() -> Set[ipaddress.IPv4Network]:
     try:
-        response = requests.get("https://www.gstatic.com/ipranges/cloud.json")
+        response = requests.get(
+            "https://www.gstatic.com/ipranges/cloud.json"
+        )
         response.raise_for_status()
         data = response.json()
         return {
@@ -36,8 +40,9 @@ def fetch_gcp_ip_ranges() -> Set[ipaddress.IPv4Network]:
 
 def fetch_azure_ip_ranges() -> Set[ipaddress.IPv4Network]:
     try:
+        route = "/download/confirmation.aspx?id=56519"
         response = requests.get(
-            "https://www.microsoft.com/en-us/download/confirmation.aspx?id=56519"
+            f"https://www.microsoft.com{route}"
         )
         response.raise_for_status()
         download_url = None
@@ -77,14 +82,23 @@ class CloudIPRanges:
             try:
                 self.ip_ranges[provider] = fetch_func()
             except Exception as e:
-                logging.error(f"Failed to fetch {provider} IP ranges: {str(e)}")
+                logging.error(
+                    f"Failed to fetch {provider} IP ranges: {str(e)}"
+                )
                 self.ip_ranges[provider] = set()
 
-    def is_cloud_ip(self, ip: str, providers: Set[str]) -> bool:
+    def is_cloud_ip(
+        self,
+        ip: str,
+        providers: Set[str]
+    ) -> bool:
         try:
             ip_obj = ipaddress.ip_address(ip)
             return any(
-                any(ip_obj in network for network in self.ip_ranges[provider])
+                any(
+                    ip_obj in network
+                    for network in self.ip_ranges[provider]
+                )
                 for provider in providers
                 if provider in self.ip_ranges
             )

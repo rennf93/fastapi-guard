@@ -37,7 +37,10 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
     def __init__(
         self,
-        app: Callable[[Request], Awaitable[Response]],
+        app: Callable[
+            [Request],
+            Awaitable[Response]
+        ],
         config: SecurityConfig,
         rate_limit: int = 100,
         rate_limit_window: int = 60,
@@ -63,21 +66,38 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self.config = config
         self.rate_limit = rate_limit
         self.rate_limit_window = rate_limit_window
-        self.request_counts = TTLCache(maxsize=10000, ttl=rate_limit_window)
+        self.request_counts = TTLCache(
+            maxsize=10000,
+            ttl=rate_limit_window
+        )
         self.logger = None
-        self.ip_request_counts = TTLCache(maxsize=10000, ttl=3600)
+        self.ip_request_counts = TTLCache(
+            maxsize=10000,
+            ttl=3600
+        )
         self.last_cloud_ip_refresh = 0
 
         if self.config.use_ip2location:
             download_ip2location_database(self.config)
-            asyncio.create_task(start_periodic_update_check(self.config))
+            asyncio.create_task(
+                start_periodic_update_check(
+                    self.config
+                )
+            )
 
     async def setup_logger(self):
         if self.logger is None:
-            self.logger = await setup_custom_logging("security.log")
+            self.logger = await setup_custom_logging(
+                "security.log"
+            )
 
     async def dispatch(
-        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+        self,
+        request: Request,
+        call_next: Callable[
+            [Request],
+            Awaitable[Response]
+        ]
     ) -> Response:
         """
         Dispatch method to handle incoming
@@ -102,17 +122,26 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         if self.config.enforce_https and request.url.scheme == "http":
             https_url = request.url.replace(scheme="https")
-            return RedirectResponse(https_url, status_code=301)
+            return RedirectResponse(
+                https_url,
+                status_code=status.HTTP_301_MOVED_PERMANENTLY
+            )
 
         if self.logger is None:
             await self.setup_logger()
         client_ip = (
-            request.headers.get("X-Forwarded-For", request.client.host)
+            request.headers.get(
+                "X-Forwarded-For",
+                request.client.host
+            )
             .split(",")[0]
             .strip()
         )
 
-        await log_request(request, self.logger)
+        await log_request(
+            request,
+            self.logger
+        )
 
         # IP Ban CHECK
         if await ip_ban_manager.is_ip_banned(client_ip):
@@ -122,10 +151,18 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             )
 
         # User agent filtering
-        user_agent = request.headers.get("User-Agent", "")
-        if not await is_user_agent_allowed(user_agent, self.config):
+        user_agent = request.headers.get(
+            "User-Agent",
+            ""
+        )
+        if not await is_user_agent_allowed(
+            user_agent,
+            self.config
+        ):
             await log_suspicious_activity(
-                request, "User-Agent not allowed", self.logger
+                request,
+                "User-Agent not allowed",
+                self.logger
             )
             return await self.create_error_response(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -139,9 +176,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 self.request_counts[client_ip] = 1
             else:
                 self.request_counts[client_ip] += 1
-                if self.request_counts[client_ip] > self.rate_limit:
+                if self.request_counts[
+                    client_ip
+                ] > self.rate_limit:
                     await log_suspicious_activity(
-                        request, f"Rate limit exceeded: {client_ip}", self.logger
+                        request,
+                        f"Rate limit exceeded: {client_ip}",
+                        self.logger
                     )
                     return await self.create_error_response(
                         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -150,18 +191,27 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         # IP whitelist/blacklist
         # (only if whitelist or blacklist is not empty)
-        if (self.config.whitelist or self.config.blacklist) and not await is_ip_allowed(
+        if (
+            self.config.whitelist or self.config.blacklist
+        ) and not await is_ip_allowed(
             client_ip, self.config
         ):
-            await log_suspicious_activity(request, "IP not allowed", self.logger)
+            await log_suspicious_activity(
+                request,
+                "IP not allowed",
+                self.logger
+            )
             return await self.create_error_response(
-                status_code=status.HTTP_403_FORBIDDEN, default_message="Forbidden"
+                status_code=status.HTTP_403_FORBIDDEN,
+                default_message="Forbidden"
             )
 
         # Penetration attempts
         if await detect_penetration_attempt(request):
             await log_suspicious_activity(
-                request, "Potential attack detected", self.logger
+                request,
+                "Potential attack detected",
+                self.logger
             )
             return await self.create_error_response(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -170,7 +220,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         # Custom request check
         if self.config.custom_request_check:
-            custom_response = await self.config.custom_request_check(request)
+            custom_response = await self.config.custom_request_check(
+                request
+            )
             if custom_response:
                 return custom_response
 
@@ -179,10 +231,17 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             self.ip_request_counts[client_ip] = 1
         else:
             self.ip_request_counts[client_ip] += 1
-            if self.ip_request_counts[client_ip] > self.config.auto_ban_threshold:
-                await ip_ban_manager.ban_ip(client_ip, self.config.auto_ban_duration)
+            if self.ip_request_counts[
+                client_ip
+            ] > self.config.auto_ban_threshold:
+                await ip_ban_manager.ban_ip(
+                    client_ip,
+                    self.config.auto_ban_duration
+                )
                 await log_suspicious_activity(
-                    request, f"IP automatically banned: {client_ip}", self.logger
+                    request,
+                    f"IP automatically banned: {client_ip}",
+                    self.logger
                 )
                 return await self.create_error_response(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -198,7 +257,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             if cloud_ip_ranges.is_cloud_ip(
                 client_ip, self.config.block_cloud_providers
             ):
-                await log_suspicious_activity(request, "Cloud IP blocked", self.logger)
+                await log_suspicious_activity(
+                    request,
+                    "Cloud IP blocked",
+                    self.logger
+                )
                 return await self.create_error_response(
                     status_code=status.HTTP_403_FORBIDDEN,
                     default_message="Access from cloud IPs is not allowed",
@@ -208,28 +271,40 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         # Custom response modifier
         if self.config.custom_response_modifier:
-            response = await self.config.custom_response_modifier(response)
+            response = await self.config.custom_response_modifier(
+                response
+            )
 
         return response
 
     async def refresh_cloud_ip_ranges(self):
-        await asyncio.to_thread(cloud_ip_ranges.refresh)
+        await asyncio.to_thread(
+            cloud_ip_ranges.refresh
+        )
         self.last_cloud_ip_refresh = time.time()
 
     async def create_error_response(
-        self, status_code: int, default_message: str
+        self,
+        status_code: int,
+        default_message: str
     ) -> Response:
         custom_message = self.config.custom_error_responses.get(
             status_code, default_message
         )
-        return Response(custom_message, status_code=status_code)
+        return Response(
+            custom_message,
+            status_code=status_code
+        )
 
     async def reset(self):
         self.request_counts.clear()
         self.ip_request_counts.clear()
 
     @staticmethod
-    def configure_cors(app: FastAPI, config: SecurityConfig) -> bool:
+    def configure_cors(
+        app: FastAPI,
+        config: SecurityConfig
+    ) -> bool:
         """
         Configure FastAPI's CORS middleware
         based on SecurityConfig.
@@ -244,8 +319,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             }
 
             if config.cors_expose_headers:
-                cors_params["expose_headers"] = config.cors_expose_headers
+                cors_params[
+                    "expose_headers"
+                ] = config.cors_expose_headers
 
-            app.add_middleware(CORSMiddleware, **cors_params)
+            app.add_middleware(
+                CORSMiddleware,
+                **cors_params
+            )
             return True
         return False

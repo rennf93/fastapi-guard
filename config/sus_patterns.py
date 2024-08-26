@@ -118,7 +118,8 @@ class SusPatterns:
         r"\r\n",
         r"\n",
         # File Upload
-        r"Content-Disposition: form-data; name=\".*?\"; filename=\".*?\.(php|exe|sh|bat)\"",
+        r"Content-Disposition: form-data; name=\".*?\"; filename=\".*?\."
+        r"(php|exe|sh|bat)\"",
         # Other
         r"eval\(",
         r"base64_decode\(",
@@ -139,15 +140,26 @@ class SusPatterns:
             of the SusPatterns class.
         """
         if cls._instance is None:
-            cls._instance = super(SusPatterns, cls).__new__(cls)
+            cls._instance = super(
+                SusPatterns,
+                cls
+            ).__new__(cls)
             cls._instance.compiled_patterns = [
-                re.compile(pattern, re.IGNORECASE) for pattern in cls.patterns
+                re.compile(
+                    pattern,
+                    re.IGNORECASE
+                )
+                for pattern in cls.patterns
             ]
             cls._instance.compiled_custom_patterns = set()
         return cls._instance
 
     @classmethod
-    async def add_pattern(cls, pattern: str, custom: bool = False) -> None:
+    async def add_pattern(
+        cls,
+        pattern: str,
+        custom: bool = False
+    ) -> None:
         """
         Add a new pattern to either the custom or
         default patterns list.
@@ -158,16 +170,31 @@ class SusPatterns:
             to custom patterns; otherwise, add to
             default patterns. Defaults to False.
         """
-        compiled_pattern = re.compile(pattern, re.IGNORECASE)
+        compiled_pattern = re.compile(
+            pattern,
+            re.IGNORECASE
+        )
         if custom:
-            cls._instance.compiled_custom_patterns.add(compiled_pattern)
-            cls._instance.custom_patterns.add(pattern)
+            cls._instance.compiled_custom_patterns.add(
+                compiled_pattern
+            )
+            cls._instance.custom_patterns.add(
+                pattern
+            )
         else:
-            cls._instance.compiled_patterns.append(compiled_pattern)
-            cls._instance.patterns.append(pattern)
+            cls._instance.compiled_patterns.append(
+                compiled_pattern
+            )
+            cls._instance.patterns.append(
+                pattern
+            )
 
     @classmethod
-    async def remove_pattern(cls, pattern: str, custom: bool = False) -> None:
+    async def remove_pattern(
+        cls,
+        pattern: str,
+        custom: bool = False
+    ) -> None:
         """
         Remove a pattern from either the
         custom or default patterns list.
@@ -178,18 +205,33 @@ class SusPatterns:
             from custom patterns; otherwise, remove
             from default patterns. Defaults to False.
         """
-        compiled_pattern = re.compile(pattern, re.IGNORECASE)
+        compiled_pattern = re.compile(
+            pattern,
+            re.IGNORECASE
+        )
         if custom:
-            cls._instance.compiled_custom_patterns.discard(compiled_pattern)
-            cls._instance.custom_patterns.discard(pattern)
+            cls._instance.compiled_custom_patterns.discard(
+                compiled_pattern
+            )
+            cls._instance.custom_patterns.discard(
+                pattern
+            )
         else:
             cls._instance.compiled_patterns = [
-                p for p in cls._instance.compiled_patterns if p.pattern != pattern
+                p
+                for p in cls._instance.compiled_patterns
+                if p.pattern != pattern
             ]
-            cls._instance.patterns = [p for p in cls._instance.patterns if p != pattern]
+            cls._instance.patterns = [
+                p
+                for p in cls._instance.patterns
+                if p != pattern
+            ]
 
     @classmethod
-    async def get_all_patterns(cls) -> List[str]:
+    async def get_all_patterns(
+        cls
+    ) -> List[str]:
         """
         Retrieve all patterns, including
         both default and custom patterns.
@@ -198,10 +240,14 @@ class SusPatterns:
             List[str]: A list containing
             all default and custom patterns.
         """
-        return cls._instance.patterns + list(cls._instance.custom_patterns)
+        return cls._instance.patterns + list(
+            cls._instance.custom_patterns
+        )
 
     @classmethod
-    async def get_all_compiled_patterns(cls) -> List[re.Pattern]:
+    async def get_all_compiled_patterns(
+        cls
+    ) -> List[re.Pattern]:
         """
         Retrieve all compiled patterns,
         including both default and custom patterns.
