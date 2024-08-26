@@ -6,21 +6,17 @@ import os
 import requests
 import zipfile
 
-
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from guard.models import SecurityConfig
-
 
 IP2_CONFIG_PATH = "./config/ip2/files"
 DB_FILENAME = "IP2LOCATION-LITE-DB1.IPV6.BIN"
 DOWNLOAD_URL = f"https://download.ip2location.com/lite/{DB_FILENAME}.ZIP"
 VERSION_FILE = f"{IP2_CONFIG_PATH}/ip2location_version.txt"
 
-
 ip2location_db = None
-
 
 
 def get_ip2location_database(
@@ -44,7 +40,6 @@ def get_ip2location_database(
     return ip2location_db
 
 
-
 def check_for_updates() -> bool:
     """
     Check if there's a new version
@@ -62,7 +57,9 @@ def check_for_updates() -> bool:
         return False
 
     last_modified = datetime.strptime(
-        response.headers["Last-Modified"], "%a, %d %b %Y %H:%M:%S GMT"
+        response.headers[
+            "Last-Modified"
+        ], "%a, %d %b %Y %H:%M:%S GMT"
     ).replace(tzinfo=timezone.utc)
 
     if os.path.exists(VERSION_FILE):
@@ -79,7 +76,6 @@ def check_for_updates() -> bool:
 
     print("New version available. Updating...")
     return True
-
 
 
 def download_ip2location_database(
@@ -121,7 +117,6 @@ def download_ip2location_database(
         logging.error(f"{message} - {reason_message}")
 
 
-
 async def periodic_update_check(
     interval_hours: int = 24
 ):
@@ -139,7 +134,6 @@ async def periodic_update_check(
                 ip2location_db = None
         except asyncio.CancelledError:
             break
-
 
 
 async def start_periodic_update_check(

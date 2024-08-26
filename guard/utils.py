@@ -105,7 +105,7 @@ async def log_request(
     method = request.method
     url = str(request.url)
     headers: Dict[str, Any] = dict(request.headers)
-    message = f"Request from"
+    message = "Request from"
     details = f"{message} {client_ip}: {method} {url}"
     reason_message = f"Headers: {headers}"
     logger.info(f"{details} - {reason_message}")
@@ -199,7 +199,9 @@ async def get_ip_country(
     if config.use_ipinfo_fallback:
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"https://ipinfo.io/{ip}/json") as response:
+                async with session.get(
+                    f"https://ipinfo.io/{ip}/json"
+                ) as response:
                     if response.status == 200:
                         data = await response.json()
                         return data.get("country", "")
@@ -270,14 +272,15 @@ async def detect_penetration_attempt(
             detected, False otherwise.
     """
 
-    suspicious_patterns = await SusPatterns().get_all_compiled_patterns()
+    suspicious_patterns = await SusPatterns(
+        ).get_all_compiled_patterns()
 
     # Query params
     query_params = request.query_params
     for key, value in query_params.items():
         for pattern in suspicious_patterns:
             if pattern.search(value):
-                message = f"Potential attack detected from"
+                message = "Potential attack detected from"
                 details = f"{request.client.host}: {key}={value}"
                 reason_message = f"Suspicious pattern: {pattern.pattern}"
                 logging.warning(f"{message} {details} - {reason_message}")
@@ -288,7 +291,7 @@ async def detect_penetration_attempt(
     body_str = body.decode("utf-8")
     for pattern in suspicious_patterns:
         if pattern.search(body_str):
-            message = f"Potential attack detected from"
+            message = "Potential attack detected from"
             details = f"{request.client.host}: {body_str}"
             reason_message = f"Suspicious pattern: {pattern.pattern}"
             logging.warning(f"{message} {details} - {reason_message}")
@@ -298,7 +301,7 @@ async def detect_penetration_attempt(
     path = request.url.path
     for pattern in suspicious_patterns:
         if pattern.search(path):
-            message = f"Potential attack detected from"
+            message = "Potential attack detected from"
             details = f"{request.client.host}: {path}"
             reason_message = f"Suspicious pattern: {pattern.pattern}"
             logging.warning(f"{message} {details} - {reason_message}")
@@ -309,7 +312,7 @@ async def detect_penetration_attempt(
     for key, value in headers.items():
         for pattern in suspicious_patterns:
             if pattern.search(value):
-                message = f"Potential attack detected from"
+                message = "Potential attack detected from"
                 details = f"{request.client.host}: {key}={value}"
                 reason_message = f"Suspicious pattern: {pattern.pattern}"
                 logging.warning(f"{message} {details} - {reason_message}")

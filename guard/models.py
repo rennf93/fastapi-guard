@@ -1,7 +1,14 @@
 # fastapi_guard/models.py
 from fastapi import Request, Response
 from pydantic import BaseModel
-from typing import Dict, List, Optional, Callable, Awaitable, Set
+from typing import (
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Set,
+)
 
 
 class SecurityConfig(BaseModel):
@@ -130,7 +137,10 @@ class SecurityConfig(BaseModel):
     """
 
     custom_request_check: Optional[
-        Callable[[Request], Awaitable[Optional[Response]]]
+        Callable[
+            [Request],
+            Awaitable[Optional[Response]]
+        ]
     ] = None
     """
     Optional[
@@ -146,7 +156,12 @@ class SecurityConfig(BaseModel):
         will be sent instead of continuing the middleware chain.
     """
 
-    custom_response_modifier: Optional[Callable[[Response], Awaitable[Response]]] = None
+    custom_response_modifier: Optional[
+        Callable[
+            [Response],
+            Awaitable[Response]
+        ]
+    ] = None
     """
     Optional[
         Callable[[Response],
@@ -169,7 +184,13 @@ class SecurityConfig(BaseModel):
         are allowed to access the API.
     """
 
-    cors_allow_methods: List[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    cors_allow_methods: List[str] = [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "OPTIONS"
+    ]
     """
     List[str]:
         A list of methods that
