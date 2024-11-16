@@ -32,7 +32,7 @@ setup(
     description="A security library for FastAPI to control IPs, log requests, and detect penetration attempts.",
     long_description=README,
     long_description_content_type="text/markdown",
-    url="https://github.com/rennf93/fastapi_guard",
+    url="https://github.com/rennf93/fastapi-guard",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
