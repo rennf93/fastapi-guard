@@ -22,32 +22,32 @@ class SusPatterns:
         r"<script[^>]*>[^<]*<\/script\s*>",  # Basic script tag
         r"javascript:\s*[^\s]+",  # javascript: protocol
         # Event handlers
-        r"(?:on(?:error|load|click|mouseover|submit|mouse|unload|change|focus|blur|"
-        r"drag))=[\"\']?[^\"\'>\s]+",
+        r"(?:on(?:error|load|click|mouseover|submit|mouse|unload|change|focus|"
+        r"blur|drag))=[\"\']?[^\"\'>\s]+",
         # Malicious attributes
-        r"(?:<[^>]*\s+(?:href|src|data|action)\s*=[\s\"\']*(?:javascript|vbscript|"
-        r"data):)",
+        r"(?:<[^>]*\s+(?:href|src|data|action)\s*=[\s\"\']*(?:javascript|"
+        r"vbscript|data):)",
         # CSS expressions
-        r"(?:<[^>]*\s+style\s*=[\s\"\']*[^>]*(?:expression|behavior|url)\s*\([^)]*"
-        r"\))",
+        r"(?:<[^>]*\s+style\s*=[\s\"\']*[^>]*(?:expression|behavior|url)\s*\("
+        r"[^)]*\))",
         r"(?:<object[^>]*>[\s\S]*?<\/object\s*>)",  # Suspicious objects
         r"(?:<embed[^>]*>[\s\S]*?<\/embed\s*>)",  # Suspicious embeds
         r"(?:<applet[^>]*>[\s\S]*?<\/applet\s*>)",  # Java applets
 
         # SQL Injection - Enhanced patterns
         # Logic-based
-        r"(?i)('\s*(?:OR|AND)\s*[\(\s]*'?[\d\w]+\s*(?:=|LIKE|<|>|<=|>=)\s*[\(\s]*"
-        r"'?[\d\w]+)",
+        r"(?i)('\s*(?:OR|AND)\s*[\(\s]*'?[\d\w]+\s*(?:=|LIKE|<|>|<=|>=)\s*"
+        r"[\(\s]*'?[\d\w]+)",
         # UNION-based
-        r"(?i)(UNION\s+(?:ALL\s+)?SELECT\s+(?:NULL[,\s]*)+|\(\s*SELECT\s+(?:@@|"
-        r"VERSION))",
+        r"(?i)(UNION\s+(?:ALL\s+)?SELECT\s+(?:NULL[,\s]*)+|\(\s*SELECT\s+"
+        r"(?:@@|VERSION))",
         r"(?i)(?:INTO\s+(?:OUTFILE|DUMPFILE)\s+'[^']+')",  # File operations
         r"(?i)(?:LOAD_FILE\s*\([^)]+\))",  # File reading
         r"(?i)(?:BENCHMARK\s*\(\s*\d+\s*,)",  # Time-based
         r"(?i)(?:SLEEP\s*\(\s*\d+\s*\))",  # Time-based
         # Comment-based
-        r"(?i)(?:\/\*![0-9]*\s*(?:OR|AND|UNION|SELECT|INSERT|DELETE|DROP|CONCAT|"
-        r"CHAR|UPDATE)\b)",
+        r"(?i)(?:\/\*![0-9]*\s*(?:OR|AND|UNION|SELECT|INSERT|DELETE|DROP|"
+        r"CONCAT|CHAR|UPDATE)\b)",
 
         # Directory Traversal - Enhanced patterns
         r"(?:\.\./|\.\\/){2,}",  # Multiple traversal
@@ -60,8 +60,8 @@ class SusPatterns:
 
         # Command Injection - Enhanced patterns
         # Basic commands
-        r";\s*(?:ls|cat|rm|chmod|chown|wget|curl|nc|netcat|ping|telnet)\s+-[a-zA-Z]"
-        r"+\s+",
+        r";\s*(?:ls|cat|rm|chmod|chown|wget|curl|nc|netcat|ping|telnet)\s+"
+        r"-[a-zA-Z]+\s+",
         # Download commands
         r"\|\s*(?:wget|curl|fetch|lwp-download|lynx|links|GET)\s+",
         # Command substitution
@@ -73,11 +73,11 @@ class SusPatterns:
 
         # File Inclusion - Enhanced patterns
         # Protocols
-        r"(?:php|data|zip|rar|file|glob|expect|input|phpinfo|zlib|phar|ssh2|rar|"
-        r"ogg|expect)://[^\s]+",
+        r"(?:php|data|zip|rar|file|glob|expect|input|phpinfo|zlib|phar|ssh2|"
+        r"rar|ogg|expect)://[^\s]+",
         # URLs
-        r"(?:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(?:\/?)(?:[a-zA-Z0-9\-"
-        r"\.\?,'/\\\+&amp;%\$#_]*)?)",
+        r"(?:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(?:\/?)(?:"
+        r"[a-zA-Z0-9\-\.\?,'/\\\+&amp;%\$#_]*)?)",
 
         # LDAP Injection - Enhanced patterns
         r"\(\s*[|&]\s*\(\s*[^)]+=[*]",  # Wildcards
@@ -102,13 +102,13 @@ class SusPatterns:
         r"(?:\{\s*\$[a-zA-Z]+\s*:\s*(?:\{|\[))",  # Nested operators
 
         # File Upload - Enhanced patterns
-        r"(?i)filename=[\"'].*?\.(?:php\d*|phar|phtml|exe|jsp|asp|aspx|sh|bash|rb|"
-        r"py|pl|cgi|com|bat|cmd|vbs|vbe|js|ws|wsf|msi|hta)[\"\']",
+        r"(?i)filename=[\"'].*?\.(?:php\d*|phar|phtml|exe|jsp|asp|aspx|sh|"
+        r"bash|rb|py|pl|cgi|com|bat|cmd|vbs|vbe|js|ws|wsf|msi|hta)[\"\']",
 
         # Path Traversal - Enhanced patterns
         # Encoded traversal
-        r"(?:%2e%2e|%252e%252e|%uff0e%uff0e|%c0%ae%c0%ae|%e0%40%ae|%c0%ae%e0%80%"
-        r"ae|%25c0%25ae)/",
+        r"(?:%2e%2e|%252e%252e|%uff0e%uff0e|%c0%ae%c0%ae|%e0%40%ae|%c0%ae"
+        r"%e0%80%ae|%25c0%25ae)/",
 
         # Template Injection - New category
         # Basic template injection
