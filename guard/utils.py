@@ -305,11 +305,9 @@ async def detect_penetration_attempt(
 
     async def check_value(value: str) -> bool:
         try:
-            # Skip checking if value is a valid JSON with no suspicious patterns
             import json
             data = json.loads(value)
             if isinstance(data, dict):
-                # Only check values, not the whole JSON structure
                 return any(
                     pattern.search(str(v))
                     for v in data.values()
@@ -317,8 +315,10 @@ async def detect_penetration_attempt(
                     for pattern in suspicious_patterns
                 )
         except json.JSONDecodeError:
-            # Not JSON, check the whole string
-            return any(pattern.search(value) for pattern in suspicious_patterns)
+            return any(
+                pattern.search(value)
+                for pattern in suspicious_patterns
+            )
         return False
 
     # Query params
@@ -339,7 +339,13 @@ async def detect_penetration_attempt(
         return True
 
     # Headers
-    excluded_headers = {'host', 'user-agent', 'accept', 'accept-encoding', 'connection'}
+    excluded_headers = {
+        'host',
+        'user-agent',
+        'accept',
+        'accept-encoding',
+        'connection'
+    }
     for key, value in request.headers.items():
         if key.lower() not in excluded_headers and await check_value(value):
             message = "Potential attack detected from"
@@ -357,7 +363,7 @@ async def detect_penetration_attempt(
             reason_message = "Suspicious pattern: body"
             logging.warning(f"{message} {details} - {reason_message}")
             return True
-    except:
+    except Exception:
         pass
 
     return False
