@@ -117,7 +117,7 @@ class SusPatterns:
         r"\{\%\s*[^\%]*(?:system|exec|popen|eval|require|include)\s*\%\}",
 
         # HTTP Response Splitting - New category
-        r"[\r\n]\s*(?:HTTP\/[0-9.]+|Location:|Set-Cookie:)",  # Header injection
+        r"[\r\n]\s*(?:HTTP\/[0-9.]+|Location:|Set-Cookie:)",
     ]
 
     def __new__(cls):
