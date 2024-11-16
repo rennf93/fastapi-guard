@@ -4,7 +4,7 @@ from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
-from guard.utils import IPBanManager, ip_ban_manager
+from config.ipban_handler import IPBanManager, ip_ban_manager
 import pytest
 
 

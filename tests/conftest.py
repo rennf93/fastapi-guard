@@ -1,7 +1,7 @@
 import pytest
 from guard.models import SecurityConfig
 from guard.middleware import SecurityMiddleware
-from guard.utils import reset_global_state
+from config.ipban_handler import reset_global_state
 from config.sus_patterns import SusPatterns
 
 

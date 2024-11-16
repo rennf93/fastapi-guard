@@ -1,6 +1,7 @@
 # fastapi_guard/middleware.py
 import asyncio
 from cachetools import TTLCache
+from config.ipban_handler import ip_ban_manager
 from config.ip2.ip2location_config import (
     download_ip2location_database,
     start_periodic_update_check,
@@ -17,7 +18,6 @@ from guard.cloud_ips import cloud_ip_ranges
 from guard.models import SecurityConfig
 from guard.utils import (
     detect_penetration_attempt,
-    ip_ban_manager,
     is_ip_allowed,
     is_user_agent_allowed,
     log_request,
