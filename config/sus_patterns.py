@@ -18,116 +18,73 @@ class SusPatterns:
     custom_patterns: Set[str] = set()
 
     patterns: List[str] = [
-        # XSS
-        r"<script.*?>.*?</script.*?>",
-        r"javascript:",
-        r"onerror=",
-        r"onload=",
-        r"alert\(",
-        r"document\.cookie",
-        r"document\.write",
-        r"window\.location",
-        # SQL Injection
-        r"SELECT\s+.*\s+FROM\s+.*",
-        r"UNION\s+SELECT\s+.*",
-        r"'.*?OR.*?=.*?'",
-        r"'.*?AND.*?=.*?'",
-        r"INSERT\s+INTO\s+.*",
-        r"UPDATE\s+.*\s+SET\s+.*",
-        r"DELETE\s+FROM\s+.*",
-        r"DROP\s+TABLE\s+.*",
-        r"CREATE\s+TABLE\s+.*",
-        r"ALTER\s+TABLE\s+.*",
-        r"EXEC\s+.*",
-        r"CAST\s*\(.*\s+AS\s+.*\)",
-        r"CONVERT\s*\(.*\s+USING\s+.*\)",
-        # Directory Traversal
-        r"\.\./",
-        r"\.\.\\",
-        r"/etc/passwd",
-        r"/etc/shadow",
-        r"/etc/group",
-        r"/proc/self/environ",
-        r"/windows/win.ini",
-        r"/boot.ini",
-        # Command Injection
-        r"\b(?:ls|cat|rm|mv|cp|chmod|chown|sudo|su)\b",
-        r"\b(?:wget|curl|nc|ncat|telnet|ssh|ftp)\b",
-        r"\b(?:ping|traceroute|nslookup|dig)\b",
-        r"\b(?:ifconfig|ipconfig|netstat)\b",
-        r"\b(?:uname|whoami|id|pwd)\b",
-        # Sensitive File Access
-        r"\b(?:passwd|shadow|group)\b",
-        r"\b(?:\.env|\.git|\.svn|\.hg|\.DS_Store)\b",
-        r"\b(?:phpinfo|setup\.php|config\.php|admin\.php)\b",
-        r"\b(?:sitemap\.xml|robots\.txt|security\.txt)\b",
-        # Common Admin Paths
-        r"\b(?:solr|admin|cgi-bin|wp-admin|wp-login)\b",
-        # Common Query Parameters
-        r"\b(?:query|show|diagnostics|status|action)\b",
-        r"\b(?:format=json|wt=json)\b",
-        # HTTP Method Tampering
-        r"OPTIONS",
-        r"TRACE",
-        r"CONNECT",
-        # Path Traversal
-        r"\.\./",
-        r"\.\.\\",
-        # File Inclusion
-        r"file://",
-        r"php://",
-        r"data://",
-        r"zip://",
-        r"rar://",
-        r"expect://",
-        # LDAP Injection
-        r"\(\|\(.*?\=\*\)\)",
-        r"\(\&\(.*?\=\*\)\)",
-        # XML Injection
-        r"<!DOCTYPE\s+.*?>",
-        r"<\?xml\s+.*?>",
-        r"<!ENTITY\s+.*?>",
-        # SSRF (Server-Side Request Forgery)
-        r"http://localhost",
-        r"http://127\.0\.0\.1",
-        r"http://169\.254\.169\.254",
-        r"http://metadata\.google\.internal",
-        # Open Redirect
-        r"//",
-        r"/\.\./",
-        r"/\.\.\\",
-        # CRLF Injection
-        r"%0d%0a",
-        r"%0d",
-        r"%0a",
-        # Path Manipulation
-        r"\.\./",
-        r"\.\.\\",
-        # Shell Injection
-        r";",
-        r"&",
-        r"\|",
-        r"`",
-        r"\$\(.*?\)",
-        r"\$\{.*?\}",
-        # NoSQL Injection
-        r"\{\s*['\"]?\$.*?['\"]?\s*:\s*.*?\s*\}",
-        # JSON Injection
-        r"\{\s*\"\$.*?\"\s*:\s*.*?\s*\}",
-        # HTTP Header Injection
-        r"\r\n",
-        r"\n",
-        # File Upload
-        r"Content-Disposition: form-data; name=\".*?\"; filename=\".*?\."
-        r"(php|exe|sh|bat)\"",
-        # Other
-        r"eval\(",
-        r"base64_decode\(",
-        r"system\(",
-        r"shell_exec\(",
-        r"exec\(",
-        r"popen\(",
-        r"proc_open\(",
+        # XSS - Enhanced patterns
+        r"<script[^>]*>[^<]*<\/script\s*>",  # Basic script tag
+        r"javascript:\s*[^\s]+",  # javascript: protocol
+        r"(?:on(?:error|load|click|mouseover|submit|mouse|unload|change|focus|blur|drag))=[\"\']?[^\"\'>\s]+",  # Event handlers
+        r"(?:<[^>]*\s+(?:href|src|data|action)\s*=[\s\"\']*(?:javascript|vbscript|data):)",  # Malicious attributes
+        r"(?:<[^>]*\s+style\s*=[\s\"\']*[^>]*(?:expression|behavior|url)\s*\([^)]*\))",  # CSS expressions
+        r"(?:<object[^>]*>[\s\S]*?<\/object\s*>)",  # Suspicious objects
+        r"(?:<embed[^>]*>[\s\S]*?<\/embed\s*>)",  # Suspicious embeds
+        r"(?:<applet[^>]*>[\s\S]*?<\/applet\s*>)",  # Java applets
+
+        # SQL Injection - Enhanced patterns
+        r"(?i)('\s*(?:OR|AND)\s*[\(\s]*'?[\d\w]+\s*(?:=|LIKE|<|>|<=|>=)\s*[\(\s]*'?[\d\w]+)",  # Logic-based
+        r"(?i)(UNION\s+(?:ALL\s+)?SELECT\s+(?:NULL[,\s]*)+|\(\s*SELECT\s+(?:@@|VERSION))",  # UNION-based
+        r"(?i)(?:INTO\s+(?:OUTFILE|DUMPFILE)\s+'[^']+')",  # File operations
+        r"(?i)(?:LOAD_FILE\s*\([^)]+\))",  # File reading
+        r"(?i)(?:BENCHMARK\s*\(\s*\d+\s*,)",  # Time-based
+        r"(?i)(?:SLEEP\s*\(\s*\d+\s*\))",  # Time-based
+        r"(?i)(?:\/\*![0-9]*\s*(?:OR|AND|UNION|SELECT|INSERT|DELETE|DROP|CONCAT|CHAR|UPDATE)\b)",  # Comment-based
+
+        # Directory Traversal - Enhanced patterns
+        r"(?:\.\./|\.\\/){2,}",  # Multiple traversal
+        r"(?:/etc/(?:passwd|shadow|group|hosts|motd|issue|mysql/my.cnf|ssh/ssh_config)$)",  # Sensitive files
+        r"(?:boot\.ini|win\.ini|system\.ini|config\.sys)\s*$",  # Windows files
+        r"(?:\/proc\/self\/environ$)",  # Process information
+        r"(?:\/var\/log\/[^\/]+$)",  # Log files
+
+        # Command Injection - Enhanced patterns
+        r";\s*(?:ls|cat|rm|chmod|chown|wget|curl|nc|netcat|ping|telnet)\s+-[a-zA-Z]+\s+",  # Basic commands
+        r"\|\s*(?:wget|curl|fetch|lwp-download|lynx|links|GET)\s+",  # Download commands
+        r"(?:[;&|`]\s*(?:\$\([^)]+\)|\$\{[^}]+\}))",  # Command substitution
+        r"(?:^|;)\s*(?:bash|sh|ksh|csh|tsch|zsh|ash)\s+-[a-zA-Z]+",  # Shell execution
+        r"\b(?:eval|system|exec|shell_exec|passthru|popen|proc_open)\s*\(",  # PHP functions
+
+        # File Inclusion - Enhanced patterns
+        r"(?:php|data|zip|rar|file|glob|expect|input|phpinfo|zlib|phar|ssh2|rar|ogg|expect)://[^\s]+",  # Protocols
+        r"(?:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(?:\/?)(?:[a-zA-Z0-9\-\.\?,'/\\\+&amp;%\$#_]*)?)",  # URLs
+
+        # LDAP Injection - Enhanced patterns
+        r"\(\s*[|&]\s*\(\s*[^)]+=[*]",  # Wildcards
+        r"(?:\*(?:[\s\d\w]+\s*=|=\s*[\d\w\s]+))",  # Attribute matching
+        r"(?:\(\s*[&|]\s*)",  # Logic operations
+
+        # XML Injection - Enhanced patterns
+        r"<!(?:ENTITY|DOCTYPE)[^>]+SYSTEM[^>]+>",  # XXE
+        r"(?:<!\[CDATA\[.*?\]\]>)",  # CDATA sections
+        r"(?:<\?xml.*?\?>)",  # XML declarations
+
+        # SSRF - Enhanced patterns
+        r"(?:localhost|127\.0\.0\.1|0\.0\.0\.0|[::]|(?:169\.254|192\.168|10\.|172\.(?:1[6-9]|2[0-9]|3[01]))\.)",  # Local addresses
+        r"(?:file|dict|gopher|jar|tftp)://[^\s]+",  # Dangerous protocols
+
+        # NoSQL Injection - Enhanced patterns
+        r"\{\s*\$(?:where|gt|lt|ne|eq|regex|in|nin|all|size|exists|type|mod|options):",  # MongoDB
+        r"(?:\{\s*\$[a-zA-Z]+\s*:\s*(?:\{|\[))",  # Nested operators
+
+        # File Upload - Enhanced patterns
+        r"(?i)filename=[\"'].*?\.(?:php\d*|phar|phtml|exe|jsp|asp|aspx|sh|bash|rb|py|pl|cgi|com|bat|cmd|vbs|vbe|js|ws|wsf|msi|hta)[\"\']",
+
+        # Path Traversal - Enhanced patterns
+        r"(?:%2e%2e|%252e%252e|%uff0e%uff0e|%c0%ae%c0%ae|%e0%40%ae|%c0%ae%e0%80%ae|%25c0%25ae)/",  # Encoded traversal
+
+        # Template Injection - New category
+        r"\{\{\s*[^\}]*(?:system|exec|popen|eval|require|include)\s*\}\}",  # Basic template injection
+        r"\{\%\s*[^\%]*(?:system|exec|popen|eval|require|include)\s*\%\}",  # Alternative syntax
+
+        # HTTP Response Splitting - New category
+        r"[\r\n]\s*(?:HTTP\/[0-9.]+|Location:|Set-Cookie:)",  # Header injection
     ]
 
     def __new__(cls):
@@ -147,7 +104,7 @@ class SusPatterns:
             cls._instance.compiled_patterns = [
                 re.compile(
                     pattern,
-                    re.IGNORECASE
+                    re.IGNORECASE | re.MULTILINE
                 )
                 for pattern in cls.patterns
             ]
@@ -172,7 +129,7 @@ class SusPatterns:
         """
         compiled_pattern = re.compile(
             pattern,
-            re.IGNORECASE
+            re.IGNORECASE | re.MULTILINE
         )
         if custom:
             cls._instance.compiled_custom_patterns.add(
@@ -207,7 +164,7 @@ class SusPatterns:
         """
         compiled_pattern = re.compile(
             pattern,
-            re.IGNORECASE
+            re.IGNORECASE | re.MULTILINE
         )
         if custom:
             cls._instance.compiled_custom_patterns.discard(

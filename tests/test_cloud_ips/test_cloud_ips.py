@@ -1,5 +1,3 @@
-import pytest
-from unittest.mock import patch, Mock
 from guard.cloud_ips import (
     CloudIPRanges,
     fetch_aws_ip_ranges,
@@ -7,6 +5,8 @@ from guard.cloud_ips import (
     fetch_azure_ip_ranges,
 )
 import ipaddress
+import pytest
+from unittest.mock import patch, Mock
 
 
 @pytest.fixture
@@ -59,7 +59,7 @@ def test_fetch_azure_ip_ranges(mock_requests_get):
 
     result = fetch_azure_ip_ranges()
     assert ipaddress.IPv4Network("192.168.1.0/24") in result
-    assert len(result) == 1  # Should not include IPv6 address
+    assert len(result) == 1
 
 
 def test_cloud_ip_ranges():
@@ -93,7 +93,6 @@ async def test_cloud_ip_refresh():
         cloud_ranges = CloudIPRanges()
         assert cloud_ranges.is_cloud_ip("192.168.0.1", {"AWS"})
 
-        # Simulate IP range change
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.1.0/24")}
         cloud_ranges.refresh()
 

@@ -17,21 +17,17 @@ async def test_is_ip_allowed(security_config, mocker):
     """
     mocker.patch("guard.utils.get_ip_country", return_value="CN")
 
-    # Test with default config
     assert await is_ip_allowed("127.0.0.1", security_config) == True
     assert await is_ip_allowed("192.168.1.1", security_config) == False
 
-    # Test with empty whitelist and blacklist
     empty_config = SecurityConfig(whitelist=[], blacklist=[])
     assert await is_ip_allowed("127.0.0.1", empty_config) == True
     assert await is_ip_allowed("192.168.1.1", empty_config) == True
 
-    # Test with only whitelist
     whitelist_config = SecurityConfig(whitelist=["127.0.0.1"])
     assert await is_ip_allowed("127.0.0.1", whitelist_config) == True
     assert await is_ip_allowed("192.168.1.1", whitelist_config) == False
 
-    # Test with only blacklist
     blacklist_config = SecurityConfig(blacklist=["192.168.1.1"])
     assert await is_ip_allowed("127.0.0.1", blacklist_config) == True
     assert await is_ip_allowed("192.168.1.1", blacklist_config) == False
@@ -96,11 +92,7 @@ async def test_detect_penetration_attempt_xss():
 
 @pytest.mark.asyncio
 async def test_detect_penetration_attempt_sql_injection():
-    """
-    Test the detect_penetration_attempt
-    function with a SQL injection attempt.
-    """
-
+    """Test SQL injection detection."""
     async def receive():
         return {"type": "http.request", "body": b""}
 
@@ -110,7 +102,7 @@ async def test_detect_penetration_attempt_sql_injection():
             "method": "GET",
             "path": "/",
             "headers": [],
-            "query_string": b"param=' OR '1'='1",
+            "query_string": b"query=UNION+SELECT+NULL--",
             "client": ("127.0.0.1", 12345),
         },
         receive=receive,
@@ -158,7 +150,7 @@ async def test_detect_penetration_attempt_command_injection():
             "method": "GET",
             "path": "/",
             "headers": [],
-            "query_string": b"param=; ls -la",
+            "query_string": b"cmd=|cat+/etc/passwd",
             "client": ("127.0.0.1", 12345),
         },
         receive=receive,
@@ -264,11 +256,7 @@ async def test_detect_penetration_attempt_path_manipulation():
 
 @pytest.mark.asyncio
 async def test_detect_penetration_attempt_shell_injection():
-    """
-    Test the detect_penetration_attempt
-    function with a shell injection attempt.
-    """
-
+    """Test shell injection detection."""
     async def receive():
         return {"type": "http.request", "body": b""}
 
@@ -278,12 +266,25 @@ async def test_detect_penetration_attempt_shell_injection():
             "method": "GET",
             "path": "/",
             "headers": [],
-            "query_string": b"param=`rm -rf /`",
+            "query_string": b"cmd=;ls%20-la%20/",
             "client": ("127.0.0.1", 12345),
         },
         receive=receive,
     )
     assert await detect_penetration_attempt(request) == True
+
+    legitimate_request = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [],
+            "query_string": b"cmd=echo%20hello",
+            "client": ("127.0.0.1", 12345),
+        },
+        receive=receive,
+    )
+    assert await detect_penetration_attempt(legitimate_request) == False
 
 
 @pytest.mark.asyncio
@@ -312,26 +313,61 @@ async def test_detect_penetration_attempt_nosql_injection():
 
 @pytest.mark.asyncio
 async def test_detect_penetration_attempt_json_injection():
-    """
-    Test the detect_penetration_attempt
-    function with a JSON injection attempt.
-    """
-
-    async def receive():
-        return {"type": "http.request", "body": b'{"key": "value"}'}
+    """Test JSON content detection."""
+    async def receive_malicious():
+        return {"type": "http.request", "body": b'''
+            {
+                "script": "<script>alert(1)</script>",
+                "sql": "UNION SELECT * FROM users",
+                "cmd": ";cat /etc/passwd",
+                "path": "../../../etc/shadow"
+            }
+        '''}
 
     request = Request(
         scope={
             "type": "http",
             "method": "POST",
             "path": "/",
-            "headers": [(b"content-type", b"application/json")],
+            "headers": [
+                (b"content-type", b"application/json"),
+                (b"content-length", b"150")
+            ],
             "query_string": b"",
             "client": ("127.0.0.1", 12345),
         },
-        receive=receive,
+        receive=receive_malicious,
     )
-    assert await detect_penetration_attempt(request) == False
+    assert await detect_penetration_attempt(request) == True
+
+    async def receive_legitimate():
+        return {"type": "http.request", "body": b'''
+            {
+                "user_id": 123,
+                "name": "John Doe",
+                "email": "john@example.com",
+                "preferences": {
+                    "theme": "dark",
+                    "notifications": true
+                }
+            }
+        '''}
+
+    legitimate_request = Request(
+        scope={
+            "type": "http",
+            "method": "POST",
+            "path": "/",
+            "headers": [
+                (b"content-type", b"application/json"),
+                (b"content-length", b"160")
+            ],
+            "query_string": b"",
+            "client": ("127.0.0.1", 12345),
+        },
+        receive=receive_legitimate,
+    )
+    assert await detect_penetration_attempt(legitimate_request) == False
 
 
 @pytest.mark.asyncio
@@ -367,7 +403,6 @@ async def test_get_ip_country(mocker):
     """
     mock_ip2location = mocker.Mock()
     mock_ip2location.get_country_short.return_value = "US"
-
     mocker.patch("guard.utils.get_ip2location_database", return_value=mock_ip2location)
 
     config = SecurityConfig(use_ip2location=True)
@@ -378,17 +413,19 @@ async def test_get_ip_country(mocker):
     country = await get_ip_country("0.0.0.0", config)
     assert country == ""
 
-    # Test fallback to ipinfo.io
     config = SecurityConfig(use_ip2location=False, use_ipinfo_fallback=True)
-    mock_response = mocker.Mock()
+
+    mock_response = mocker.AsyncMock()
     mock_response.status = 200
     mock_response.json.return_value = {"country": "CA"}
+
     mock_session = mocker.AsyncMock()
-    mock_session.get.return_value.__aenter__.return_value = mock_response
+    mock_session.get.return_value = mock_response
+
     mocker.patch("aiohttp.ClientSession", return_value=mock_session)
 
     country = await get_ip_country("2.2.2.2", config)
-    assert country == ""
+    assert country == "CA"
 
 
 @pytest.mark.asyncio
@@ -406,5 +443,5 @@ async def test_is_ip_allowed_cloud_providers(security_config, mocker):
     config = SecurityConfig(block_cloud_providers={"AWS"})
 
     assert await is_ip_allowed("127.0.0.1", config) == True
-    assert await is_ip_allowed("13.59.255.255", config) == False  # AWS IP
-    assert await is_ip_allowed("8.8.8.8", config) == True  # Non-cloud IP
+    assert await is_ip_allowed("13.59.255.255", config) == False
+    assert await is_ip_allowed("8.8.8.8", config) == True

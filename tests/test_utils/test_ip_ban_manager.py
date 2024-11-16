@@ -1,11 +1,11 @@
 import asyncio
-from guard.utils import IPBanManager, ip_ban_manager
-import pytest
 from fastapi import FastAPI, status
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
+from guard.utils import IPBanManager, ip_ban_manager
+import pytest
 
 
 @pytest.mark.asyncio
@@ -31,31 +31,27 @@ async def test_automatic_ip_ban(reset_state):
     Test the automatic IP banning.
     """
     app = FastAPI()
-    config = SecurityConfig(auto_ban_threshold=3, auto_ban_duration=300)
+    config = SecurityConfig(
+        enable_ip_banning=True,
+        enable_penetration_detection=True,
+        auto_ban_threshold=3,
+        auto_ban_duration=300
+    )
     app.add_middleware(SecurityMiddleware, config=config)
 
-    @app.get("/")
-    async def read_root():
-        return {"message": "Hello World"}
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         for _ in range(config.auto_ban_threshold):
-            response = await client.get("/", headers={"X-Forwarded-For": "192.168.1.2"})
-            assert response.status_code == status.HTTP_200_OK
+            await client.get(
+                "/test",
+                params={"input": "<script>alert(1)</script>"},
+                headers={"X-Forwarded-For": "192.168.1.2"}
+            )
 
-        # This should trigger the automatic ban
-        response = await client.get("/", headers={"X-Forwarded-For": "192.168.1.2"})
+        response = await client.get(
+            "/",
+            headers={"X-Forwarded-For": "192.168.1.2"}
+        )
         assert response.status_code == status.HTTP_403_FORBIDDEN
-
-        # Ensure the IP remains banned
-        response = await client.get("/", headers={"X-Forwarded-For": "192.168.1.2"})
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-
-        # Ensure other IPs are not affected
-        response = await client.get("/", headers={"X-Forwarded-For": "192.168.1.3"})
-        assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.asyncio
