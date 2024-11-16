@@ -39,7 +39,7 @@ class SecurityConfig(BaseModel):
 
     whitelist: Optional[List[str]] = Field(
         default=None,
-        description="List of IP addresses or CIDR ranges that are always allowed"
+        description="Allowed IP addresses or CIDR ranges"
     )
     """
     Optional[List[str]]:
@@ -50,7 +50,7 @@ class SecurityConfig(BaseModel):
 
     blacklist: List[str] = Field(
         default=[],
-        description="List of IP addresses or CIDR ranges that are always blocked"
+        description="Blocked IP addresses or CIDR ranges"
     )
     """
     List[str]:
@@ -79,7 +79,7 @@ class SecurityConfig(BaseModel):
 
     blocked_user_agents: List[str] = Field(
         default=[],
-        description="A list of user agent strings or patterns that should be blocked"
+        description="Blocked user agents"
     )
     """
     List[str]:
@@ -120,7 +120,7 @@ class SecurityConfig(BaseModel):
 
     custom_error_responses: Dict[int, str] = Field(
         default={},
-        description="A dictionary of custom error responses for specific HTTP status codes"
+        description="Custom error for specific HTTP status codes"
     )
     """
     Dict[int, str]:
@@ -140,7 +140,7 @@ class SecurityConfig(BaseModel):
 
     rate_limit_window: int = Field(
         default=60,
-        description="The time window in seconds for rate limiting"
+        description="Rate limiting time window (seconds)"
     )
     """
     int:
@@ -149,7 +149,7 @@ class SecurityConfig(BaseModel):
 
     use_ip2location: bool = Field(
         default=False,
-        description="Whether to use the IP2Location database for IP geolocation"
+        description="Use the IP2Location database for IP geolocation"
     )
     """
     bool:
@@ -169,7 +169,7 @@ class SecurityConfig(BaseModel):
 
     ip2location_auto_download: bool = Field(
         default=False,
-        description="Whether to automatically download the IP2Location database if it's not found"
+        description="Automatic download of the IP2Location database"
     )
     """
     bool:
@@ -179,7 +179,7 @@ class SecurityConfig(BaseModel):
 
     ip2location_auto_update: bool = Field(
         default=False,
-        description="Whether to automatically update the IP2Location database periodically"
+        description="Automatic update of the IP2Location database"
     )
     """
     bool:
@@ -189,7 +189,7 @@ class SecurityConfig(BaseModel):
 
     ip2location_update_interval: int = Field(
         default=24,
-        description="The interval in hours for automatic IP2Location database updates"
+        description="IP2Location database update interval (hours)"
     )
     """
     int:
@@ -199,7 +199,7 @@ class SecurityConfig(BaseModel):
 
     use_ipinfo_fallback: bool = Field(
         default=True,
-        description="Whether to use ipinfo.io as a fallback for IP geolocation when IP2Location fails"
+        description="Use ipinfo.io as a fallback for IP geolocation"
     )
     """
     bool:
@@ -224,7 +224,7 @@ class SecurityConfig(BaseModel):
         ]
     ] = Field(
         default=None,
-        description="A custom function to perform additional checks on the request"
+        description="Perform additional checks on the request"
     )
     """
     Optional[
@@ -402,6 +402,6 @@ class SecurityConfig(BaseModel):
                 else:
                     addr = IPv4Address(entry)
                     validated.append(str(addr))
-            except ValueError as e:
+            except ValueError:
                 raise ValueError(f"Invalid IP or CIDR range: {entry}")
         return validated
