@@ -20,17 +20,21 @@ class SusPatterns:
     patterns: List[str] = [
         # XSS - Enhanced patterns
         r"<script[^>]*>[^<]*<\/script\s*>",  # Basic script tag
-        r"javascript:\s*[^\s]+",  # javascript: protocol
-        r"(?:on(?:error|load|click|mouseover|submit|mouse|unload|change|focus|blur|drag))=[\"\']?[^\"\'>\s]+",  # Event handlers
-        r"(?:<[^>]*\s+(?:href|src|data|action)\s*=[\s\"\']*(?:javascript|vbscript|data):)",  # Malicious attributes
-        r"(?:<[^>]*\s+style\s*=[\s\"\']*[^>]*(?:expression|behavior|url)\s*\([^)]*\))",  # CSS expressions
+        (r"(?:on(?:error|load|click|mouseover|submit|mouse|unload|change|focus|"
+         r"blur|drag))=[\"\']?[^\"\'>\s]+"),  # Event handlers
+        (r"(?:<[^>]*\s+(?:href|src|data|action)\s*=[\s\"\']*"
+         r"(?:javascript|vbscript|data):)"),  # Malicious attributes
+        (r"(?:<[^>]*\s+style\s*=[\s\"\']*[^>]*"
+         r"(?:expression|behavior|url)\s*\([^)]*\))"),  # CSS expressions
         r"(?:<object[^>]*>[\s\S]*?<\/object\s*>)",  # Suspicious objects
         r"(?:<embed[^>]*>[\s\S]*?<\/embed\s*>)",  # Suspicious embeds
         r"(?:<applet[^>]*>[\s\S]*?<\/applet\s*>)",  # Java applets
 
         # SQL Injection - Enhanced patterns
-        r"(?i)('\s*(?:OR|AND)\s*[\(\s]*'?[\d\w]+\s*(?:=|LIKE|<|>|<=|>=)\s*[\(\s]*'?[\d\w]+)",  # Logic-based
-        r"(?i)(UNION\s+(?:ALL\s+)?SELECT\s+(?:NULL[,\s]*)+|\(\s*SELECT\s+(?:@@|VERSION))",  # UNION-based
+        (r"(?i)('\s*(?:OR|AND)\s*[\(\s]*'?[\d\w]+\s*"
+         r"(?:=|LIKE|<|>|<=|>=)\s*[\(\s]*'?[\d\w]+)"),  # Logic-based
+        (r"(?i)(UNION\s+(?:ALL\s+)?SELECT\s+(?:NULL[,\s]*)+|"
+         r"\(\s*SELECT\s+(?:@@|VERSION))"),  # UNION-based
         r"(?i)(?:INTO\s+(?:OUTFILE|DUMPFILE)\s+'[^']+')",  # File operations
         r"(?i)(?:LOAD_FILE\s*\([^)]+\))",  # File reading
         r"(?i)(?:BENCHMARK\s*\(\s*\d+\s*,)",  # Time-based
@@ -74,10 +78,12 @@ class SusPatterns:
         r"(?:\{\s*\$[a-zA-Z]+\s*:\s*(?:\{|\[))",  # Nested operators
 
         # File Upload - Enhanced patterns
-        r"(?i)filename=[\"'].*?\.(?:php\d*|phar|phtml|exe|jsp|asp|aspx|sh|bash|rb|py|pl|cgi|com|bat|cmd|vbs|vbe|js|ws|wsf|msi|hta)[\"\']",
+        (r"(?i)filename=[\"'].*?\.(?:php\d*|phar|phtml|exe|jsp|asp|aspx|sh|"
+         r"bash|rb|py|pl|cgi|com|bat|cmd|vbs|vbe|js|ws|wsf|msi|hta)[\"\']"),
 
         # Path Traversal - Enhanced patterns
-        r"(?:%2e%2e|%252e%252e|%uff0e%uff0e|%c0%ae%c0%ae|%e0%40%ae|%c0%ae%e0%80%ae|%25c0%25ae)/",  # Encoded traversal
+        (r"(?:%2e%2e|%252e%252e|%uff0e%uff0e|%c0%ae%c0%ae|%e0%40%ae|"
+         r"%c0%ae%e0%80%ae|%25c0%25ae)/"),  # Encoded traversal
 
         # Template Injection - New category
         r"\{\{\s*[^\}]*(?:system|exec|popen|eval|require|include)\s*\}\}",  # Basic template injection
