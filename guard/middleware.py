@@ -5,7 +5,12 @@ from config.ip2.ip2location_config import (
     download_ip2location_database,
     start_periodic_update_check,
 )
-from fastapi import FastAPI, Request, Response, status
+from fastapi import (
+    FastAPI,
+    Request,
+    Response,
+    status
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from guard.cloud_ips import cloud_ip_ranges
@@ -17,11 +22,16 @@ from guard.utils import (
     is_user_agent_allowed,
     log_request,
     log_suspicious_activity,
-    setup_custom_logging,
+    setup_custom_logging
 )
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
-from typing import Callable, Awaitable
+from typing import (
+    Awaitable,
+    Callable,
+    Dict,
+    List
+)
 
 
 class SecurityMiddleware(BaseHTTPMiddleware):
@@ -41,9 +51,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             [Request],
             Awaitable[Response]
         ],
-        config: SecurityConfig,
-        rate_limit: int = 100,
-        rate_limit_window: int = 60,
+        config: SecurityConfig
     ):
         """
         Initialize the SecurityMiddleware.
@@ -53,22 +61,14 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 The FastAPI application.
             config (SecurityConfig):
                 Configuration object for security settings.
-            rate_limit (int, optional):
-                Maximum number of requests
-                allowed per IP in the rate
-                limit window. Defaults to 100.
-            rate_limit_window (int, optional):
-                Time window in
-                seconds for rate limiting.
-                Defaults to 60.
         """
         super().__init__(app)
         self.config = config
-        self.rate_limit = rate_limit
-        self.rate_limit_window = rate_limit_window
+        self.rate_limit = config.rate_limit
+        self.rate_limit_window = config.rate_limit_window
         self.request_counts = TTLCache(
             maxsize=10000,
-            ttl=rate_limit_window
+            ttl=self.rate_limit_window
         )
         self.logger = None
         self.ip_request_counts = TTLCache(
@@ -76,6 +76,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             ttl=3600
         )
         self.last_cloud_ip_refresh = 0
+        self.request_times: Dict[str, List[float]] = {}
+        self.suspicious_request_counts: Dict[str, int] = {}
+        self.last_cleanup = time.time()
 
         if self.config.use_ip2location:
             download_ip2location_database(self.config)
@@ -118,8 +121,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             Response: The response object, either
             from the next handler or a security-related response.
         """
-        client_ip = request.client.host
-
         if self.config.enforce_https and request.url.scheme == "http":
             https_url = request.url.replace(scheme="https")
             return RedirectResponse(
@@ -127,78 +128,47 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 status_code=status.HTTP_301_MOVED_PERMANENTLY
             )
 
-        if self.logger is None:
-            await self.setup_logger()
         client_ip = (
-            request.headers.get(
-                "X-Forwarded-For",
-                request.client.host
-            )
+            request.headers.get("X-Forwarded-For", request.client.host)
             .split(",")[0]
             .strip()
         )
 
+        # Excluded paths
+        if any(
+            request.url.path.startswith(path)
+            for path in self.config.exclude_paths
+        ):
+            return await call_next(request)
+
+        # Setup logging
+        if self.logger is None:
+            await self.setup_logger()
         await log_request(
             request,
             self.logger
         )
 
-        # IP Ban CHECK
+        # IP banning
         if await ip_ban_manager.is_ip_banned(client_ip):
-            return await self.create_error_response(
-                status_code=status.HTTP_403_FORBIDDEN,
-                default_message="IP address banned",
-            )
-
-        # User agent filtering
-        user_agent = request.headers.get(
-            "User-Agent",
-            ""
-        )
-        if not await is_user_agent_allowed(
-            user_agent,
-            self.config
-        ):
             await log_suspicious_activity(
                 request,
-                "User-Agent not allowed",
+                f"Banned IP attempted access: {client_ip}",
                 self.logger
             )
             return await self.create_error_response(
                 status_code=status.HTTP_403_FORBIDDEN,
-                default_message="User-Agent not allowed",
+                default_message="IP address banned"
             )
 
-        # Rate limiting
-        if self.rate_limit:
-            current_time = time.time()
-            if client_ip not in self.request_counts:
-                self.request_counts[client_ip] = 1
-            else:
-                self.request_counts[client_ip] += 1
-                if self.request_counts[
-                    client_ip
-                ] > self.rate_limit:
-                    await log_suspicious_activity(
-                        request,
-                        f"Rate limit exceeded: {client_ip}",
-                        self.logger
-                    )
-                    return await self.create_error_response(
-                        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                        default_message="Rate limit exceeded",
-                    )
-
-        # IP whitelist/blacklist
-        # (only if whitelist or blacklist is not empty)
-        if (
-            self.config.whitelist or self.config.blacklist
-        ) and not await is_ip_allowed(
-            client_ip, self.config
+        # Whitelist/blacklist
+        if not await is_ip_allowed(
+            client_ip,
+            self.config
         ):
             await log_suspicious_activity(
                 request,
-                "IP not allowed",
+                f"IP not allowed: {client_ip}",
                 self.logger
             )
             return await self.create_error_response(
@@ -206,76 +176,95 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 default_message="Forbidden"
             )
 
-        # Penetration attempts
-        if await detect_penetration_attempt(request):
+        # User agent
+        user_agent = request.headers.get("User-Agent", "")
+        if not await is_user_agent_allowed(
+            user_agent,
+            self.config
+        ):
             await log_suspicious_activity(
                 request,
-                "Potential attack detected",
+                f"Blocked user agent: {user_agent}",
                 self.logger
             )
             return await self.create_error_response(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                default_message="Potential attack detected",
+                status_code=status.HTTP_403_FORBIDDEN,
+                default_message="User-Agent not allowed"
             )
 
-        # Custom request check
+        # Rate limit
+        if self.config.enable_rate_limiting:
+            current_time = time.time()
+            window_start = current_time - self.rate_limit_window
+
+            requests = [
+                t for t in self.request_times.get(
+                    client_ip,
+                    []
+                ) if t > window_start
+            ]
+
+            if len(requests) >= self.rate_limit:
+                await log_suspicious_activity(
+                    request,
+                    f"Rate limit exceeded for IP: {client_ip}",
+                    self.logger
+                )
+                return await self.create_error_response(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    default_message="Too many requests"
+                )
+
+            self.request_times[client_ip] = requests + [current_time]
+
+        # Sus Activity
+        if self.config.enable_penetration_detection:
+            if await detect_penetration_attempt(request):
+                self.suspicious_request_counts[client_ip] = (
+                    self.suspicious_request_counts.get(
+                        client_ip,
+                        0
+                    ) + 1
+                )
+
+                # Check banning
+                if (
+                    self.config.enable_ip_banning and
+                    self.suspicious_request_counts[
+                        client_ip
+                    ] >= self.config.auto_ban_threshold
+                ):
+                    await ip_ban_manager.ban_ip(
+                        client_ip,
+                        self.config.auto_ban_duration
+                    )
+                    await log_suspicious_activity(
+                        request,
+                        f"IP banned due to suspicious activity: {client_ip}",
+                        self.logger
+                    )
+                    return await self.create_error_response(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        default_message="IP has been banned"
+                    )
+
+                await log_suspicious_activity(
+                    request,
+                    f"Suspicious activity detected for IP: {client_ip}",
+                    self.logger
+                )
+                return await self.create_error_response(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    default_message="Suspicious activity detected"
+                )
+
+        # Custom request
         if self.config.custom_request_check:
-            custom_response = await self.config.custom_request_check(
-                request
-            )
+            custom_response = await self.config.custom_request_check(request)
             if custom_response:
                 return custom_response
 
-        # Automatic IP ban check
-        if client_ip not in self.ip_request_counts:
-            self.ip_request_counts[client_ip] = 1
-        else:
-            self.ip_request_counts[client_ip] += 1
-            if self.ip_request_counts[
-                client_ip
-            ] > self.config.auto_ban_threshold:
-                await ip_ban_manager.ban_ip(
-                    client_ip,
-                    self.config.auto_ban_duration
-                )
-                await log_suspicious_activity(
-                    request,
-                    f"IP automatically banned: {client_ip}",
-                    self.logger
-                )
-                return await self.create_error_response(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    default_message="IP address banned",
-                )
-
-        # Refresh cloud IP ranges periodically
-        if self.config.block_cloud_providers:
-            current_time = time.time()
-            if current_time - self.last_cloud_ip_refresh > 86400:
-                await self.refresh_cloud_ip_ranges()
-
-            if cloud_ip_ranges.is_cloud_ip(
-                client_ip, self.config.block_cloud_providers
-            ):
-                await log_suspicious_activity(
-                    request,
-                    "Cloud IP blocked",
-                    self.logger
-                )
-                return await self.create_error_response(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    default_message="Access from cloud IPs is not allowed",
-                )
-
-        response = await call_next(request)
-
-        # Custom response modifier
-        if self.config.custom_response_modifier:
-            response = await self.config.custom_response_modifier(
-                response
-            )
-
-        return response
+        return await call_next(request)
 
     async def refresh_cloud_ip_ranges(self):
         await asyncio.to_thread(
@@ -329,3 +318,17 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             )
             return True
         return False
+
+    async def cleanup_rate_limits(self):
+        """Clean up expired rate limit windows"""
+        current_time = time.time()
+        if current_time - self.last_cleanup > 60:  # Cleanup every minute
+            window_start = current_time - self.config.rate_limit_window
+            for ip in list(self.request_times.keys()):
+                self.request_times[ip] = [
+                    t for t in self.request_times[ip]
+                    if t > window_start
+                ]
+                if not self.request_times[ip]:
+                    del self.request_times[ip]
+            self.last_cleanup = current_time

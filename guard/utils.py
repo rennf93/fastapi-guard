@@ -6,10 +6,17 @@ from config.sus_patterns import SusPatterns
 from fastapi import Request
 from guard.cloud_ips import cloud_ip_ranges
 from guard.models import SecurityConfig
+from ipaddress import (
+    IPv4Address,
+    ip_network
+)
 import logging
 import re
 import time
-from typing import Dict, Any
+from typing import (
+    Any,
+    Dict
+)
 
 
 class IPBanManager:
@@ -198,13 +205,14 @@ async def get_ip_country(
 
     if config.use_ipinfo_fallback:
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    f"https://ipinfo.io/{ip}/json"
-                ) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        return data.get("country", "")
+            session = aiohttp.ClientSession()
+            try:
+                response = await session.get(f"https://ipinfo.io/{ip}/json")
+                if response.status == 200:
+                    data = await response.json()
+                    return data.get("country", "")
+            finally:
+                await session.close()
         except Exception as e:
             type = "ipinfo.io"
             message = f"Error getting country for IP {ip}"
@@ -232,21 +240,42 @@ async def is_ip_allowed(
         bool:
             True if the IP is allowed, False otherwise.
     """
-    if config.blacklist and ip in config.blacklist:
-        return False
-    if config.whitelist:
-        return ip in config.whitelist
-    # if config.whitelist and ip not in config.whitelist:
-    #     return False
-    if config.blocked_countries:
-        country = await get_ip_country(ip, config)
-        if country in config.blocked_countries:
+    try:
+        ip_addr = IPv4Address(ip)
+
+        # Blacklist
+        if config.blacklist:
+            for blocked in config.blacklist:
+                if '/' in blocked:  # CIDR
+                    if ip_addr in ip_network(blocked, strict=False):
+                        return False
+                elif ip == blocked:  # Direct match
+                    return False
+
+        # Whitelist
+        if config.whitelist:
+            for allowed in config.whitelist:
+                if '/' in allowed:  # CIDR
+                    if ip_addr in ip_network(allowed, strict=False):
+                        return True
+                elif ip == allowed:  # Direct match
+                    return True
+            return False  # If whitelist exists but IP not in it
+
+        # Blocked countries
+        if config.blocked_countries:
+            country = await get_ip_country(ip, config)
+            if country in config.blocked_countries:
+                return False
+
+        # Cloud providers
+        if config.block_cloud_providers and cloud_ip_ranges.is_cloud_ip(
+            ip, config.block_cloud_providers
+        ):
             return False
-    if config.block_cloud_providers and cloud_ip_ranges.is_cloud_ip(
-        ip, config.block_cloud_providers
-    ):
-        return False
-    return True
+        return True
+    except ValueError:
+        return False  # Invalid IP
 
 
 async def detect_penetration_attempt(
@@ -272,50 +301,63 @@ async def detect_penetration_attempt(
             detected, False otherwise.
     """
 
-    suspicious_patterns = await SusPatterns(
-        ).get_all_compiled_patterns()
+    suspicious_patterns = await SusPatterns().get_all_compiled_patterns()
+
+    async def check_value(value: str) -> bool:
+        try:
+            # Skip checking if value is a valid JSON with no suspicious patterns
+            import json
+            data = json.loads(value)
+            if isinstance(data, dict):
+                # Only check values, not the whole JSON structure
+                return any(
+                    pattern.search(str(v))
+                    for v in data.values()
+                    if isinstance(v, str)
+                    for pattern in suspicious_patterns
+                )
+        except json.JSONDecodeError:
+            # Not JSON, check the whole string
+            return any(pattern.search(value) for pattern in suspicious_patterns)
+        return False
 
     # Query params
-    query_params = request.query_params
-    for key, value in query_params.items():
-        for pattern in suspicious_patterns:
-            if pattern.search(value):
-                message = "Potential attack detected from"
-                details = f"{request.client.host}: {key}={value}"
-                reason_message = f"Suspicious pattern: {pattern.pattern}"
-                logging.warning(f"{message} {details} - {reason_message}")
-                return True
-
-    # Body
-    body = await request.body()
-    body_str = body.decode("utf-8")
-    for pattern in suspicious_patterns:
-        if pattern.search(body_str):
+    for value in request.query_params.values():
+        if await check_value(value):
             message = "Potential attack detected from"
-            details = f"{request.client.host}: {body_str}"
-            reason_message = f"Suspicious pattern: {pattern.pattern}"
+            details = f"{request.client.host}: {value}"
+            reason_message = "Suspicious pattern: query param"
             logging.warning(f"{message} {details} - {reason_message}")
             return True
 
     # Path
-    path = request.url.path
-    for pattern in suspicious_patterns:
-        if pattern.search(path):
+    if await check_value(request.url.path):
+        message = "Potential attack detected from"
+        details = f"{request.client.host}: {request.url.path}"
+        reason_message = "Suspicious pattern: path"
+        logging.warning(f"{message} {details} - {reason_message}")
+        return True
+
+    # Headers
+    excluded_headers = {'host', 'user-agent', 'accept', 'accept-encoding', 'connection'}
+    for key, value in request.headers.items():
+        if key.lower() not in excluded_headers and await check_value(value):
             message = "Potential attack detected from"
-            details = f"{request.client.host}: {path}"
-            reason_message = f"Suspicious pattern: {pattern.pattern}"
+            details = f"{request.client.host}: {key}={value}"
+            reason_message = "Suspicious pattern: header"
             logging.warning(f"{message} {details} - {reason_message}")
             return True
 
-    # Headers
-    headers = request.headers
-    for key, value in headers.items():
-        for pattern in suspicious_patterns:
-            if pattern.search(value):
-                message = "Potential attack detected from"
-                details = f"{request.client.host}: {key}={value}"
-                reason_message = f"Suspicious pattern: {pattern.pattern}"
-                logging.warning(f"{message} {details} - {reason_message}")
-                return True
+    # Body
+    try:
+        body = (await request.body()).decode()
+        if await check_value(body):
+            message = "Potential attack detected from"
+            details = f"{request.client.host}: {body}"
+            reason_message = "Suspicious pattern: body"
+            logging.warning(f"{message} {details} - {reason_message}")
+            return True
+    except:
+        pass
 
     return False

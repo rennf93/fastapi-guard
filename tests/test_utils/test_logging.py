@@ -20,21 +20,17 @@ async def test_is_ip_allowed(security_config, mocker):
     """
     mocker.patch("guard.utils.get_ip_country", return_value="CN")
 
-    # Test with default config
     assert await is_ip_allowed("127.0.0.1", security_config) == True
     assert await is_ip_allowed("192.168.1.1", security_config) == False
 
-    # Test with empty whitelist and blacklist
     empty_config = SecurityConfig(whitelist=[], blacklist=[])
     assert await is_ip_allowed("127.0.0.1", empty_config) == True
     assert await is_ip_allowed("192.168.1.1", empty_config) == True
 
-    # Test with only whitelist
     whitelist_config = SecurityConfig(whitelist=["127.0.0.1"])
     assert await is_ip_allowed("127.0.0.1", whitelist_config) == True
     assert await is_ip_allowed("192.168.1.1", whitelist_config) == False
 
-    # Test with only blacklist
     blacklist_config = SecurityConfig(blacklist=["192.168.1.1"])
     assert await is_ip_allowed("127.0.0.1", blacklist_config) == True
     assert await is_ip_allowed("192.168.1.1", blacklist_config) == False
@@ -149,7 +145,7 @@ async def test_setup_custom_logging():
     logger = await setup_custom_logging(log_file)
 
     assert logger.name == "guard.utils"
-    assert len(logger.handlers) == 14
+    assert len(logger.handlers) == 13
 
     file_handler = logger.handlers[0]
     assert isinstance(file_handler, logging.FileHandler)

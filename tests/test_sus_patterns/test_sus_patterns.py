@@ -1,6 +1,5 @@
 from config.sus_patterns import SusPatterns
 import pytest
-import re
 
 
 @pytest.mark.asyncio

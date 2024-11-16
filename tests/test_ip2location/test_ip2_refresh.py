@@ -3,9 +3,9 @@ from config.ip2.ip2location_config import (
     download_ip2location_database,
 )
 from datetime import datetime, timedelta, timezone
+from guard.models import SecurityConfig
 import unittest
 from unittest.mock import patch, mock_open, MagicMock
-from guard.models import SecurityConfig
 
 
 class TestIP2Refresh(unittest.TestCase):
