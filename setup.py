@@ -8,7 +8,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="fastapi_guard",
-    version="0.3.1",
+    version="0.3.2",
     packages=find_packages(),
     install_requires=[
         "aiohttp",
@@ -40,18 +40,9 @@ setup(
         "Development Status :: 4 - Beta",
         "Framework :: FastAPI",
         "Intended Audience :: Developers",
-        "Intended Audience :: Information Technology",
-        "Intended Audience :: System Administrators",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
-        "Programming Language :: Python :: 3 :: Only",
-        "Topic :: Internet :: WWW/HTTP :: Middleware",
-        "Topic :: Security",
-        "Topic :: Security :: Web Security",
     ],
     include_package_data=True,
     package_data={
