@@ -1,11 +1,8 @@
 # fastapi_guard/middleware.py
 import asyncio
 from cachetools import TTLCache
-from config.ipban_handler import ip_ban_manager
-from config.ip2.ip2location_config import (
-    download_ip2location_database,
-    start_periodic_update_check,
-)
+from handlers.ipban_handler import ip_ban_manager
+from handlers.ipinfo_handler import IPInfoDB
 from fastapi import (
     FastAPI,
     Request,
@@ -79,14 +76,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self.request_times: Dict[str, List[float]] = {}
         self.suspicious_request_counts: Dict[str, int] = {}
         self.last_cleanup = time.time()
-
-        if self.config.use_ip2location:
-            download_ip2location_database(self.config)
-            asyncio.create_task(
-                start_periodic_update_check(
-                    self.config
-                )
-            )
+        self.ipinfo_db = IPInfoDB(token=config.ipinfo_token)
 
     async def setup_logger(self):
         if self.logger is None:

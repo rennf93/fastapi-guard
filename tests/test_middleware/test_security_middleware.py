@@ -5,8 +5,12 @@ from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
+import os
 import pytest
 from unittest.mock import patch
+
+
+IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
 
 
 @pytest.mark.asyncio
@@ -17,6 +21,7 @@ async def test_rate_limiting():
     """
     app = FastAPI()
     config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
         rate_limit=2,
         rate_limit_window=1,
         enable_rate_limiting=True
@@ -52,7 +57,11 @@ async def test_ip_whitelist_blacklist():
     functionality of the SecurityMiddleware.
     """
     app = FastAPI()
-    config = SecurityConfig(whitelist=["127.0.0.1"], blacklist=["192.168.1.1"])
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        whitelist=["127.0.0.1"],
+        blacklist=["192.168.1.1"]
+    )
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -79,7 +88,10 @@ async def test_user_agent_filtering():
     functionality of the SecurityMiddleware.
     """
     app = FastAPI()
-    config = SecurityConfig(blocked_user_agents=[r"badbot"])
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        blocked_user_agents=[r"badbot"]
+    )
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -104,6 +116,7 @@ async def test_rate_limiting_multiple_ips(reset_state, security_middleware):
     """
     app = FastAPI()
     config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
         rate_limit=2,
         rate_limit_window=1,
         enable_rate_limiting=True,
@@ -145,8 +158,15 @@ async def test_middleware_multiple_configs():
     with multiple configurations.
     """
     app = FastAPI()
-    config1 = SecurityConfig(blocked_user_agents=[r"badbot"])
-    config2 = SecurityConfig(whitelist=["127.0.0.1"], blacklist=["192.168.1.1"])
+    config1 = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        blocked_user_agents=[r"badbot"]
+    )
+    config2 = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        whitelist=["127.0.0.1"],
+        blacklist=["192.168.1.1"]
+    )
 
     app.add_middleware(SecurityMiddleware, config=config1)
     app.add_middleware(SecurityMiddleware, config=config2)
@@ -180,7 +200,10 @@ async def test_custom_request_check():
             return Response("Custom block", status_code=status.HTTP_403_FORBIDDEN)
         return None
 
-    config = SecurityConfig(custom_request_check=custom_check)
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        custom_request_check=custom_check
+    )
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -205,6 +228,7 @@ async def test_custom_error_responses():
     """
     app = FastAPI()
     config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
         blacklist=["192.168.1.3"],
         custom_error_responses={
             403: "Custom Forbidden",
@@ -240,6 +264,7 @@ async def test_custom_error_responses():
 async def test_cors_configuration():
     app = FastAPI()
     config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
         enable_cors=True,
         cors_allow_origins=["https://example.com"],
         cors_allow_methods=["GET", "POST"],
@@ -277,7 +302,10 @@ async def test_cors_configuration():
 @pytest.mark.asyncio
 async def test_cloud_ip_blocking():
     app = FastAPI()
-    config = SecurityConfig(block_cloud_providers={"AWS", "GCP", "Azure"})
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        block_cloud_providers={"AWS", "GCP", "Azure"}
+    )
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -304,7 +332,10 @@ async def test_cloud_ip_blocking():
 @pytest.mark.asyncio
 async def test_cloud_ip_refresh():
     app = FastAPI()
-    config = SecurityConfig(block_cloud_providers={"AWS", "GCP", "Azure"})
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        block_cloud_providers={"AWS", "GCP", "Azure"}
+    )
     middleware = SecurityMiddleware(app, config)
 
     with patch(

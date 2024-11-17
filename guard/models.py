@@ -147,66 +147,6 @@ class SecurityConfig(BaseModel):
         The time window in seconds for rate limiting.
     """
 
-    use_ip2location: bool = Field(
-        default=False,
-        description="Use the IP2Location database for IP geolocation"
-    )
-    """
-    bool:
-        Whether to use the IP2Location
-        database for IP geolocation.
-    """
-
-    ip2location_db_path: Optional[str] = Field(
-        default=None,
-        description="The path to the IP2Location database file"
-    )
-    """
-    Optional[str]:
-        The path to the IP2Location
-        database file.
-    """
-
-    ip2location_auto_download: bool = Field(
-        default=False,
-        description="Automatic download of the IP2Location database"
-    )
-    """
-    bool:
-        Whether to automatically download
-        the IP2Location database if it's not found.
-    """
-
-    ip2location_auto_update: bool = Field(
-        default=False,
-        description="Automatic update of the IP2Location database"
-    )
-    """
-    bool:
-        Whether to automatically update
-        the IP2Location database periodically.
-    """
-
-    ip2location_update_interval: int = Field(
-        default=24,
-        description="IP2Location database update interval (hours)"
-    )
-    """
-    int:
-        The interval in hours for automatic
-        IP2Location database updates.
-    """
-
-    use_ipinfo_fallback: bool = Field(
-        default=True,
-        description="Use ipinfo.io as a fallback for IP geolocation"
-    )
-    """
-    bool:
-        Whether to use ipinfo.io as a fallback
-        for IP geolocation when IP2Location fails.
-    """
-
     enforce_https: bool = Field(
         default=False,
         description="Whether to enforce HTTPS connections"
@@ -342,6 +282,15 @@ class SecurityConfig(BaseModel):
     Optional[Set[str]]:
         A set of cloud provider names to block.
         Supported values: 'AWS', 'GCP', 'Azure'
+    """
+
+    ipinfo_token: str = Field(
+        ...,
+        description="IPInfo API token for IP geolocation"
+    )
+    """
+    str:
+        The IPInfo API token for IP geolocation.
     """
 
     exclude_paths: List[str] = Field(

@@ -1,7 +1,10 @@
 import ipaddress
 import logging
 import requests
-from typing import Dict, Set
+from typing import (
+    Dict,
+    Set
+)
 
 
 def fetch_aws_ip_ranges() -> Set[ipaddress.IPv4Network]:

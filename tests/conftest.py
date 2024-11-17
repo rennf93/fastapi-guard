@@ -1,8 +1,13 @@
-import pytest
 from guard.models import SecurityConfig
 from guard.middleware import SecurityMiddleware
-from config.ipban_handler import reset_global_state
-from config.sus_patterns import SusPatterns
+from guard.sus_patterns import SusPatterns
+from handlers.ipban_handler import reset_global_state
+from handlers.ipinfo_handler import IPInfoDB
+import os
+import pytest
+
+
+IPINFO_TOKEN = os.getenv("IPINFO_TOKEN", "test_token")
 
 
 @pytest.fixture(autouse=True)
@@ -21,6 +26,7 @@ def security_config():
         SecurityConfig: A configured SecurityConfig object.
     """
     return SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
         whitelist=["127.0.0.1"],
         blacklist=["192.168.1.1"],
         blocked_countries=["CN"],
@@ -45,9 +51,25 @@ def security_config():
 @pytest.fixture
 async def security_middleware():
     config = SecurityConfig(
-        whitelist=[], blacklist=[], auto_ban_threshold=10, auto_ban_duration=300
+        ipinfo_token=IPINFO_TOKEN,
+        whitelist=[],
+        blacklist=[],
+        auto_ban_threshold=10,
+        auto_ban_duration=300
     )
-    middleware = SecurityMiddleware(app=None, config=config)
+    middleware = SecurityMiddleware(
+        app=None,
+        config=config
+    )
     await middleware.setup_logger()
     yield middleware
     await middleware.reset()
+
+
+@pytest.fixture
+async def ipinfo_db():
+    """IPInfo database fixture"""
+    db = IPInfoDB(token=IPINFO_TOKEN)
+    await db.initialize()
+    yield db
+    db.close()
