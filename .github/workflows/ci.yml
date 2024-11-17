@@ -45,7 +45,7 @@ jobs:
         run: |
           pip install flake8
           flake8 guard/
-          flake8 config/
+          flake8 handlers/
 
       - name: Format code with black
         run: |
