@@ -8,6 +8,8 @@
 
 `fastapi-guard` is a security library for FastAPI that provides middleware to control IPs, log requests, and detect penetration attempts. It integrates seamlessly with FastAPI to offer robust protection against various security threats.
 
+📖 **[Functional Documentation & Tutorial](https://renzof93.medium.com/secure-your-fastapi-applications-with-fastapi-guard-539ed8c2a58c)**
+
 ## Prerequisites
 
 Before using `fastapi-guard`, you'll need to obtain an IPInfo token:
