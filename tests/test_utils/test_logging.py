@@ -1,4 +1,4 @@
-import pytest
+from fastapi import Request
 from guard.utils import (
     is_ip_allowed,
     is_user_agent_allowed,
@@ -7,31 +7,47 @@ from guard.utils import (
     log_suspicious_activity,
 )
 from guard.models import SecurityConfig
-from fastapi import Request
 import logging
 import os
+import pytest
+
+
+IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
 
 
 @pytest.mark.asyncio
-async def test_is_ip_allowed(security_config, mocker):
+async def test_is_ip_allowed(
+    security_config,
+    mocker
+):
     """
     Test the is_ip_allowed function
     with various IP addresses.
     """
-    mocker.patch("guard.utils.get_ip_country", return_value="CN")
+    mocker.patch("guard.utils.check_ip_country", return_value=False)
 
     assert await is_ip_allowed("127.0.0.1", security_config) == True
     assert await is_ip_allowed("192.168.1.1", security_config) == False
 
-    empty_config = SecurityConfig(whitelist=[], blacklist=[])
+    empty_config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        whitelist=[],
+        blacklist=[]
+    )
     assert await is_ip_allowed("127.0.0.1", empty_config) == True
     assert await is_ip_allowed("192.168.1.1", empty_config) == True
 
-    whitelist_config = SecurityConfig(whitelist=["127.0.0.1"])
+    whitelist_config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        whitelist=["127.0.0.1"]
+    )
     assert await is_ip_allowed("127.0.0.1", whitelist_config) == True
     assert await is_ip_allowed("192.168.1.1", whitelist_config) == False
 
-    blacklist_config = SecurityConfig(blacklist=["192.168.1.1"])
+    blacklist_config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        blacklist=["192.168.1.1"]
+    )
     assert await is_ip_allowed("127.0.0.1", blacklist_config) == True
     assert await is_ip_allowed("192.168.1.1", blacklist_config) == False
 
@@ -47,7 +63,11 @@ async def test_is_user_agent_allowed(security_config):
 
 
 @pytest.mark.asyncio
-async def test_custom_logging(reset_state, security_config, tmp_path):
+async def test_custom_logging(
+    reset_state,
+    security_config,
+    tmp_path
+):
     """
     Test the custom logging.
     """

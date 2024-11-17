@@ -4,8 +4,12 @@ from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
-from guard.utils import IPBanManager, ip_ban_manager
+from handlers.ipban_handler import IPBanManager, ip_ban_manager
+import os
 import pytest
+
+
+IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
 
 
 @pytest.mark.asyncio
@@ -32,6 +36,7 @@ async def test_automatic_ip_ban(reset_state):
     """
     app = FastAPI()
     config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
         enable_ip_banning=True,
         enable_penetration_detection=True,
         auto_ban_threshold=3,
@@ -39,7 +44,10 @@ async def test_automatic_ip_ban(reset_state):
     )
     app.add_middleware(SecurityMiddleware, config=config)
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    ) as client:
         for _ in range(config.auto_ban_threshold):
             await client.get(
                 "/test",

@@ -35,6 +35,8 @@ jobs:
           pip install -e .
 
       - name: Run tests
+        env:
+          IPINFO_TOKEN: ${{ secrets.IPINFO_TOKEN }}
         run: |
           pip install pytest
           pytest

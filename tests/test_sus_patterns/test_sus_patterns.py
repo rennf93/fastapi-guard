@@ -1,4 +1,4 @@
-from config.sus_patterns import SusPatterns
+from guard.sus_patterns import SusPatterns
 import pytest
 
 

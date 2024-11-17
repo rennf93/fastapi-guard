@@ -1,80 +1,21 @@
 # fastapi_guard/utils.py
-import aiohttp
-from cachetools import TTLCache
-from config.ip2.ip2location_config import get_ip2location_database
-from config.sus_patterns import SusPatterns
 from fastapi import Request
 from guard.cloud_ips import cloud_ip_ranges
 from guard.models import SecurityConfig
+from guard.sus_patterns import SusPatterns
+from handlers.ipinfo_handler import IPInfoDB
 from ipaddress import (
     IPv4Address,
     ip_network
 )
 import logging
 import re
-import time
 from typing import (
     Any,
-    Dict
+    Dict,
+    Optional,
+    Union
 )
-
-
-class IPBanManager:
-    """
-    A class for managing IP bans.
-    """
-
-    def __init__(self):
-        """
-        Initialize the IPBanManager.
-        """
-        self.banned_ips = TTLCache(
-            maxsize=10000,
-            ttl=3600
-        )
-
-    async def ban_ip(
-        self,
-        ip: str,
-        duration: int
-    ):
-        """
-        Ban an IP address for
-        a specified duration.
-        """
-        self.banned_ips[ip] = time.time() + duration
-
-    async def is_ip_banned(
-        self,
-        ip: str
-    ) -> bool:
-        """
-        Check if an IP
-        address is banned.
-        """
-        if ip in self.banned_ips:
-            if time.time() > self.banned_ips[ip]:
-                del self.banned_ips[ip]
-                return False
-            return True
-        return False
-
-    async def reset(self):
-        """
-        Reset the banned IPs.
-        """
-        self.banned_ips.clear()
-
-
-ip_ban_manager = IPBanManager()
-
-
-async def reset_global_state():
-    """
-    Reset all global state.
-    """
-    global ip_ban_manager
-    ip_ban_manager = IPBanManager()
 
 
 async def setup_custom_logging(
@@ -170,61 +111,74 @@ async def is_user_agent_allowed(
     return True
 
 
-async def get_ip_country(
-    ip: str,
-    config: SecurityConfig
-) -> str:
+async def check_ip_country(
+    request: Union[str, Request],
+    config: SecurityConfig,
+    ipinfo_db: IPInfoDB
+) -> bool:
     """
-    Get the country associated with the given
-    IP address using IP2Location database
-    or ipinfo.io as a fallback.
+    Check if IP is from a blocked country
+    or in the whitelist.
 
     Args:
-        ip (str):
-            The IP address to look up.
+        request (Union[str, Request]):
+            The FastAPI request object or IP string.
         config (SecurityConfig):
-            The security configuration.
+            The security configuration object.
+        ipinfo_db (IPInfoDB):
+            The IPInfo database handler.
 
     Returns:
-        str:
-            The country code associated
-            with the IP address.
+        bool:
+            True if the IP is from a blocked
+            country or in the whitelist,
+            False otherwise.
     """
-    if config.use_ip2location:
-        ip2location = get_ip2location_database(config)
-        if ip2location is not None:
-            try:
-                result = ip2location.get_country_short(ip)
-                if result and result != "-":
-                    return result
-            except Exception as e:
-                type = "IP2Location"
-                message = f"Error getting country for IP {ip}"
-                reason_message = f"Reason: {str(e)}"
-                logging.error(f"{type} - {message} - {reason_message}")
+    if not config.blocked_countries and not config.whitelist_countries:
+        message = "No countries blocked or whitelisted"
+        details = f"{request if isinstance(request, str) else request.client.host}"
+        reason_message = "No countries blocked or whitelisted"
+        logging.warning(f"{message} {details} - {reason_message}")
+        return False
 
-    if config.use_ipinfo_fallback:
-        try:
-            session = aiohttp.ClientSession()
-            try:
-                response = await session.get(f"https://ipinfo.io/{ip}/json")
-                if response.status == 200:
-                    data = await response.json()
-                    return data.get("country", "")
-            finally:
-                await session.close()
-        except Exception as e:
-            type = "ipinfo.io"
-            message = f"Error getting country for IP {ip}"
-            reason_message = f"Reason: {str(e)}"
-            logging.error(f"{type} - {message} - {reason_message}")
+    if not ipinfo_db.reader:
+        await ipinfo_db.initialize()
 
-    return ""
+    ip = request if isinstance(request, str) else request.client.host
+    country = ipinfo_db.get_country(ip)
+
+    if not country:
+        message = "IP not geolocated"
+        details = f"{ip}"
+        reason_message = "IP geolocation failed"
+        logging.warning(f"{message} {details} - {reason_message}")
+        return False
+
+    if config.whitelist_countries and country in config.whitelist_countries:
+        message = "IP from whitelisted country"
+        details = f"{ip} - {country}"
+        reason_message = "IP from whitelisted country"
+        logging.info(f"{message} {details} - {reason_message}")
+        return False
+
+    if config.blocked_countries and country in config.blocked_countries:
+        message = "IP from blocked country"
+        details = f"{ip} - {country}"
+        reason_message = "IP from blocked country"
+        logging.warning(f"{message} {details} - {reason_message}")
+        return True
+
+    message = "IP not from blocked or whitelisted country"
+    details = f"{ip} - {country}"
+    reason_message = "IP not from blocked or whitelisted country"
+    logging.info(f"{message} {details} - {reason_message}")
+    return False
 
 
 async def is_ip_allowed(
     ip: str,
-    config: SecurityConfig
+    config: SecurityConfig,
+    ipinfo_db: Optional[IPInfoDB] = None
 ) -> bool:
     """
     Check if the IP address is allowed
@@ -235,6 +189,8 @@ async def is_ip_allowed(
             The IP address to check.
         config (SecurityConfig):
             The security configuration object.
+        ipinfo_db (Optional[IPInfoDB]):
+            The IPInfo database handler.
 
     Returns:
         bool:
@@ -247,7 +203,10 @@ async def is_ip_allowed(
         if config.blacklist:
             for blocked in config.blacklist:
                 if '/' in blocked:  # CIDR
-                    if ip_addr in ip_network(blocked, strict=False):
+                    if ip_addr in ip_network(
+                        blocked,
+                        strict=False
+                    ):
                         return False
                 elif ip == blocked:  # Direct match
                     return False
@@ -256,26 +215,37 @@ async def is_ip_allowed(
         if config.whitelist:
             for allowed in config.whitelist:
                 if '/' in allowed:  # CIDR
-                    if ip_addr in ip_network(allowed, strict=False):
+                    if ip_addr in ip_network(
+                        allowed,
+                        strict=False
+                    ):
                         return True
                 elif ip == allowed:  # Direct match
                     return True
             return False  # If whitelist exists but IP not in it
 
         # Blocked countries
-        if config.blocked_countries:
-            country = await get_ip_country(ip, config)
-            if country in config.blocked_countries:
+        if config.blocked_countries and ipinfo_db:
+            country = await check_ip_country(
+                ip,
+                config,
+                ipinfo_db
+            )
+            if country:
                 return False
 
         # Cloud providers
         if config.block_cloud_providers and cloud_ip_ranges.is_cloud_ip(
-            ip, config.block_cloud_providers
+            ip,
+            config.block_cloud_providers
         ):
             return False
         return True
     except ValueError:
         return False  # Invalid IP
+    except Exception as e:
+        logging.error(f"Error checking IP {ip}: {str(e)}")
+        return True
 
 
 async def detect_penetration_attempt(
@@ -301,7 +271,8 @@ async def detect_penetration_attempt(
             detected, False otherwise.
     """
 
-    suspicious_patterns = await SusPatterns().get_all_compiled_patterns()
+    suspicious_patterns = await SusPatterns(
+        ).get_all_compiled_patterns()
 
     async def check_value(value: str) -> bool:
         try:

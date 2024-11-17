@@ -5,9 +5,14 @@ from guard.utils import (
     is_ip_allowed,
     is_user_agent_allowed,
     detect_penetration_attempt,
-    get_ip_country,
+    check_ip_country,
 )
+import os
 import pytest
+from unittest.mock import patch
+
+
+IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
 
 
 @pytest.mark.asyncio
@@ -15,20 +20,30 @@ async def test_is_ip_allowed(security_config, mocker):
     """
     Test the is_ip_allowed function with various IP addresses.
     """
-    mocker.patch("guard.utils.get_ip_country", return_value="CN")
+    mocker.patch("guard.utils.check_ip_country", return_value=False)
 
     assert await is_ip_allowed("127.0.0.1", security_config) == True
     assert await is_ip_allowed("192.168.1.1", security_config) == False
 
-    empty_config = SecurityConfig(whitelist=[], blacklist=[])
+    empty_config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        whitelist=[],
+        blacklist=[]
+    )
     assert await is_ip_allowed("127.0.0.1", empty_config) == True
     assert await is_ip_allowed("192.168.1.1", empty_config) == True
 
-    whitelist_config = SecurityConfig(whitelist=["127.0.0.1"])
+    whitelist_config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        whitelist=["127.0.0.1"]
+    )
     assert await is_ip_allowed("127.0.0.1", whitelist_config) == True
     assert await is_ip_allowed("192.168.1.1", whitelist_config) == False
 
-    blacklist_config = SecurityConfig(blacklist=["192.168.1.1"])
+    blacklist_config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        blacklist=["192.168.1.1"]
+    )
     assert await is_ip_allowed("127.0.0.1", blacklist_config) == True
     assert await is_ip_allowed("192.168.1.1", blacklist_config) == False
 
@@ -398,50 +413,106 @@ async def test_detect_penetration_attempt_http_header_injection():
 
 @pytest.mark.asyncio
 async def test_get_ip_country(mocker):
-    """
-    Test the get_ip_country function.
-    """
-    mock_ip2location = mocker.Mock()
-    mock_ip2location.get_country_short.return_value = "US"
-    mocker.patch("guard.utils.get_ip2location_database", return_value=mock_ip2location)
+    """Test the get_ip_country function."""
+    mock_ipinfo = mocker.patch("handlers.ipinfo_handler.IPInfoDB")
+    mock_db = mock_ipinfo.return_value
+    mock_db.get_country.return_value = "US"
+    mock_db.reader = True  # Mock initialized reader
 
-    config = SecurityConfig(use_ip2location=True)
-    country = await get_ip_country("1.1.1.1", config)
-    assert country == "US"
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        blocked_countries=["CN"]
+    )
 
-    mock_ip2location.get_country_short.return_value = ""
-    country = await get_ip_country("0.0.0.0", config)
-    assert country == ""
+    country = await check_ip_country(
+        "1.1.1.1",
+        config,
+        mock_db
+    )
+    assert country == False  # Not blocked
 
-    config = SecurityConfig(use_ip2location=False, use_ipinfo_fallback=True)
-
-    mock_response = mocker.AsyncMock()
-    mock_response.status = 200
-    mock_response.json.return_value = {"country": "CA"}
-
-    mock_session = mocker.AsyncMock()
-    mock_session.get.return_value = mock_response
-
-    mocker.patch("aiohttp.ClientSession", return_value=mock_session)
-
-    country = await get_ip_country("2.2.2.2", config)
-    assert country == "CA"
+    mock_db.get_country.return_value = "CN"
+    country = await check_ip_country(
+        "1.1.1.1",
+        config,
+        mock_db
+    )
+    assert country == True  # Blocked
 
 
 @pytest.mark.asyncio
-async def test_is_ip_allowed_cloud_providers(security_config, mocker):
+async def test_is_ip_allowed_cloud_providers(
+    security_config,
+    mocker
+):
     """
     Test the is_ip_allowed function with cloud provider IP blocking.
     """
-    mocker.patch("guard.utils.get_ip_country", return_value="US")
+    mocker.patch(
+        "guard.utils.check_ip_country",
+        return_value=True
+    )
     mocker.patch.object(
         cloud_ip_ranges,
         "is_cloud_ip",
-        side_effect=lambda ip, providers: ip.startswith("13."),
+        side_effect=lambda ip,
+        providers: ip.startswith("13."),
     )
 
-    config = SecurityConfig(block_cloud_providers={"AWS"})
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        block_cloud_providers={"AWS"}
+    )
 
-    assert await is_ip_allowed("127.0.0.1", config) == True
-    assert await is_ip_allowed("13.59.255.255", config) == False
-    assert await is_ip_allowed("8.8.8.8", config) == True
+    assert await is_ip_allowed(
+        "127.0.0.1",
+        config
+    ) == True
+    assert await is_ip_allowed(
+        "13.59.255.255",
+        config
+    ) == False
+    assert await is_ip_allowed(
+        "8.8.8.8",
+        config
+    ) == True
+
+
+@pytest.mark.asyncio
+async def test_check_ip_country():
+    """Test country checking functionality."""
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        blocked_countries=["CN"],
+        whitelist_countries=["US"]
+    )
+
+    # Mock IPInfoDB
+    with patch("handlers.ipinfo_handler.IPInfoDB") as MockIPInfoDB:
+        mock_db = MockIPInfoDB.return_value
+        mock_db.get_country.return_value = "CN"
+
+        request = Request(
+            scope={
+                "type": "http",
+                "method": "GET",
+                "path": "/",
+                "headers": [],
+                "query_string": b"",
+                "client": ("127.0.0.1", 12345),
+            },
+            receive=lambda: {"type": "http.request"}
+        )
+
+        assert await check_ip_country(
+            request,
+            config,
+            mock_db
+        ) == True
+
+        mock_db.get_country.return_value = "US"
+        assert await check_ip_country(
+            request,
+            config,
+            mock_db
+        ) == False
