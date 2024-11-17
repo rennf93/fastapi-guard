@@ -136,7 +136,12 @@ async def check_ip_country(
     """
     if not config.blocked_countries and not config.whitelist_countries:
         message = "No countries blocked or whitelisted"
-        details = f"{request if isinstance(request, str) else request.client.host}"
+        host = ""
+        if isinstance(request, str):
+            host = request
+        else:
+            host = request.client.host
+        details = f"{host}"
         reason_message = "No countries blocked or whitelisted"
         logging.warning(f"{message} {details} - {reason_message}")
         return False
