@@ -8,6 +8,18 @@
 
 `fastapi-guard` is a security library for FastAPI that provides middleware to control IPs, log requests, and detect penetration attempts. It integrates seamlessly with FastAPI to offer robust protection against various security threats.
 
+## Prerequisites
+
+Before using `fastapi-guard`, you'll need to obtain an IPInfo token:
+
+1. Visit [IPInfo's website](https://ipinfo.io/signup) to create a free account
+2. After signing up, you'll receive an API token
+3. The free tier includes:
+   - Up to 50,000 requests per month
+   - Access to IP to Country database
+   - Daily database updates
+   - IPv4 & IPv6 support
+
 ## Features
 
 - **IP Whitelisting and Blacklisting**: Control access based on IP addresses.
@@ -18,7 +30,7 @@
 - **Custom Logging**: Log security events to a custom file.
 - **CORS Configuration**: Configure CORS settings for your FastAPI application.
 - **Cloud Provider IP Blocking**: Block requests from cloud provider IPs (AWS, GCP, Azure).
-- **IP Geolocation**: Use IP2Location or ipinfo.io to determine the country of an IP address.
+- **IP Geolocation**: Use IPInfo.io API to determine the country of an IP address.
 
 ## Installation
 
@@ -43,6 +55,7 @@ app = FastAPI()
 
 # Define your security configuration
 config = SecurityConfig(
+    ipinfo_token="your_ipinfo_token_here",  # Required for IP geolocation
     whitelist=["192.168.1.1"],
     blacklist=["10.0.0.1"],
     blocked_countries=["AR", "IT"],
@@ -51,12 +64,6 @@ config = SecurityConfig(
     auto_ban_duration=86400,
     custom_log_file="security.log",
     rate_limit=100,
-    use_ip2location=True,
-    ip2location_db_path="./IP2LOCATION-LITE-DB1.IPV6.BIN",
-    ip2location_auto_download=True,
-    ip2location_auto_update=True,
-    ip2location_update_interval=24,
-    use_ipinfo_fallback=True,
     enforce_https=True,
     enable_cors=True,
     cors_allow_origins=["*"],
@@ -169,20 +176,27 @@ config = SecurityConfig(
 )
 ```
 
-### IP Geolocation
+### IP Geolocation and Country Blocking
 
-Use IP2Location or ipinfo.io to determine the country of an IP address using the `use_ip2location` and `use_ipinfo_fallback` options.
+The library uses IPInfo's [IP to Country database](https://ipinfo.io/products/free-ip-database) which provides:
+
+- Full accuracy IP to country mapping
+- Daily updates
+- Support for both IPv4 and IPv6
+- Country and continent information
+- ASN details
+
+To use the geolocation features:
 
 ```python
 config = SecurityConfig(
-    use_ip2location=True,
-    ip2location_db_path="./IP2LOCATION-LITE-DB1.IPV6.BIN",
-    ip2location_auto_download=True,
-    ip2location_auto_update=True,
-    ip2location_update_interval=24,
-    use_ipinfo_fallback=True,
+    ipinfo_token="your_ipinfo_token_here",  # Required
+    blocked_countries=["AR", "IT"],  # Block specific countries using ISO 3166-1 alpha-2 codes
+    whitelist_countries=["US", "CA"]  # Optional: Only allow specific countries
 )
 ```
+
+The database is automatically downloaded and cached locally when the middleware starts, and it's updated daily to ensure accuracy.
 
 ## Advanced Usage
 
@@ -227,6 +241,7 @@ The `SecurityConfig` class defines the structure for security configuration, inc
 
 #### Attributes
 
+- `ipinfo_token`: str - The IPInfo API token required for IP geolocation functionality.
 - `whitelist`: Optional[List[str]] - A list of IP addresses or ranges that are always allowed. If set to None, no whitelist is applied.
 - `blacklist`: List[str] - A list of IP addresses or ranges that are always blocked.
 - `blocked_countries`: List[str] - A list of country codes whose IP addresses should be blocked.
@@ -236,12 +251,6 @@ The `SecurityConfig` class defines the structure for security configuration, inc
 - `custom_log_file`: Optional[str] - The path to a custom log file for logging security events.
 - `custom_error_responses`: Dict[int, str] - A dictionary of custom error responses for specific HTTP status codes.
 - `rate_limit`: int - The maximum number of requests allowed per minute from a single IP.
-- `use_ip2location`: bool - Whether to use the IP2Location database for IP geolocation.
-- `ip2location_db_path`: Optional[str] - The path to the IP2Location database file.
-- `ip2location_auto_download`: bool - Whether to automatically download the IP2Location database if it's not found.
-- `ip2location_auto_update`: bool - Whether to automatically update the IP2Location database periodically.
-- `ip2location_update_interval`: int - The interval in hours for automatic IP2Location database updates.
-- `use_ipinfo_fallback`: bool - Whether to use ipinfo.io as a fallback for IP geolocation when IP2Location fails.
 - `enforce_https`: bool - Whether to enforce HTTPS connections. If True, all HTTP requests will be redirected to HTTPS.
 - `custom_request_check`: Optional[Callable[[Request], Awaitable[Optional[Response]]]] - A custom function to perform additional checks on the request. If it returns a Response, that response will be sent instead of continuing the middleware chain.
 - `custom_response_modifier`: Optional[Callable[[Response], Awaitable[Response]]] - A custom function to modify the response before it's sent.
@@ -269,7 +278,7 @@ Renzo Franceschini - [rennf93@gmail.com](mailto:rennf93@gmail.com)
 ## Acknowledgements
 
 - [FastAPI](https://fastapi.tiangolo.com/)
-- [IP2Location](https://www.ip2location.com/)
+- [IPInfo](https://ipinfo.io/)
 - [aiohttp](https://docs.aiohttp.org/)
 - [cachetools](https://cachetools.readthedocs.io/)
 - [requests](https://docs.python-requests.org/)

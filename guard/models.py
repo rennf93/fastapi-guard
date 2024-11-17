@@ -37,6 +37,15 @@ class SecurityConfig(BaseModel):
     Country codes should be specified in ISO 3166-1 alpha-2 format.
     """
 
+    ipinfo_token: str = Field(
+        ...,
+        description="IPInfo API token for IP geolocation"
+    )
+    """
+    str:
+        The IPInfo API token for IP geolocation.
+    """
+
     whitelist: Optional[List[str]] = Field(
         default=None,
         description="Allowed IP addresses or CIDR ranges"
@@ -282,15 +291,6 @@ class SecurityConfig(BaseModel):
     Optional[Set[str]]:
         A set of cloud provider names to block.
         Supported values: 'AWS', 'GCP', 'Azure'
-    """
-
-    ipinfo_token: str = Field(
-        ...,
-        description="IPInfo API token for IP geolocation"
-    )
-    """
-    str:
-        The IPInfo API token for IP geolocation.
     """
 
     exclude_paths: List[str] = Field(
