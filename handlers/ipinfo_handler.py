@@ -34,7 +34,7 @@ class IPInfoDB:
 
     async def _download_database(self):
         """Download the latest database from IPInfo"""
-        base_url = f"https://ipinfo.io/data/free/country_asn.mmdb"
+        base_url = "https://ipinfo.io/data/free/country_asn.mmdb"
         url = f"{base_url}?token={self.token}"
 
         async with aiohttp.ClientSession() as session:
