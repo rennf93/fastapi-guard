@@ -44,7 +44,7 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
-        "Topic :: Internet :: WWW/HTTP :: API :: Middleware",
+        "Topic :: Internet :: WWW/HTTP :: Middleware",
         "Topic :: Security",
     ],
     include_package_data=True,
