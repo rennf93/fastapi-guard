@@ -6,7 +6,6 @@ import time
 from typing import Optional
 
 
-
 class IPInfoDB:
     """Handler for IPInfo's IP to Country ASN database"""
 
@@ -35,7 +34,8 @@ class IPInfoDB:
 
     async def _download_database(self):
         """Download the latest database from IPInfo"""
-        url = f"https://ipinfo.io/data/free/country_asn.mmdb?token={self.token}"
+        base_url = f"https://ipinfo.io/data/free/country_asn.mmdb"
+        url = f"{base_url}?token={self.token}"
 
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
