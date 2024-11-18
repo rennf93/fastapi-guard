@@ -12,6 +12,7 @@
 ## Documentation
 
 📖 **[Functional Documentation & Tutorial](https://renzof93.medium.com/secure-your-fastapi-applications-with-fastapi-guard-539ed8c2a58c)**
+
 📚 **[Documentation](https://rennf93.github.io/fastapi-guard)**
 
 ## Prerequisites
