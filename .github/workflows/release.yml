@@ -12,6 +12,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Send Initial Slack Message
+        id: send_initial_slack
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Started'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - Pypi Release'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':rocket:'
+          TITLE: 'Pypi Release Started'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
+          MESSAGE: |
+            .
+            *NEW VERSION TRIGGERED PYPI RELEASE!*
+
+            Commit:
+              ${{ github.event.head_commit.message }}
+            .
+          COLOR: warning
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -32,3 +54,52 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
         run: |
           twine upload dist/*
+
+      - name: Notify Success on Slack Channel
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Success'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - Pypi Release'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':gem:'
+          TITLE: 'Pypi Release Successful'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
+          MESSAGE: |
+            .
+            Commit message:
+              ${{ github.event.head_commit.message }}
+
+            Commit URL:
+              ${{ github.event.head_commit.url }}
+            .
+          COLOR: good
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack.outputs.SLACK_THREAD_TS }}
+
+      - name: Send Failure Notification to Slack
+        if: failure()
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Failed'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - Pypi Release'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':skull:'
+          TITLE: 'Pypi Release Failed'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
+          MESSAGE: |
+            .
+            Pypi Release failed for commit:
+              ${{ github.event.head_commit.message }}
+
+            Commit URL:
+              ${{ github.event.head_commit.url }}
+
+            Please check the logs for more details.
+            .
+          COLOR: danger
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack.outputs.SLACK_THREAD_TS }}
