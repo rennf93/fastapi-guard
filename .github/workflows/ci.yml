@@ -24,6 +24,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Wait based on Python version
+        run: |
+          if [ "${{ matrix.python-version }}" = "3.10" ]; then
+            sleep 2
+          elif [ "${{ matrix.python-version }}" = "3.11" ]; then
+            sleep 4
+          elif [ "${{ matrix.python-version }}" = "3.12" ]; then
+            sleep 6
+          fi
+
       - name: Send Initial Slack Message
         id: send_initial_slack
         uses: rennf93/good-comms@master
@@ -48,11 +63,6 @@ jobs:
               ${{ github.event.head_commit.message }}
             .
           COLOR: warning
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: |
