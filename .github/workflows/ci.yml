@@ -11,12 +11,9 @@ on:
 jobs:
   notify-start:
     runs-on: ubuntu-latest
-    outputs:
-      # thread_ts: ${{ steps.send_initial_slack.outputs.SLACK_THREAD_TS }}
-      thread_ts: ${{ steps.send_initial_slack.outputs.SLACK_MESSAGE_ID }}
     steps:
       - name: Send Initial Slack Message
-        id: send_initial_slack
+        id: send_initial_slack_ci
         uses: rennf93/good-comms@master
         with:
           SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
@@ -113,7 +110,7 @@ jobs:
               ${{ github.event.head_commit.url }}
             .
           COLOR: good
-          SLACK_THREAD_TS: ${{ needs.notify-start.outputs.thread_ts }}
+          SLACK_THREAD_TS: ${{ needs.notify-start.outputs.send_initial_slack_ci.SLACK_THREAD_TS }}
 
       - name: Send Failure Notification to Slack
         if: ${{ needs.test.result == 'failure' }}
@@ -144,4 +141,4 @@ jobs:
             Please check the logs for more details.
             .
           COLOR: danger
-          SLACK_THREAD_TS: ${{ needs.notify-start.outputs.thread_ts }}
+          SLACK_THREAD_TS: ${{ needs.notify-start.outputs.send_initial_slack_ci.SLACK_THREAD_TS }}
