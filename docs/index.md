@@ -1,3 +1,9 @@
+---
+title: FastAPI Guard - Security Middleware for FastAPI
+description: Comprehensive security library for FastAPI applications providing IP control, request logging, and penetration detection
+keywords: fastapi, security, middleware, python, ip control
+---
+
 # FastAPI Guard
 
 ![FastAPI Guard Logo](assets/big_logo.svg)

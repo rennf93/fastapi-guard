@@ -1,3 +1,9 @@
+---
+title: Rate Limiting - FastAPI Guard
+description: Protect your FastAPI application from abuse with configurable rate limiting and request throttling
+keywords: rate limiting, api throttling, request limiting, ddos protection
+---
+
 # Rate Limiting
 
 FastAPI Guard includes built-in rate limiting to protect your API from abuse.

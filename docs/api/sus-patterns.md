@@ -1,3 +1,9 @@
+---
+title: SusPatterns API - FastAPI Guard
+description: API documentation for FastAPI Guard's suspicious pattern detection and management system
+keywords: security patterns, threat detection, pattern management, security rules api
+---
+
 # SusPatterns
 
 The `SusPatterns` class manages suspicious patterns for security threat detection.

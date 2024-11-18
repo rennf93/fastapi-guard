@@ -1,3 +1,9 @@
+---
+title: IP Banning - FastAPI Guard
+description: Implement automatic and manual IP banning in FastAPI applications using FastAPI Guard's IPBanManager
+keywords: ip banning, ip blocking, security middleware, fastapi security
+---
+
 # IP Banning
 
 FastAPI Guard provides powerful IP banning capabilities through the `IPBanManager`.

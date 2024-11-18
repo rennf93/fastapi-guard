@@ -1,3 +1,9 @@
+---
+title: Getting Started with FastAPI Guard
+description: First steps guide for implementing FastAPI Guard security features in your FastAPI application
+keywords: fastapi security tutorial, fastapi guard setup, python security middleware
+---
+
 # First Steps
 
 Let's start with a simple example that shows how to add FastAPI Guard to your application.

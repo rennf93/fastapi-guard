@@ -1,3 +1,9 @@
+---
+title: Logging Configuration - FastAPI Guard
+description: Configure security event logging and monitoring in FastAPI Guard with custom log formats and levels
+keywords: fastapi logging, security logging, event monitoring, log configuration
+---
+
 # Logging Configuration
 
 FastAPI Guard provides detailed logging capabilities for security events.

@@ -1,3 +1,9 @@
+---
+title: Penetration Detection - FastAPI Guard
+description: Detect and prevent common attack patterns including SQL injection, XSS, and other security threats
+keywords: penetration detection, attack prevention, security patterns, threat detection
+---
+
 # Penetration Detection
 
 FastAPI Guard includes sophisticated penetration attempt detection to identify and block malicious requests.

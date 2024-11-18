@@ -1,3 +1,9 @@
+---
+title: CORS Configuration - FastAPI Guard
+description: Learn how to configure Cross-Origin Resource Sharing (CORS) settings in FastAPI Guard for secure API access
+keywords: fastapi cors, cors configuration, api security, cross origin resource sharing
+---
+
 # CORS Configuration
 
 FastAPI Guard provides comprehensive CORS (Cross-Origin Resource Sharing) configuration options.

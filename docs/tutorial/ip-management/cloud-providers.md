@@ -1,3 +1,9 @@
+---
+title: Cloud Provider IP Blocking - FastAPI Guard
+description: Block requests from major cloud providers like AWS, GCP, and Azure using FastAPI Guard's IP management
+keywords: cloud ip blocking, aws blocking, gcp blocking, azure blocking, cloud security
+---
+
 # Cloud Provider IP Blocking
 
 FastAPI Guard can automatically detect and block requests from major cloud providers.

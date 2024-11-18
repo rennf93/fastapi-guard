@@ -124,6 +124,19 @@ extra:
             Thanks for your feedback! Help us improve by using our
             <a href="https://github.com/rennf93/fastapi-guard/issues/new">issue tracker</a>.
 
+  generator: false
+  meta:
+    - property: og:type
+      content: website
+    - property: og:title
+      content: FastAPI Guard - Security Middleware for FastAPI
+    - property: og:description
+      content: Comprehensive security library for FastAPI applications providing IP control, request logging, and penetration detection
+    - property: og:image
+      content: https://rennf93.github.io/fastapi-guard/assets/big_logo.svg
+    - name: keywords
+      content: fastapi, security, middleware, python, ip control, rate limiting, penetration detection
+
   version:
     provider: mike
     default: latest

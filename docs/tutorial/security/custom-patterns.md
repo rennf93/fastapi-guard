@@ -1,3 +1,9 @@
+---
+title: Custom Security Patterns - FastAPI Guard
+description: Create and manage custom security patterns for detecting specific threats in your FastAPI application
+keywords: security patterns, custom detection, threat patterns, security rules
+---
+
 # Custom Patterns
 
 FastAPI Guard allows you to add custom patterns for detecting suspicious activity.

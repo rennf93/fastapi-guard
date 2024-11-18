@@ -1,3 +1,9 @@
+---
+title: SecurityMiddleware API - FastAPI Guard
+description: Complete API reference for FastAPI Guard's SecurityMiddleware class and its configuration options
+keywords: security middleware, fastapi middleware, api security, middleware configuration
+---
+
 # SecurityMiddleware
 
 The `SecurityMiddleware` class is the core component of FastAPI Guard that handles all security features.

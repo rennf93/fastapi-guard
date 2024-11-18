@@ -1,3 +1,9 @@
+---
+title: CloudIPRanges API - FastAPI Guard
+description: API reference for managing and detecting IP addresses from major cloud providers
+keywords: cloud ip detection, aws ip ranges, gcp ip ranges, azure ip ranges
+---
+
 # CloudIPRanges
 
 The `CloudIPRanges` class manages detection of IP addresses from major cloud providers.

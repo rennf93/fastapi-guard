@@ -1,3 +1,9 @@
+---
+title: IPInfoDB API - FastAPI Guard
+description: API documentation for IP geolocation and country-based filtering using IPInfo's database
+keywords: ip geolocation, country filtering, ipinfo integration, location detection
+---
+
 # IPInfoDB
 
 The `IPInfoDB` class handles IP geolocation using IPInfo's database.

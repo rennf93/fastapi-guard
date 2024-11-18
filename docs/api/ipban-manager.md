@@ -1,3 +1,9 @@
+---
+title: IPBanManager API - FastAPI Guard
+description: API reference for FastAPI Guard's IP banning system, including automatic and manual IP management
+keywords: ip ban api, ban management, ip blocking api, security api
+---
+
 # IPBanManager
 
 The `IPBanManager` class handles temporary IP bans in your FastAPI application.

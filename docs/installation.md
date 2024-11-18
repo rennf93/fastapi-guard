@@ -1,3 +1,9 @@
+---
+title: Installation - FastAPI Guard
+description: Learn how to install and set up FastAPI Guard, a comprehensive security middleware for FastAPI applications
+keywords: fastapi guard installation, python security middleware, fastapi security setup
+---
+
 # Installation
 
 Install `fastapi-guard` using pip:

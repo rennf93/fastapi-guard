@@ -1,3 +1,9 @@
+---
+title: API Reference - FastAPI Guard
+description: Complete API documentation for FastAPI Guard security middleware and its components
+keywords: fastapi guard api, security middleware api, python api reference
+---
+
 # API Reference Overview
 
 FastAPI Guard consists of several core components:

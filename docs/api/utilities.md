@@ -1,3 +1,9 @@
+---
+title: Utilities API - FastAPI Guard
+description: Helper functions and utilities for logging, security checks, and request handling in FastAPI Guard
+keywords: security utilities, logging functions, security checks, request handling
+---
+
 # Utilities
 
 The `utils` module provides various helper functions for security operations.

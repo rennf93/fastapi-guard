@@ -1,3 +1,9 @@
+---
+title: IP Geolocation - FastAPI Guard
+description: Configure country-based IP filtering and geolocation features using IPInfo's database in FastAPI Guard
+keywords: ip geolocation, country blocking, ipinfo integration, location filtering
+---
+
 # IP Geolocation
 
 FastAPI Guard uses IPInfo's database for IP geolocation and country-based filtering.
