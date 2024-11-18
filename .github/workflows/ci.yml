@@ -31,11 +31,11 @@ jobs:
       - name: Wait based on Python version
         run: |
           if [ "${{ matrix.python-version }}" = "3.10" ]; then
-            sleep 1
+            sleep 120
           elif [ "${{ matrix.python-version }}" = "3.11" ]; then
-            sleep 5
+            sleep 60
           elif [ "${{ matrix.python-version }}" = "3.12" ]; then
-            sleep 10
+            sleep 1
           fi
 
       - name: Send Initial Slack Message
