@@ -18,13 +18,13 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12']
+      max-parallel: 1
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Send Initial Slack Message
-        if: matrix.python-version == '3.12'
         id: send_initial_slack
         uses: rennf93/good-comms@master
         with:
@@ -76,7 +76,6 @@ jobs:
           black .
 
       - name: Notify Success on Slack Channel
-        if: success() && matrix.python-version == '3.12'
         uses: rennf93/good-comms@master
         with:
           SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
@@ -100,7 +99,7 @@ jobs:
           SLACK_THREAD_TS: ${{ steps.send_initial_slack.outputs.SLACK_THREAD_TS }}
 
       - name: Send Failure Notification to Slack
-        if: failure() && matrix.python-version == '3.12'
+        if: failure()
         uses: rennf93/good-comms@master
         with:
           SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
