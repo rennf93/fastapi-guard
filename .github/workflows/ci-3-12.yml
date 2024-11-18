@@ -1,0 +1,133 @@
+name: CI Python 3.12
+
+on:
+  push:
+    branches:
+      - master
+  pull_request_target:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    permissions:
+      pull-requests: write
+
+    # strategy:
+    #   matrix:
+    #     python-version: ['3.10', '3.11', '3.12']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Send Initial Slack Message
+        id: send_initial_slack
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Started'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - CI & Tests'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':test_tube:'
+          TITLE: 'CI & Tests Started'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
+          MESSAGE: |
+            .
+            *DEPLOYMENT TRIGGERED CI & TESTS!*
+
+            Matrix:
+              Python: 3.12
+
+            Commit:
+              ${{ github.event.head_commit.message }}
+            .
+          COLOR: warning
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r reqs.pip
+          pip install -e .
+
+      - name: Run tests
+        env:
+          IPINFO_TOKEN: ${{ secrets.IPINFO_TOKEN }}
+        run: |
+          pip install pytest
+          pytest
+
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 guard/
+          flake8 handlers/
+
+      - name: Format code with black
+        run: |
+          pip install black
+          black .
+
+      - name: Notify Success on Slack Channel
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Success'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - CI & Tests'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':gem:'
+          TITLE: 'CI & Tests Successful'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
+          MESSAGE: |
+            .
+            Matrix:
+              Python: 3.12
+
+            Commit message:
+              ${{ github.event.head_commit.message }}
+
+            Commit URL:
+              ${{ github.event.head_commit.url }}
+            .
+          COLOR: good
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack.outputs.SLACK_THREAD_TS }}
+
+      - name: Send Failure Notification to Slack
+        if: failure()
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Failed'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - CI & Tests'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':skull:'
+          TITLE: 'CI & Tests Failed'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
+          MESSAGE: |
+            .
+            Matrix:
+              Python: 3.12
+
+            CI & Tests failed for commit:
+              ${{ github.event.head_commit.message }}
+
+            Commit URL:
+              ${{ github.event.head_commit.url }}
+
+            Please check the logs for more details.
+            .
+          COLOR: danger
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack.outputs.SLACK_THREAD_TS }}
