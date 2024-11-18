@@ -41,6 +41,9 @@ jobs:
             .
             *DEPLOYMENT TRIGGERED CI & TESTS!*
 
+            Matrix:
+              Python: ${{ matrix.python-version }}
+
             Commit:
               ${{ github.event.head_commit.message }}
             .
@@ -89,6 +92,9 @@ jobs:
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
+            Matrix:
+              Python: ${{ matrix.python-version }}
+
             Commit message:
               ${{ github.event.head_commit.message }}
 
@@ -113,6 +119,9 @@ jobs:
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
+            Matrix:
+              Python: ${{ matrix.python-version }}
+
             CI & Tests failed for commit:
               ${{ github.event.head_commit.message }}
 
