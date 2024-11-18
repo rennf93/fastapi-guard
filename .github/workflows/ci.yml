@@ -1,4 +1,4 @@
-name: CI Python 3.10
+name: CI
 
 on:
   push:
@@ -15,6 +15,10 @@ jobs:
     permissions:
       pull-requests: write
 
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,17 +31,17 @@ jobs:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           STATUS: 'Started'
           CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
-          AUTHOR_NAME: 'FastAPI Guard - CI & Tests - Py3.10'
+          AUTHOR_NAME: 'FastAPI Guard - CI & Tests - Py${{ matrix.python-version }}'
           AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
           AUTHOR_ICON: ':test_tube:'
-          TITLE: 'CI & Tests Started - Py3.10'
+          TITLE: 'CI & Tests Started - Py${{ matrix.python-version }}'
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
-            *DEPLOYMENT TRIGGERED CI & TESTS!*
-
             Matrix:
-              Python: 3.10
+              Python: ${{ matrix.python-version }}
+
+            *DEPLOYMENT TRIGGERED CI & TESTS!*
 
             Commit:
               ${{ github.event.head_commit.message }}
@@ -47,7 +51,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: |
@@ -80,15 +84,15 @@ jobs:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           STATUS: 'Success'
           CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
-          AUTHOR_NAME: 'FastAPI Guard - CI & Tests - Py3.10'
+          AUTHOR_NAME: 'FastAPI Guard - CI & Tests - Py${{ matrix.python-version }}'
           AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
           AUTHOR_ICON: ':gem:'
-          TITLE: 'CI & Tests Successful - Py3.10'
+          TITLE: 'CI & Tests Successful - Py${{ matrix.python-version }}'
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
             Matrix:
-              Python: 3.10
+              Python: ${{ matrix.python-version }}
 
             Commit message:
               ${{ github.event.head_commit.message }}
@@ -107,15 +111,15 @@ jobs:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           STATUS: 'Failed'
           CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
-          AUTHOR_NAME: 'FastAPI Guard - CI & Tests - Py3.10'
+          AUTHOR_NAME: 'FastAPI Guard - CI & Tests - Py${{ matrix.python-version }}'
           AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
           AUTHOR_ICON: ':skull:'
-          TITLE: 'CI & Tests Failed - Py3.10'
+          TITLE: 'CI & Tests Failed - Py${{ matrix.python-version }}'
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
             Matrix:
-              Python: 3.10
+              Python: ${{ matrix.python-version }}
 
             CI & Tests failed for commit:
               ${{ github.event.head_commit.message }}
