@@ -24,17 +24,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Send Initial Slack Message
-        id: send_initial_slack
+        id: send_initial_slack_ci
         uses: rennf93/good-comms@master
         with:
           SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           STATUS: 'Started'
           CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
-          AUTHOR_NAME: 'FastAPI Guard - CI & Tests'
+          AUTHOR_NAME: 'FastAPI Guard - CI & Tests - Py3.12'
           AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
           AUTHOR_ICON: ':test_tube:'
-          TITLE: 'CI & Tests Started'
+          TITLE: 'CI & Tests Started - Py3.12'
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
@@ -84,10 +84,10 @@ jobs:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           STATUS: 'Success'
           CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
-          AUTHOR_NAME: 'FastAPI Guard - CI & Tests'
+          AUTHOR_NAME: 'FastAPI Guard - CI & Tests - Py3.12'
           AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
           AUTHOR_ICON: ':gem:'
-          TITLE: 'CI & Tests Successful'
+          TITLE: 'CI & Tests Successful - Py3.12'
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
@@ -101,7 +101,7 @@ jobs:
               ${{ github.event.head_commit.url }}
             .
           COLOR: good
-          SLACK_THREAD_TS: ${{ steps.send_initial_slack.outputs.SLACK_THREAD_TS }}
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack_ci.outputs.SLACK_THREAD_TS }}
 
       - name: Send Failure Notification to Slack
         if: failure()
@@ -111,10 +111,10 @@ jobs:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           STATUS: 'Failed'
           CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
-          AUTHOR_NAME: 'FastAPI Guard - CI & Tests'
+          AUTHOR_NAME: 'FastAPI Guard - CI & Tests - Py3.12'
           AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
           AUTHOR_ICON: ':skull:'
-          TITLE: 'CI & Tests Failed'
+          TITLE: 'CI & Tests Failed - Py3.12'
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
@@ -130,4 +130,4 @@ jobs:
             Please check the logs for more details.
             .
           COLOR: danger
-          SLACK_THREAD_TS: ${{ steps.send_initial_slack.outputs.SLACK_THREAD_TS }}
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack_ci.outputs.SLACK_THREAD_TS }}
