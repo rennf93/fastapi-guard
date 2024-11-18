@@ -1,0 +1,140 @@
+site_name: FastAPI Guard
+site_description: Security middleware for FastAPI applications
+site_url: https://rennf93.github.io/fastapi-guard
+repo_name: rennf93/fastapi-guard
+repo_url: https://github.com/rennf93/fastapi-guard
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: dark-blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: dark-blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - search.highlight
+    - search.share
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+  logo: assets/logo.svg
+  favicon: assets/favicon.png
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Tutorial - User Guide:
+    - First Steps: tutorial/first-steps.md
+    - IP Management:
+      - IP Banning: tutorial/ip-management/banning.md
+      - Geolocation: tutorial/ip-management/geolocation.md
+      - Cloud Providers: tutorial/ip-management/cloud-providers.md
+    - Security Features:
+      - Rate Limiting: tutorial/security/rate-limiting.md
+      - Penetration Detection: tutorial/security/penetration-detection.md
+      - Custom Patterns: tutorial/security/custom-patterns.md
+    - Configuration:
+      - CORS: tutorial/configuration/cors.md
+      - Logging: tutorial/configuration/logging.md
+  - API Reference:
+    - Overview: api/overview.md
+    - SecurityMiddleware: api/security-middleware.md
+    - IPBanManager: api/ipban-manager.md
+    - IPInfoDB: api/ipinfo-db.md
+    - SusPatterns: api/sus-patterns.md
+    - CloudIPRanges: api/cloud-ip-ranges.md
+    - Utilities: api/utilities.md
+  - Release Notes: release-notes.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+  - def_list
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [guard]
+          options:
+            show_source: true
+            show_root_heading: true
+            heading_level: 2
+            docstring_style: google
+            show_if_no_docstring: true
+            filters: ["!^_"]
+            merge_init_into_class: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/rennf93/fastapi-guard
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/fastapi-guard/
+
+  analytics:
+    provider: google
+    property: !ENV GOOGLE_ANALYTICS_KEY
+    feedback:
+      title: Was this page helpful?
+      ratings:
+        - icon: material/emoticon-happy-outline
+          name: This page was helpful
+          data: 1
+          note: >-
+            Thanks for your feedback!
+        - icon: material/emoticon-sad-outline
+          name: This page could be improved
+          data: 0
+          note: >-
+            Thanks for your feedback! Help us improve by using our
+            <a href="https://github.com/rennf93/fastapi-guard/issues/new">issue tracker</a>.
+
+  version:
+    provider: mike
+    default: latest
+    version_selector: true
+    json_file: /fastapi-guard/versions.json
+
+  author:
+    name: Renzo Franceschini
+    url: https://github.com/rennf93
+
+copyright: FastAPI Guard by
+
+extra_css:
+  - css/custom.css

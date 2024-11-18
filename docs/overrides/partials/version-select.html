@@ -1,0 +1,12 @@
+{% if config.extra.version %}
+  <div class="md-version">
+    <button class="md-version__current" disabled>
+      v{{ config.extra.version.default }}
+    </button>
+    <ul class="md-version__list">
+      <li class="md-version__item">
+        <a href="../fastapi-guard/" class="md-version__link">0.3.2</a>
+      </li>
+    </ul>
+  </div>
+{% endif %}
