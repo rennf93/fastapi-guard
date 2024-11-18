@@ -28,6 +28,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Wait based on Python version
+        run: |
+          if [ "${{ matrix.python-version }}" = "3.10" ]; then
+            sleep 1
+          elif [ "${{ matrix.python-version }}" = "3.11" ]; then
+            sleep 5
+          elif [ "${{ matrix.python-version }}" = "3.12" ]; then
+            sleep 10
+          fi
+
       - name: Send Initial Slack Message
         id: send_initial_slack_ci
         uses: rennf93/good-comms@master
