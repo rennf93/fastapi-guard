@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Send Initial Slack Message
-        id: send_initial_slack
+        id: send_initial_slack_release
         uses: rennf93/good-comms@master
         with:
           SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
@@ -76,7 +76,7 @@ jobs:
               ${{ github.event.head_commit.url }}
             .
           COLOR: good
-          SLACK_THREAD_TS: ${{ steps.send_initial_slack.outputs.SLACK_THREAD_TS }}
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack_release.outputs.SLACK_THREAD_TS }}
 
       - name: Send Failure Notification to Slack
         if: failure()
@@ -102,4 +102,4 @@ jobs:
             Please check the logs for more details.
             .
           COLOR: danger
-          SLACK_THREAD_TS: ${{ steps.send_initial_slack.outputs.SLACK_THREAD_TS }}
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack_release.outputs.SLACK_THREAD_TS }}
