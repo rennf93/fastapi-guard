@@ -9,36 +9,11 @@ on:
       - master
 
 jobs:
-  test:
+  notify-start:
     runs-on: ubuntu-latest
-
-    permissions:
-      pull-requests: write
-
-    strategy:
-      matrix:
-        python-version: ['3.10', '3.11', '3.12']
-      # max-parallel: 1
-
+    outputs:
+      thread_ts: ${{ steps.send_initial_slack.outputs.SLACK_THREAD_TS }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Wait based on Python version
-        run: |
-          if [ "${{ matrix.python-version }}" = "3.10" ]; then
-            sleep 2
-          elif [ "${{ matrix.python-version }}" = "3.11" ]; then
-            sleep 4
-          elif [ "${{ matrix.python-version }}" = "3.12" ]; then
-            sleep 6
-          fi
-
       - name: Send Initial Slack Message
         id: send_initial_slack
         uses: rennf93/good-comms@master
@@ -57,12 +32,32 @@ jobs:
             *DEPLOYMENT TRIGGERED CI & TESTS!*
 
             Matrix:
-              Python: ${{ matrix.python-version }}
+              Python: [ 3.10, 3.11, 3.12 ]
 
             Commit:
               ${{ github.event.head_commit.message }}
             .
           COLOR: warning
+
+  test:
+    runs-on: ubuntu-latest
+    needs: notify-start
+
+    permissions:
+      pull-requests: write
+
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: |
@@ -88,7 +83,13 @@ jobs:
           pip install black
           black .
 
+  notify-result:
+    runs-on: ubuntu-latest
+    needs: [notify-start, test]
+    if: always()
+    steps:
       - name: Notify Success on Slack Channel
+        if: ${{ needs.test.result == 'success' }}
         uses: rennf93/good-comms@master
         with:
           SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
@@ -102,8 +103,7 @@ jobs:
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
-            Matrix:
-              Python: ${{ matrix.python-version }}
+            All Python versions passed successfully!
 
             Commit message:
               ${{ github.event.head_commit.message }}
@@ -112,10 +112,10 @@ jobs:
               ${{ github.event.head_commit.url }}
             .
           COLOR: good
-          SLACK_THREAD_TS: ${{ steps.send_initial_slack.outputs.SLACK_THREAD_TS }}
+          SLACK_THREAD_TS: ${{ needs.notify-start.outputs.thread_ts }}
 
       - name: Send Failure Notification to Slack
-        if: failure()
+        if: ${{ needs.test.result == 'failure' }}
         uses: rennf93/good-comms@master
         with:
           SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
@@ -129,10 +129,12 @@ jobs:
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
-            Matrix:
-              Python: ${{ matrix.python-version }}
+            Tests failed!
 
-            CI & Tests failed for commit:
+            Matrix Results:
+            ${{ join(needs.test.result) }}
+
+            Commit message:
               ${{ github.event.head_commit.message }}
 
             Commit URL:
@@ -141,4 +143,4 @@ jobs:
             Please check the logs for more details.
             .
           COLOR: danger
-          SLACK_THREAD_TS: ${{ steps.send_initial_slack.outputs.SLACK_THREAD_TS }}
+          SLACK_THREAD_TS: ${{ needs.notify-start.outputs.thread_ts }}
