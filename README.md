@@ -1,7 +1,5 @@
 ![FastAPI Guard Logo](docs/assets/big_logo.svg)
 
----
-
 [![PyPI version](https://badge.fury.io/py/fastapi-guard.svg?cache=none)](https://badge.fury.io/py/fastapi-guard)
 [![Release](https://github.com/rennf93/fastapi-guard/actions/workflows/release.yml/badge.svg)](https://github.com/rennf93/fastapi-guard/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -13,6 +11,8 @@
 [![Downloads](https://pepy.tech/badge/fastapi-guard)](https://pepy.tech/project/fastapi-guard)
 
 `fastapi-guard` is a security library for FastAPI that provides middleware to control IPs, log requests, and detect penetration attempts. It integrates seamlessly with FastAPI to offer robust protection against various security threats.
+
+---
 
 ## Documentation
 
