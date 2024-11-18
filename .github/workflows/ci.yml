@@ -12,7 +12,8 @@ jobs:
   notify-start:
     runs-on: ubuntu-latest
     outputs:
-      thread_ts: ${{ steps.send_initial_slack.outputs.SLACK_THREAD_TS }}
+      # thread_ts: ${{ steps.send_initial_slack.outputs.SLACK_THREAD_TS }}
+      thread_ts: ${{ steps.send_initial_slack.outputs.SLACK_MESSAGE_ID }}
     steps:
       - name: Send Initial Slack Message
         id: send_initial_slack
