@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://rennf93.github.io/fastapi-guard/latest/0.3.2/api/utilities/">
       
       
-        <link rel="prev" href="../cloud-ip-ranges/">
+        <link rel="prev" href="../cloud-manager/">
       
       
         <link rel="next" href="../../release-notes/">
@@ -996,11 +996,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../cloud-ip-ranges/" class="md-nav__link">
+      <a href="../cloud-manager/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    CloudIPRanges
+    CloudManager
   </span>
   
 
@@ -1390,7 +1390,7 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">check_ip_country</span><span class="p">(</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">request</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Request</span><span class="p">],</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">config</span><span class="p">:</span> <span class="n">SecurityConfig</span><span class="p">,</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">ipinfo_db</span><span class="p">:</span> <span class="n">IPInfoDB</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">ipinfo_db</span><span class="p">:</span> <span class="n">IPInfoManager</span>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="sd">    Check if IP is from a blocked country.</span>
@@ -1400,7 +1400,7 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">is_ip_allowed</span><span class="p">(</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">config</span><span class="p">:</span> <span class="n">SecurityConfig</span><span class="p">,</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">ipinfo_db</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">IPInfoDB</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">ipinfo_db</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">IPInfoManager</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="sd">    Check if IP address is allowed.</span>

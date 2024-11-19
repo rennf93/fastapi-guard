@@ -1063,11 +1063,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../cloud-ip-ranges/" class="md-nav__link">
+      <a href="../cloud-manager/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    CloudIPRanges
+    CloudManager
   </span>
   
 
@@ -1202,18 +1202,18 @@
 <ul>
 <li><strong>SecurityMiddleware</strong>: The main middleware that handles all security features</li>
 <li><strong>IPBanManager</strong>: Manages IP banning functionality</li>
-<li><strong>IPInfoDB</strong>: Handles IP geolocation using IPInfo's database</li>
+<li><strong>IPInfoManager</strong>: Handles IP geolocation using IPInfo's database</li>
 <li><strong>SusPatterns</strong>: Manages suspicious patterns for threat detection</li>
-<li><strong>CloudIPRanges</strong>: Handles cloud provider IP range detection</li>
+<li><strong>CloudManager</strong>: Handles cloud provider IP range detection</li>
 <li><strong>Utilities</strong>: Helper functions for logging and request analysis</li>
 </ul>
 <h2 id="key-classes">Key Classes<a class="headerlink" href="#key-classes" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">guard.middleware</span> <span class="kn">import</span> <span class="n">SecurityMiddleware</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span> <span class="nn">guard.models</span> <span class="kn">import</span> <span class="n">SecurityConfig</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span> <span class="nn">guard.handlers.ipban_handler</span> <span class="kn">import</span> <span class="n">IPBanManager</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span> <span class="nn">guard.handlers.ipinfo_handler</span> <span class="kn">import</span> <span class="n">IPInfoDB</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="kn">from</span> <span class="nn">guard.sus_patterns</span> <span class="kn">import</span> <span class="n">SusPatterns</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="kn">from</span> <span class="nn">guard.cloud_ips</span> <span class="kn">import</span> <span class="n">CloudIPRanges</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span> <span class="nn">guard.handlers.cloud_handler</span> <span class="kn">import</span> <span class="n">CloudManager</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span> <span class="nn">guard.handlers.ipban_handler</span> <span class="kn">import</span> <span class="n">IPBanManager</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="kn">from</span> <span class="nn">guard.handlers.ipinfo_handler</span> <span class="kn">import</span> <span class="n">IPInfoManager</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="kn">from</span> <span class="nn">guard.sus_patterns</span> <span class="kn">import</span> <span class="n">SusPatterns</span>
 </span></code></pre></div>
 <h2 id="configuration-model">Configuration Model<a class="headerlink" href="#configuration-model" title="Permanent link">&para;</a></h2>
 <p>The <code>SecurityConfig</code> class is the central configuration point:</p>
