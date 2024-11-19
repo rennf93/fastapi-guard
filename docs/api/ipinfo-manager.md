@@ -1,20 +1,20 @@
 ---
-title: IPInfoDB API - FastAPI Guard
+title: IPInfoManager API - FastAPI Guard
 description: API documentation for IP geolocation and country-based filtering using IPInfo's database
 keywords: ip geolocation, country filtering, ipinfo integration, location detection
 ---
 
-# IPInfoDB
+# IPInfoManager
 
-The `IPInfoDB` class handles IP geolocation using IPInfo's database.
+The `IPInfoManager` class handles IP geolocation using IPInfo's database.
 
 ## Class Definition
 
 ```python
-class IPInfoDB:
+class IPInfoManager:
     def __init__(self, token: str):
         """
-        Initialize IPInfoDB with IPInfo token.
+        Initialize IPInfoManager with IPInfo token.
         """
 ```
 
@@ -50,10 +50,10 @@ def close(self):
 ## Usage Example
 
 ```python
-from guard.handlers.ipinfo_handler import IPInfoDB
+from guard.handlers.ipinfo_handler import IPInfoManager
 
 # Initialize database
-ipinfo_db = IPInfoDB(token="your_token")
+ipinfo_db = IPInfoManager(token="your_token")
 await ipinfo_db.initialize()
 
 # Get country for IP
@@ -62,4 +62,4 @@ print(f"Country: {country}")  # Output: "US"
 
 # Clean up
 ipinfo_db.close()
-``` 
+```
