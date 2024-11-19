@@ -347,7 +347,7 @@ class SecurityConfig(BaseModel):
 
     redis_prefix: str = Field(
         default="fastapi_guard:",
-        description="Prefix for Redis keys to avoid collisions with other applications"
+        description="Prefix for Redis keys to avoid collisions with other apps"
     )
     """
     str:
