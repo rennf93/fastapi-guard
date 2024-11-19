@@ -2,7 +2,7 @@ from guard.models import SecurityConfig
 from guard.middleware import SecurityMiddleware
 from guard.sus_patterns import SusPatterns
 from handlers.ipban_handler import reset_global_state
-from handlers.ipinfo_handler import IPInfoDB
+from handlers.ipinfo_handler import IPInfoManager
 import os
 import pytest
 
@@ -69,7 +69,7 @@ async def security_middleware():
 @pytest.fixture
 async def ipinfo_db():
     """IPInfo database fixture"""
-    db = IPInfoDB(token=IPINFO_TOKEN)
+    db = IPInfoManager(token=IPINFO_TOKEN)
     await db.initialize()
     yield db
     db.close()

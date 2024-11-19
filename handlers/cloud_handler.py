@@ -70,7 +70,7 @@ def fetch_azure_ip_ranges() -> Set[ipaddress.IPv4Network]:
         return set()
 
 
-class CloudIPRanges:
+class CloudManager:
     def __init__(self):
         self.ip_ranges: Dict[str, Set[ipaddress.IPv4Network]] = {}
         self.refresh()
@@ -110,4 +110,4 @@ class CloudIPRanges:
             return False
 
 
-cloud_ip_ranges = CloudIPRanges()
+cloud_handler = CloudManager()

@@ -61,7 +61,7 @@ nav:
     - IPBanManager: api/ipban-manager.md
     - IPInfoManager: api/ipinfo-manager.md
     - SusPatterns: api/sus-patterns.md
-    - CloudIPRanges: api/cloud-ip-ranges.md
+    - CloudManager: api/cloud-manager.md
     - Utilities: api/utilities.md
   - Release Notes: release-notes.md
 

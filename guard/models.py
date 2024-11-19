@@ -336,6 +336,24 @@ class SecurityConfig(BaseModel):
         Whether to enable penetration attempt detection.
     """
 
+    redis_url: Optional[str] = Field(
+        default="redis://localhost:6379",
+        description="Redis URL for distributed state management"
+    )
+    """
+    Optional[str]:
+        The URL of the Redis server.
+    """
+
+    redis_prefix: str = Field(
+        default="fastapi_guard:",
+        description="Prefix for Redis keys to avoid collisions with other applications"
+    )
+    """
+    str:
+        The prefix for Redis keys to avoid collisions with other applications.
+    """
+
     @field_validator('whitelist', 'blacklist')
     def validate_ip_lists(cls, v: Optional[List[str]]) -> Optional[List[str]]:
         """Validate IP addresses and CIDR ranges in whitelist/blacklist."""

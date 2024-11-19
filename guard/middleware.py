@@ -1,8 +1,6 @@
 # fastapi_guard/middleware.py
 import asyncio
 from cachetools import TTLCache
-from handlers.ipban_handler import ip_ban_manager
-from handlers.ipinfo_handler import IPInfoDB
 from fastapi import (
     FastAPI,
     Request,
@@ -11,7 +9,9 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from guard.cloud_ips import cloud_ip_ranges
+from handlers.cloud_handler import cloud_handler
+from handlers.ipban_handler import ip_ban_manager
+from handlers.ipinfo_handler import IPInfoManager
 from guard.models import SecurityConfig
 from guard.utils import (
     detect_penetration_attempt,
@@ -76,7 +76,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self.request_times: Dict[str, List[float]] = {}
         self.suspicious_request_counts: Dict[str, int] = {}
         self.last_cleanup = time.time()
-        self.ipinfo_db = IPInfoDB(token=config.ipinfo_token)
+        self.ipinfo_db = IPInfoManager(token=config.ipinfo_token)
 
     async def setup_logger(self):
         if self.logger is None:
@@ -258,7 +258,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
     async def refresh_cloud_ip_ranges(self):
         await asyncio.to_thread(
-            cloud_ip_ranges.refresh
+            cloud_handler.refresh
         )
         self.last_cloud_ip_refresh = time.time()
 

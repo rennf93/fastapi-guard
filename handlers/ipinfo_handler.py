@@ -6,7 +6,7 @@ import time
 from typing import Optional
 
 
-class IPInfoDB:
+class IPInfoManager:
     """Handler for IPInfo's IP to Country ASN database"""
 
     def __init__(

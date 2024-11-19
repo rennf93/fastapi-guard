@@ -66,7 +66,7 @@ async def is_user_agent_allowed(
 async def check_ip_country(
     request: Union[str, Request],
     config: SecurityConfig,
-    ipinfo_db: IPInfoDB
+    ipinfo_db: IPInfoManager
 ) -> bool:
     """
     Check if IP is from a blocked country.
@@ -79,7 +79,7 @@ async def check_ip_country(
 async def is_ip_allowed(
     ip: str,
     config: SecurityConfig,
-    ipinfo_db: Optional[IPInfoDB] = None
+    ipinfo_db: Optional[IPInfoManager] = None
 ) -> bool:
     """
     Check if IP address is allowed.
@@ -114,4 +114,4 @@ await log_request(request, logger)
 
 # Check for penetration attempts
 is_suspicious = await detect_penetration_attempt(request)
-``` 
+```

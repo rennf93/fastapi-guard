@@ -1,9 +1,9 @@
 # fastapi_guard/utils.py
 from fastapi import Request
-from guard.cloud_ips import cloud_ip_ranges
 from guard.models import SecurityConfig
 from guard.sus_patterns import SusPatterns
-from handlers.ipinfo_handler import IPInfoDB
+from handlers.cloud_handler import cloud_handler
+from handlers.ipinfo_handler import IPInfoManager
 from ipaddress import (
     IPv4Address,
     ip_network
@@ -114,7 +114,7 @@ async def is_user_agent_allowed(
 async def check_ip_country(
     request: Union[str, Request],
     config: SecurityConfig,
-    ipinfo_db: IPInfoDB
+    ipinfo_db: IPInfoManager
 ) -> bool:
     """
     Check if IP is from a blocked country
@@ -125,7 +125,7 @@ async def check_ip_country(
             The FastAPI request object or IP string.
         config (SecurityConfig):
             The security configuration object.
-        ipinfo_db (IPInfoDB):
+        ipinfo_db (IPInfoManager):
             The IPInfo database handler.
 
     Returns:
@@ -183,7 +183,7 @@ async def check_ip_country(
 async def is_ip_allowed(
     ip: str,
     config: SecurityConfig,
-    ipinfo_db: Optional[IPInfoDB] = None
+    ipinfo_db: Optional[IPInfoManager] = None
 ) -> bool:
     """
     Check if the IP address is allowed
@@ -194,7 +194,7 @@ async def is_ip_allowed(
             The IP address to check.
         config (SecurityConfig):
             The security configuration object.
-        ipinfo_db (Optional[IPInfoDB]):
+        ipinfo_db (Optional[IPInfoManager]):
             The IPInfo database handler.
 
     Returns:
@@ -240,7 +240,7 @@ async def is_ip_allowed(
                 return False
 
         # Cloud providers
-        if config.block_cloud_providers and cloud_ip_ranges.is_cloud_ip(
+        if config.block_cloud_providers and cloud_handler.is_cloud_ip(
             ip,
             config.block_cloud_providers
         ):

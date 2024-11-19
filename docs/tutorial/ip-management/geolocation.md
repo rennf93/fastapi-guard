@@ -55,16 +55,16 @@ config = SecurityConfig(
 
 ## Custom Geolocation Logic
 
-You can also use the `IPInfoDB` directly for custom geolocation logic:
+You can also use the `IPInfoManager` directly for custom geolocation logic:
 
 ```python
-from guard.handlers.ipinfo_handler import IPInfoDB
+from guard.handlers.ipinfo_handler import IPInfoManager
 
-ipinfo_db = IPInfoDB(token="your_ipinfo_token_here")
+ipinfo_db = IPInfoManager(token="your_ipinfo_token_here")
 await ipinfo_db.initialize()
 
 @app.get("/country/{ip}")
 async def get_ip_country(ip: str):
     country = ipinfo_db.get_country(ip)
     return {"ip": ip, "country": country}
-``` 
+```

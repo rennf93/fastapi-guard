@@ -1,5 +1,4 @@
 from fastapi import Request
-from guard.utils import cloud_ip_ranges
 from guard.models import SecurityConfig
 from guard.utils import (
     is_ip_allowed,
@@ -7,6 +6,7 @@ from guard.utils import (
     detect_penetration_attempt,
     check_ip_country,
 )
+from handlers.cloud_handler import cloud_handler
 import os
 import pytest
 from unittest.mock import patch
@@ -414,7 +414,7 @@ async def test_detect_penetration_attempt_http_header_injection():
 @pytest.mark.asyncio
 async def test_get_ip_country(mocker):
     """Test the get_ip_country function."""
-    mock_ipinfo = mocker.patch("handlers.ipinfo_handler.IPInfoDB")
+    mock_ipinfo = mocker.patch("handlers.ipinfo_handler.IPInfoManager")
     mock_db = mock_ipinfo.return_value
     mock_db.get_country.return_value = "US"
     mock_db.reader = True  # Mock initialized reader
@@ -453,7 +453,7 @@ async def test_is_ip_allowed_cloud_providers(
         return_value=True
     )
     mocker.patch.object(
-        cloud_ip_ranges,
+        cloud_handler,
         "is_cloud_ip",
         side_effect=lambda ip,
         providers: ip.startswith("13."),
@@ -487,9 +487,9 @@ async def test_check_ip_country():
         whitelist_countries=["US"]
     )
 
-    # Mock IPInfoDB
-    with patch("handlers.ipinfo_handler.IPInfoDB") as MockIPInfoDB:
-        mock_db = MockIPInfoDB.return_value
+    # Mock IPInfoManager
+    with patch("handlers.ipinfo_handler.IPInfoManager") as MockIPInfoManager:
+        mock_db = MockIPInfoManager.return_value
         mock_db.get_country.return_value = "CN"
 
         request = Request(

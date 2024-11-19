@@ -12,9 +12,9 @@ FastAPI Guard consists of several core components:
 
 - **SecurityMiddleware**: The main middleware that handles all security features
 - **IPBanManager**: Manages IP banning functionality
-- **IPInfoDB**: Handles IP geolocation using IPInfo's database
+- **IPInfoManager**: Handles IP geolocation using IPInfo's database
 - **SusPatterns**: Manages suspicious patterns for threat detection
-- **CloudIPRanges**: Handles cloud provider IP range detection
+- **CloudManager**: Handles cloud provider IP range detection
 - **Utilities**: Helper functions for logging and request analysis
 
 ## Key Classes
@@ -22,10 +22,10 @@ FastAPI Guard consists of several core components:
 ```python
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
+from guard.handlers.cloud_handler import CloudManager
 from guard.handlers.ipban_handler import IPBanManager
-from guard.handlers.ipinfo_handler import IPInfoDB
+from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.sus_patterns import SusPatterns
-from guard.cloud_ips import CloudIPRanges
 ```
 
 ## Configuration Model
@@ -50,4 +50,4 @@ class SecurityConfig:
         # ... other parameters
     ):
         # ... initialization
-``` 
+```

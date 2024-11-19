@@ -1,10 +1,10 @@
 import asyncio
 from fastapi import FastAPI, status
-from httpx import AsyncClient
-from httpx._transports.asgi import ASGITransport
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
 from handlers.ipban_handler import IPBanManager, ip_ban_manager
+from httpx import AsyncClient
+from httpx._transports.asgi import ASGITransport
 import os
 import pytest
 

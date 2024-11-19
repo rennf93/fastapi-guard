@@ -86,4 +86,4 @@ config = SecurityConfig(
 )
 
 app.add_middleware(SecurityMiddleware, config=config)
-``` 
+```

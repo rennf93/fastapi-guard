@@ -1,5 +1,5 @@
-from guard.cloud_ips import (
-    CloudIPRanges,
+from handlers.cloud_handler import (
+    CloudManager,
     fetch_aws_ip_ranges,
     fetch_gcp_ip_ranges,
     fetch_azure_ip_ranges,
@@ -11,7 +11,7 @@ from unittest.mock import patch, Mock
 
 @pytest.fixture
 def mock_requests_get():
-    with patch("guard.cloud_ips.requests.get") as mock_get:
+    with patch("handlers.cloud_handler.requests.get") as mock_get:
         yield mock_get
 
 
@@ -63,15 +63,15 @@ def test_fetch_azure_ip_ranges(mock_requests_get):
 
 
 def test_cloud_ip_ranges():
-    with patch("guard.cloud_ips.fetch_aws_ip_ranges") as mock_aws, patch(
-        "guard.cloud_ips.fetch_gcp_ip_ranges"
-    ) as mock_gcp, patch("guard.cloud_ips.fetch_azure_ip_ranges") as mock_azure:
+    with patch("handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws, \
+        patch("handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp, \
+        patch("handlers.cloud_handler.fetch_azure_ip_ranges") as mock_azure:
 
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
         mock_gcp.return_value = {ipaddress.IPv4Network("172.16.0.0/12")}
         mock_azure.return_value = {ipaddress.IPv4Network("10.0.0.0/8")}
 
-        cloud_ranges = CloudIPRanges()
+        cloud_ranges = CloudManager()
 
         assert cloud_ranges.is_cloud_ip("192.168.0.1", {"AWS"})
         assert not cloud_ranges.is_cloud_ip("192.168.0.1", {"GCP"})
@@ -82,15 +82,15 @@ def test_cloud_ip_ranges():
 
 @pytest.mark.asyncio
 async def test_cloud_ip_refresh():
-    with patch("guard.cloud_ips.fetch_aws_ip_ranges") as mock_aws, patch(
-        "guard.cloud_ips.fetch_gcp_ip_ranges"
-    ) as mock_gcp, patch("guard.cloud_ips.fetch_azure_ip_ranges") as mock_azure:
+    with patch("handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws, \
+        patch("handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp, \
+        patch("handlers.cloud_handler.fetch_azure_ip_ranges") as mock_azure:
 
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
         mock_gcp.return_value = {ipaddress.IPv4Network("172.16.0.0/12")}
         mock_azure.return_value = {ipaddress.IPv4Network("10.0.0.0/8")}
 
-        cloud_ranges = CloudIPRanges()
+        cloud_ranges = CloudManager()
         assert cloud_ranges.is_cloud_ip("192.168.0.1", {"AWS"})
 
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.1.0/24")}
@@ -102,14 +102,17 @@ async def test_cloud_ip_refresh():
 
 def test_cloud_ip_ranges_error_handling():
     with patch(
-        "guard.cloud_ips.fetch_aws_ip_ranges", side_effect=Exception("AWS error")
+        "handlers.cloud_handler.fetch_aws_ip_ranges",
+        side_effect=Exception("AWS error")
     ), patch(
-        "guard.cloud_ips.fetch_gcp_ip_ranges", side_effect=Exception("GCP error")
+        "handlers.cloud_handler.fetch_gcp_ip_ranges",
+        side_effect=Exception("GCP error")
     ), patch(
-        "guard.cloud_ips.fetch_azure_ip_ranges", side_effect=Exception("Azure error")
+        "handlers.cloud_handler.fetch_azure_ip_ranges",
+        side_effect=Exception("Azure error")
     ):
 
-        cloud_ranges = CloudIPRanges()
+        cloud_ranges = CloudManager()
 
         assert not cloud_ranges.is_cloud_ip("192.168.0.1", {"AWS"})
         assert not cloud_ranges.is_cloud_ip("172.16.0.1", {"GCP"})
@@ -117,5 +120,5 @@ def test_cloud_ip_ranges_error_handling():
 
 
 def test_cloud_ip_ranges_invalid_ip():
-    cloud_ranges = CloudIPRanges()
+    cloud_ranges = CloudManager()
     assert not cloud_ranges.is_cloud_ip("invalid_ip", {"AWS", "GCP", "Azure"})

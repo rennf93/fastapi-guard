@@ -1,8 +1,8 @@
 import asyncio
 from fastapi import FastAPI, Request, Response, status
-from guard.cloud_ips import cloud_ip_ranges
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
+from handlers.cloud_handler import cloud_handler
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 import os
@@ -312,7 +312,7 @@ async def test_cloud_ip_blocking():
     async def read_root():
         return {"message": "Hello World"}
 
-    with patch.object(cloud_ip_ranges, "is_cloud_ip", return_value=True):
+    with patch.object(cloud_handler, "is_cloud_ip", return_value=True):
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -321,7 +321,7 @@ async def test_cloud_ip_blocking():
             )
             assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    with patch.object(cloud_ip_ranges, "is_cloud_ip", return_value=False):
+    with patch.object(cloud_handler, "is_cloud_ip", return_value=False):
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -339,7 +339,7 @@ async def test_cloud_ip_refresh():
     middleware = SecurityMiddleware(app, config)
 
     with patch(
-        "guard.cloud_ips.CloudIPRanges.is_cloud_ip",
+        "handlers.cloud_handler.CloudManager.is_cloud_ip",
         return_value=False
     ) as mock_is_cloud_ip:
         async def receive():

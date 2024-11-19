@@ -40,10 +40,10 @@ config = SecurityConfig(
 Cloud IP ranges are automatically updated daily. You can manually refresh them:
 
 ```python
-from guard.cloud_ips import cloud_ip_ranges
+from guard.handlers.cloud_handler import cloud_handler
 
 # Refresh IP ranges
-cloud_ip_ranges.refresh()
+cloud_handler.refresh()
 ```
 
 ## Custom IP Checking
@@ -51,13 +51,13 @@ cloud_ip_ranges.refresh()
 Check if an IP belongs to a cloud provider:
 
 ```python
-from guard.cloud_ips import cloud_ip_ranges
+from guard.handlers.cloud_handler import cloud_handler
 
 @app.get("/check-cloud/{ip}")
 async def check_cloud_ip(ip: str):
-    is_cloud = cloud_ip_ranges.is_cloud_ip(
+    is_cloud = cloud_handler.is_cloud_ip(
         ip,
         providers={"AWS", "GCP", "Azure"}
     )
     return {"ip": ip, "is_cloud": is_cloud}
-``` 
+```
