@@ -1,8 +1,8 @@
 from guard.models import SecurityConfig
 from guard.middleware import SecurityMiddleware
 from guard.sus_patterns import SusPatterns
-from handlers.ipban_handler import reset_global_state
-from handlers.ipinfo_handler import IPInfoManager
+from guard.handlers.ipban_handler import reset_global_state
+from guard.handlers.ipinfo_handler import IPInfoManager
 import os
 import pytest
 
