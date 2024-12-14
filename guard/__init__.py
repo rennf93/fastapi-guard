@@ -7,9 +7,9 @@ from guard.handlers.ipinfo_handler import IPInfoManager
 
 
 __all__ = [
-  "SecurityMiddleware",
-  "SecurityConfig",
-  "ip_ban_manager",
-  "cloud_handler",
-  "IPInfoManager"
+    "SecurityMiddleware",
+    "SecurityConfig",
+    "ip_ban_manager",
+    "cloud_handler",
+    "IPInfoManager"
 ]
