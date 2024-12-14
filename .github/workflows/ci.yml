@@ -66,14 +66,14 @@ jobs:
           pip install pytest
           pytest
 
-      - name: Configure Git line endings
+      - name: Debug file endings
         run: |
-          git config --global core.autocrlf false
-          git config --global core.eol lf
-
-      - name: Ensure newline at end of files
-        run: |
-          echo "" >> guard/__init__.py
+          echo "Hexdump of file:"
+          hexdump -C guard/__init__.py
+          echo "Line count:"
+          wc -l guard/__init__.py
+          echo "File size in bytes:"
+          ls -l guard/__init__.py
 
       - name: Lint with flake8
         run: |
