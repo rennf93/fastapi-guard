@@ -66,6 +66,15 @@ jobs:
           pip install pytest
           pytest
 
+      - name: Debug file endings
+        run: |
+          echo "Hexdump of file:"
+          hexdump -C guard/__init__.py
+          echo "Line count:"
+          wc -l guard/__init__.py
+          echo "File size in bytes:"
+          ls -l guard/__init__.py
+
       - name: Lint with flake8
         run: |
           pip install flake8
