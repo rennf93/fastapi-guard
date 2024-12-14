@@ -2,8 +2,8 @@
 from fastapi import Request
 from guard.models import SecurityConfig
 from guard.sus_patterns import SusPatterns
-from handlers.cloud_handler import cloud_handler
-from handlers.ipinfo_handler import IPInfoManager
+from guard.handlers.cloud_handler import cloud_handler
+from guard.handlers.ipinfo_handler import IPInfoManager
 from ipaddress import (
     IPv4Address,
     ip_network

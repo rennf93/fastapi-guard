@@ -9,9 +9,9 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from handlers.cloud_handler import cloud_handler
-from handlers.ipban_handler import ip_ban_manager
-from handlers.ipinfo_handler import IPInfoManager
+from guard.handlers.cloud_handler import cloud_handler
+from guard.handlers.ipban_handler import ip_ban_manager
+from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.models import SecurityConfig
 from guard.utils import (
     detect_penetration_attempt,

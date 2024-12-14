@@ -2,7 +2,7 @@ import asyncio
 from fastapi import FastAPI, Request, Response, status
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
-from handlers.cloud_handler import cloud_handler
+from guard.handlers.cloud_handler import cloud_handler
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 import os
@@ -339,7 +339,7 @@ async def test_cloud_ip_refresh():
     middleware = SecurityMiddleware(app, config)
 
     with patch(
-        "handlers.cloud_handler.CloudManager.is_cloud_ip",
+        "guard.handlers.cloud_handler.CloudManager.is_cloud_ip",
         return_value=False
     ) as mock_is_cloud_ip:
         async def receive():

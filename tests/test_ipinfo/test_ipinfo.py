@@ -1,4 +1,4 @@
-from handlers.ipinfo_handler import IPInfoManager
+from guard.handlers.ipinfo_handler import IPInfoManager
 import pytest
 from unittest.mock import patch, Mock
 from unittest.mock import AsyncMock
