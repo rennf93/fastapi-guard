@@ -5,6 +5,7 @@ from guard.handlers.ipban_handler import ip_ban_manager
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipinfo_handler import IPInfoManager
 
+
 __all__ = [
     "SecurityMiddleware",
     "SecurityConfig",
