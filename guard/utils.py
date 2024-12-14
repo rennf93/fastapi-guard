@@ -320,7 +320,12 @@ async def detect_penetration_attempt(
         'user-agent',
         'accept',
         'accept-encoding',
-        'connection'
+        'connection',
+        'origin',
+        'referer',
+        'sec-fetch-site',
+        'sec-fetch-mode',
+        'sec-fetch-dest'
     }
     for key, value in request.headers.items():
         if key.lower() not in excluded_headers and await check_value(value):
