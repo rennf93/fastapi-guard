@@ -66,6 +66,8 @@ jobs:
         run: |
           if [[ $GITHUB_REF == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/v}
+          elif [[ -n "${{ env.VERSION }}" ]]; then
+            VERSION=${{ env.VERSION }}
           else
             VERSION=$(grep -m 1 -oP '(?<=aliases:\n  latest: )[\d.]+' .mike.yml)
           fi
