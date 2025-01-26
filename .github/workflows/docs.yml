@@ -106,9 +106,8 @@ jobs:
 
       - name: Deploy documentation
         run: |
-          mike delete-alias latest || true
           mike deploy --push ${{ env.VERSION }}
-          mike alias --push ${{ env.VERSION }} latest
+          mike alias --update-aliases --push ${{ env.VERSION }} latest
           mike set-default --push latest
 
       - name: Deploy to GitHub Pages
