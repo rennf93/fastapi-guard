@@ -93,6 +93,9 @@ jobs:
             Matrix:
               Python: ${{ matrix.python-version }}
 
+            Docs version:
+              ${{ secrets.DOCS_VERSION }}
+
             Commit message:
               ${{ github.event.head_commit.message }}
 
@@ -119,6 +122,9 @@ jobs:
             .
             Matrix:
               Python: ${{ matrix.python-version }}
+
+            Docs version:
+              ${{ secrets.DOCS_VERSION }}
 
             CI & Tests failed for commit:
               ${{ github.event.head_commit.message }}

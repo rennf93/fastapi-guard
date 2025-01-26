@@ -55,23 +55,51 @@ jobs:
           pip install mkdocs-material
           pip install "mkdocstrings[python]"
           pip install mike
+          sudo apt-get install -y yq
 
       - name: Configure Git user
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
 
-      - name: Get version
+      - name: Get and Update Version
         id: get_version
         run: |
-          if [[ $GITHUB_REF == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/v}
-          elif [[ -n "${{ env.VERSION }}" ]]; then
-            VERSION=${{ env.VERSION }}
-          else
-            VERSION=$(grep -m 1 -oP '(?<=aliases:\n  latest: )[\d.]+' .mike.yml)
+          CURRENT_VERSION=$(yq e '.aliases.latest' .mike.yml)
+
+          if [[ ! $CURRENT_VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version format in .mike.yml: $CURRENT_VERSION"
+            exit 1
           fi
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+
+          if [[ -n "${{ secrets.DOCS_VERSION }}" ]]; then
+            STORED_VERSION=${{ secrets.DOCS_VERSION }}
+            echo "STORED_VERSION=$STORED_VERSION" >> $GITHUB_ENV
+          else
+            echo "::error::DOCS_VERSION secret not found"
+            exit 1
+          fi
+
+          if [[ "$CURRENT_VERSION" != "$STORED_VERSION" ]]; then
+            echo "::notice::Updating DOCS_VERSION from $STORED_VERSION to $CURRENT_VERSION"
+            echo "VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+            echo "UPDATE_SECRET=true" >> $GITHUB_ENV
+          else
+            echo "::notice::Versions match ($CURRENT_VERSION), no update needed"
+            echo "VERSION=$STORED_VERSION" >> $GITHUB_ENV
+            echo "UPDATE_SECRET=false" >> $GITHUB_ENV
+          fi
+
+      - name: Update Docs Version Secret
+        if: ${{ env.UPDATE_SECRET == 'true' }}
+        uses: rennf93/github-actions-secrets-mgmt@v1.5
+        with:
+          OWNER: ${{ github.repository_owner }}
+          REPOSITORY: ${{ github.repository }}
+          ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SECRET_NAME: DOCS_VERSION
+          SECRET_VALUE: ${{ env.VERSION }}
 
       - name: Deploy documentation
         run: |
