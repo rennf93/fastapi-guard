@@ -6,6 +6,11 @@ keywords: release notes, fastapi guard, security middleware, api security
 
 # Release Notes
 
+## v0.3.4 (2025-01-26)
+
+### Bug Fixes
+- Fixed issue with accepted `Headers` on `Swagger UI` access/requests
+
 ## v0.3.3 (2024-12-14)
 
 ### Bug Fixes
