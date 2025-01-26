@@ -67,7 +67,7 @@ jobs:
           if [[ $GITHUB_REF == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/v}
           else
-            VERSION="0.3.4"
+            VERSION=$(grep -m 1 -oP '(?<=aliases:\n  latest: )[\d.]+' .mike.yml)
           fi
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
