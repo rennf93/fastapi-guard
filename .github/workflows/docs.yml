@@ -106,6 +106,7 @@ jobs:
 
       - name: Deploy documentation
         run: |
+          mike delete-alias latest || true
           mike deploy --push ${{ env.VERSION }}
           mike alias --push ${{ env.VERSION }} latest
           mike set-default --push latest
