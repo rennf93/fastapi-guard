@@ -27,7 +27,7 @@ jobs:
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
-            *NEW VERSION TRIGGERED PYPI RELEASE!*
+            *NEW VERSION v${{ github.event.release.tag_name }} TRIGGERED PYPI RELEASE!*
 
             Commit:
               ${{ github.event.head_commit.message }}
@@ -79,6 +79,8 @@ jobs:
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
+            *Pypi Release v${{ github.event.release.tag_name }} Successful!*
+            .
             Commit message:
               ${{ github.event.head_commit.message }}
 
@@ -102,6 +104,8 @@ jobs:
           TITLE: 'Pypi Release Failed'
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
+            .
+            *Pypi Release v${{ github.event.release.tag_name }} Failed!*
             .
             Pypi Release failed for commit:
               ${{ github.event.head_commit.message }}

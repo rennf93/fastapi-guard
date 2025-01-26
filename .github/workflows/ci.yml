@@ -41,6 +41,9 @@ jobs:
             Matrix:
               Python: ${{ matrix.python-version }}
 
+            Docs version:
+              ${{ secrets.DOCS_VERSION }}
+
             *DEPLOYMENT TRIGGERED CI & TESTS!*
 
             Commit:
