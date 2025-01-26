@@ -67,7 +67,7 @@ jobs:
           if [[ $GITHUB_REF == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/v}
           else
-            VERSION="0.3.2"
+            VERSION="latest"
           fi
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
