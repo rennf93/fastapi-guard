@@ -4,13 +4,11 @@
       <div class="md-footer-copyright footer-custom">
         <a href="{{ config.repo_url }}">{{ config.site_name }}</a> by
         <a href="{{ config.extra.author.url }}"> {{ config.extra.author.name }}</a>
-        <hr>
-        <div>
-          Built with <a href="https://squidfunk.github.io/mkdocs-material/">MkDocs</a>
-        </div>
+        <br>
+        Documentation was built using <a href="https://squidfunk.github.io/mkdocs-material/">MkDocs</a>
       </div>
       {% if config.extra.social %}
-        {% include "partials/social.html" %}
+      {% include "partials/social.html" %}
       {% endif %}
     </div>
   </div>
