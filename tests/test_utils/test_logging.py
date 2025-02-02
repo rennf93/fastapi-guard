@@ -165,7 +165,7 @@ async def test_setup_custom_logging():
     logger = await setup_custom_logging(log_file)
 
     assert logger.name == "guard.utils"
-    assert len(logger.handlers) == 13
+    assert len(logger.handlers) == 14
 
     file_handler = logger.handlers[0]
     assert isinstance(file_handler, logging.FileHandler)
