@@ -66,8 +66,8 @@ jobs:
         env:
           IPINFO_TOKEN: ${{ secrets.IPINFO_TOKEN }}
         run: |
-          pip install pytest
-          pytest
+          pip install pytest pytest-cov httpx
+          pytest -v
 
       - name: Lint with flake8
         run: |
