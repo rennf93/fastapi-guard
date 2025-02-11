@@ -53,7 +53,7 @@ def fetch_azure_ip_ranges() -> Set[ipaddress.IPv4Network]:
 
         route = "/download/confirmation.aspx?id=56519"
         response = requests.get(
-            f"https://www.microsoft.com{route}", 
+            f"https://www.microsoft.com{route}",
             headers=headers
         )
         response.raise_for_status()
