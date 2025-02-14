@@ -2,7 +2,7 @@
 
 ---
 
-[![PyPI version](https://badge.fury.io/py/fastapi-guard.svg?cache=none)](https://badge.fury.io/py/fastapi-guard)
+[![PyPI version](https://badge.fury.io/py/fastapi-guard.svg?cache=none&icon=si%3Apython&icon_color=%23008cb4)](https://badge.fury.io/py/fastapi-guard)
 [![Release](https://github.com/rennf93/fastapi-guard/actions/workflows/release.yml/badge.svg)](https://github.com/rennf93/fastapi-guard/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/rennf93/fastapi-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/rennf93/fastapi-guard/actions/workflows/ci.yml)
