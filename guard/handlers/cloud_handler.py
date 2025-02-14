@@ -1,6 +1,8 @@
+import html
 import ipaddress
 import logging
 import requests
+import re
 from typing import (
     Dict,
     Set
@@ -43,23 +45,34 @@ def fetch_gcp_ip_ranges() -> Set[ipaddress.IPv4Network]:
 
 def fetch_azure_ip_ranges() -> Set[ipaddress.IPv4Network]:
     try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/91.0.4472.124 Safari/537.36"
+        }
+
         route = "/download/confirmation.aspx?id=56519"
         response = requests.get(
-            f"https://www.microsoft.com{route}"
+            f"https://www.microsoft.com{route}",
+            headers=headers
         )
         response.raise_for_status()
-        download_url = None
-        for line in response.text.split("\n"):
-            if "manually" in line and "href" in line:
-                download_url = line.split('href="')[1].split('"')[0]
-                break
 
-        if not download_url:
+        decoded_html = html.unescape(response.text)
+        pattern = (
+            r'href=["\'](https://download\.microsoft\.com/'
+            r'.*?\.json)["\']'
+        )
+        match = re.search(pattern, decoded_html)
+
+        if not match:
             raise ValueError("Could not find Azure IP ranges download URL")
 
+        download_url = match.group(1)
         response = requests.get(download_url)
         response.raise_for_status()
         data = response.json()
+
         return {
             ipaddress.IPv4Network(ip_range)
             for ip_range in data["values"][0]["properties"]["addressPrefixes"]

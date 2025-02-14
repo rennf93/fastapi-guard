@@ -31,8 +31,8 @@ Before using `fastapi-guard`, obtain an IPInfo token:
 
 ```python
 from fastapi import FastAPI
-from fastapi_guard.middleware import SecurityMiddleware
-from fastapi_guard.models import SecurityConfig
+from guard.middleware import SecurityMiddleware
+from guard.models import SecurityConfig
 
 app = FastAPI()
 config = SecurityConfig(
