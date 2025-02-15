@@ -1,5 +1,6 @@
 from guard.sus_patterns import SusPatterns
 import pytest
+import re
 
 
 @pytest.mark.asyncio
@@ -37,3 +38,25 @@ async def test_get_all_patterns():
     all_patterns = await sus_patterns.get_all_patterns()
     assert custom_pattern in all_patterns
     assert all(pattern in all_patterns for pattern in default_patterns)
+
+
+@pytest.mark.asyncio
+async def test_invalid_pattern_handling():
+    with pytest.raises(re.error):
+        await SusPatterns.add_pattern(r"invalid(regex", custom=True)
+
+
+@pytest.mark.asyncio
+async def test_remove_nonexistent_pattern():
+    sus_patterns = SusPatterns()
+    await sus_patterns.remove_pattern(
+        "nonexistent",
+        custom=True
+    )
+
+
+def test_singleton_behavior():
+    instance1 = SusPatterns()
+    instance2 = SusPatterns()
+    assert instance1 is instance2
+    assert instance1.compiled_patterns is instance2.compiled_patterns

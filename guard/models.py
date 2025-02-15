@@ -372,3 +372,10 @@ class SecurityConfig(BaseModel):
             except ValueError:
                 raise ValueError(f"Invalid IP or CIDR range: {entry}")
         return validated
+
+    @field_validator('block_cloud_providers', mode='before')
+    def validate_cloud_providers(cls, v):
+        valid_providers = {"AWS", "GCP", "Azure"}
+        if v is None:
+            return set()
+        return {p for p in v if p in valid_providers}

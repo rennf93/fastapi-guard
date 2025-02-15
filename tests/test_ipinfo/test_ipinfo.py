@@ -25,3 +25,28 @@ async def test_ipinfo_db():
         db.reader = Mock()
         db.reader.get.return_value = {"country": "US"}
         assert db.get_country("1.1.1.1") == "US"
+
+
+def test_ipinfo_missing_token():
+    with pytest.raises(ValueError):
+        IPInfoManager(token="")
+
+
+async def test_ipinfo_download_failure():
+    db = IPInfoManager(token="test")
+    with patch("aiohttp.ClientSession.get", side_effect=Exception("Download failed")), \
+         patch.object(IPInfoManager, "_is_db_outdated", return_value=True):
+        await db.initialize()
+        assert db.reader is None
+        assert not db.db_path.exists()
+
+
+@pytest.mark.asyncio
+async def test_db_initialization_retry():
+    db = IPInfoManager(token="test")
+    with patch("aiohttp.ClientSession.get", side_effect=Exception("First fail")), \
+         patch("asyncio.sleep") as mock_sleep, \
+         patch("builtins.open", Mock()):
+        await db.initialize()
+        assert mock_sleep.call_count == 2
+        assert db.reader is None

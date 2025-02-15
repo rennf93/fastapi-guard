@@ -516,3 +516,22 @@ async def test_check_ip_country():
             config,
             mock_db
         ) == False
+
+
+@pytest.mark.asyncio
+async def test_whitelisted_country(security_config, mocker, ipinfo_db):
+    mocker.patch.object(ipinfo_db, "get_country", return_value="US")
+    security_config.whitelist_countries = ["US"]
+
+    assert await check_ip_country("8.8.8.8", security_config, ipinfo_db) is False
+
+
+@pytest.mark.asyncio
+async def test_cloud_provider_blocking(security_config, mocker):
+    mocker.patch(
+        "guard.utils.cloud_handler.is_cloud_ip",
+        return_value=True
+    )
+    security_config.block_cloud_providers = {"AWS"}
+
+    assert await is_ip_allowed("8.8.8.8", security_config) is False
