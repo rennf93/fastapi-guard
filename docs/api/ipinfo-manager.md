@@ -12,9 +12,16 @@ The `IPInfoManager` class handles IP geolocation using IPInfo's database.
 
 ```python
 class IPInfoManager:
-    def __init__(self, token: str):
+    def __init__(
+        self,
+        token: str,
+        db_path: Optional[Path] = None
+    ):
         """
         Initialize IPInfoManager with IPInfo token.
+
+        :param token: IPInfo API token
+        :param db_path: Optional custom path for database storage
         """
 ```
 
@@ -51,9 +58,13 @@ def close(self):
 
 ```python
 from guard.handlers.ipinfo_handler import IPInfoManager
+from pathlib import Path
 
-# Initialize database
-ipinfo_db = IPInfoManager(token="your_token")
+# Initialize with custom database location
+ipinfo_db = IPInfoManager(
+    token="your_token",
+    db_path=Path("/custom/path/ipinfo.db") # default is ./data/ipinfo/country_asn.mmdb
+)
 await ipinfo_db.initialize()
 
 # Get country for IP

@@ -204,7 +204,8 @@ To use the geolocation features:
 
 ```python
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",  # Required
+    ipinfo_token="your_ipinfo_token_here",
+    db_path="custom/ipinfo.db",  # Optional custom database path
     blocked_countries=["AR", "IT"],  # Block specific countries using ISO 3166-1 alpha-2 codes
     whitelist_countries=["US", "CA"]  # Optional: Only allow specific countries
 )
@@ -256,6 +257,7 @@ The `SecurityConfig` class defines the structure for security configuration, inc
 #### Attributes
 
 - `ipinfo_token`: str - The IPInfo API token required for IP geolocation functionality.
+- `db_path`: Optional[str] - Custom path for IPInfo database storage (default: ./data/ipinfo/country_asn.mmdb)
 - `whitelist`: Optional[List[str]] - A list of IP addresses or ranges that are always allowed. If set to None, no whitelist is applied.
 - `blacklist`: List[str] - A list of IP addresses or ranges that are always blocked.
 - `blocked_countries`: List[str] - A list of country codes whose IP addresses should be blocked.
@@ -275,7 +277,7 @@ The `SecurityConfig` class defines the structure for security configuration, inc
 - `cors_allow_credentials`: bool - Whether to allow credentials in CORS requests.
 - `cors_expose_headers`: List[str] - A list of headers that are exposed in CORS responses.
 - `cors_max_age`: int - The maximum age in seconds that the results of a preflight request can be cached.
-- `block_cloud_providers`: Optional[Set[str]] - A set of cloud provider names to block. Supported values: 'AWS', 'GCP', 'Azure'.
+- `block_cloud_providers`: Optional[Set[str]] - Case-sensitive cloud provider names to block. Valid values: 'AWS', 'GCP', 'Azure'. Invalid entries are silently ignored.
 
 ## Contributing
 

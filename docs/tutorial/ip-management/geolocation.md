@@ -17,7 +17,9 @@ FastAPI Guard uses IPInfo's database for IP geolocation and country-based filter
 config = SecurityConfig(
     ipinfo_token="your_ipinfo_token_here",
     blocked_countries=["CN", "RU"],  # Block specific countries
-    whitelist_countries=["US", "CA"]  # Optional: only allow specific countries
+    whitelist_countries=["US", "CA"],
+    db_path="custom/ipinfo.db",  # Optional custom database path
+    block_cloud_providers={"AWS", "GCP"}  # Case-sensitive provider names
 )
 ```
 
