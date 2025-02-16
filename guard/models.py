@@ -22,6 +22,7 @@ from typing import (
     Set
 )
 
+
 class SecurityConfig(BaseModel):
     """
     Configuration model for security settings.
@@ -54,7 +55,6 @@ class SecurityConfig(BaseModel):
     Optional[Path]:
         The path to the IPInfo database file.
     """
-
 
     whitelist: Optional[List[str]] = Field(
         default=None,

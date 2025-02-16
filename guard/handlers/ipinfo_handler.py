@@ -34,7 +34,7 @@ class IPInfoManager:
         try:
             if not self.db_path.exists() or self._is_db_outdated():
                 await self._download_database()
-        except Exception as e:
+        except Exception:
             if self.db_path.exists():
                 self.db_path.unlink()
             self.reader = None
@@ -58,7 +58,7 @@ class IPInfoManager:
                         with open(self.db_path, 'wb') as f:
                             f.write(await response.read())
                         return
-                except Exception as e:
+                except Exception:
                     if attempt == retries - 1:
                         raise
                     await asyncio.sleep(backoff)
