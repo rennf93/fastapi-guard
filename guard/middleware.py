@@ -13,6 +13,7 @@ from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
 from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.models import SecurityConfig
+from guard.sus_patterns import SusPatterns
 from guard.utils import (
     detect_penetration_attempt,
     is_ip_allowed,
@@ -80,6 +81,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             token=config.ipinfo_token,
             db_path=config.ipinfo_db_path
         )
+
+        # Initialize Redis handler if enabled
+        self.redis_handler = None
+        if config.enable_redis:
+            from guard.handlers.redis_handler import RedisManager
+            self.redis_handler = RedisManager(config)
 
     async def setup_logger(self):
         if self.logger is None:
@@ -350,3 +357,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 if not self.request_times[ip]:
                     del self.request_times[ip]
             self.last_cleanup = current_time
+
+    async def initialize(self):
+        """Initialize all components asynchronously"""
+        if self.config.enable_redis:
+            await self.redis_handler.initialize()
+            await cloud_handler.initialize_redis(self.redis_handler)
+            await ip_ban_manager.initialize_redis(self.redis_handler)
+            await SusPatterns().initialize_redis(self.redis_handler)
+            await cloud_handler.refresh()  # Initial refresh after Redis init

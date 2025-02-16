@@ -145,7 +145,19 @@ class SusPatterns:
                 for pattern in cls.patterns
             ]
             cls._instance.compiled_custom_patterns = set()
+            cls._instance.redis_handler = None
         return cls._instance
+
+    async def initialize_redis(self, redis_handler):
+        """Initialize Redis connection and load cached patterns"""
+        self.redis_handler = redis_handler
+        if self.redis_handler:
+            cached_patterns = await self.redis_handler.get_key("patterns", "custom")
+            if cached_patterns:
+                patterns = cached_patterns.split(',')
+                for pattern in patterns:
+                    if pattern not in self.custom_patterns:
+                        await self.add_pattern(pattern, custom=True)
 
     @classmethod
     async def add_pattern(
@@ -174,6 +186,14 @@ class SusPatterns:
             cls._instance.custom_patterns.add(
                 pattern
             )
+
+            # Cache in Redis if available
+            if cls._instance.redis_handler:
+                await cls._instance.redis_handler.set_key(
+                    "patterns",
+                    "custom",
+                    ','.join(cls._instance.custom_patterns)
+                )
         else:
             cls._instance.compiled_patterns.append(
                 compiled_pattern
@@ -209,6 +229,14 @@ class SusPatterns:
             cls._instance.custom_patterns.discard(
                 pattern
             )
+
+            # Update Redis if available
+            if cls._instance.redis_handler:
+                await cls._instance.redis_handler.set_key(
+                    "patterns",
+                    "custom",
+                    ','.join(cls._instance.custom_patterns)
+                )
         else:
             cls._instance.compiled_patterns = [
                 p
