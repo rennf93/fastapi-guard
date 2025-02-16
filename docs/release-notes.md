@@ -7,7 +7,10 @@ keywords: release notes, fastapi guard, security middleware, api security
 # Release Notes
 
 # TODO:
-## v0.3.5 (2025-0)
+## v0.4.0 (2025-02-16)
+
+### Bug Fixes
+- 
 
 ## v0.3.4 (2025-01-26)
 
