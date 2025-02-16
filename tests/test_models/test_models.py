@@ -36,3 +36,21 @@ def test_cloud_provider_validation():
         }
     )
     assert config.block_cloud_providers == {"AWS"}
+
+
+def test_security_config_none_whitelist():
+    """Test that None whitelist is handled correctly"""
+    config = SecurityConfig(
+        ipinfo_token="test",
+        whitelist=None
+    )
+    assert config.whitelist is None
+
+
+def test_none_cloud_providers():
+    """Test that None cloud_providers is handled correctly"""
+    config = SecurityConfig(
+        ipinfo_token="test",
+        block_cloud_providers=None
+    )
+    assert config.block_cloud_providers == set()
