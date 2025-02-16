@@ -7,6 +7,8 @@ from guard.handlers.cloud_handler import (
 import ipaddress
 import pytest
 from unittest.mock import patch, Mock
+from guard.handlers.redis_handler import RedisManager
+from fastapi import HTTPException
 
 
 @pytest.fixture
@@ -169,3 +171,116 @@ def test_fetch_azure_ip_ranges_download_failure(mock_requests_get):
 
     result = fetch_azure_ip_ranges()
     assert result == set()
+
+
+@pytest.mark.asyncio
+async def test_cloud_ip_redis_caching(security_config_redis):
+    """Test CloudManager with Redis caching"""
+    with patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws:
+        mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
+
+        # Create manager and initialize Redis
+        manager = CloudManager()
+        redis_handler = RedisManager(security_config_redis)
+        await redis_handler.initialize()
+
+        # Initialize Redis and perform initial refresh
+        await manager.initialize_redis(redis_handler)
+
+        # Verify initial fetch and cache
+        assert manager.is_cloud_ip("192.168.0.1", {"AWS"})
+        cached = await redis_handler.get_key("cloud_ranges", "AWS")
+        assert cached == "192.168.0.0/24"
+
+        # Change mock return value and refresh
+        mock_aws.return_value = {ipaddress.IPv4Network("192.168.1.0/24")}
+        await manager.refresh_async()
+
+        # Clear Redis cache to force refresh
+        await redis_handler.delete("cloud_ranges", "AWS")
+        await manager.refresh_async()
+
+        # Test error handling
+        mock_aws.side_effect = Exception("API Error")
+        await manager.refresh_async()  # Should keep existing ranges on error
+        assert manager.is_cloud_ip("192.168.1.1", {"AWS"})
+
+        # Test refresh_async without Redis
+        manager.redis_handler = None
+        await manager.refresh_async()  # Should fall back to sync refresh
+
+        await redis_handler.close()
+
+
+@pytest.mark.asyncio
+async def test_cloud_ip_redis_cache_hit(security_config_redis):
+    """Test CloudManager using cached Redis values"""
+    redis_handler = RedisManager(security_config_redis)
+    await redis_handler.initialize()
+
+    # Pre-populate Redis cache
+    await redis_handler.set_key("cloud_ranges", "AWS", "192.168.0.0/24")
+
+    # Initialize manager with Redis
+    manager = CloudManager()
+    await manager.initialize_redis(redis_handler)
+
+    # Verify manager uses cached value
+    with patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws:
+        assert manager.is_cloud_ip("192.168.0.1", {"AWS"})
+        mock_aws.assert_not_called()
+
+    await redis_handler.close()
+
+
+@pytest.mark.asyncio
+async def test_cloud_ip_redis_sync_async(security_config_redis):
+    """Test CloudManager sync/async refresh behavior"""
+    manager = CloudManager()
+
+    # Test sync refresh when Redis is disabled
+    with patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws:
+        mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
+
+        # Sync refresh should work when Redis is disabled
+        manager.refresh()
+        assert manager.is_cloud_ip("192.168.0.1", {"AWS"})
+
+        # Enable Redis
+        redis_handler = RedisManager(security_config_redis)
+        await redis_handler.initialize()
+        await manager.initialize_redis(redis_handler)
+
+        # Sync refresh should raise error when Redis is enabled
+        with pytest.raises(RuntimeError) as exc_info:
+            manager.refresh()
+        assert str(exc_info.value) == "Use async refresh() when Redis is enabled"
+
+        await redis_handler.close()
+
+
+@pytest.mark.asyncio
+async def test_cloud_ip_redis_error_handling(security_config_redis):
+    """Test CloudManager error handling during Redis operations"""
+    with patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws:
+        mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
+
+        manager = CloudManager()
+        redis_handler = RedisManager(security_config_redis)
+        await redis_handler.initialize()
+
+        # Clear any existing Redis data
+        await redis_handler.delete("cloud_ranges", "AWS")
+
+        # Initialize Redis and test error handling
+        mock_aws.side_effect = Exception("API Error")
+        await manager.initialize_redis(redis_handler)
+
+        # Test provider not in ip_ranges during error
+        manager.ip_ranges.pop("AWS", None)  # Remove AWS from ip_ranges
+        await manager.refresh_async()
+
+        assert isinstance(manager.ip_ranges["AWS"], set)
+        assert len(manager.ip_ranges["AWS"]) == 0
+
+        await redis_handler.close()

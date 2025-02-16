@@ -123,7 +123,7 @@ class CloudManager:
     async def initialize_redis(self, redis_handler):
         """Initialize Redis connection and load cached ranges."""
         self.redis_handler = redis_handler
-        await self.refresh()  # Perform async refresh after Redis setup
+        await self.refresh_async()  # Use async refresh instead of sync
 
     def refresh(self):
         """Synchronous refresh method for backward compatibility."""
@@ -133,21 +133,24 @@ class CloudManager:
             raise RuntimeError("Use async refresh() when Redis is enabled")
 
     async def refresh_async(self):
-        """Refresh cloud IP ranges, using Redis cache when available."""
+        """Asynchronous refresh method for Redis-enabled operation."""
+        if self.redis_handler is None:
+            self._refresh_sync()
+            return
+
         for provider in ["AWS", "GCP", "Azure"]:
             try:
                 # Try to get from Redis cache first
-                if self.redis_handler:
-                    cached_ranges = await self.redis_handler.get_key(
-                        "cloud_ranges",
-                        provider
-                    )
-                    if cached_ranges:
-                        self.ip_ranges[provider] = {
-                            ipaddress.IPv4Network(ip)
-                            for ip in cached_ranges.split(',')
-                        }
-                        continue
+                cached_ranges = await self.redis_handler.get_key(
+                    "cloud_ranges",
+                    provider
+                )
+                if cached_ranges:
+                    self.ip_ranges[provider] = {
+                        ipaddress.IPv4Network(ip)
+                        for ip in cached_ranges.split(',')
+                    }
+                    continue
 
                 # Fetch from source if not in cache
                 fetch_func = {
@@ -161,13 +164,12 @@ class CloudManager:
                     self.ip_ranges[provider] = ranges
 
                     # Cache in Redis if available
-                    if self.redis_handler:
-                        await self.redis_handler.set_key(
-                            "cloud_ranges",
-                            provider,
-                            ','.join(str(ip) for ip in ranges),
-                            ttl=3600  # Cache for 1 hour
-                        )
+                    await self.redis_handler.set_key(
+                        "cloud_ranges",
+                        provider,
+                        ','.join(str(ip) for ip in ranges),
+                        ttl=3600  # Cache for 1 hour
+                    )
 
             except Exception as e:
                 self.logger.error(
