@@ -63,7 +63,6 @@ async def test_database_retry_success(tmp_path):
     mock_response.__aexit__ = AsyncMock()
     mock_response.read = AsyncMock(return_value=b"test data")
 
-    # Use Mock's side_effect as a callable instead of a list
     def side_effect(*args, **kwargs):
         side_effect.calls = getattr(side_effect, 'calls', 0) + 1
         if side_effect.calls == 1:
@@ -93,11 +92,9 @@ def test_db_age_check(tmp_path):
     db = IPInfoManager(token="test", db_path=tmp_path/"test.mmdb")
 
     with patch("pathlib.Path.stat") as mock_stat:
-        # Test outdated database
         mock_stat.return_value.st_mtime = time.time() - 86401
         assert db._is_db_outdated() is True
 
-        # Test current database
         mock_stat.return_value.st_mtime = time.time() - 100
         assert db._is_db_outdated() is False
 
