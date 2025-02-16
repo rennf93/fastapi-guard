@@ -7,6 +7,10 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # environment: pypi
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout code
@@ -54,16 +58,46 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
         run: |
           twine upload dist/*
-          echo "VERSION=${${{ github.event.release.tag_name }}#v}" >> $GITHUB_ENV
+          echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+
+      - name: Get and Update Version
+        id: get_version
+        run: |
+          CURRENT_VERSION=$(yq -r '.aliases.latest' .mike.yml)
+
+          if [[ ! $CURRENT_VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version format in .mike.yml: $CURRENT_VERSION"
+            exit 1
+          fi
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+
+          if [[ -n "${{ secrets.DOCS_VERSION }}" ]]; then
+            STORED_VERSION=${{ secrets.DOCS_VERSION }}
+            echo "STORED_VERSION=$STORED_VERSION" >> $GITHUB_ENV
+          else
+            echo "::error::DOCS_VERSION secret not found"
+            exit 1
+          fi
+
+          if [[ "$CURRENT_VERSION" != "$STORED_VERSION" ]]; then
+            echo "::notice::Updating DOCS_VERSION from $STORED_VERSION to $CURRENT_VERSION"
+            echo "VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+            echo "UPDATE_SECRET=true" >> $GITHUB_ENV
+          else
+            echo "::notice::Versions match ($CURRENT_VERSION), no update needed"
+            echo "VERSION=$STORED_VERSION" >> $GITHUB_ENV
+            echo "UPDATE_SECRET=false" >> $GITHUB_ENV
+          fi
 
       - name: Update Docs Version Secret
+        if: ${{ env.UPDATE_SECRET == 'true' }}
         uses: rennf93/github-actions-secrets-mgmt@v1.5
         with:
           OWNER: ${{ github.repository_owner }}
           REPOSITORY: ${{ github.repository }}
           ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SECRET_NAME: DOCS_VERSION
-          SECRET_VALUE: ${${{ github.event.release.tag_name }}#v}
+          SECRET_VALUE: ${{ github.event.release.tag_name }}
 
       - name: Notify Success on Slack Channel
         uses: rennf93/good-comms@master
