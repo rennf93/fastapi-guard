@@ -7,6 +7,7 @@ from ipaddress import (
     ip_network,
     IPv4Address
 )
+from pathlib import Path
 from pydantic import (
     BaseModel,
     field_validator,
@@ -20,7 +21,6 @@ from typing import (
     Optional,
     Set
 )
-
 
 class SecurityConfig(BaseModel):
     """
@@ -45,6 +45,16 @@ class SecurityConfig(BaseModel):
     str:
         The IPInfo API token for IP geolocation.
     """
+
+    ipinfo_db_path: Optional[Path] = Field(
+        default=Path("data/ipinfo/country_asn.mmdb"),
+        description="Path to the IPInfo database file"
+    )
+    """
+    Optional[Path]:
+        The path to the IPInfo database file.
+    """
+
 
     whitelist: Optional[List[str]] = Field(
         default=None,

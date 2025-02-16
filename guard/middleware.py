@@ -76,7 +76,10 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self.request_times: Dict[str, List[float]] = {}
         self.suspicious_request_counts: Dict[str, int] = {}
         self.last_cleanup = time.time()
-        self.ipinfo_db = IPInfoManager(token=config.ipinfo_token)
+        self.ipinfo_db = IPInfoManager(
+            token=config.ipinfo_token,
+            db_path=config.ipinfo_db_path
+        )
 
     async def setup_logger(self):
         if self.logger is None:
@@ -139,6 +142,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             self.logger
         )
 
+        # Refresh cloud IP ranges
+        if (
+            self.config.block_cloud_providers and
+            time.time() - self.last_cloud_ip_refresh > 3600  # 1 hour
+        ):
+            await self.refresh_cloud_ip_ranges()
+
         # IP banning
         if await ip_ban_manager.is_ip_banned(client_ip):
             await log_suspicious_activity(
@@ -164,6 +174,24 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             return await self.create_error_response(
                 status_code=status.HTTP_403_FORBIDDEN,
                 default_message="Forbidden"
+            )
+
+        # Cloud providers
+        if (
+            self.config.block_cloud_providers and
+            cloud_handler.is_cloud_ip(
+                client_ip,
+                self.config.block_cloud_providers
+            )
+        ):
+            await log_suspicious_activity(
+                request,
+                f"Blocked cloud provider IP: {client_ip}",
+                self.logger
+            )
+            return await self.create_error_response(
+                status_code=status.HTTP_403_FORBIDDEN,
+                default_message="Cloud provider IP not allowed"
             )
 
         # User agent

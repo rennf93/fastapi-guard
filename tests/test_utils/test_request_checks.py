@@ -519,11 +519,15 @@ async def test_check_ip_country():
 
 
 @pytest.mark.asyncio
-async def test_whitelisted_country(security_config, mocker, ipinfo_db):
-    mocker.patch.object(ipinfo_db, "get_country", return_value="US")
+async def test_whitelisted_country(security_config, mocker):
+    """Test country whitelist functionality"""
+    mock_ipinfo = mocker.Mock()
+    mock_ipinfo.get_country.return_value = "US"
+    mock_ipinfo.reader = True
+
     security_config.whitelist_countries = ["US"]
 
-    assert await check_ip_country("8.8.8.8", security_config, ipinfo_db) is False
+    assert await check_ip_country("8.8.8.8", security_config, mock_ipinfo) is False
 
 
 @pytest.mark.asyncio

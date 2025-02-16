@@ -12,13 +12,16 @@ class IPInfoManager:
 
     def __init__(
         self,
-        token: str
+        token: str,
+        db_path: Optional[Path] = None
     ):
         if not token:
             raise ValueError("IPInfo token is required!")
 
         self.token = token
-        self.db_path = Path("data/ipinfo/country_asn.mmdb")
+        self.db_path = db_path or Path(
+            "data/ipinfo/country_asn.mmdb"
+        )
         self.reader: Optional[maxminddb.Reader] = None
 
     async def initialize(self):
