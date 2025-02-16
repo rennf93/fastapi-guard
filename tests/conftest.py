@@ -14,10 +14,13 @@ IPINFO_TOKEN = os.getenv("IPINFO_TOKEN", "test_token")
 @pytest.fixture(autouse=True)
 async def reset_state():
     await reset_global_state()
+    original_patterns = SusPatterns.patterns.copy()
     SusPatterns._instance = None
     cloud_handler.ip_ranges = {}
     cloud_handler.last_refresh = 0
     yield
+    SusPatterns.patterns = original_patterns.copy()
+    SusPatterns._instance = None
 
 
 @pytest.fixture
