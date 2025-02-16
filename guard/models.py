@@ -346,6 +346,15 @@ class SecurityConfig(BaseModel):
         Whether to enable penetration attempt detection.
     """
 
+    enable_redis: bool = Field(
+        default=True,
+        description="Enable/disable Redis for distributed state management"
+    )
+    """
+    bool:
+        Whether to enable Redis for distributed state management.
+    """
+
     redis_url: Optional[str] = Field(
         default="redis://localhost:6379",
         description="Redis URL for distributed state management"
