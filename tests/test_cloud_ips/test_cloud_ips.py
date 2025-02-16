@@ -122,3 +122,50 @@ def test_cloud_ip_ranges_error_handling():
 def test_cloud_ip_ranges_invalid_ip():
     cloud_ranges = CloudManager()
     assert not cloud_ranges.is_cloud_ip("invalid_ip", {"AWS", "GCP", "Azure"})
+
+
+def test_fetch_aws_ip_ranges_error(mock_requests_get):
+    mock_requests_get.side_effect = Exception("API failure")
+    result = fetch_aws_ip_ranges()
+    assert result == set()
+
+
+def test_fetch_gcp_ip_ranges_error(mock_requests_get):
+    mock_response = Mock()
+    mock_response.json.side_effect = Exception("Invalid JSON")
+    mock_requests_get.return_value = mock_response
+    result = fetch_gcp_ip_ranges()
+    assert result == set()
+
+
+def test_cloud_manager_refresh_handling():
+    manager = CloudManager()
+    original_count = len(manager.ip_ranges.get("AWS", []))
+    manager.refresh()
+    assert len(manager.ip_ranges["AWS"]) == original_count
+
+
+def test_is_cloud_ip_ipv6():
+    manager = CloudManager()
+    assert not manager.is_cloud_ip("2001:db8::1", {"AWS"})
+
+
+def test_fetch_azure_ip_ranges_url_not_found(mock_requests_get):
+    mock_html_response = Mock()
+    mock_html_response.text = "HTML without download link"
+    mock_requests_get.return_value = mock_html_response
+
+    result = fetch_azure_ip_ranges()
+    assert result == set()
+
+
+def test_fetch_azure_ip_ranges_download_failure(mock_requests_get):
+    mock_html_response = Mock()
+    mock_html_response.text = '<a href="https://download.microsoft.com/valid.json">'
+    mock_download_response = Mock()
+    mock_download_response.raise_for_status.side_effect = Exception("Download failed")
+
+    mock_requests_get.side_effect = [mock_html_response, mock_download_response]
+
+    result = fetch_azure_ip_ranges()
+    assert result == set()

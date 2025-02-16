@@ -1,4 +1,5 @@
 import aiohttp
+import asyncio
 import maxminddb
 import os
 from pathlib import Path
@@ -11,13 +12,16 @@ class IPInfoManager:
 
     def __init__(
         self,
-        token: str
+        token: str,
+        db_path: Optional[Path] = None
     ):
         if not token:
             raise ValueError("IPInfo token is required!")
 
         self.token = token
-        self.db_path = Path("data/ipinfo/country_asn.mmdb")
+        self.db_path = db_path or Path(
+            "data/ipinfo/country_asn.mmdb"
+        )
         self.reader: Optional[maxminddb.Reader] = None
 
     async def initialize(self):
@@ -27,21 +31,38 @@ class IPInfoManager:
             exist_ok=True
         )
 
-        if not self.db_path.exists() or self._is_db_outdated():
-            await self._download_database()
+        try:
+            if not self.db_path.exists() or self._is_db_outdated():
+                await self._download_database()
+        except Exception as e:
+            if self.db_path.exists():
+                self.db_path.unlink()
+            self.reader = None
+            return
 
-        self.reader = maxminddb.open_database(str(self.db_path))
+        if self.db_path.exists():
+            self.reader = maxminddb.open_database(str(self.db_path))
 
     async def _download_database(self):
         """Download the latest database from IPInfo"""
         base_url = "https://ipinfo.io/data/free/country_asn.mmdb"
         url = f"{base_url}?token={self.token}"
+        retries = 3
+        backoff = 1
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                response.raise_for_status()
-                with open(self.db_path, 'wb') as f:
-                    f.write(await response.read())
+            for attempt in range(retries):
+                try:
+                    async with session.get(url) as response:
+                        response.raise_for_status()
+                        with open(self.db_path, 'wb') as f:
+                            f.write(await response.read())
+                        return
+                except Exception as e:
+                    if attempt == retries - 1:
+                        raise
+                    await asyncio.sleep(backoff)
+                    backoff *= 2
 
     def _is_db_outdated(self) -> bool:
         """Check if database needs updating (older than 24h)"""

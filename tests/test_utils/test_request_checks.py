@@ -10,6 +10,9 @@ from guard.handlers.cloud_handler import cloud_handler
 import os
 import pytest
 from unittest.mock import patch
+from unittest.mock import Mock
+from unittest.mock import AsyncMock
+import logging
 
 
 IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
@@ -516,3 +519,225 @@ async def test_check_ip_country():
             config,
             mock_db
         ) == False
+
+
+@pytest.mark.asyncio
+async def test_whitelisted_country(security_config, mocker):
+    """Test country whitelist functionality"""
+    mock_ipinfo = mocker.Mock()
+    mock_ipinfo.get_country.return_value = "US"
+    mock_ipinfo.reader = True
+
+    security_config.whitelist_countries = ["US"]
+
+    assert await check_ip_country("8.8.8.8", security_config, mock_ipinfo) is False
+
+
+@pytest.mark.asyncio
+async def test_cloud_provider_blocking(security_config, mocker):
+    mocker.patch(
+        "guard.utils.cloud_handler.is_cloud_ip",
+        return_value=True
+    )
+    security_config.block_cloud_providers = {"AWS"}
+
+    assert await is_ip_allowed("8.8.8.8", security_config) is False
+
+
+@pytest.mark.asyncio
+async def test_check_ip_country_no_reader(security_config):
+    """Test check_ip_country when IPInfo reader is not initialized."""
+    mock_ipinfo = Mock()
+    mock_ipinfo.reader = None
+    mock_ipinfo.initialize = AsyncMock()
+    mock_ipinfo.get_country.return_value = "US"
+
+    result = await check_ip_country("1.1.1.1", security_config, mock_ipinfo)
+    assert result is False
+    mock_ipinfo.initialize.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_check_ip_country_no_country_found(security_config):
+    """Test check_ip_country when country lookup fails."""
+    mock_ipinfo = Mock()
+    mock_ipinfo.reader = True
+    mock_ipinfo.get_country.return_value = None
+
+    result = await check_ip_country("1.1.1.1", security_config, mock_ipinfo)
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_check_ip_country_no_countries_configured(caplog):
+    """Test check_ip_country when no countries are blocked or whitelisted."""
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        blocked_countries=[],
+        whitelist_countries=[]
+    )
+
+    mock_ipinfo = Mock()
+    mock_ipinfo.reader = True
+    mock_ipinfo.get_country.return_value = "US"
+
+    with caplog.at_level(logging.WARNING):
+        result = await check_ip_country("1.1.1.1", config, mock_ipinfo)
+        assert result is False
+        assert "No countries blocked or whitelisted" in caplog.text
+        assert "1.1.1.1" in caplog.text
+
+    caplog.clear()
+
+    async def receive():
+        return {"type": "http.request", "body": b""}
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [],
+            "query_string": b"",
+            "client": ("2.2.2.2", 12345),
+        },
+        receive=receive,
+    )
+
+    with caplog.at_level(logging.WARNING):
+        result = await check_ip_country(request, config, mock_ipinfo)
+        assert result is False
+        assert "No countries blocked or whitelisted" in caplog.text
+        assert "2.2.2.2" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_is_ip_allowed_cidr_blacklist():
+    """Test the is_ip_allowed function with CIDR notation in blacklist."""
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        blacklist=["192.168.1.0/24"],
+        whitelist=[]
+    )
+
+    assert await is_ip_allowed("192.168.1.100", config) == False
+    assert await is_ip_allowed("192.168.1.1", config) == False
+    assert await is_ip_allowed("192.168.1.254", config) == False
+
+    assert await is_ip_allowed("192.168.2.1", config) == True
+    assert await is_ip_allowed("192.168.0.1", config) == True
+    assert await is_ip_allowed("10.0.0.1", config) == True
+
+    config_multiple = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        blacklist=[
+            "192.168.1.0/24",
+            "10.0.0.0/8"
+        ],
+        whitelist=[]
+    )
+
+    assert await is_ip_allowed("192.168.1.100", config_multiple) == False
+    assert await is_ip_allowed("10.10.10.10", config_multiple) == False
+    assert await is_ip_allowed("172.16.0.1", config_multiple) == True
+
+
+@pytest.mark.asyncio
+async def test_is_ip_allowed_cidr_whitelist():
+    """Test the is_ip_allowed function with CIDR notation in whitelist."""
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        whitelist=["192.168.1.0/24"],
+        blacklist=[]
+    )
+
+    assert await is_ip_allowed("192.168.1.100", config) == True
+    assert await is_ip_allowed("192.168.1.1", config) == True
+    assert await is_ip_allowed("192.168.1.254", config) == True
+
+    assert await is_ip_allowed("192.168.2.1", config) == False
+    assert await is_ip_allowed("192.168.0.1", config) == False
+    assert await is_ip_allowed("10.0.0.1", config) == False
+
+    config_multiple = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        whitelist=[
+            "192.168.1.0/24",
+            "10.0.0.0/8"
+        ],
+        blacklist=[]
+    )
+
+    assert await is_ip_allowed("192.168.1.100", config_multiple) == True
+    assert await is_ip_allowed("10.10.10.10", config_multiple) == True
+    assert await is_ip_allowed("172.16.0.1", config_multiple) == False
+
+
+@pytest.mark.asyncio
+async def test_is_ip_allowed_invalid_ip(caplog):
+    """Test is_ip_allowed with invalid IP address."""
+    config = SecurityConfig(ipinfo_token="test")
+
+    with caplog.at_level(logging.ERROR):
+        result = await is_ip_allowed("invalid-ip", config)
+        assert result is False
+
+
+@pytest.mark.asyncio
+async def test_is_ip_allowed_general_exception(caplog, mocker):
+    """Test is_ip_allowed with unexpected exception."""
+    config = SecurityConfig(ipinfo_token="test")
+
+    mock_error = Exception("Unexpected error")
+    mocker.patch("guard.utils.IPv4Address", side_effect=mock_error)
+
+    with caplog.at_level(logging.ERROR):
+        result = await is_ip_allowed("192.168.1.1", config)
+        assert result is True
+        assert "Error checking IP 192.168.1.1" in caplog.text
+        assert "Unexpected error" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_detect_penetration_attempt_body_error():
+    """Test penetration detection with body reading error."""
+    async def receive():
+        raise Exception("Body read error")
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "POST",
+            "path": "/",
+            "headers": [
+                (b"content-type", b"application/json"),
+                (b"content-length", b"10")
+            ],
+            "query_string": b"",
+            "client": ("127.0.0.1", 12345),
+        },
+        receive=receive,
+    )
+
+    assert await detect_penetration_attempt(request) == False
+
+
+@pytest.mark.asyncio
+async def test_is_ip_allowed_blocked_country(mocker):
+    """Test is_ip_allowed with blocked country."""
+    config = SecurityConfig(
+        ipinfo_token="test",
+        blocked_countries=["CN"]
+    )
+
+    mock_ipinfo = Mock()
+    mock_ipinfo.reader = True
+    mock_ipinfo.get_country.return_value = "CN"
+
+    mocker.patch(
+        "guard.utils.check_ip_country",
+        return_value=True
+    )
+
+    result = await is_ip_allowed("192.168.1.1", config, mock_ipinfo)
+    assert result is False

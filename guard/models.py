@@ -7,6 +7,7 @@ from ipaddress import (
     ip_network,
     IPv4Address
 )
+from pathlib import Path
 from pydantic import (
     BaseModel,
     field_validator,
@@ -20,7 +21,6 @@ from typing import (
     Optional,
     Set
 )
-
 
 class SecurityConfig(BaseModel):
     """
@@ -45,6 +45,16 @@ class SecurityConfig(BaseModel):
     str:
         The IPInfo API token for IP geolocation.
     """
+
+    ipinfo_db_path: Optional[Path] = Field(
+        default=Path("data/ipinfo/country_asn.mmdb"),
+        description="Path to the IPInfo database file"
+    )
+    """
+    Optional[Path]:
+        The path to the IPInfo database file.
+    """
+
 
     whitelist: Optional[List[str]] = Field(
         default=None,
@@ -355,7 +365,10 @@ class SecurityConfig(BaseModel):
     """
 
     @field_validator('whitelist', 'blacklist')
-    def validate_ip_lists(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+    def validate_ip_lists(
+        cls,
+        v: Optional[List[str]]
+    ) -> Optional[List[str]]:
         """Validate IP addresses and CIDR ranges in whitelist/blacklist."""
         if v is None:
             return None
@@ -372,3 +385,10 @@ class SecurityConfig(BaseModel):
             except ValueError:
                 raise ValueError(f"Invalid IP or CIDR range: {entry}")
         return validated
+
+    @field_validator('block_cloud_providers', mode='before')
+    def validate_cloud_providers(cls, v):
+        valid_providers = {"AWS", "GCP", "Azure"}
+        if v is None:
+            return set()
+        return {p for p in v if p in valid_providers}

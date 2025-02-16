@@ -70,3 +70,13 @@ async def test_reset_ip_ban_manager():
     await ip_ban_manager.ban_ip("test_ip", 3600)
     await ip_ban_manager.reset()
     assert await ip_ban_manager.is_ip_banned("test_ip") == False
+
+
+@pytest.mark.asyncio
+async def test_ban_ip_concurrent_access():
+    manager = IPBanManager()
+    ip = "192.168.1.100"
+    await asyncio.gather(
+        *[manager.ban_ip(ip, 1) for _ in range(10)]
+    )
+    assert await manager.is_ip_banned(ip)
