@@ -70,6 +70,7 @@ app = FastAPI()
 # Define your security configuration
 config = SecurityConfig(
     ipinfo_token="your_ipinfo_token_here",  # Required for IP geolocation
+    db_path="custom/ipinfo.db",  # Optional custom database path
     whitelist=["192.168.1.1"],
     blacklist=["10.0.0.1"],
     blocked_countries=["AR", "IT"],
