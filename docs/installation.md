@@ -36,7 +36,10 @@ from guard.models import SecurityConfig
 
 app = FastAPI()
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here", # Required for IP geolocation
+    ipinfo_token="your_ipinfo_token_here",
+    enable_redis=True,  # Enabled by default, disable to use in-memory storage
+    redis_url="redis://localhost:6379/0",
+    redis_prefix="prod:security:",
     whitelist=["192.168.1.1"],
     blacklist=["10.0.0.1"],
     blocked_countries=["AR", "IT"],
@@ -48,3 +51,8 @@ config = SecurityConfig(
 
 app.add_middleware(SecurityMiddleware, config=config)
 ```
+
+**Note**: When Redis is disabled:
+- Rate limiting and IP bans become instance-local
+- Cloud provider IP ranges refresh every hour
+- Penetration patterns reset on app restart

@@ -18,6 +18,20 @@ ip_ban_manager = IPBanManager()
 
 The `IPBanManager` uses an in-memory cache to track banned IPs and their ban durations.
 
+## Distributed Banning
+When Redis is enabled:
+- Bans are shared across instances
+- Ban expiration is handled automatically
+- Supports atomic ban operations
+
+```python
+# Cluster-wide ban
+await ip_ban_manager.ban_ip("192.168.1.1", 3600, distributed=True)
+
+# Check ban status across cluster
+is_banned = await ip_ban_manager.is_ip_banned("192.168.1.1", check_redis=True)
+```
+
 ## Methods
 
 ### ban_ip

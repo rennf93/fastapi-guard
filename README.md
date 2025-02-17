@@ -45,6 +45,8 @@ Before using `fastapi-guard`, you'll need to obtain an IPInfo token:
 - **CORS Configuration**: Configure CORS settings for your FastAPI application.
 - **Cloud Provider IP Blocking**: Block requests from cloud provider IPs (AWS, GCP, Azure).
 - **IP Geolocation**: Use IPInfo.io API to determine the country of an IP address.
+- **Distributed State Management**: (Optional) Redis integration for shared security state across instances
+- **Flexible Storage**: Redis-enabled distributed storage or in-memory storage for single instance deployments
 
 ## Installation
 
@@ -249,6 +251,24 @@ config = SecurityConfig(
 )
 ```
 
+### Redis Configuration
+
+Enable distributed state management across multiple instances:
+
+```python
+config = SecurityConfig(
+    enable_redis=True,
+    redis_url="redis://prod-redis:6379/1",
+    redis_prefix="myapp:security:",
+)
+```
+
+The Redis integration provides:
+- Atomic increment operations for rate limiting
+- Distributed IP ban tracking
+- Cloud provider IP range caching
+- Pattern storage for penetration detection
+
 ## Detailed Configuration Options
 
 ### SecurityConfig
@@ -259,6 +279,9 @@ The `SecurityConfig` class defines the structure for security configuration, inc
 
 - `ipinfo_token`: str - The IPInfo API token required for IP geolocation functionality.
 - `db_path`: Optional[str] - Custom path for IPInfo database storage (default: ./data/ipinfo/country_asn.mmdb)
+- `enable_redis`: bool - Enable Redis for distributed state (default: True). When disabled, uses in-memory storage
+- `redis_url`: Optional[str] - Redis connection URL (default: "redis://localhost:6379")
+- `redis_prefix`: str - Prefix for Redis keys (default: "fastapi_guard:")
 - `whitelist`: Optional[List[str]] - A list of IP addresses or ranges that are always allowed. If set to None, no whitelist is applied.
 - `blacklist`: List[str] - A list of IP addresses or ranges that are always blocked.
 - `blocked_countries`: List[str] - A list of country codes whose IP addresses should be blocked.
@@ -299,4 +322,5 @@ Renzo Franceschini - [rennf93@gmail.com](mailto:rennf93@gmail.com)
 - [aiohttp](https://docs.aiohttp.org/)
 - [cachetools](https://cachetools.readthedocs.io/)
 - [requests](https://docs.python-requests.org/)
+- [Redis](https://redis.io/)
 - [uvicorn](https://www.uvicorn.org/)

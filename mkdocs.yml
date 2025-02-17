@@ -55,9 +55,11 @@ nav:
     - Configuration:
       - CORS: tutorial/configuration/cors.md
       - Logging: tutorial/configuration/logging.md
+    - Redis Integration: tutorial/redis-integration/caching.md
   - API Reference:
     - Overview: api/overview.md
     - SecurityMiddleware: api/security-middleware.md
+    - RedisManager: api/redis-manager.md
     - IPBanManager: api/ipban-manager.md
     - IPInfoManager: api/ipinfo-manager.md
     - SusPatterns: api/sus-patterns.md

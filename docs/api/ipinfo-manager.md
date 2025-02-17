@@ -54,6 +54,17 @@ def close(self):
     """
 ```
 
+## Redis Caching
+The database is cached in Redis with 24-hour TTL when enabled:
+
+```python
+# Get cached database
+db_content = await redis.get_key("ipinfo", "database")
+
+# Force refresh cache
+await ipinfo_db.initialize()  # Will update Redis cache
+```
+
 ## Usage Example
 
 ```python

@@ -58,6 +58,17 @@ async def get_all_patterns(cls) -> List[str]:
     """
 ```
 
+## Pattern Synchronization
+Custom patterns are stored in Redis when enabled:
+
+```python
+# Add pattern to Redis
+await SusPatterns.add_pattern(r"malicious.*", custom=True)
+
+# Get patterns from Redis
+patterns = await redis.get_key("patterns", "custom")
+```
+
 ## Usage Example
 
 ```python
@@ -77,4 +88,4 @@ await SusPatterns.remove_pattern(
     r"malicious_pattern.*",
     custom=True
 )
-``` 
+```
