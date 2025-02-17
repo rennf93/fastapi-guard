@@ -58,7 +58,7 @@ async def test_database_retry_success(tmp_path):
     """Test successful download after retry"""
     db = IPInfoManager(token="test", db_path=tmp_path/"test.mmdb")
     mock_response = Mock()
-    mock_response.raise_for_status = Mock()
+    mock_response.raise_for_status = AsyncMock()
     mock_response.__aenter__ = AsyncMock(return_value=mock_response)
     mock_response.__aexit__ = AsyncMock()
     mock_response.read = AsyncMock(return_value=b"test data")
@@ -205,3 +205,65 @@ async def test_close_with_reader(tmp_path):
 
     db.close()
     mock_reader.close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_redis_cache_hit(tmp_path):
+    """Test database initialization from Redis cache"""
+    db = IPInfoManager(token="test", db_path=tmp_path/"test.mmdb")
+    db.redis_handler = AsyncMock()
+    db.redis_handler.get_key.return_value = b"mock_db_data"  # Raw bytes
+
+    mock_reader = Mock()
+    mock_reader.get.return_value = {"country": "US"}
+
+    with patch("maxminddb.open_database", return_value=mock_reader) as mock_open:
+        await db.initialize()
+
+        # Verify Redis cache check
+        db.redis_handler.get_key.assert_awaited_once_with("ipinfo", "database")
+
+        # Verify file write with proper bytes handling
+        with open(db.db_path, 'rb') as f:
+            assert f.read() == b"mock_db_data"
+
+        # Verify database initialization
+        mock_open.assert_called_once_with(str(db.db_path))
+        assert db.reader is mock_reader
+
+
+@pytest.mark.asyncio
+async def test_redis_cache_update(tmp_path):
+    """Test database storage in Redis after download"""
+    db = IPInfoManager(token="test", db_path=tmp_path/"test.mmdb")
+    db.redis_handler = AsyncMock()
+
+    mock_response = AsyncMock()
+    mock_response.__aenter__.return_value = mock_response
+    mock_response.read.return_value = b"new_db_data"
+
+    with patch("aiohttp.ClientSession.get", return_value=mock_response), \
+         patch("maxminddb.open_database"):
+        await db._download_database()
+
+        # Verify Redis storage with raw bytes
+        db.redis_handler.set_key.assert_awaited_once_with(
+            "ipinfo",
+            "database",
+            b"new_db_data".decode('latin-1'),
+            ttl=86400
+        )
+
+
+@pytest.mark.asyncio
+async def test_redis_initialization_flow(tmp_path):
+    """Test Redis handler initialization pattern"""
+    db = IPInfoManager(token="test", db_path=tmp_path/"test.mmdb")
+    mock_redis = AsyncMock()
+
+    # Verify initialization sequence
+    with patch.object(db, 'initialize', new_callable=AsyncMock) as mock_init:
+        await db.initialize_redis(mock_redis)
+
+        assert db.redis_handler is mock_redis
+        mock_init.assert_awaited_once()

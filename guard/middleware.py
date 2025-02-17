@@ -364,5 +364,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             await self.redis_handler.initialize()
             await cloud_handler.initialize_redis(self.redis_handler)
             await ip_ban_manager.initialize_redis(self.redis_handler)
+            await self.ipinfo_db.initialize_redis(self.redis_handler)
             await SusPatterns().initialize_redis(self.redis_handler)
             await cloud_handler.refresh()

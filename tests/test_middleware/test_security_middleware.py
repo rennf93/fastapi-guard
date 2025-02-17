@@ -4,6 +4,7 @@ from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
+from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.sus_patterns import SusPatterns
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
@@ -453,16 +454,18 @@ async def test_cloud_ip_blocking_with_refresh():
     with patch.object(cloud_handler, "refresh", mock_refresh), \
          patch.object(cloud_handler, "is_cloud_ip", return_value=False):
 
-        request = Request(scope={
-            "type": "http",
-            "method": "GET",
-            "path": "/",
-            "headers": [(b"x-forwarded-for", b"192.168.1.1")],
-            "client": ("192.168.1.1", 12345),
-            "query_string": b"",
-            "server": ("testserver", 80),
-            "scheme": "http",
-        })
+        request = Request(
+            scope={
+                "type": "http",
+                "method": "GET",
+                "path": "/",
+                "headers": [(b"x-forwarded-for", b"192.168.1.1")],
+                "client": ("192.168.1.1", 12345),
+                "query_string": b"",
+                "server": ("testserver", 80),
+                "scheme": "http",
+            }
+        )
         request._receive = lambda: {"type": "http.request", "body": b""}
 
         async def mock_call_next(request):
@@ -625,6 +628,7 @@ async def test_redis_initialization(security_config_redis):
     with patch.object(middleware.redis_handler, 'initialize') as redis_init, \
          patch.object(cloud_handler, 'initialize_redis') as cloud_init, \
          patch.object(ip_ban_manager, 'initialize_redis') as ipban_init, \
+         patch.object(IPInfoManager, 'initialize_redis') as ipinfo_init, \
          patch.object(SusPatterns(), 'initialize_redis') as sus_init, \
          patch.object(cloud_handler, 'refresh', new_callable=AsyncMock) as cloud_refresh:
 
@@ -636,8 +640,8 @@ async def test_redis_initialization(security_config_redis):
         # Verify component initializations with Redis
         cloud_init.assert_awaited_once_with(middleware.redis_handler)
         ipban_init.assert_awaited_once_with(middleware.redis_handler)
+        ipinfo_init.assert_awaited_once_with(middleware.redis_handler)
         sus_init.assert_awaited_once_with(middleware.redis_handler)
-
         # Verify initial cloud refresh
         cloud_refresh.assert_awaited_once()
 
