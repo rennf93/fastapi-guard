@@ -1,4 +1,3 @@
-# fastapi_guard/models.py
 from fastapi import (
     Request,
     Response

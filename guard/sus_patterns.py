@@ -187,7 +187,6 @@ class SusPatterns:
                 pattern
             )
 
-            # Cache in Redis if available
             if cls._instance.redis_handler:
                 await cls._instance.redis_handler.set_key(
                     "patterns",
@@ -230,7 +229,6 @@ class SusPatterns:
                 pattern
             )
 
-            # Update Redis if available
             if cls._instance.redis_handler:
                 await cls._instance.redis_handler.set_key(
                     "patterns",

@@ -420,7 +420,7 @@ async def test_get_ip_country(mocker):
     mock_ipinfo = mocker.patch("guard.handlers.ipinfo_handler.IPInfoManager")
     mock_db = mock_ipinfo.return_value
     mock_db.get_country.return_value = "US"
-    mock_db.reader = True  # Mock initialized reader
+    mock_db.reader = True
 
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
@@ -490,7 +490,6 @@ async def test_check_ip_country():
         whitelist_countries=["US"]
     )
 
-    # Mock IPInfoManager
     with patch("guard.handlers.ipinfo_handler.IPInfoManager") as MockIPInfoManager:
         mock_db = MockIPInfoManager.return_value
         mock_db.get_country.return_value = "CN"

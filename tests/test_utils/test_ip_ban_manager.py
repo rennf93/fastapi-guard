@@ -152,8 +152,8 @@ async def test_ip_ban_manager_redis_expired_cleanup(security_config_redis):
     assert await manager.is_ip_banned(ip) == True
 
     # Clear local cache and manually set expired time in Redis
-    manager.banned_ips.clear()  # Clear local cache
-    past_expiry = str(time.time() - 10)  # 10 seconds in the past
+    manager.banned_ips.clear()
+    past_expiry = str(time.time() - 10)
     await redis_mgr.set_key("banned_ips", ip, past_expiry)
 
     # Check ban status - this should trigger the cleanup

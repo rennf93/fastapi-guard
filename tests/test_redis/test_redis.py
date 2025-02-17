@@ -80,7 +80,7 @@ async def test_redis_error_handling(security_config_redis):
 
         with pytest.raises(HTTPException) as exc_info:
             await handler.safe_operation(_fail_operation)
-        assert exc_info.value.status_code == 500
+        assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         return {"message": "success"}
 
     async with AsyncClient(
@@ -108,7 +108,7 @@ async def test_redis_connection_retry(security_config_redis, mocker):
     async def read_root():
         with pytest.raises(HTTPException) as exc_info:
             await handler.get_key("test", "retry")
-        assert exc_info.value.status_code == 500
+        assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         return {"message": "success"}
 
     async with AsyncClient(
@@ -196,8 +196,8 @@ async def test_redis_connection_context(security_config_redis):
     await handler.close()
     with pytest.raises(HTTPException) as exc_info:
         async with handler.get_connection() as conn:
-            await conn.get("test:key")  # This should fail
-    assert exc_info.value.status_code == 500
+            await conn.get("test:key")
+    assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
     await handler.close()
 
@@ -213,7 +213,7 @@ async def test_redis_connection_failures(security_config_redis):
     handler = RedisManager(bad_config)
     with pytest.raises(HTTPException) as exc_info:
         await handler.initialize()
-    assert exc_info.value.status_code == 500
+    assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert handler._redis is None
 
     # Test with valid config but force connection failure
@@ -224,13 +224,13 @@ async def test_redis_connection_failures(security_config_redis):
     await handler.close()
     with pytest.raises(HTTPException) as exc_info:
         await handler.get_key("test", "key")
-    assert exc_info.value.status_code == 500
+    assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
     # Test safe_operation with null connection
     handler._redis = None
     with pytest.raises(HTTPException) as exc_info:
         await handler.safe_operation(lambda conn: conn.get("test:key"))
-    assert exc_info.value.status_code == 500
+    assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
 @pytest.mark.asyncio
@@ -258,8 +258,8 @@ async def test_redis_failed_initialization_operations(security_config_redis):
 
     with pytest.raises(HTTPException) as exc_info:
         await handler.get_key("test", "key")
-    assert exc_info.value.status_code == 500
+    assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
     with pytest.raises(HTTPException) as exc_info:
         await handler.set_key("test", "key", "value")
-    assert exc_info.value.status_code == 500
+    assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR

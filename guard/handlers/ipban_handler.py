@@ -50,20 +50,18 @@ class IPBanManager:
         """
         current_time = time.time()
 
-        # Check local cache first
         if ip in self.banned_ips:
             if current_time > self.banned_ips[ip]:
                 del self.banned_ips[ip]
                 return False
             return True
 
-        # Check Redis if available
         if self.redis_handler:
             expiry = await self.redis_handler.get_key("banned_ips", ip)
             if expiry:
                 expiry_time = float(expiry)
                 if current_time <= expiry_time:
-                    self.banned_ips[ip] = expiry_time  # Update local cache
+                    self.banned_ips[ip] = expiry_time
                     return True
                 await self.redis_handler.delete("banned_ips", ip)
 

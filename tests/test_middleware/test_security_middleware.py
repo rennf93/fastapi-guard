@@ -10,7 +10,7 @@ from httpx._transports.asgi import ASGITransport
 import os
 import pytest
 import time
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, Mock
 
 
 IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
@@ -397,7 +397,7 @@ async def test_cloud_ip_refresh():
 
         assert mock_is_cloud_ip.called
         assert isinstance(response, Response)
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.asyncio
@@ -434,7 +434,7 @@ async def test_excluded_paths():
         base_url="http://test"
     ) as client:
         response = await client.get("/health")
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.asyncio
@@ -449,24 +449,21 @@ async def test_cloud_ip_blocking_with_refresh():
 
     middleware.last_cloud_ip_refresh = time.time() - 3700
 
-    with patch.object(cloud_handler, "refresh", new_callable=AsyncMock) as mock_refresh, \
+    mock_refresh = Mock()
+    with patch.object(cloud_handler, "refresh", mock_refresh), \
          patch.object(cloud_handler, "is_cloud_ip", return_value=False):
-        async def receive():
-            return {"type": "http.request", "body": b""}
 
-        request = Request(
-            scope={
-                "type": "http",
-                "method": "GET",
-                "path": "/",
-                "headers": [(b"x-forwarded-for", b"192.168.1.1")],
-                "client": ("192.168.1.1", 12345),
-                "query_string": b"",
-                "server": ("testserver", 80),
-                "scheme": "http",
-            }
-        )
-        request._receive = receive
+        request = Request(scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [(b"x-forwarded-for", b"192.168.1.1")],
+            "client": ("192.168.1.1", 12345),
+            "query_string": b"",
+            "server": ("testserver", 80),
+            "scheme": "http",
+        })
+        request._receive = lambda: {"type": "http.request", "body": b""}
 
         async def mock_call_next(request):
             return Response("OK")

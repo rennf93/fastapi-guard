@@ -8,7 +8,6 @@ import ipaddress
 import pytest
 from unittest.mock import patch, Mock
 from guard.handlers.redis_handler import RedisManager
-from fastapi import HTTPException
 
 
 @pytest.fixture
@@ -202,12 +201,12 @@ async def test_cloud_ip_redis_caching(security_config_redis):
 
         # Test error handling
         mock_aws.side_effect = Exception("API Error")
-        await manager.refresh_async()  # Should keep existing ranges on error
+        await manager.refresh_async()
         assert manager.is_cloud_ip("192.168.1.1", {"AWS"})
 
         # Test refresh_async without Redis
         manager.redis_handler = None
-        await manager.refresh_async()  # Should fall back to sync refresh
+        await manager.refresh_async()
 
         await redis_handler.close()
 
@@ -277,7 +276,7 @@ async def test_cloud_ip_redis_error_handling(security_config_redis):
         await manager.initialize_redis(redis_handler)
 
         # Test provider not in ip_ranges during error
-        manager.ip_ranges.pop("AWS", None)  # Remove AWS from ip_ranges
+        manager.ip_ranges.pop("AWS", None)
         await manager.refresh_async()
 
         assert isinstance(manager.ip_ranges["AWS"], set)

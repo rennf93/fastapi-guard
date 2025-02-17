@@ -70,7 +70,7 @@ class IPInfoManager:
             return True
 
         age = time.time() - self.db_path.stat().st_mtime
-        return age > 86400  # 24 hours
+        return age > 86400
 
     def get_country(self, ip: str) -> Optional[str]:
         """Get country code for an IP address"""

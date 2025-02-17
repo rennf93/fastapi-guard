@@ -95,12 +95,11 @@ class CloudManager:
         self.redis_handler = None
         self.logger = logging.getLogger(__name__)
 
-        # Perform synchronous refresh only if Redis is not going to be used
         self._initial_refresh()
 
     def _initial_refresh(self):
         """Perform initial synchronous refresh if Redis is not used."""
-        if self.redis_handler is None:  # Only refresh if Redis is not configured
+        if self.redis_handler is None:
             self._refresh_sync()
 
     def _refresh_sync(self):
@@ -123,7 +122,7 @@ class CloudManager:
     async def initialize_redis(self, redis_handler):
         """Initialize Redis connection and load cached ranges."""
         self.redis_handler = redis_handler
-        await self.refresh_async()  # Use async refresh instead of sync
+        await self.refresh_async()
 
     def refresh(self):
         """Synchronous refresh method for backward compatibility."""
@@ -140,7 +139,6 @@ class CloudManager:
 
         for provider in ["AWS", "GCP", "Azure"]:
             try:
-                # Try to get from Redis cache first
                 cached_ranges = await self.redis_handler.get_key(
                     "cloud_ranges",
                     provider
@@ -152,7 +150,6 @@ class CloudManager:
                     }
                     continue
 
-                # Fetch from source if not in cache
                 fetch_func = {
                     "AWS": fetch_aws_ip_ranges,
                     "GCP": fetch_gcp_ip_ranges,
@@ -160,22 +157,20 @@ class CloudManager:
                 }[provider]
 
                 ranges = fetch_func()
-                if ranges:  # Only update if we got valid ranges
+                if ranges:
                     self.ip_ranges[provider] = ranges
 
-                    # Cache in Redis if available
                     await self.redis_handler.set_key(
                         "cloud_ranges",
                         provider,
                         ','.join(str(ip) for ip in ranges),
-                        ttl=3600  # Cache for 1 hour
+                        ttl=3600
                     )
 
             except Exception as e:
                 self.logger.error(
                     f"Failed to refresh {provider} IP ranges: {str(e)}"
                 )
-                # Keep existing ranges on error
                 if provider not in self.ip_ranges:
                     self.ip_ranges[provider] = set()
 
@@ -202,5 +197,4 @@ class CloudManager:
             return False
 
 
-# Global instance
 cloud_handler = CloudManager()
