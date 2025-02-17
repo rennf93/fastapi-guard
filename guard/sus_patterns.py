@@ -152,7 +152,10 @@ class SusPatterns:
         """Initialize Redis connection and load cached patterns"""
         self.redis_handler = redis_handler
         if self.redis_handler:
-            cached_patterns = await self.redis_handler.get_key("patterns", "custom")
+            cached_patterns = await self.redis_handler.get_key(
+                "patterns",
+                "custom"
+            )
             if cached_patterns:
                 patterns = cached_patterns.split(',')
                 for pattern in patterns:
