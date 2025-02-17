@@ -74,6 +74,13 @@ class IPBanManager:
         Reset the banned IPs.
         """
         self.banned_ips.clear()
+        if self.redis_handler:
+            async with self.redis_handler.get_connection() as conn:
+                keys = await conn.keys(
+                    f"{self.redis_handler.config.redis_prefix}banned_ips:*"
+                )
+                if keys:
+                    await conn.delete(*keys)
 
 
 ip_ban_manager = IPBanManager()
