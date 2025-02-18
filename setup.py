@@ -16,6 +16,7 @@ setup(
         "fastapi",
         "ipaddress",
         "maxminddb",
+        "redis",
         "requests",
         "uvicorn",
     ],
