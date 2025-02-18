@@ -16,6 +16,7 @@ FastAPI Guard consists of several core components:
 - **SusPatterns**: Manages suspicious patterns for threat detection
 - **CloudManager**: Handles cloud provider IP range detection
 - **Utilities**: Helper functions for logging and request analysis
+- **RedisManager**: Handles Redis connections and atomic operations
 
 ## Key Classes
 
@@ -25,6 +26,7 @@ from guard.models import SecurityConfig
 from guard.handlers.cloud_handler import CloudManager
 from guard.handlers.ipban_handler import IPBanManager
 from guard.handlers.ipinfo_handler import IPInfoManager
+from guard.handlers.redis_handler import RedisManager
 from guard.sus_patterns import SusPatterns
 ```
 

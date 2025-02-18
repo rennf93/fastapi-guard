@@ -31,6 +31,7 @@ app = FastAPI()
 
 config = SecurityConfig(
     ipinfo_token="your_token_here",
+    enable_redis=False,
     rate_limit=100,
     auto_ban_threshold=5
 )
@@ -49,6 +50,8 @@ app.add_middleware(SecurityMiddleware, config=config)
 - **CORS Configuration**: Configure CORS settings for your FastAPI application.
 - **Cloud Provider IP Blocking**: Block requests from cloud provider IPs (AWS, GCP, Azure).
 - **IP Geolocation**: Use IPInfo.io API to determine the country of an IP address.
+- **Flexible Storage**: Choose between Redis-backed distributed state or in-memory storage
+- **Automatic Fallback**: Seamless operation with/without Redis connection
 
 ## Documentation
 
@@ -57,5 +60,6 @@ app.add_middleware(SecurityMiddleware, config=config)
 - [IP Management](tutorial/ip-management/banning.md)
 - [Security Features](tutorial/security/rate-limiting.md)
 - [API Reference](api/overview.md)
+- [Redis Integration Guide](tutorial/redis-integration/caching.md)
 
 [📖 **Learn More in the Tutorial**](tutorial/first-steps.md)

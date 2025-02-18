@@ -6,6 +6,13 @@ keywords: release notes, fastapi guard, security middleware, api security
 
 # Release Notes
 
+## v1.0.0 (2025-02-19)
+### New Features
+- Added Redis integration for distributed state management
+
+### Improvements
+- Improved tests & testing coverage (100% coverage)
+
 ## v0.4.0 (2025-02-16)
 ### New Features
 - Added `db_path` parameter to `IPInfoManager` for custom database locations

@@ -1,4 +1,3 @@
-# fastapi_guard/models.py
 from fastapi import (
     Request,
     Response
@@ -54,6 +53,33 @@ class SecurityConfig(BaseModel):
     """
     Optional[Path]:
         The path to the IPInfo database file.
+    """
+
+    enable_redis: bool = Field(
+        default=True,
+        description="Enable/disable Redis for distributed state management"
+    )
+    """
+    bool:
+        Whether to enable Redis for distributed state management.
+    """
+
+    redis_url: Optional[str] = Field(
+        default="redis://localhost:6379",
+        description="Redis URL for distributed state management"
+    )
+    """
+    Optional[str]:
+        The URL of the Redis server.
+    """
+
+    redis_prefix: str = Field(
+        default="fastapi_guard:",
+        description="Prefix for Redis keys to avoid collisions with other apps"
+    )
+    """
+    str:
+        The prefix for Redis keys to avoid collisions with other applications.
     """
 
     whitelist: Optional[List[str]] = Field(
@@ -344,24 +370,6 @@ class SecurityConfig(BaseModel):
     """
     bool:
         Whether to enable penetration attempt detection.
-    """
-
-    redis_url: Optional[str] = Field(
-        default="redis://localhost:6379",
-        description="Redis URL for distributed state management"
-    )
-    """
-    Optional[str]:
-        The URL of the Redis server.
-    """
-
-    redis_prefix: str = Field(
-        default="fastapi_guard:",
-        description="Prefix for Redis keys to avoid collisions with other apps"
-    )
-    """
-    str:
-        The prefix for Redis keys to avoid collisions with other applications.
     """
 
     @field_validator('whitelist', 'blacklist')

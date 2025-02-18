@@ -8,7 +8,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="fastapi_guard",
-    version="0.4.0",
+    version="1.0.0",
     packages=find_packages(include=['guard', 'guard.*']),
     install_requires=[
         "aiohttp",
@@ -37,7 +37,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/rennf93/fastapi-guard",
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Framework :: FastAPI",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",

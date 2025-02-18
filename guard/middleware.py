@@ -13,6 +13,7 @@ from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
 from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.models import SecurityConfig
+from guard.sus_patterns import SusPatterns
 from guard.utils import (
     detect_penetration_attempt,
     is_ip_allowed,
@@ -81,6 +82,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             db_path=config.ipinfo_db_path
         )
 
+        # Initialize Redis handler if enabled
+        self.redis_handler = None
+        if config.enable_redis:
+            from guard.handlers.redis_handler import RedisManager
+            self.redis_handler = RedisManager(config)
+
     async def setup_logger(self):
         if self.logger is None:
             self.logger = await setup_custom_logging(
@@ -145,7 +152,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # Refresh cloud IP ranges
         if (
             self.config.block_cloud_providers and
-            time.time() - self.last_cloud_ip_refresh > 3600  # 1 hour
+            time.time() - self.last_cloud_ip_refresh > 3600
         ):
             await self.refresh_cloud_ip_ranges()
 
@@ -340,7 +347,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     async def cleanup_rate_limits(self):
         """Clean up expired rate limit windows"""
         current_time = time.time()
-        if current_time - self.last_cleanup > 60:  # Cleanup every minute
+        if current_time - self.last_cleanup > 60:
             window_start = current_time - self.config.rate_limit_window
             for ip in list(self.request_times.keys()):
                 self.request_times[ip] = [
@@ -350,3 +357,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 if not self.request_times[ip]:
                     del self.request_times[ip]
             self.last_cleanup = current_time
+
+    async def initialize(self):
+        """Initialize all components asynchronously"""
+        if self.config.enable_redis:
+            await self.redis_handler.initialize()
+            await cloud_handler.initialize_redis(self.redis_handler)
+            await ip_ban_manager.initialize_redis(self.redis_handler)
+            await self.ipinfo_db.initialize_redis(self.redis_handler)
+            await SusPatterns().initialize_redis(self.redis_handler)
+            await cloud_handler.refresh()

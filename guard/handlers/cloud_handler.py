@@ -50,7 +50,6 @@ def fetch_azure_ip_ranges() -> Set[ipaddress.IPv4Network]:
                           "AppleWebKit/537.36 (KHTML, like Gecko) "
                           "Chrome/91.0.4472.124 Safari/537.36"
         }
-
         route = "/download/confirmation.aspx?id=56519"
         response = requests.get(
             f"https://www.microsoft.com{route}",
@@ -84,42 +83,117 @@ def fetch_azure_ip_ranges() -> Set[ipaddress.IPv4Network]:
 
 
 class CloudManager:
-    def __init__(self):
-        self.ip_ranges: Dict[str, Set[ipaddress.IPv4Network]] = {}
-        self.refresh()
+    """Manages cloud provider IP ranges with optional Redis caching."""
 
-    def refresh(self):
-        self.ip_ranges = {}
+    def __init__(self):
+        """Initialize the CloudManager with empty IP ranges."""
+        self.ip_ranges: Dict[str, Set[ipaddress.IPv4Network]] = {
+            "AWS": set(),
+            "GCP": set(),
+            "Azure": set()
+        }
+        self.redis_handler = None
+        self.logger = logging.getLogger(__name__)
+
+        self._initial_refresh()
+
+    def _initial_refresh(self):
+        """Perform initial synchronous refresh if Redis is not used."""
+        if self.redis_handler is None:
+            self._refresh_sync()
+
+    def _refresh_sync(self):
+        """Synchronous refresh of cloud IP ranges."""
         for provider, fetch_func in [
             ("AWS", fetch_aws_ip_ranges),
             ("GCP", fetch_gcp_ip_ranges),
-            ("Azure", fetch_azure_ip_ranges),
+            ("Azure", fetch_azure_ip_ranges)
         ]:
             try:
-                self.ip_ranges[provider] = fetch_func()
+                ranges = fetch_func()
+                if ranges:
+                    self.ip_ranges[provider] = ranges
             except Exception as e:
-                logging.error(
+                self.logger.error(
                     f"Failed to fetch {provider} IP ranges: {str(e)}"
                 )
                 self.ip_ranges[provider] = set()
 
-    def is_cloud_ip(
-        self,
-        ip: str,
-        providers: Set[str]
-    ) -> bool:
+    async def initialize_redis(self, redis_handler):
+        """Initialize Redis connection and load cached ranges."""
+        self.redis_handler = redis_handler
+        await self.refresh_async()
+
+    def refresh(self):
+        """Synchronous refresh method for backward compatibility."""
+        if self.redis_handler is None:
+            self._refresh_sync()
+        else:
+            raise RuntimeError("Use async refresh() when Redis is enabled")
+
+    async def refresh_async(self):
+        """Asynchronous refresh method for Redis-enabled operation."""
+        if self.redis_handler is None:
+            self._refresh_sync()
+            return
+
+        for provider in ["AWS", "GCP", "Azure"]:
+            try:
+                cached_ranges = await self.redis_handler.get_key(
+                    "cloud_ranges",
+                    provider
+                )
+                if cached_ranges:
+                    self.ip_ranges[provider] = {
+                        ipaddress.IPv4Network(ip)
+                        for ip in cached_ranges.split(',')
+                    }
+                    continue
+
+                fetch_func = {
+                    "AWS": fetch_aws_ip_ranges,
+                    "GCP": fetch_gcp_ip_ranges,
+                    "Azure": fetch_azure_ip_ranges
+                }[provider]
+
+                ranges = fetch_func()
+                if ranges:
+                    self.ip_ranges[provider] = ranges
+
+                    await self.redis_handler.set_key(
+                        "cloud_ranges",
+                        provider,
+                        ','.join(str(ip) for ip in ranges),
+                        ttl=3600
+                    )
+
+            except Exception as e:
+                self.logger.error(
+                    f"Failed to refresh {provider} IP ranges: {str(e)}"
+                )
+                if provider not in self.ip_ranges:
+                    self.ip_ranges[provider] = set()
+
+    def is_cloud_ip(self, ip: str, providers: Set[str]) -> bool:
+        """
+        Check if an IP belongs to specified cloud providers.
+
+        Args:
+            ip: IP address to check
+            providers: Set of cloud provider names to check against
+
+        Returns:
+            bool: True if IP belongs to any specified provider
+        """
         try:
             ip_obj = ipaddress.ip_address(ip)
             return any(
-                any(
-                    ip_obj in network
-                    for network in self.ip_ranges[provider]
-                )
+                any(ip_obj in network for network in self.ip_ranges[provider])
                 for provider in providers
                 if provider in self.ip_ranges
             )
         except ValueError:
-            logging.error(f"Invalid IP address: {ip}")
+            self.logger.error(f"Invalid IP address: {ip}")
             return False
 
 

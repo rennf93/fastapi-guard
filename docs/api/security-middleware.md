@@ -49,6 +49,23 @@ async def create_error_response(
     """
 ```
 
+## Redis Configuration
+Enable Redis in SecurityConfig:
+
+```python
+config = SecurityConfig(
+    enable_redis=True,
+    redis_url="redis://prod:6379/0",
+    redis_prefix="prod_security:"
+)
+```
+
+The middleware automatically initializes:
+- CloudManager Redis integration
+- IPBanManager distributed banning
+- IPInfo database caching
+- SusPatterns synchronization
+
 ## Usage Example
 
 ```python
@@ -64,4 +81,4 @@ config = SecurityConfig(
 )
 
 app.add_middleware(SecurityMiddleware, config=config)
-``` 
+```

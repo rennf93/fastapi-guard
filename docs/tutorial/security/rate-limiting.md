@@ -26,10 +26,6 @@ You can set different rate limits for different paths:
 ```python
 config = SecurityConfig(
     rate_limit=100,  # Default rate limit
-    rate_limit_paths={
-        "/api/public": 1000,  # Higher limit for public API
-        "/api/admin": 50      # Lower limit for admin API
-    }
 )
 ```
 
@@ -60,4 +56,4 @@ async def rate_limit_handler(request: Request, exc: HTTPException):
             }
         )
     raise exc
-``` 
+```

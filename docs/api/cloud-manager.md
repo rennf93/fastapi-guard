@@ -20,6 +20,12 @@ class CloudManager:
         self.refresh()
 ```
 
+## Redis Integration
+When Redis is enabled, CloudManager automatically:
+- Caches cloud IP ranges in Redis with 1-hour TTL
+- Uses cached ranges if available
+- Synchronizes ranges across instances
+
 ## Methods
 
 ### refresh

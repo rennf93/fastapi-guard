@@ -3,12 +3,15 @@ from fastapi import FastAPI, Request, Response, status
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
 from guard.handlers.cloud_handler import cloud_handler
+from guard.handlers.ipban_handler import ip_ban_manager
+from guard.handlers.ipinfo_handler import IPInfoManager
+from guard.sus_patterns import SusPatterns
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 import os
 import pytest
 import time
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock, Mock
 
 
 IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
@@ -395,7 +398,7 @@ async def test_cloud_ip_refresh():
 
         assert mock_is_cloud_ip.called
         assert isinstance(response, Response)
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.asyncio
@@ -432,7 +435,7 @@ async def test_excluded_paths():
         base_url="http://test"
     ) as client:
         response = await client.get("/health")
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.asyncio
@@ -447,10 +450,9 @@ async def test_cloud_ip_blocking_with_refresh():
 
     middleware.last_cloud_ip_refresh = time.time() - 3700
 
-    with patch.object(cloud_handler, "refresh") as mock_refresh, \
+    mock_refresh = Mock()
+    with patch.object(cloud_handler, "refresh", mock_refresh), \
          patch.object(cloud_handler, "is_cloud_ip", return_value=False):
-        async def receive():
-            return {"type": "http.request", "body": b""}
 
         request = Request(
             scope={
@@ -464,7 +466,7 @@ async def test_cloud_ip_blocking_with_refresh():
                 "scheme": "http",
             }
         )
-        request._receive = receive
+        request._receive = lambda: {"type": "http.request", "body": b""}
 
         async def mock_call_next(request):
             return Response("OK")
@@ -614,4 +616,45 @@ async def test_cloud_ip_blocking_with_logging():
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        
+
+
+@pytest.mark.asyncio
+async def test_redis_initialization(security_config_redis):
+    """Test Redis initialization in SecurityMiddleware"""
+    app = FastAPI()
+    middleware = SecurityMiddleware(app, security_config_redis)
+
+    # Mock external handlers
+    with patch.object(middleware.redis_handler, 'initialize') as redis_init, \
+         patch.object(cloud_handler, 'initialize_redis') as cloud_init, \
+         patch.object(ip_ban_manager, 'initialize_redis') as ipban_init, \
+         patch.object(IPInfoManager, 'initialize_redis') as ipinfo_init, \
+         patch.object(SusPatterns(), 'initialize_redis') as sus_init, \
+         patch.object(cloud_handler, 'refresh', new_callable=AsyncMock) as cloud_refresh:
+
+        await middleware.initialize()
+
+        # Verify Redis handler initialization
+        redis_init.assert_awaited_once()
+
+        # Verify component initializations with Redis
+        cloud_init.assert_awaited_once_with(middleware.redis_handler)
+        ipban_init.assert_awaited_once_with(middleware.redis_handler)
+        ipinfo_init.assert_awaited_once_with(middleware.redis_handler)
+        sus_init.assert_awaited_once_with(middleware.redis_handler)
+        # Verify initial cloud refresh
+        cloud_refresh.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_redis_disabled(security_config):
+    """Test middleware behavior when Redis is disabled"""
+    app = FastAPI()
+    security_config.enable_redis = False
+    middleware = SecurityMiddleware(app, security_config)
+
+    assert middleware.redis_handler is None
+
+    # Should not raise errors when Redis-dependent features are called
+    await middleware.initialize()
+    await middleware.cleanup_rate_limits()

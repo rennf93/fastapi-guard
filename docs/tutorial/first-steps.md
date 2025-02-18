@@ -27,9 +27,12 @@ Create a `SecurityConfig` instance with your desired settings:
 ```python
 config = SecurityConfig(
     ipinfo_token="your_ipinfo_token_here",  # Required for geolocation
+    db_path="data/ipinfo/country_asn.mmdb",  # Optional, default: ./data/ipinfo/country_asn.mmdb
+    enable_redis=True,  # Enable Redis integration
+    redis_url="redis://localhost:6379",  # Redis URL
     rate_limit=100,  # Max requests per minute
     auto_ban_threshold=5,  # Ban after 5 suspicious requests
-    custom_log_file="security.log"
+    custom_log_file="security.log"  # Custom log file
 )
 ```
 
@@ -54,6 +57,8 @@ app = FastAPI()
 
 config = SecurityConfig(
     ipinfo_token="your_ipinfo_token_here",
+    enable_redis=True,  # Redis enabled
+    redis_url="redis://localhost:6379",
     whitelist=["192.168.1.1"],
     blacklist=["10.0.0.1"],
     blocked_countries=["AR", "IT"],
@@ -83,3 +88,5 @@ Your API is now protected by FastAPI Guard! 🛡️
 - Learn about [IP Management](ip-management/banning.md)
 - Configure [Rate Limiting](security/rate-limiting.md)
 - Set up [Penetration Detection](security/penetration-detection.md)
+- Learn about [Redis Integration](redis-integration/caching.md)
+- Configure [Distributed Rate Limiting](security/rate-limiting.md)

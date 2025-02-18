@@ -4,6 +4,7 @@ from guard.sus_patterns import SusPatterns
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import reset_global_state
 from guard.handlers.ipinfo_handler import IPInfoManager
+from guard.handlers.redis_handler import RedisManager
 import os
 import pytest
 
@@ -33,6 +34,7 @@ def security_config():
     """
     return SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
+        enable_redis=False,
         whitelist=["127.0.0.1"],
         blacklist=["192.168.1.1"],
         blocked_countries=["CN"],
@@ -85,3 +87,52 @@ async def ipinfo_db(ipinfo_db_path):
     await db.initialize()
     yield db
     db.close()
+
+
+@pytest.fixture
+def security_config_redis(ipinfo_db_path):
+    """SecurityConfig with Redis enabled"""
+    return SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        enable_redis=True,
+        redis_url="redis://localhost:6379",
+        redis_prefix="test:fastapi_guard:",
+        whitelist=["127.0.0.1"],
+        blacklist=["192.168.1.1"],
+        blocked_countries=["CN"],
+        blocked_user_agents=[r"badbot"],
+        auto_ban_threshold=3,
+        auto_ban_duration=300,
+        custom_log_file="test_log.log",
+        custom_error_responses={
+            403: "Custom Forbidden",
+            429: "Custom Too Many Requests",
+        },
+        enable_cors=True,
+        cors_allow_origins=["https://example.com"],
+        cors_allow_methods=["GET", "POST"],
+        cors_allow_headers=["*"],
+        cors_allow_credentials=True,
+        cors_expose_headers=["X-Custom-Header"],
+        cors_max_age=600,
+    )
+
+
+@pytest.fixture(autouse=True)
+async def redis_cleanup():
+    """Clean Redis test keys before each test"""
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        enable_redis=True,
+        redis_url="redis://localhost:6379",
+        redis_prefix="test:fastapi_guard:"
+    )
+    handler = RedisManager(config)
+    await handler.initialize()
+    try:
+        async with handler.get_connection() as conn:
+            keys = await conn.keys("test:fastapi_guard:*")
+            if keys:
+                await conn.delete(*keys)
+    finally:
+        await handler.close()
