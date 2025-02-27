@@ -29,7 +29,7 @@ class SecurityConfig(BaseModel):
     This class defines the structure for security configuration,
     including IP whitelists and blacklists, blocked countries,
     blocked user agents, rate limiting, automatic IP banning,
-    IP2Location settings, HTTPS enforcement, custom hooks, CORS settings,
+    HTTPS enforcement, custom hooks, CORS settings,
     and blocking of cloud provider IPs.
 
     Whitelist takes precedence over all other rules.
