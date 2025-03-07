@@ -1,0 +1,117 @@
+name: Publish Containerized Demo
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  publish-container:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Send Initial Slack Message
+        id: send_initial_slack_release
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Started'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - Containerized Demo Release'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':whale:'
+          TITLE: 'Containerized Demo Release Started'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
+          MESSAGE: |
+              .
+              *NEW VERSION v${{ github.event.release.tag_name }} TRIGGERED CONTAINERIZED DEMO RELEASE!*
+
+              Commit:
+              ${{ github.event.head_commit.message }}
+              .
+          COLOR: warning
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build/Push Demo
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/fastapi-guard:${{ github.event.release.tag_name }}
+            ghcr.io/${{ github.repository_owner }}/fastapi-guard:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description="Security middleware library for FastAPI"
+            org.opencontainers.image.licenses=MIT
+
+      - name: Notify Success on Slack Channel
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Success'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - Containerized Demo Release'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':gem:'
+          TITLE: 'Containerized Demo Release Successful'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/pkgs/container/fastapi-guard'
+          MESSAGE: |
+            .
+            *Containerized Demo v${{ github.event.release.tag_name }} Published to GHCR!*
+            .
+            Commit message:
+              ${{ github.event.head_commit.message }}
+
+            Commit URL:
+              ${{ github.event.head_commit.url }}
+            .
+          COLOR: good
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack_release.outputs.SLACK_THREAD_TS }}
+
+      - name: Send Failure Notification to Slack
+        if: failure()
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Failed'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - Containerized Demo Release'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':skull:'
+          TITLE: 'Containerized Demo Release Failed'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
+          MESSAGE: |
+            .
+            *Containerized Demo Release v${{ github.event.release.tag_name }} Failed!*
+            .
+            Containerized Demo Release failed for commit:
+              ${{ github.event.head_commit.message }}
+
+            Commit URL:
+              ${{ github.event.head_commit.url }}
+
+            Please check the logs for more details.
+            .
+          COLOR: danger
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack_release.outputs.SLACK_THREAD_TS }}
