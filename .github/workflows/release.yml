@@ -94,7 +94,7 @@ jobs:
         uses: rennf93/github-actions-secrets-mgmt@v1.5
         with:
           OWNER: ${{ github.repository_owner }}
-          REPOSITORY: ${{ github.repository }}
+          REPOSITORY: ${{ github.event.repository.name }}
           ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SECRET_NAME: DOCS_VERSION
           SECRET_VALUE: ${{ github.event.release.tag_name }}
