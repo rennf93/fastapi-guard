@@ -1,0 +1,49 @@
+services:
+    fastapi-guard-example:
+      build:
+        context: .
+      command: uvicorn examples.main:app --reload
+      ports:
+        - "127.0.0.1:8000:8000"
+      environment:
+        - REDIS_URL=redis://redis:6379
+        - REDIS_PREFIX=${REDIS_PREFIX:-"test:fastapi_guard:"}
+        - IPINFO_TOKEN=${IPINFO_TOKEN:-"test_token"}
+      volumes:
+        - ./guard:/app/guard:z
+        - ./tests:/app/tests:z
+        - ./examples:/app/examples:z
+        - ./pyproject.toml:/app/pyproject.toml:z
+        - ./poetry.lock:/app/poetry.lock:z
+      depends_on:
+        redis:
+          condition: service_started
+
+    fastapi-guard:
+      build:
+        context: .
+      command: pytest -v --cov=.
+      environment:
+        - REDIS_URL=redis://redis:6379
+        - REDIS_PREFIX=${REDIS_PREFIX:-"test:fastapi_guard:"}
+        - IPINFO_TOKEN=${IPINFO_TOKEN:-"test_token"}
+      volumes:
+        - ./guard:/app/guard:z
+        - ./tests:/app/tests:z
+        - ./pyproject.toml:/app/pyproject.toml:z
+        - ./poetry.lock:/app/poetry.lock:z
+      depends_on:
+        redis:
+          condition: service_started
+
+    redis:
+      image: redis:7-alpine
+      ports:
+        - "6379:6379"
+      volumes:
+        - redis-data:/data
+      command: redis-server --save 60 1 --loglevel warning
+
+volumes:
+  redis-data:
+

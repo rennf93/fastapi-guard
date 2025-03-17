@@ -1,7 +1,9 @@
-from guard.sus_patterns import SusPatterns
-import pytest
 import re
+
+import pytest
+
 from guard.handlers.redis_handler import RedisManager
+from guard.sus_patterns import SusPatterns
 
 
 @pytest.mark.asyncio
@@ -50,10 +52,7 @@ async def test_invalid_pattern_handling():
 @pytest.mark.asyncio
 async def test_remove_nonexistent_pattern():
     sus_patterns = SusPatterns()
-    await sus_patterns.remove_pattern(
-        "nonexistent",
-        custom=True
-    )
+    await sus_patterns.remove_pattern("nonexistent", custom=True)
 
 
 def test_singleton_behavior():
@@ -118,7 +117,7 @@ async def test_redis_initialization(security_config_redis):
     await sus_patterns.initialize_redis(redis_handler)
 
     # Verify patterns were loaded from Redis
-    for pattern in test_patterns.split(','):
+    for pattern in test_patterns.split(","):
         assert pattern in sus_patterns.custom_patterns
 
     await redis_handler.close()
@@ -140,14 +139,14 @@ async def test_redis_pattern_persistence(security_config_redis):
 
     # Verify pattern was saved to Redis
     cached_patterns = await redis_handler.get_key("patterns", "custom")
-    assert test_pattern in cached_patterns.split(',')
+    assert test_pattern in cached_patterns.split(",")
 
     # Remove pattern
     await sus_patterns.remove_pattern(test_pattern, custom=True)
 
     # Verify pattern was removed from Redis
     cached_patterns = await redis_handler.get_key("patterns", "custom")
-    assert not cached_patterns or test_pattern not in cached_patterns.split(',')
+    assert not cached_patterns or test_pattern not in cached_patterns.split(",")
 
     await redis_handler.close()
 
@@ -182,7 +181,9 @@ async def test_get_all_compiled_patterns():
     compiled_patterns = await sus_patterns.get_all_compiled_patterns()
 
     # Verify both default and custom patterns are included
-    assert len(compiled_patterns) == len(sus_patterns.compiled_patterns) + len(sus_patterns.compiled_custom_patterns)
+    assert len(compiled_patterns) == len(sus_patterns.compiled_patterns) + len(
+        sus_patterns.compiled_custom_patterns
+    )
 
     # Test pattern matching with compiled patterns
     test_string = "test_pattern123"

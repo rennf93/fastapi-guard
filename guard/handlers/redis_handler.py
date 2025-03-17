@@ -1,11 +1,13 @@
 import asyncio
-from contextlib import asynccontextmanager
-from fastapi import HTTPException, status
-from guard.models import SecurityConfig
 import logging
+from contextlib import asynccontextmanager
+from typing import Any
+
+from fastapi import HTTPException, status
 from redis.asyncio import Redis
 from redis.exceptions import ConnectionError
-from typing import Any, Optional
+
+from guard.models import SecurityConfig
 
 
 class RedisManager:
@@ -14,12 +16,12 @@ class RedisManager:
     """
 
     _instance = None
-    _redis: Optional[Redis] = None
+    _redis: Redis | None = None
     _connection_lock = asyncio.Lock()
     _closed = False
 
     def __new__(cls, config: SecurityConfig):
-        cls._instance = super(RedisManager, cls).__new__(cls)
+        cls._instance = super().__new__(cls)
         cls._instance.config = config
         cls._instance.logger = logging.getLogger(__name__)
         cls._instance._closed = False
@@ -34,8 +36,7 @@ class RedisManager:
         async with self._connection_lock:
             try:
                 self._redis = Redis.from_url(
-                    self.config.redis_url,
-                    decode_responses=True
+                    self.config.redis_url, decode_responses=True
                 )
                 await self._redis.ping()
                 self.logger.info("Redis connection established")
@@ -45,8 +46,8 @@ class RedisManager:
                 self._redis = None
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Redis connection failed"
-                )
+                    detail="Redis connection failed",
+                ) from e
 
     async def close(self):
         """Close Redis connection properly"""
@@ -63,7 +64,7 @@ class RedisManager:
             if self._closed:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Redis connection closed"
+                    detail="Redis connection closed",
                 )
 
             if not self._redis:
@@ -74,8 +75,8 @@ class RedisManager:
             self.logger.error(f"Redis operation failed: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Redis connection failed"
-            )
+                detail="Redis connection failed",
+            ) from e
 
     async def safe_operation(self, func, *args, **kwargs):
         """Execute Redis operation with error handling"""
@@ -89,39 +90,35 @@ class RedisManager:
             self.logger.error(f"Redis operation failed: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Redis operation failed"
-            )
+                detail="Redis operation failed",
+            ) from e
 
     # Atomic operations
     async def get_key(self, namespace: str, key: str) -> Any:
         """Get a value from Redis with proper namespacing"""
+
         async def _get(conn):
             full_key = f"{self.config.redis_prefix}{namespace}:{key}"
             return await conn.get(full_key)
+
         return await self.safe_operation(_get)
 
     async def set_key(
-        self,
-        namespace: str,
-        key: str,
-        value: Any,
-        ttl: Optional[int] = None
+        self, namespace: str, key: str, value: Any, ttl: int | None = None
     ) -> bool:
         """Set a value in Redis with proper namespacing"""
+
         async def _set(conn):
             full_key = f"{self.config.redis_prefix}{namespace}:{key}"
             if ttl:
                 return await conn.setex(full_key, ttl, value)
             return await conn.set(full_key, value)
+
         return await self.safe_operation(_set)
 
-    async def incr(
-        self,
-        namespace: str,
-        key: str,
-        ttl: Optional[int] = None
-    ) -> int:
+    async def incr(self, namespace: str, key: str, ttl: int | None = None) -> int:
         """Atomic increment with namespacing"""
+
         async def _incr(conn):
             full_key = f"{self.config.redis_prefix}{namespace}:{key}"
             async with conn.pipeline() as pipe:
@@ -130,20 +127,25 @@ class RedisManager:
                     await pipe.expire(full_key, ttl)
                 result = await pipe.execute()
                 return result[0]
+
         return await self.safe_operation(_incr)
 
     async def exists(self, namespace: str, key: str) -> bool:
         """Check if a namespaced key exists"""
+
         async def _exists(conn):
             full_key = f"{self.config.redis_prefix}{namespace}:{key}"
             return bool(await conn.exists(full_key))
+
         return await self.safe_operation(_exists)
 
     async def delete(self, namespace: str, key: str) -> int:
         """Delete a namespaced key"""
+
         async def _delete(conn):
             full_key = f"{self.config.redis_prefix}{namespace}:{key}"
             return await conn.delete(full_key)
+
         return await self.safe_operation(_delete)
 
 

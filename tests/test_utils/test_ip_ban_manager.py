@@ -1,15 +1,16 @@
 import asyncio
-from fastapi import FastAPI, status
-from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
-from guard.handlers.ipban_handler import IPBanManager, ip_ban_manager
-from guard.handlers.redis_handler import RedisManager
-from httpx import AsyncClient
-from httpx._transports.asgi import ASGITransport
 import os
-import pytest
 import time
 
+import pytest
+from fastapi import FastAPI, status
+from httpx import AsyncClient
+from httpx._transports.asgi import ASGITransport
+
+from guard.handlers.ipban_handler import IPBanManager, ip_ban_manager
+from guard.handlers.redis_handler import RedisManager
+from guard.middleware import SecurityMiddleware
+from guard.models import SecurityConfig
 
 IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
 
@@ -22,13 +23,13 @@ async def test_ip_ban_manager(reset_state):
     manager = IPBanManager()
     ip = "192.168.1.1"
 
-    assert await manager.is_ip_banned(ip) == False
+    assert not await manager.is_ip_banned(ip)
 
     await manager.ban_ip(ip, 1)
-    assert await manager.is_ip_banned(ip) == True
+    assert await manager.is_ip_banned(ip)
 
     await asyncio.sleep(1.1)
-    assert await manager.is_ip_banned(ip) == False
+    assert not await manager.is_ip_banned(ip)
 
 
 @pytest.mark.asyncio
@@ -42,25 +43,21 @@ async def test_automatic_ip_ban(reset_state):
         enable_ip_banning=True,
         enable_penetration_detection=True,
         auto_ban_threshold=3,
-        auto_ban_duration=300
+        auto_ban_duration=300,
     )
     app.add_middleware(SecurityMiddleware, config=config)
 
     async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
         for _ in range(config.auto_ban_threshold):
             await client.get(
                 "/test",
                 params={"input": "<script>alert(1)</script>"},
-                headers={"X-Forwarded-For": "192.168.1.2"}
+                headers={"X-Forwarded-For": "192.168.1.2"},
             )
 
-        response = await client.get(
-            "/",
-            headers={"X-Forwarded-For": "192.168.1.2"}
-        )
+        response = await client.get("/", headers={"X-Forwarded-For": "192.168.1.2"})
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
@@ -71,16 +68,14 @@ async def test_reset_ip_ban_manager():
     """
     await ip_ban_manager.ban_ip("test_ip", 3600)
     await ip_ban_manager.reset()
-    assert await ip_ban_manager.is_ip_banned("test_ip") == False
+    assert not await ip_ban_manager.is_ip_banned("test_ip")
 
 
 @pytest.mark.asyncio
 async def test_ban_ip_concurrent_access():
     manager = IPBanManager()
     ip = "192.168.1.100"
-    await asyncio.gather(
-        *[manager.ban_ip(ip, 1) for _ in range(10)]
-    )
+    await asyncio.gather(*[manager.ban_ip(ip, 1) for _ in range(10)])
     assert await manager.is_ip_banned(ip)
 
 
@@ -97,17 +92,17 @@ async def test_ip_ban_manager_with_redis(security_config_redis):
 
     # Test banning
     await manager.ban_ip(ip, duration)
-    assert await manager.is_ip_banned(ip) == True
+    assert await manager.is_ip_banned(ip)
 
     # Test Redis persistence
     new_manager = IPBanManager()
     await new_manager.initialize_redis(redis_mgr)
-    assert await new_manager.is_ip_banned(ip) == True
+    assert await new_manager.is_ip_banned(ip)
 
     # Test expiration
     await asyncio.sleep(2.1)
-    assert await manager.is_ip_banned(ip) == False
-    assert await new_manager.is_ip_banned(ip) == False
+    assert not await manager.is_ip_banned(ip)
+    assert not await new_manager.is_ip_banned(ip)
 
     await redis_mgr.close()
 
@@ -124,14 +119,14 @@ async def test_ip_ban_manager_redis_reset(security_config_redis):
     ips = ["192.168.1.1", "192.168.1.2", "192.168.1.3"]
     for ip in ips:
         await manager.ban_ip(ip, 3600)
-        assert await manager.is_ip_banned(ip) == True
+        assert await manager.is_ip_banned(ip)
 
     # Reset and verify
     await manager.reset()
     for ip in ips:
-        assert await manager.is_ip_banned(ip) == False
+        assert not await manager.is_ip_banned(ip)
         # Verify Redis keys are also cleared
-        assert await redis_mgr.exists("banned_ips", ip) == False
+        assert not await redis_mgr.exists("banned_ips", ip)
 
     await redis_mgr.close()
 
@@ -149,7 +144,7 @@ async def test_ip_ban_manager_redis_expired_cleanup(security_config_redis):
 
     # Ban the IP
     await manager.ban_ip(ip, duration)
-    assert await manager.is_ip_banned(ip) == True
+    assert await manager.is_ip_banned(ip)
 
     # Clear local cache and manually set expired time in Redis
     manager.banned_ips.clear()
@@ -157,9 +152,9 @@ async def test_ip_ban_manager_redis_expired_cleanup(security_config_redis):
     await redis_mgr.set_key("banned_ips", ip, past_expiry)
 
     # Check ban status - this should trigger the cleanup
-    assert await manager.is_ip_banned(ip) == False
+    assert not await manager.is_ip_banned(ip)
 
     # Verify the key was deleted from Redis
-    assert await redis_mgr.exists("banned_ips", ip) == False
+    assert not await redis_mgr.exists("banned_ips", ip)
 
     await redis_mgr.close()

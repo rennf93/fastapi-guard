@@ -1,6 +1,6 @@
-from setuptools import setup, find_packages
 import pathlib
 
+from setuptools import find_packages, setup
 
 HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
@@ -22,8 +22,6 @@ setup(
     ],
     extras_require={
         "dev": [
-            "black",
-            "flake8",
             "httpx",
             "pytest",
             "pytest-asyncio",

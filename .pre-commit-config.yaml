@@ -1,0 +1,22 @@
+repos:
+-   repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff-format
+        entry: poetry run ruff format
+        require_serial: true
+        language: system
+        types: [ python ]
+      - id: ruff
+        name: ruff
+        entry: poetry run ruff check --force-exclude
+        require_serial: true
+        language: system
+        types: [python]
+      - id: mypy
+        name: mypy
+        entry: poetry run mypy guard
+        require_serial: true
+        language: system
+        types: [python]
+        pass_filenames: false
