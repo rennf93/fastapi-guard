@@ -1,0 +1,3 @@
+fastapi
+fastapi-guard
+uvicorn
