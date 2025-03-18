@@ -1,5 +1,5 @@
 # fastapi_guard/middleware.py
-import asyncio
+import logging
 import time
 from collections.abc import Awaitable, Callable
 
@@ -35,14 +35,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     penetration attempts.
     """
 
-    def __init__(
-        self, app: Callable[[Request], Awaitable[Response]], config: SecurityConfig
-    ):
+    def __init__(self, app: FastAPI, config: SecurityConfig):
         """
         Initialize the SecurityMiddleware.
 
         Args:
-            app (Callable[[Request], Awaitable[Response]]):
+            app (FastAPI):
                 The FastAPI application.
             config (SecurityConfig):
                 Configuration object for security settings.
@@ -51,9 +49,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self.config = config
         self.rate_limit = config.rate_limit
         self.rate_limit_window = config.rate_limit_window
-        self.request_counts = TTLCache(maxsize=10000, ttl=self.rate_limit_window)
-        self.logger = None
-        self.ip_request_counts = TTLCache(maxsize=10000, ttl=3600)
+        self.request_counts: TTLCache = TTLCache(
+            maxsize=10000, ttl=self.rate_limit_window
+        )
+        self.logger = logging.getLogger(__name__)
+        self.ip_request_counts: TTLCache = TTLCache(maxsize=10000, ttl=3600)
         self.last_cloud_ip_refresh = 0
         self.request_times: dict[str, list[float]] = {}
         self.suspicious_request_counts: dict[str, int] = {}
@@ -69,9 +69,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
             self.redis_handler = RedisManager(config)
 
-    async def setup_logger(self):
-        if self.logger is None:
-            self.logger = await setup_custom_logging("security.log")
+    async def setup_logger(self) -> None:
+        self.logger = await setup_custom_logging("security.log")
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
@@ -101,6 +100,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 https_url, status_code=status.HTTP_301_MOVED_PERMANENTLY
             )
 
+        if not request.client:
+            return await call_next(request)
+
         client_ip = (
             request.headers.get("X-Forwarded-For", request.client.host)
             .split(",")[0]
@@ -111,9 +113,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if any(request.url.path.startswith(path) for path in self.config.exclude_paths):
             return await call_next(request)
 
-        # Setup logging
-        if self.logger is None:
-            await self.setup_logger()
+        # Log request
         await log_request(request, self.logger)
 
         # Refresh cloud IP ranges
@@ -229,9 +229,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         return await call_next(request)
 
-    async def refresh_cloud_ip_ranges(self):
-        await asyncio.to_thread(cloud_handler.refresh)
-        self.last_cloud_ip_refresh = time.time()
+    async def refresh_cloud_ip_ranges(self) -> None:
+        """Refresh cloud IP ranges asynchronously."""
+        if self.config.enable_redis and self.redis_handler:
+            await cloud_handler.refresh_async()
+        else:
+            cloud_handler.refresh()
+        self.last_cloud_ip_refresh = int(time.time())
 
     async def create_error_response(
         self, status_code: int, default_message: str
@@ -241,7 +245,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         )
         return Response(custom_message, status_code=status_code)
 
-    async def reset(self):
+    async def reset(self) -> None:
         self.request_counts.clear()
         self.ip_request_counts.clear()
 
@@ -267,7 +271,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             return True
         return False
 
-    async def cleanup_rate_limits(self):
+    async def cleanup_rate_limits(self) -> None:
         """Clean up expired rate limit windows"""
         current_time = time.time()
         if current_time - self.last_cleanup > 60:
@@ -280,12 +284,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     del self.request_times[ip]
             self.last_cleanup = current_time
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize all components asynchronously"""
-        if self.config.enable_redis:
+        if self.config.enable_redis and self.redis_handler:
             await self.redis_handler.initialize()
             await cloud_handler.initialize_redis(self.redis_handler)
             await ip_ban_manager.initialize_redis(self.redis_handler)
             await self.ipinfo_db.initialize_redis(self.redis_handler)
             await SusPatterns().initialize_redis(self.redis_handler)
-            await cloud_handler.refresh()
+            await cloud_handler.refresh_async()

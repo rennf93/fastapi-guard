@@ -1,4 +1,5 @@
 import time
+from typing import Any
 
 from cachetools import TTLCache
 
@@ -8,17 +9,17 @@ class IPBanManager:
     A class for managing IP bans.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize the IPBanManager.
         """
-        self.banned_ips = TTLCache(maxsize=10000, ttl=3600)
-        self.redis_handler = None
+        self.banned_ips: TTLCache = TTLCache(maxsize=10000, ttl=3600)
+        self.redis_handler: Any | None = None
 
-    async def initialize_redis(self, redis_handler):
+    async def initialize_redis(self, redis_handler: Any) -> None:
         self.redis_handler = redis_handler
 
-    async def ban_ip(self, ip: str, duration: int):
+    async def ban_ip(self, ip: str, duration: int) -> None:
         """
         Ban an IP address for
         a specified duration.
@@ -55,7 +56,7 @@ class IPBanManager:
 
         return False
 
-    async def reset(self):
+    async def reset(self) -> None:
         """
         Reset the banned IPs.
         """
@@ -72,7 +73,7 @@ class IPBanManager:
 ip_ban_manager = IPBanManager()
 
 
-async def reset_global_state():
+async def reset_global_state() -> None:
     """
     Reset all global state.
     """

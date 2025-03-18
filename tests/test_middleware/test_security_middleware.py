@@ -424,10 +424,12 @@ async def test_cloud_ip_blocking_with_refresh():
     """Test cloud IP blocking with refresh functionality"""
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN, block_cloud_providers={"AWS", "GCP", "Azure"}
+        ipinfo_token=IPINFO_TOKEN,
+        block_cloud_providers={"AWS", "GCP", "Azure"},
+        enable_redis = False
     )
-    middleware = SecurityMiddleware(app, config)
 
+    middleware = SecurityMiddleware(app, config)
     middleware.last_cloud_ip_refresh = time.time() - 3700
 
     mock_refresh = Mock()
@@ -458,6 +460,19 @@ async def test_cloud_ip_blocking_with_refresh():
         mock_refresh.reset_mock()
         await middleware.dispatch(request, mock_call_next)
         mock_refresh.assert_not_called()
+
+    # Redis enabled
+    config.enable_redis = True
+    middleware = SecurityMiddleware(app, config)
+    middleware.last_cloud_ip_refresh = time.time() - 3700
+
+    mock_refresh_async = AsyncMock()
+    with (
+        patch.object(cloud_handler, "refresh_async", mock_refresh_async),
+        patch.object(cloud_handler, "is_cloud_ip", return_value=False),
+    ):
+        await middleware.dispatch(request, mock_call_next)
+        mock_refresh_async.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -645,7 +660,9 @@ async def test_redis_initialization(security_config_redis):
         patch.object(ip_ban_manager, "initialize_redis") as ipban_init,
         patch.object(IPInfoManager, "initialize_redis") as ipinfo_init,
         patch.object(SusPatterns(), "initialize_redis") as sus_init,
-        patch.object(cloud_handler, "refresh", new_callable=AsyncMock) as cloud_refresh,
+        patch.object(
+            cloud_handler, "refresh_async", new_callable=AsyncMock
+        ) as cloud_refresh,
     ):
         await middleware.initialize()
 

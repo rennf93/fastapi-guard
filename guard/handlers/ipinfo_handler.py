@@ -94,7 +94,10 @@ class IPInfoManager:
 
         try:
             result = self.reader.get(ip)
-            return result.get("country") if result else None
+            if isinstance(result, dict) and "country" in result:
+                country = result.get("country")
+                return str(country) if country is not None else None
+            return None
         except Exception:
             return None
 

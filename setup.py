@@ -33,7 +33,7 @@ setup(
     python_requires=">=3.10,<3.14",
     author="Renzo Franceschini",
     author_email="rennf93@gmail.com",
-    description="A security library for FastAPI to control IPs, log requests, and detect penetration attempts.",
+    description="Security library for FastAPI to control IPs and more.",
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/rennf93/fastapi-guard",

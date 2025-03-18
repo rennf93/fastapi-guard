@@ -2,6 +2,7 @@ import html
 import ipaddress
 import logging
 import re
+from typing import Any
 
 import requests
 
@@ -77,24 +78,24 @@ def fetch_azure_ip_ranges() -> set[ipaddress.IPv4Network]:
 class CloudManager:
     """Manages cloud provider IP ranges with optional Redis caching."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the CloudManager with empty IP ranges."""
         self.ip_ranges: dict[str, set[ipaddress.IPv4Network]] = {
             "AWS": set(),
             "GCP": set(),
             "Azure": set(),
         }
-        self.redis_handler = None
+        self.redis_handler: Any = None
         self.logger = logging.getLogger(__name__)
 
         self._initial_refresh()
 
-    def _initial_refresh(self):
+    def _initial_refresh(self) -> None:
         """Perform initial synchronous refresh if Redis is not used."""
         if self.redis_handler is None:
             self._refresh_sync()
 
-    def _refresh_sync(self):
+    def _refresh_sync(self) -> None:
         """Synchronous refresh of cloud IP ranges."""
         for provider, fetch_func in [
             ("AWS", fetch_aws_ip_ranges),
@@ -109,19 +110,19 @@ class CloudManager:
                 self.logger.error(f"Failed to fetch {provider} IP ranges: {str(e)}")
                 self.ip_ranges[provider] = set()
 
-    async def initialize_redis(self, redis_handler):
+    async def initialize_redis(self, redis_handler: Any) -> None:
         """Initialize Redis connection and load cached ranges."""
         self.redis_handler = redis_handler
         await self.refresh_async()
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Synchronous refresh method for backward compatibility."""
         if self.redis_handler is None:
             self._refresh_sync()
         else:
             raise RuntimeError("Use async refresh() when Redis is enabled")
 
-    async def refresh_async(self):
+    async def refresh_async(self) -> None:
         """Asynchronous refresh method for Redis-enabled operation."""
         if self.redis_handler is None:
             self._refresh_sync()

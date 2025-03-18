@@ -38,7 +38,10 @@ async def log_request(request: Request, logger: logging.Logger):
         logger (logging.Logger):
             The logger instance to use.
     """
-    client_ip = request.client.host
+    client_ip = "unknown"
+    if request.client:
+        client_ip = request.client.host
+
     method = request.method
     url = str(request.url)
     headers: dict[str, Any] = dict(request.headers)
@@ -64,7 +67,10 @@ async def log_suspicious_activity(
         logger (logging.Logger):
             The logger instance to use.
     """
-    client_ip = request.client.host
+    client_ip = "unknown"
+    if request.client:
+        client_ip = request.client.host
+
     method = request.method
     url = str(request.url)
     headers = dict(request.headers)
@@ -121,7 +127,7 @@ async def check_ip_country(
         host = ""
         if isinstance(request, str):
             host = request
-        else:
+        elif request.client:
             host = request.client.host
         details = f"{host}"
         reason_message = "No countries blocked or whitelisted"
@@ -131,7 +137,11 @@ async def check_ip_country(
     if not ipinfo_db.reader:
         await ipinfo_db.initialize()
 
-    ip = request if isinstance(request, str) else request.client.host
+    ip = (
+        request
+        if isinstance(request, str)
+        else (request.client.host if request.client else "unknown")
+    )
     country = ipinfo_db.get_country(ip)
 
     if not country:
@@ -265,7 +275,10 @@ async def detect_penetration_attempt(request: Request) -> bool:
     for value in request.query_params.values():
         if await check_value(value):
             message = "Potential attack detected from"
-            details = f"{request.client.host}: {value}"
+            client_ip = "unknown"
+            if request.client:
+                client_ip = request.client.host
+            details = f"{client_ip}: {value}"
             reason_message = "Suspicious pattern: query param"
             logging.warning(f"{message} {details} - {reason_message}")
             return True
@@ -273,7 +286,10 @@ async def detect_penetration_attempt(request: Request) -> bool:
     # Path
     if await check_value(request.url.path):
         message = "Potential attack detected from"
-        details = f"{request.client.host}: {request.url.path}"
+        client_ip = "unknown"
+        if request.client:
+            client_ip = request.client.host
+        details = f"{client_ip}: {request.url.path}"
         reason_message = "Suspicious pattern: path"
         logging.warning(f"{message} {details} - {reason_message}")
         return True
@@ -294,7 +310,10 @@ async def detect_penetration_attempt(request: Request) -> bool:
     for key, value in request.headers.items():
         if key.lower() not in excluded_headers and await check_value(value):
             message = "Potential attack detected from"
-            details = f"{request.client.host}: {key}={value}"
+            client_ip = "unknown"
+            if request.client:
+                client_ip = request.client.host
+            details = f"{client_ip}: {key}={value}"
             reason_message = "Suspicious pattern: header"
             logging.warning(f"{message} {details} - {reason_message}")
             return True
@@ -304,7 +323,10 @@ async def detect_penetration_attempt(request: Request) -> bool:
         body = (await request.body()).decode()
         if await check_value(body):
             message = "Potential attack detected from"
-            details = f"{request.client.host}: {body}"
+            client_ip = "unknown"
+            if request.client:
+                client_ip = request.client.host
+            details = f"{client_ip}: {body}"
             reason_message = "Suspicious pattern: body"
             logging.warning(f"{message} {details} - {reason_message}")
             return True

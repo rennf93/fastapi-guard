@@ -27,6 +27,8 @@ pytest-asyncio = "*"
 pytest-cov = "*"
 pytest-mock = "*"
 ruff = "*"
+types-cachetools = "*"
+types-requests = "*"
 
 [build-system]
 requires = ["poetry-core"]
