@@ -5,19 +5,16 @@ services:
         args:
           PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
       image: fastapi-guard-example-py${PYTHON_VERSION:-3.10}
-      command: uvicorn examples.main:app --reload
+      command: uvicorn examples.main:app --host 0.0.0.0 --reload
       ports:
-        - "127.0.0.1:8000:8000"
+        - "8000:8000"
       environment:
         - REDIS_URL=redis://redis:6379
-        - REDIS_PREFIX=${REDIS_PREFIX:-"test:fastapi_guard:"}
+        - REDIS_PREFIX=${REDIS_PREFIX:-"fastapi_guard:"}
         - IPINFO_TOKEN=${IPINFO_TOKEN:-"test_token"}
       volumes:
-        - ./guard:/app/guard:z
-        - ./tests:/app/tests:z
         - ./examples:/app/examples:z
-        - ./pyproject.toml:/app/pyproject.toml:z
-        - ./poetry.lock:/app/poetry.lock:z
+        - ./guard:/app/guard:z
       depends_on:
         redis:
           condition: service_started

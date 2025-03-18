@@ -10,36 +10,24 @@ This example demonstrates how to use FastAPI Guard as middleware in your FastAPI
 # Start the example app and Redis
 make start-example
 
-# Or start the entire stack
-make start
-```
+# Restart
+make restart
 
-### Using Poetry
-
-```bash
-# Install dependencies
-make install
-
-# Run the example
-make example
+# Stop
+make stop-example
 ```
 
 ## Available endpoints
 
-- `/` - Hello World
-- `/health` - Health check
-- `/whitelist-test` - Test IP whitelist functionality
-- `/blacklist-test` - Test IP blacklist functionality
-- `/rate-limit-test` - Test rate limiting functionality
-- `/ban-test` - Test auto-ban functionality
-- `/test` - Test endpoint with query parameters
-- `/protected` - Protected endpoint
+- `/` - Test app (various scenarios)
 - `/ip` - Return client IP address
+- `/test` - Test endpoint with query parameters
 
 ## Environment variables
 
 - `IPINFO_TOKEN` - Token for IPInfo geolocation (required for country blocking)
 - `REDIS_URL` - URL for Redis connection (default: `redis://localhost:6379`)
+- `REDIS_PREFIX` - Prefix for Redis keys (default: `fastapi_guard:`)
 
 ## Configuration
 

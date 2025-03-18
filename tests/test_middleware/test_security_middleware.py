@@ -359,6 +359,7 @@ async def test_cloud_ip_refresh():
     with patch(
         "guard.handlers.cloud_handler.CloudManager.is_cloud_ip", return_value=False
     ) as mock_is_cloud_ip:
+
         async def receive():
             return {"type": "http.request", "body": b"test_body"}
 

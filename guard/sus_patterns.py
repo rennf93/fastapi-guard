@@ -33,10 +33,14 @@ class SusPatterns:
         r"(?:<embed[^>]*>[\s\S]*?<\/embed\s*>)",  # Suspicious embeds
         r"(?:<applet[^>]*>[\s\S]*?<\/applet\s*>)",  # Java applets
         # SQL Injection - Enhanced patterns
+        # Basic SELECT statements
+        r"(?i)SELECT\s+[\w\s,\*]+\s+FROM\s+[\w\s\._]+",
+        # UNION-based queries
+        r"(?i)UNION\s+(?:ALL\s+)?SELECT",
         # Logic-based
         r"(?i)('\s*(?:OR|AND)\s*[\(\s]*'?[\d\w]+\s*(?:=|LIKE|<|>|<=|>=)\s*"
         r"[\(\s]*'?[\d\w]+)",
-        # UNION-based
+        # UNION-based (original pattern)
         r"(?i)(UNION\s+(?:ALL\s+)?SELECT\s+(?:NULL[,\s]*)+|\(\s*SELECT\s+"
         r"(?:@@|VERSION))",
         r"(?i)(?:INTO\s+(?:OUTFILE|DUMPFILE)\s+'[^']+')",  # File operations

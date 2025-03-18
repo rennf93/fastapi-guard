@@ -43,8 +43,10 @@ def fetch_azure_ip_ranges() -> set[ipaddress.IPv4Network]:
             "AppleWebKit/537.36 (KHTML, like Gecko) "
             "Chrome/91.0.4472.124 Safari/537.36"
         }
-        route = "/download/confirmation.aspx?id=56519"
-        response = requests.get(f"https://www.microsoft.com{route}", headers=headers)
+        route = "/download/details.aspx?id=56519"
+        response = requests.get(
+            f"https://www.microsoft.com/en-us{route}", headers=headers
+        )
         response.raise_for_status()
 
         decoded_html = html.unescape(response.text)

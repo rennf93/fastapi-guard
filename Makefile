@@ -15,13 +15,13 @@ install:
 # Update dependencies
 .PHONY: update-dependencies
 update-dependencies:
-	@docker compose run --rm --no-deps fastapi-guard poetry lock
+	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard poetry lock
 	@$(MAKE) stop
 
 # Lint code
 .PHONY: lint
 lint:
-	@docker compose run --rm --no-deps fastapi-guard sh -c "ruff format . ; ruff check . ; mypy guard"
+	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "ruff format . ; ruff check . ; mypy guard"
 	@$(MAKE) stop
 
 # Stop
@@ -31,7 +31,7 @@ stop:
 
 # Restart
 .PHONY: restart
-restart: stop start
+restart: stop start-example
 
 # Run tests (default Python version)
 .PHONY: test
