@@ -1,53 +1,39 @@
-import aiohttp
 import asyncio
-import maxminddb
 import os
-from pathlib import Path
 import time
-from typing import Optional
+from pathlib import Path
+
+import aiohttp
+import maxminddb
 
 
 class IPInfoManager:
     """Handler for IPInfo's IP to Country ASN database"""
 
-    def __init__(
-        self,
-        token: str,
-        db_path: Optional[Path] = None
-    ):
+    def __init__(self, token: str, db_path: Path | None = None):
         if not token:
             raise ValueError("IPInfo token is required!")
 
         self.token = token
-        self.db_path = db_path or Path(
-            "data/ipinfo/country_asn.mmdb"
-        )
-        self.reader: Optional[maxminddb.Reader] = None
+        self.db_path = db_path or Path("data/ipinfo/country_asn.mmdb")
+        self.reader: maxminddb.Reader | None = None
         self.redis_handler = None
 
     async def initialize(self):
         """Initialize the database"""
-        os.makedirs(
-            self.db_path.parent,
-            exist_ok=True
-        )
+        os.makedirs(self.db_path.parent, exist_ok=True)
 
         # Check Redis first if available
         if self.redis_handler:
-            cached_db = await self.redis_handler.get_key(
-                "ipinfo",
-                "database"
-            )
+            cached_db = await self.redis_handler.get_key("ipinfo", "database")
             if cached_db:
-                with open(self.db_path, 'wb') as f:
+                with open(self.db_path, "wb") as f:
                     f.write(
                         cached_db
                         if isinstance(cached_db, bytes)
-                        else cached_db.encode('latin-1')
+                        else cached_db.encode("latin-1")
                     )
-                self.reader = maxminddb.open_database(
-                    str(self.db_path)
-                )
+                self.reader = maxminddb.open_database(str(self.db_path))
                 return
 
         try:
@@ -60,9 +46,7 @@ class IPInfoManager:
             return
 
         if self.db_path.exists():
-            self.reader = maxminddb.open_database(
-                str(self.db_path)
-            )
+            self.reader = maxminddb.open_database(str(self.db_path))
 
     async def _download_database(self):
         """Download the latest database from IPInfo"""
@@ -76,17 +60,17 @@ class IPInfoManager:
                 try:
                     async with session.get(url) as response:
                         await response.raise_for_status()
-                        with open(self.db_path, 'wb') as f:
+                        with open(self.db_path, "wb") as f:
                             f.write(await response.read())
 
                         if self.redis_handler and self.db_path.exists():
-                            with open(self.db_path, 'rb') as f:
-                                db_content = f.read().decode('latin-1')
+                            with open(self.db_path, "rb") as f:
+                                db_content = f.read().decode("latin-1")
                             await self.redis_handler.set_key(
                                 "ipinfo",
                                 "database",
                                 db_content,
-                                ttl=86400  # 24 hours
+                                ttl=86400,  # 24 hours
                             )
                         return
                 except Exception:
@@ -103,14 +87,14 @@ class IPInfoManager:
         age = time.time() - self.db_path.stat().st_mtime
         return age > 86400
 
-    def get_country(self, ip: str) -> Optional[str]:
+    def get_country(self, ip: str) -> str | None:
         """Get country code for an IP address"""
         if not self.reader:
             raise RuntimeError("Database not initialized")
 
         try:
             result = self.reader.get(ip)
-            return result.get('country') if result else None
+            return result.get("country") if result else None
         except Exception:
             return None
 

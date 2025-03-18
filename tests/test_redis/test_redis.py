@@ -1,11 +1,13 @@
+import asyncio
+
 import pytest
-from fastapi import FastAPI, status, HTTPException
-from guard.handlers.redis_handler import RedisManager
-from guard.models import SecurityConfig
-from redis.exceptions import ConnectionError
+from fastapi import FastAPI, HTTPException, status
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
-import asyncio
+from redis.exceptions import ConnectionError
+
+from guard.handlers.redis_handler import RedisManager
+from guard.models import SecurityConfig
 
 
 @pytest.mark.asyncio
@@ -181,22 +183,19 @@ async def test_redis_increment_operations(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_redis_connection_context(security_config_redis):
-    """Test Redis connection context manager"""
+async def test_redis_connection_context_get_error(security_config_redis, monkeypatch):
+    """Test Redis connection get operation with error"""
     handler = RedisManager(security_config_redis)
     await handler.initialize()
 
-    # Test normal connection usage
-    async with handler.get_connection() as conn:
-        await conn.set("test:key", "value")
-        value = await conn.get("test:key")
-        assert value == "value"
+    async def mock_get(*args, **kwargs):
+        raise ConnectionError("Test connection error on get")
 
-    # Test connection error handling
-    await handler.close()
     with pytest.raises(HTTPException) as exc_info:
         async with handler.get_connection() as conn:
+            monkeypatch.setattr(conn, "get", mock_get)
             await conn.get("test:key")
+
     assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
     await handler.close()
@@ -207,8 +206,10 @@ async def test_redis_connection_failures(security_config_redis):
     """Test Redis connection failure scenarios"""
     # Test initialization failure
     bad_config = SecurityConfig(
-        **{**security_config_redis.model_dump(),
-           "redis_url": "redis://nonexistent:6379"}
+        **{
+            **security_config_redis.model_dump(),
+            "redis_url": "redis://nonexistent:6379",
+        }
     )
     handler = RedisManager(bad_config)
     with pytest.raises(HTTPException) as exc_info:
@@ -251,8 +252,7 @@ async def test_redis_disabled_operations(security_config_redis):
 async def test_redis_failed_initialization_operations(security_config_redis):
     """Test operations after failed initialization"""
     bad_config = SecurityConfig(
-        **{**security_config_redis.model_dump(),
-           "redis_url": "redis://invalid:6379"}
+        **{**security_config_redis.model_dump(), "redis_url": "redis://invalid:6379"}
     )
     handler = RedisManager(bad_config)
 

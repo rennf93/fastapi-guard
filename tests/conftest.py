@@ -1,15 +1,17 @@
-from guard.models import SecurityConfig
-from guard.middleware import SecurityMiddleware
-from guard.sus_patterns import SusPatterns
-from guard.handlers.cloud_handler import cloud_handler
-from guard.handlers.ipban_handler import reset_global_state
-from guard.handlers.ipinfo_handler import IPInfoManager
-from guard.handlers.redis_handler import RedisManager
 import os
+
 import pytest
 
+from guard.handlers.cloud_handler import cloud_handler
+from guard.handlers.ipban_handler import reset_global_state
+from guard.handlers.redis_handler import RedisManager
+from guard.middleware import SecurityMiddleware
+from guard.models import SecurityConfig
+from guard.sus_patterns import SusPatterns
 
-IPINFO_TOKEN = os.getenv("IPINFO_TOKEN", "test_token")
+IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
+REDIS_URL = os.getenv("REDIS_URL")
+REDIS_PREFIX = os.getenv("REDIS_PREFIX")
 
 
 @pytest.fixture(autouse=True)
@@ -63,12 +65,9 @@ async def security_middleware():
         whitelist=[],
         blacklist=[],
         auto_ban_threshold=10,
-        auto_ban_duration=300
+        auto_ban_duration=300,
     )
-    middleware = SecurityMiddleware(
-        app=None,
-        config=config
-    )
+    middleware = SecurityMiddleware(app=None, config=config)
     await middleware.setup_logger()
     yield middleware
     await middleware.reset()
@@ -81,22 +80,12 @@ def ipinfo_db_path(tmp_path_factory):
 
 
 @pytest.fixture
-async def ipinfo_db(ipinfo_db_path):
-    """IPInfo database fixture with isolated storage"""
-    db = IPInfoManager(token=IPINFO_TOKEN, db_path=ipinfo_db_path)
-    await db.initialize()
-    yield db
-    db.close()
-
-
-@pytest.fixture
 def security_config_redis(ipinfo_db_path):
     """SecurityConfig with Redis enabled"""
     return SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
-        enable_redis=True,
-        redis_url="redis://localhost:6379",
-        redis_prefix="test:fastapi_guard:",
+        redis_url=REDIS_URL,
+        redis_prefix=REDIS_PREFIX,
         whitelist=["127.0.0.1"],
         blacklist=["192.168.1.1"],
         blocked_countries=["CN"],
@@ -123,15 +112,14 @@ async def redis_cleanup():
     """Clean Redis test keys before each test"""
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
-        enable_redis=True,
-        redis_url="redis://localhost:6379",
-        redis_prefix="test:fastapi_guard:"
+        redis_url=REDIS_URL,
+        redis_prefix=REDIS_PREFIX,
     )
     handler = RedisManager(config)
     await handler.initialize()
     try:
         async with handler.get_connection() as conn:
-            keys = await conn.keys("test:fastapi_guard:*")
+            keys = await conn.keys(f"{REDIS_PREFIX}*")
             if keys:
                 await conn.delete(*keys)
     finally:

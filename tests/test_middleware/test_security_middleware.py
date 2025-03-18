@@ -1,18 +1,19 @@
 import asyncio
+import os
+import time
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 from fastapi import FastAPI, Request, Response, status
-from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
+from httpx import AsyncClient
+from httpx._transports.asgi import ASGITransport
+
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
 from guard.handlers.ipinfo_handler import IPInfoManager
+from guard.middleware import SecurityMiddleware
+from guard.models import SecurityConfig
 from guard.sus_patterns import SusPatterns
-from httpx import AsyncClient
-from httpx._transports.asgi import ASGITransport
-import os
-import pytest
-import time
-from unittest.mock import patch, AsyncMock, Mock
-
 
 IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
 
@@ -28,7 +29,7 @@ async def test_rate_limiting():
         ipinfo_token=IPINFO_TOKEN,
         rate_limit=2,
         rate_limit_window=1,
-        enable_rate_limiting=True
+        enable_rate_limiting=True,
     )
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -62,9 +63,7 @@ async def test_ip_whitelist_blacklist():
     """
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        whitelist=["127.0.0.1"],
-        blacklist=["192.168.1.1"]
+        ipinfo_token=IPINFO_TOKEN, whitelist=["127.0.0.1"], blacklist=["192.168.1.1"]
     )
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -92,10 +91,7 @@ async def test_user_agent_filtering():
     functionality of the SecurityMiddleware.
     """
     app = FastAPI()
-    config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        blocked_user_agents=[r"badbot"]
-    )
+    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, blocked_user_agents=[r"badbot"])
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -125,7 +121,7 @@ async def test_rate_limiting_multiple_ips(reset_state, security_middleware):
         rate_limit_window=1,
         enable_rate_limiting=True,
         whitelist=[],
-        blacklist=[]
+        blacklist=[],
     )
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -162,14 +158,9 @@ async def test_middleware_multiple_configs():
     with multiple configurations.
     """
     app = FastAPI()
-    config1 = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        blocked_user_agents=[r"badbot"]
-    )
+    config1 = SecurityConfig(ipinfo_token=IPINFO_TOKEN, blocked_user_agents=[r"badbot"])
     config2 = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        whitelist=["127.0.0.1"],
-        blacklist=["192.168.1.1"]
+        ipinfo_token=IPINFO_TOKEN, whitelist=["127.0.0.1"], blacklist=["192.168.1.1"]
     )
 
     app.add_middleware(SecurityMiddleware, config=config1)
@@ -205,8 +196,7 @@ async def test_custom_request_check():
         return None
 
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        custom_request_check=custom_check
+        ipinfo_token=IPINFO_TOKEN, custom_request_check=custom_check
     )
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -294,63 +284,67 @@ async def test_cors_configuration():
     assert response.headers["access-control-allow-origin"] == "https://example.com"
     assert "GET" in response.headers["access-control-allow-methods"]
     assert "X-Custom-Header" in response.headers["access-control-allow-headers"]
-
-    if "access-control-expose-headers" in response.headers:
-        assert "X-Custom-Header" in response.headers["access-control-expose-headers"]
-    else:
-        print("Warning: access-control-expose-headers not present in response")
-
     assert response.headers["access-control-max-age"] == "600"
+
+
+@pytest.mark.asyncio
+async def test_cors_configuration_missing_expose_headers():
+    """Test CORS configuration when expose-headers is not present"""
+    app = FastAPI()
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        enable_cors=True,
+        cors_allow_origins=["https://example.com"],
+        cors_allow_methods=["GET", "POST"],
+        cors_allow_headers=["X-Custom-Header"],
+        cors_allow_credentials=True,
+        # NOTE: No cors_expose_headers
+        cors_max_age=600,
+    )
+
+    cors_added = SecurityMiddleware.configure_cors(app, config)
+    assert cors_added, "CORS middleware was not added"
+
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+    response = await client.options(
+        "/",
+        headers={
+            "Origin": "https://example.com",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "X-Custom-Header",
+        },
+    )
+
+    assert "access-control-expose-headers" not in response.headers
+    print("Warning: access-control-expose-headers not present in response")
 
 
 @pytest.mark.asyncio
 async def test_cloud_ip_blocking():
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        block_cloud_providers={"AWS", "GCP", "Azure"}
+        ipinfo_token=IPINFO_TOKEN, block_cloud_providers={"AWS", "GCP", "Azure"}
     )
-    app.add_middleware(
-        SecurityMiddleware,
-        config=config
-    )
+    app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
     async def read_root():
         return {"message": "Hello World"}
 
-    with patch.object(
-        cloud_handler,
-        "is_cloud_ip",
-        return_value=True
-    ):
+    with patch.object(cloud_handler, "is_cloud_ip", return_value=True):
         async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test"
+            transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
             response = await client.get(
-                "/",
-                headers={
-                    "X-Forwarded-For": "13.59.255.255"
-                }
+                "/", headers={"X-Forwarded-For": "13.59.255.255"}
             )
             assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    with patch.object(
-        cloud_handler,
-        "is_cloud_ip",
-        return_value=False
-    ):
+    with patch.object(cloud_handler, "is_cloud_ip", return_value=False):
         async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test"
+            transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
-            response = await client.get(
-                "/",
-                headers={
-                    "X-Forwarded-For": "8.8.8.8"
-                }
-            )
+            response = await client.get("/", headers={"X-Forwarded-For": "8.8.8.8"})
             assert response.status_code == status.HTTP_200_OK
 
 
@@ -358,24 +352,16 @@ async def test_cloud_ip_blocking():
 async def test_cloud_ip_refresh():
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        block_cloud_providers={
-            "AWS",
-            "GCP",
-            "Azure"
-        }
+        ipinfo_token=IPINFO_TOKEN, block_cloud_providers={"AWS", "GCP", "Azure"}
     )
-    middleware = SecurityMiddleware(
-        app,
-        config
-    )
+    middleware = SecurityMiddleware(app, config)
 
     with patch(
-        "guard.handlers.cloud_handler.CloudManager.is_cloud_ip",
-        return_value=False
+        "guard.handlers.cloud_handler.CloudManager.is_cloud_ip", return_value=False
     ) as mock_is_cloud_ip:
+
         async def receive():
-            return {"type": "http.request", "body": b""}
+            return {"type": "http.request", "body": b"test_body"}
 
         request = Request(
             scope={
@@ -387,9 +373,12 @@ async def test_cloud_ip_refresh():
                 "query_string": b"",
                 "server": ("testserver", 80),
                 "scheme": "http",
-            }
+            },
+            receive=receive,
         )
-        request._receive = receive
+
+        body = await request.body()
+        assert body == b"test_body"
 
         async def mock_call_next(request):
             return Response("OK")
@@ -403,10 +392,9 @@ async def test_cloud_ip_refresh():
 
 @pytest.mark.asyncio
 async def test_cleanup_rate_limits(security_middleware):
-    security_middleware.request_times.update({
-        "expired_ip": [time.time() - 200],
-        "fresh_ip": [time.time() - 30]
-    })
+    security_middleware.request_times.update(
+        {"expired_ip": [time.time() - 200], "fresh_ip": [time.time() - 30]}
+    )
 
     await security_middleware.cleanup_rate_limits()
 
@@ -417,22 +405,15 @@ async def test_cleanup_rate_limits(security_middleware):
 @pytest.mark.asyncio
 async def test_excluded_paths():
     app = FastAPI()
-    config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        exclude_paths=["/health"]
-    )
-    app.add_middleware(
-        SecurityMiddleware,
-        config=config
-    )
+    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, exclude_paths=["/health"])
+    app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/health")
     async def health():
         return {"status": "ok"}
 
     async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
         response = await client.get("/health")
         assert response.status_code == status.HTTP_200_OK
@@ -443,17 +424,17 @@ async def test_cloud_ip_blocking_with_refresh():
     """Test cloud IP blocking with refresh functionality"""
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        block_cloud_providers={"AWS", "GCP", "Azure"}
+        ipinfo_token=IPINFO_TOKEN, block_cloud_providers={"AWS", "GCP", "Azure"}
     )
     middleware = SecurityMiddleware(app, config)
 
     middleware.last_cloud_ip_refresh = time.time() - 3700
 
     mock_refresh = Mock()
-    with patch.object(cloud_handler, "refresh", mock_refresh), \
-         patch.object(cloud_handler, "is_cloud_ip", return_value=False):
-
+    with (
+        patch.object(cloud_handler, "refresh", mock_refresh),
+        patch.object(cloud_handler, "is_cloud_ip", return_value=False),
+    ):
         request = Request(
             scope={
                 "type": "http",
@@ -483,10 +464,7 @@ async def test_cloud_ip_blocking_with_refresh():
 async def test_cors_disabled():
     """Test CORS configuration when disabled"""
     app = FastAPI()
-    config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        enable_cors=False
-    )
+    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, enable_cors=False)
 
     cors_added = SecurityMiddleware.configure_cors(app, config)
     assert not cors_added, "CORS middleware should not be added when disabled"
@@ -496,23 +474,34 @@ async def test_cors_disabled():
 async def test_https_enforcement():
     """Test HTTPS enforcement functionality"""
     app = FastAPI()
-    config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        enforce_https=True
-    )
+    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, enforce_https=True)
     app.add_middleware(SecurityMiddleware, config=config)
+
+    handler_called = False
 
     @app.get("/")
     async def read_root():
+        nonlocal handler_called
+        handler_called = True
         return {"message": "Hello World"}
 
     async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
         response = await client.get("/")
         assert response.status_code == status.HTTP_301_MOVED_PERMANENTLY
         assert response.headers["location"].startswith("https://")
+        assert not handler_called, (
+            "Handler should not be called for redirected requests"
+        )
+
+    config.enforce_https = False
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/")
+        assert response.status_code == status.HTTP_200_OK
+        assert handler_called, "Handler should be called for non-redirected requests"
 
 
 @pytest.mark.asyncio
@@ -520,9 +509,7 @@ async def test_cleanup_expired_request_times():
     """Test cleanup of expired request times"""
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        rate_limit=2,
-        rate_limit_window=1
+        ipinfo_token=IPINFO_TOKEN, rate_limit=2, rate_limit_window=1
     )
     middleware = SecurityMiddleware(app, config)
 
@@ -534,7 +521,7 @@ async def test_cleanup_expired_request_times():
     middleware.request_times = {
         "ip1": [old_time, old_time],
         "ip2": [current_time],
-        "ip3": [old_time, current_time]
+        "ip3": [old_time, current_time],
     }
 
     await middleware.cleanup_rate_limits()
@@ -550,8 +537,7 @@ async def test_penetration_detection_disabled():
     """Test when penetration detection is disabled"""
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        enable_penetration_detection=False
+        ipinfo_token=IPINFO_TOKEN, enable_penetration_detection=False
     )
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -564,8 +550,7 @@ async def test_penetration_detection_disabled():
         return {"message": "Admin"}
 
     async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
         response = await client.get("/")
         assert response.status_code == status.HTTP_200_OK
@@ -581,15 +566,23 @@ async def test_cloud_ip_blocking_with_logging():
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
         block_cloud_providers={"AWS", "GCP", "Azure"},
-        whitelist=[]
+        whitelist=[],
     )
     middleware = SecurityMiddleware(app, config)
     await middleware.setup_logger()
 
-    with patch.object(cloud_handler, "is_cloud_ip", return_value=True), \
-         patch("guard.middleware.log_suspicious_activity") as mock_log, \
-         patch("guard.middleware.is_ip_allowed", return_value=True):
+    call_next_executed = False
 
+    async def mock_call_next(request):
+        nonlocal call_next_executed
+        call_next_executed = True
+        return Response("OK")
+
+    with (
+        patch.object(cloud_handler, "is_cloud_ip", return_value=True),
+        patch("guard.middleware.log_suspicious_activity") as mock_log,
+        patch("guard.middleware.is_ip_allowed", return_value=True),
+    ):
         request = Request(
             scope={
                 "type": "http",
@@ -604,18 +597,39 @@ async def test_cloud_ip_blocking_with_logging():
         )
         request._receive = lambda: {"type": "http.request", "body": b""}
 
-        async def mock_call_next(request):
-            return Response("OK")
-
         response = await middleware.dispatch(request, mock_call_next)
 
         mock_log.assert_called_once_with(
-            request,
-            "Blocked cloud provider IP: 13.59.255.255",
-            middleware.logger
+            request, "Blocked cloud provider IP: 13.59.255.255", middleware.logger
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert not call_next_executed, (
+            "call_next should not be executed when IP is blocked"
+        )
+
+    with (
+        patch.object(cloud_handler, "is_cloud_ip", return_value=False),
+        patch("guard.middleware.is_ip_allowed", return_value=True),
+    ):
+        request = Request(
+            scope={
+                "type": "http",
+                "method": "GET",
+                "path": "/",
+                "headers": [(b"x-forwarded-for", b"192.168.1.1")],
+                "client": ("192.168.1.1", 12345),
+                "query_string": b"",
+                "server": ("testserver", 80),
+                "scheme": "http",
+            }
+        )
+        request._receive = lambda: {"type": "http.request", "body": b""}
+
+        response = await middleware.dispatch(request, mock_call_next)
+
+        assert call_next_executed, "call_next should be executed for allowed IPs"
+        assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.asyncio
@@ -625,13 +639,14 @@ async def test_redis_initialization(security_config_redis):
     middleware = SecurityMiddleware(app, security_config_redis)
 
     # Mock external handlers
-    with patch.object(middleware.redis_handler, 'initialize') as redis_init, \
-         patch.object(cloud_handler, 'initialize_redis') as cloud_init, \
-         patch.object(ip_ban_manager, 'initialize_redis') as ipban_init, \
-         patch.object(IPInfoManager, 'initialize_redis') as ipinfo_init, \
-         patch.object(SusPatterns(), 'initialize_redis') as sus_init, \
-         patch.object(cloud_handler, 'refresh', new_callable=AsyncMock) as cloud_refresh:
-
+    with (
+        patch.object(middleware.redis_handler, "initialize") as redis_init,
+        patch.object(cloud_handler, "initialize_redis") as cloud_init,
+        patch.object(ip_ban_manager, "initialize_redis") as ipban_init,
+        patch.object(IPInfoManager, "initialize_redis") as ipinfo_init,
+        patch.object(SusPatterns(), "initialize_redis") as sus_init,
+        patch.object(cloud_handler, "refresh", new_callable=AsyncMock) as cloud_refresh,
+    ):
         await middleware.initialize()
 
         # Verify Redis handler initialization

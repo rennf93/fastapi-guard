@@ -1,0 +1,60 @@
+[tool.poetry]
+name = "fastapi-guard"
+version = "1.0.0"
+description = "A security library for FastAPI to control IPs, log requests, and detect penetration attempts."
+authors = ["Renzo Franceschini <rennf93@gmail.com>"]
+readme = "README.md"
+packages = [{include = "guard"}]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.14"
+aiohttp = "*"
+cachetools = "*"
+fastapi = "*"
+ipaddress = "*"
+maxminddb = "*"
+redis = "*"
+requests = "*"
+uvicorn = "*"
+
+[tool.poetry.group.dev.dependencies]
+black = "*"
+httpx = "*"
+mypy = "*"
+pre-commit = "*"
+pytest = "*"
+pytest-asyncio = "*"
+pytest-cov = "*"
+pytest-mock = "*"
+ruff = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # isort
+    "I",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+asyncio_default_fixture_loop_scope = "function"
+addopts = "--cov=guard --cov-report=term-missing"
+markers = [
+    "asyncio: mark tests as async"
+]

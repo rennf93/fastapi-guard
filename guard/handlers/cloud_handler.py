@@ -1,19 +1,14 @@
 import html
 import ipaddress
 import logging
-import requests
 import re
-from typing import (
-    Dict,
-    Set
-)
+
+import requests
 
 
-def fetch_aws_ip_ranges() -> Set[ipaddress.IPv4Network]:
+def fetch_aws_ip_ranges() -> set[ipaddress.IPv4Network]:
     try:
-        response = requests.get(
-            "https://ip-ranges.amazonaws.com/ip-ranges.json"
-        )
+        response = requests.get("https://ip-ranges.amazonaws.com/ip-ranges.json")
         response.raise_for_status()
         data = response.json()
         return {
@@ -26,11 +21,9 @@ def fetch_aws_ip_ranges() -> Set[ipaddress.IPv4Network]:
         return set()
 
 
-def fetch_gcp_ip_ranges() -> Set[ipaddress.IPv4Network]:
+def fetch_gcp_ip_ranges() -> set[ipaddress.IPv4Network]:
     try:
-        response = requests.get(
-            "https://www.gstatic.com/ipranges/cloud.json"
-        )
+        response = requests.get("https://www.gstatic.com/ipranges/cloud.json")
         response.raise_for_status()
         data = response.json()
         return {
@@ -43,17 +36,16 @@ def fetch_gcp_ip_ranges() -> Set[ipaddress.IPv4Network]:
         return set()
 
 
-def fetch_azure_ip_ranges() -> Set[ipaddress.IPv4Network]:
+def fetch_azure_ip_ranges() -> set[ipaddress.IPv4Network]:
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                          "AppleWebKit/537.36 (KHTML, like Gecko) "
-                          "Chrome/91.0.4472.124 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/91.0.4472.124 Safari/537.36"
         }
-        route = "/download/confirmation.aspx?id=56519"
+        route = "/download/details.aspx?id=56519"
         response = requests.get(
-            f"https://www.microsoft.com{route}",
-            headers=headers
+            f"https://www.microsoft.com/en-us{route}", headers=headers
         )
         response.raise_for_status()
 
@@ -87,10 +79,10 @@ class CloudManager:
 
     def __init__(self):
         """Initialize the CloudManager with empty IP ranges."""
-        self.ip_ranges: Dict[str, Set[ipaddress.IPv4Network]] = {
+        self.ip_ranges: dict[str, set[ipaddress.IPv4Network]] = {
             "AWS": set(),
             "GCP": set(),
-            "Azure": set()
+            "Azure": set(),
         }
         self.redis_handler = None
         self.logger = logging.getLogger(__name__)
@@ -107,16 +99,14 @@ class CloudManager:
         for provider, fetch_func in [
             ("AWS", fetch_aws_ip_ranges),
             ("GCP", fetch_gcp_ip_ranges),
-            ("Azure", fetch_azure_ip_ranges)
+            ("Azure", fetch_azure_ip_ranges),
         ]:
             try:
                 ranges = fetch_func()
                 if ranges:
                     self.ip_ranges[provider] = ranges
             except Exception as e:
-                self.logger.error(
-                    f"Failed to fetch {provider} IP ranges: {str(e)}"
-                )
+                self.logger.error(f"Failed to fetch {provider} IP ranges: {str(e)}")
                 self.ip_ranges[provider] = set()
 
     async def initialize_redis(self, redis_handler):
@@ -140,20 +130,18 @@ class CloudManager:
         for provider in ["AWS", "GCP", "Azure"]:
             try:
                 cached_ranges = await self.redis_handler.get_key(
-                    "cloud_ranges",
-                    provider
+                    "cloud_ranges", provider
                 )
                 if cached_ranges:
                     self.ip_ranges[provider] = {
-                        ipaddress.IPv4Network(ip)
-                        for ip in cached_ranges.split(',')
+                        ipaddress.IPv4Network(ip) for ip in cached_ranges.split(",")
                     }
                     continue
 
                 fetch_func = {
                     "AWS": fetch_aws_ip_ranges,
                     "GCP": fetch_gcp_ip_ranges,
-                    "Azure": fetch_azure_ip_ranges
+                    "Azure": fetch_azure_ip_ranges,
                 }[provider]
 
                 ranges = fetch_func()
@@ -163,18 +151,16 @@ class CloudManager:
                     await self.redis_handler.set_key(
                         "cloud_ranges",
                         provider,
-                        ','.join(str(ip) for ip in ranges),
-                        ttl=3600
+                        ",".join(str(ip) for ip in ranges),
+                        ttl=3600,
                     )
 
             except Exception as e:
-                self.logger.error(
-                    f"Failed to refresh {provider} IP ranges: {str(e)}"
-                )
+                self.logger.error(f"Failed to refresh {provider} IP ranges: {str(e)}")
                 if provider not in self.ip_ranges:
                     self.ip_ranges[provider] = set()
 
-    def is_cloud_ip(self, ip: str, providers: Set[str]) -> bool:
+    def is_cloud_ip(self, ip: str, providers: set[str]) -> bool:
         """
         Check if an IP belongs to specified cloud providers.
 

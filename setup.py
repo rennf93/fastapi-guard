@@ -1,6 +1,6 @@
-from setuptools import setup, find_packages
 import pathlib
 
+from setuptools import find_packages, setup
 
 HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
@@ -22,15 +22,15 @@ setup(
     ],
     extras_require={
         "dev": [
-            "black",
-            "flake8",
             "httpx",
             "pytest",
             "pytest-asyncio",
             "pytest-mock",
+            "ruff",
+            "mypy",
         ],
     },
-    python_requires=">=3.10",
+    python_requires=">=3.10,<3.14",
     author="Renzo Franceschini",
     author_email="rennf93@gmail.com",
     description="A security library for FastAPI to control IPs, log requests, and detect penetration attempts.",
@@ -44,6 +44,11 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
     ],
     include_package_data=True,
     package_data={
