@@ -63,7 +63,7 @@ async def test_custom_logging(reset_state, security_config, tmp_path):
     logger = await setup_custom_logging(str(log_file))
 
     async def receive():
-        return {"type": "http.request", "body": b""}
+        return {"type": "http.request", "body": b"test_body"}
 
     request = Request(
         scope={
@@ -76,6 +76,8 @@ async def test_custom_logging(reset_state, security_config, tmp_path):
         },
         receive=receive,
     )
+    body = await request.body()
+    assert body == b"test_body"
 
     await log_request(request, logger)
 
@@ -92,7 +94,7 @@ async def test_log_request(caplog):
     """
 
     async def receive():
-        return {"type": "http.request", "body": b""}
+        return {"type": "http.request", "body": b"test_body"}
 
     request = Request(
         scope={
@@ -105,6 +107,8 @@ async def test_log_request(caplog):
         },
         receive=receive,
     )
+    body = await request.body()
+    assert body == b"test_body"
 
     logger = logging.getLogger(__name__)
     with caplog.at_level(logging.INFO):
@@ -121,7 +125,7 @@ async def test_log_suspicious_activity(caplog):
     """
 
     async def receive():
-        return {"type": "http.request", "body": b""}
+        return {"type": "http.request", "body": b"test_body"}
 
     request = Request(
         scope={
@@ -134,6 +138,8 @@ async def test_log_suspicious_activity(caplog):
         },
         receive=receive,
     )
+    body = await request.body()
+    assert body == b"test_body"
 
     logger = logging.getLogger(__name__)
     with caplog.at_level(logging.WARNING):

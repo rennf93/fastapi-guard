@@ -1,4 +1,5 @@
-FROM python:3.10-slim
+ARG PYTHON_VERSION=3.10
+FROM python:${PYTHON_VERSION}-slim
 
 RUN apt-get update && apt-get install -y \
     libsodium23 \
@@ -12,7 +13,7 @@ WORKDIR /app
 ENV PIP_NO_CACHE_DIR=false \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     PIP_DEFAULT_TIMEOUT=10 \
-    POETRY_VERSION=1.5.1 \
+    POETRY_VERSION=2.1.1 \
     POETRY_HOME="/home/user/poetry" \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
     POETRY_NO_INTERACTION=1 \
@@ -27,10 +28,8 @@ COPY pyproject.toml poetry.lock* /app/
 
 RUN poetry install --no-root
 
-# Copy library code and examples
 COPY guard/ /app/guard/
 COPY tests/ /app/tests/
 COPY examples/ /app/examples/
 
-# Create directory for data storage
 RUN mkdir -p /app/data/ipinfo

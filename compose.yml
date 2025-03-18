@@ -2,6 +2,9 @@ services:
     fastapi-guard-example:
       build:
         context: .
+        args:
+          PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
+      image: fastapi-guard-example-py${PYTHON_VERSION:-3.10}
       command: uvicorn examples.main:app --reload
       ports:
         - "127.0.0.1:8000:8000"
@@ -22,6 +25,9 @@ services:
     fastapi-guard:
       build:
         context: .
+        args:
+          PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
+      image: fastapi-guard-py${PYTHON_VERSION:-3.10}
       command: pytest -v --cov=.
       environment:
         - REDIS_URL=redis://redis:6379

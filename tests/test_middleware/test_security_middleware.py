@@ -284,13 +284,39 @@ async def test_cors_configuration():
     assert response.headers["access-control-allow-origin"] == "https://example.com"
     assert "GET" in response.headers["access-control-allow-methods"]
     assert "X-Custom-Header" in response.headers["access-control-allow-headers"]
-
-    if "access-control-expose-headers" in response.headers:
-        assert "X-Custom-Header" in response.headers["access-control-expose-headers"]
-    else:
-        print("Warning: access-control-expose-headers not present in response")
-
     assert response.headers["access-control-max-age"] == "600"
+
+
+@pytest.mark.asyncio
+async def test_cors_configuration_missing_expose_headers():
+    """Test CORS configuration when expose-headers is not present"""
+    app = FastAPI()
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        enable_cors=True,
+        cors_allow_origins=["https://example.com"],
+        cors_allow_methods=["GET", "POST"],
+        cors_allow_headers=["X-Custom-Header"],
+        cors_allow_credentials=True,
+        # NOTE: No cors_expose_headers
+        cors_max_age=600,
+    )
+
+    cors_added = SecurityMiddleware.configure_cors(app, config)
+    assert cors_added, "CORS middleware was not added"
+
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+    response = await client.options(
+        "/",
+        headers={
+            "Origin": "https://example.com",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "X-Custom-Header",
+        },
+    )
+
+    assert "access-control-expose-headers" not in response.headers
+    print("Warning: access-control-expose-headers not present in response")
 
 
 @pytest.mark.asyncio
@@ -333,9 +359,8 @@ async def test_cloud_ip_refresh():
     with patch(
         "guard.handlers.cloud_handler.CloudManager.is_cloud_ip", return_value=False
     ) as mock_is_cloud_ip:
-
         async def receive():
-            return {"type": "http.request", "body": b""}
+            return {"type": "http.request", "body": b"test_body"}
 
         request = Request(
             scope={
@@ -347,9 +372,12 @@ async def test_cloud_ip_refresh():
                 "query_string": b"",
                 "server": ("testserver", 80),
                 "scheme": "http",
-            }
+            },
+            receive=receive,
         )
-        request._receive = receive
+
+        body = await request.body()
+        assert body == b"test_body"
 
         async def mock_call_next(request):
             return Response("OK")
@@ -448,8 +476,12 @@ async def test_https_enforcement():
     config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, enforce_https=True)
     app.add_middleware(SecurityMiddleware, config=config)
 
+    handler_called = False
+
     @app.get("/")
     async def read_root():
+        nonlocal handler_called
+        handler_called = True
         return {"message": "Hello World"}
 
     async with AsyncClient(
@@ -458,6 +490,17 @@ async def test_https_enforcement():
         response = await client.get("/")
         assert response.status_code == status.HTTP_301_MOVED_PERMANENTLY
         assert response.headers["location"].startswith("https://")
+        assert not handler_called, (
+            "Handler should not be called for redirected requests"
+        )
+
+    config.enforce_https = False
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/")
+        assert response.status_code == status.HTTP_200_OK
+        assert handler_called, "Handler should be called for non-redirected requests"
 
 
 @pytest.mark.asyncio
@@ -527,6 +570,13 @@ async def test_cloud_ip_blocking_with_logging():
     middleware = SecurityMiddleware(app, config)
     await middleware.setup_logger()
 
+    call_next_executed = False
+
+    async def mock_call_next(request):
+        nonlocal call_next_executed
+        call_next_executed = True
+        return Response("OK")
+
     with (
         patch.object(cloud_handler, "is_cloud_ip", return_value=True),
         patch("guard.middleware.log_suspicious_activity") as mock_log,
@@ -546,9 +596,6 @@ async def test_cloud_ip_blocking_with_logging():
         )
         request._receive = lambda: {"type": "http.request", "body": b""}
 
-        async def mock_call_next(request):
-            return Response("OK")
-
         response = await middleware.dispatch(request, mock_call_next)
 
         mock_log.assert_called_once_with(
@@ -556,6 +603,32 @@ async def test_cloud_ip_blocking_with_logging():
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert not call_next_executed, (
+            "call_next should not be executed when IP is blocked"
+        )
+
+    with (
+        patch.object(cloud_handler, "is_cloud_ip", return_value=False),
+        patch("guard.middleware.is_ip_allowed", return_value=True),
+    ):
+        request = Request(
+            scope={
+                "type": "http",
+                "method": "GET",
+                "path": "/",
+                "headers": [(b"x-forwarded-for", b"192.168.1.1")],
+                "client": ("192.168.1.1", 12345),
+                "query_string": b"",
+                "server": ("testserver", 80),
+                "scheme": "http",
+            }
+        )
+        request._receive = lambda: {"type": "http.request", "body": b""}
+
+        response = await middleware.dispatch(request, mock_call_next)
+
+        assert call_next_executed, "call_next should be executed for allowed IPs"
+        assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.asyncio

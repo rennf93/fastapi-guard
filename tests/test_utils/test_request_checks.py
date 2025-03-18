@@ -99,6 +99,8 @@ async def test_detect_penetration_attempt_xss():
         receive=receive,
     )
     assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -120,6 +122,8 @@ async def test_detect_penetration_attempt_sql_injection():
         receive=receive,
     )
     assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -144,6 +148,8 @@ async def test_detect_penetration_attempt_directory_traversal():
         receive=receive,
     )
     assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -168,6 +174,8 @@ async def test_detect_penetration_attempt_command_injection():
         receive=receive,
     )
     assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -192,6 +200,8 @@ async def test_detect_penetration_attempt_ssrf():
         receive=receive,
     )
     assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -216,6 +226,8 @@ async def test_detect_penetration_attempt_open_redirect():
         receive=receive,
     )
     assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -240,6 +252,8 @@ async def test_detect_penetration_attempt_crlf_injection():
         receive=receive,
     )
     assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -264,6 +278,8 @@ async def test_detect_penetration_attempt_path_manipulation():
         receive=receive,
     )
     assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -322,6 +338,8 @@ async def test_detect_penetration_attempt_nosql_injection():
         receive=receive,
     )
     assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -414,6 +432,9 @@ async def test_detect_penetration_attempt_http_header_injection():
         receive=receive,
     )
     assert await detect_penetration_attempt(request)
+
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -559,6 +580,8 @@ async def test_check_ip_country_no_countries_configured(caplog):
         },
         receive=receive,
     )
+    body = await request.body()
+    assert body == b""
 
     with caplog.at_level(logging.WARNING):
         result = await check_ip_country(request, config, mock_ipinfo)
