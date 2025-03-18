@@ -5,7 +5,7 @@ DEFAULT_PYTHON = 3.10
 # Start example-app
 .PHONY: start-example
 start-example:
-	@PYTHON_VERSION=$(DEFAULT_PYTHON) docker compose up --build fastapi-guard-example
+	@COMPOSE_BAKE=true PYTHON_VERSION=$(DEFAULT_PYTHON) docker compose up --build fastapi-guard-example
 
 # Install dependencies
 .PHONY: install
@@ -36,7 +36,7 @@ restart: stop start
 # Run tests (default Python version)
 .PHONY: test
 test:
-	@PYTHON_VERSION=$(DEFAULT_PYTHON) docker compose run --rm --build fastapi-guard pytest -v --cov=.
+	@COMPOSE_BAKE=true PYTHON_VERSION=$(DEFAULT_PYTHON) docker compose run --rm --build fastapi-guard pytest -v --cov=.
 	@$(MAKE) stop
 
 # Run All Python versions
@@ -47,7 +47,7 @@ test-all: test-3.10 test-3.11 test-3.12 test-3.13
 .PHONY: test-3.10
 test-3.10:
 	@docker compose down -v fastapi-guard
-	@PYTHON_VERSION=3.10 docker compose build fastapi-guard
+	@COMPOSE_BAKE=true PYTHON_VERSION=3.10 docker compose build fastapi-guard
 	@PYTHON_VERSION=3.10 docker compose run --rm fastapi-guard pytest -v --cov=.
 	@$(MAKE) stop
 
@@ -55,7 +55,7 @@ test-3.10:
 .PHONY: test-3.11
 test-3.11:
 	@docker compose down -v fastapi-guard
-	@PYTHON_VERSION=3.11 docker compose build fastapi-guard
+	@COMPOSE_BAKE=true PYTHON_VERSION=3.11 docker compose build fastapi-guard
 	@PYTHON_VERSION=3.11 docker compose run --rm fastapi-guard pytest -v --cov=.
 	@$(MAKE) stop
 
@@ -63,7 +63,7 @@ test-3.11:
 .PHONY: test-3.12
 test-3.12:
 	@docker compose down -v fastapi-guard
-	@PYTHON_VERSION=3.12 docker compose build fastapi-guard
+	@COMPOSE_BAKE=true PYTHON_VERSION=3.12 docker compose build fastapi-guard
 	@PYTHON_VERSION=3.12 docker compose run --rm fastapi-guard pytest -v --cov=.
 	@$(MAKE) stop
 
@@ -71,7 +71,7 @@ test-3.12:
 .PHONY: test-3.13
 test-3.13:
 	@docker compose down -v fastapi-guard
-	@PYTHON_VERSION=3.13 docker compose build fastapi-guard
+	@COMPOSE_BAKE=true PYTHON_VERSION=3.13 docker compose build fastapi-guard
 	@PYTHON_VERSION=3.13 docker compose run --rm fastapi-guard pytest -v --cov=.
 	@$(MAKE) stop
 
