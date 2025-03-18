@@ -7,7 +7,7 @@ on:
   pull_request_target:
     branches:
       - master
-      # - feature/patterns-and-decorators
+      - feature/patterns-and-decorators
 
 jobs:
   pre-commit:

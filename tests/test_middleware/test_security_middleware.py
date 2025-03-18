@@ -426,7 +426,7 @@ async def test_cloud_ip_blocking_with_refresh():
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
         block_cloud_providers={"AWS", "GCP", "Azure"},
-        enable_redis = False
+        enable_redis=False,
     )
 
     middleware = SecurityMiddleware(app, config)
