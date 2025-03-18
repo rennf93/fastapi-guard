@@ -4,10 +4,10 @@ on:
   push:
     branches:
       - master
+      - feature/patterns-and-decorators
   pull_request_target:
     branches:
       - master
-      - feature/patterns-and-decorators
 
 jobs:
   pre-commit:
