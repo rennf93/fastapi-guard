@@ -27,7 +27,7 @@ async def setup_custom_logging(log_file: str) -> logging.Logger:
     return logger
 
 
-async def log_request(request: Request, logger: logging.Logger):
+async def log_request(request: Request, logger: logging.Logger) -> None:
     """
     Log the details of
     an incoming request.
@@ -53,7 +53,7 @@ async def log_request(request: Request, logger: logging.Logger):
 
 async def log_suspicious_activity(
     request: Request, reason: str, logger: logging.Logger
-):
+) -> None:
     """
     Log suspicious activity
     detected in a request.

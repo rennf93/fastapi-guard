@@ -19,18 +19,14 @@ class MessageResponse(BaseModel):
     message: str
 
     class Config:
-        json_schema_extra = {
-            "example": {"message": "Hello World"}
-        }
+        json_schema_extra = {"example": {"message": "Hello World"}}
 
 
 class IPResponse(BaseModel):
     ip: str
 
     class Config:
-        json_schema_extra = {
-            "example": {"ip": "127.0.0.1"}
-        }
+        json_schema_extra = {"example": {"ip": "127.0.0.1"}}
 
 
 class TestResponse(BaseModel):
@@ -39,10 +35,7 @@ class TestResponse(BaseModel):
 
     class Config:
         json_schema_extra = {
-            "example": {
-                "message": "Test endpoint",
-                "request_params": "test_value"
-            }
+            "example": {"message": "Test endpoint", "request_params": "test_value"}
         }
 
 
@@ -50,9 +43,7 @@ class ErrorResponse(BaseModel):
     detail: str
 
     class Config:
-        json_schema_extra = {
-            "example": {"detail": "Request blocked"}
-        }
+        json_schema_extra = {"example": {"detail": "Request blocked"}}
 
 
 # Initialize
@@ -150,7 +141,7 @@ async def root():
     responses={
         200: {
             "description": "Successful response with IP address",
-            "model": IPResponse
+            "model": IPResponse,
         },
     },
     tags=["Information"],
@@ -183,23 +174,21 @@ async def test_endpoint(
     input: str | None = Query(
         None,
         description="Parameter to test XSS attacks",
-        example="<script>alert(1)</script>"
+        example="<script>alert(1)</script>",
     ),
     query: str | None = Query(
         None,
         description="Parameter to test SQL injection",
-        example="SELECT * FROM users"
+        example="SELECT * FROM users",
     ),
     path: str | None = Query(
         None,
         description="Parameter to test path traversal",
-        example="../../../etc/passwd"
+        example="../../../etc/passwd",
     ),
     cmd: str | None = Query(
-        None,
-        description="Parameter to test command injection",
-        example=";ls;pwd;"
-    )
+        None, description="Parameter to test command injection", example=";ls;pwd;"
+    ),
 ):
     """
     Test endpoint to trigger penetration detection.
@@ -220,4 +209,5 @@ async def test_endpoint(
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

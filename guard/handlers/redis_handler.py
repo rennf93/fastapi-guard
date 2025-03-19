@@ -20,7 +20,6 @@ class RedisManager:
     _redis: Redis | None = None
     _connection_lock = asyncio.Lock()
     _closed = False
-    # Initialize with proper type annotations
     config: SecurityConfig
     logger: logging.Logger
 
@@ -110,6 +109,8 @@ class RedisManager:
     # Atomic operations
     async def get_key(self, namespace: str, key: str) -> Any:
         """Get a value from Redis with proper namespacing"""
+        if not self.config.enable_redis:
+            return None
 
         async def _get(conn: Redis) -> Any:
             full_key = f"{self.config.redis_prefix}{namespace}:{key}"
@@ -121,23 +122,24 @@ class RedisManager:
         self, namespace: str, key: str, value: Any, ttl: int | None = None
     ) -> bool | None:
         """Set a value in Redis with proper namespacing"""
+        if not self.config.enable_redis:
+            return None
 
         async def _set(conn: Redis) -> bool:
             full_key = f"{self.config.redis_prefix}{namespace}:{key}"
             if ttl:
-                return await conn.setex(full_key, ttl, value)
-            return await conn.set(full_key, value)
+                return bool(await conn.setex(full_key, ttl, value))
+            return bool(await conn.set(full_key, value))
 
         result = await self.safe_operation(_set)
-        # Return None if Redis is disabled
-        if not self.config.enable_redis:
-            return None
-        return bool(result) if result is not None else False
+        return False if result is None else bool(result)
 
     async def incr(
         self, namespace: str, key: str, ttl: int | None = None
     ) -> int | None:
         """Atomic increment with namespacing"""
+        if not self.config.enable_redis:
+            return None
 
         async def _incr(conn: Redis) -> int:
             full_key = f"{self.config.redis_prefix}{namespace}:{key}"
@@ -149,35 +151,31 @@ class RedisManager:
                 return int(result[0]) if result else 0
 
         result = await self.safe_operation(_incr)
-        # Return None if Redis is disabled
-        if not self.config.enable_redis:
-            return None
         return int(result) if result is not None else 0
 
     async def exists(self, namespace: str, key: str) -> bool | None:
         """Check if a namespaced key exists"""
+        if not self.config.enable_redis:
+            return None
 
         async def _exists(conn: Redis) -> bool:
             full_key = f"{self.config.redis_prefix}{namespace}:{key}"
             return bool(await conn.exists(full_key))
 
         result = await self.safe_operation(_exists)
-        # Return None if Redis is disabled
-        if not self.config.enable_redis:
-            return None
-        return bool(result) if result is not None else False
+        return False if result is None else bool(result)
 
     async def delete(self, namespace: str, key: str) -> int | None:
         """Delete a namespaced key"""
+        if not self.config.enable_redis:
+            return None
 
         async def _delete(conn: Redis) -> int:
             full_key = f"{self.config.redis_prefix}{namespace}:{key}"
-            return await conn.delete(full_key)
+            delete_result = await conn.delete(full_key)
+            return int(delete_result) if delete_result is not None else 0
 
         result = await self.safe_operation(_delete)
-        # Return None if Redis is disabled
-        if not self.config.enable_redis:
-            return None
         return int(result) if result is not None else 0
 
 

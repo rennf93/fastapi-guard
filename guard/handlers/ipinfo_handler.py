@@ -2,6 +2,7 @@ import asyncio
 import os
 import time
 from pathlib import Path
+from typing import Any
 
 import aiohttp
 import maxminddb
@@ -19,11 +20,10 @@ class IPInfoManager:
         self.reader: maxminddb.Reader | None = None
         self.redis_handler = None
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize the database"""
         os.makedirs(self.db_path.parent, exist_ok=True)
 
-        # Check Redis first if available
         if self.redis_handler:
             cached_db = await self.redis_handler.get_key("ipinfo", "database")
             if cached_db:
@@ -48,7 +48,7 @@ class IPInfoManager:
         if self.db_path.exists():
             self.reader = maxminddb.open_database(str(self.db_path))
 
-    async def _download_database(self):
+    async def _download_database(self) -> None:
         """Download the latest database from IPInfo"""
         base_url = "https://ipinfo.io/data/free/country_asn.mmdb"
         url = f"{base_url}?token={self.token}"
@@ -59,19 +59,20 @@ class IPInfoManager:
             for attempt in range(retries):
                 try:
                     async with session.get(url) as response:
-                        await response.raise_for_status()
+                        response.raise_for_status()
                         with open(self.db_path, "wb") as f:
                             f.write(await response.read())
 
-                        if self.redis_handler and self.db_path.exists():
-                            with open(self.db_path, "rb") as f:
-                                db_content = f.read().decode("latin-1")
-                            await self.redis_handler.set_key(
-                                "ipinfo",
-                                "database",
-                                db_content,
-                                ttl=86400,  # 24 hours
-                            )
+                        if self.redis_handler is not None:
+                            if self.db_path.exists():
+                                with open(self.db_path, "rb") as f:
+                                    db_content = f.read().decode("latin-1")
+                                await self.redis_handler.set_key(
+                                    "ipinfo",
+                                    "database",
+                                    db_content,
+                                    ttl=86400,  # 24 hours
+                                )
                         return
                 except Exception:
                     if attempt == retries - 1:
@@ -101,12 +102,12 @@ class IPInfoManager:
         except Exception:
             return None
 
-    def close(self):
+    def close(self) -> None:
         """Close the database connection"""
         if self.reader:
             self.reader.close()
 
-    async def initialize_redis(self, redis_handler):
+    async def initialize_redis(self, redis_handler: Any) -> None:
         """Align with other handlers' initialization pattern"""
         self.redis_handler = redis_handler
         await self.initialize()
