@@ -6,7 +6,6 @@ on:
   push:
     branches:
       - main
-      - releases/example-app-docker
     paths:
       - 'examples/**'
       - '.github/workflows/container-release.yml'
