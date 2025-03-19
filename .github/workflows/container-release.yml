@@ -29,7 +29,6 @@ jobs:
             echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
             echo "IS_RELEASE=true" >> $GITHUB_ENV
           else
-            # For pushes, just use 'latest' tag only
             echo "VERSION=latest" >> $GITHUB_ENV
             echo "IS_RELEASE=false" >> $GITHUB_ENV
           fi
@@ -74,9 +73,8 @@ jobs:
           version: latest
 
       - name: Build with Docker Compose
-        working-directory: ./examples
         run: |
-          docker compose build
+          docker compose build fastapi-guard-example
 
       - name: Tag and Push to GitHub Container Registry
         run: |
