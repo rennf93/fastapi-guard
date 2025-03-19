@@ -72,16 +72,22 @@ jobs:
         with:
           version: latest
 
-      - name: Build, Tag and Push to GHCR
+      - name: Build Docker Images
         run: |
           docker compose build fastapi-guard-example:latest
-          docker tag fastapi-guard-example:latest ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest
 
           if [[ "${{ env.IS_RELEASE }}" == "true" ]]; then
             docker compose build fastapi-guard-example:${{ env.VERSION }}
-              docker tag fastapi-guard-example:latest ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
-              docker push ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
-            fi
+          fi
+
+      - name: Tag and Push to GHCR
+        run: |
+          docker tag fastapi-guard-example:latest ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest
+
+          if [[ "${{ env.IS_RELEASE }}" == "true" ]]; then
+            docker tag fastapi-guard-example:latest ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
+            docker push ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
+          fi
 
           docker push ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest
 
