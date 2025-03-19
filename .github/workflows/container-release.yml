@@ -73,7 +73,7 @@ jobs:
           version: latest
 
       - name: Build with Docker Compose
-        working-directory: .
+        working-directory: ./examples
         run: |
           docker compose build
 
