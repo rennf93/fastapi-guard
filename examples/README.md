@@ -8,13 +8,13 @@ This example demonstrates how to use FastAPI Guard as middleware in your FastAPI
 
 ```bash
 # Start the example app and Redis
-make start-example
+docker compose up --build
 
 # Restart
-make restart
+docker compose restart
 
 # Stop
-make stop-example
+docker compose down
 ```
 
 ## Available endpoints

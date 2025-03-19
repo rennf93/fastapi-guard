@@ -3,6 +3,13 @@ name: Publish Containerized Demo
 on:
   release:
     types: [created]
+  push:
+    branches:
+      - main
+      - releases/example-app-docker
+    paths:
+      - 'examples/**'
+      - '.github/workflows/container-release.yml'
 
 jobs:
   publish-container:
@@ -15,6 +22,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set version tag
+        id: set_version
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+            echo "IS_RELEASE=true" >> $GITHUB_ENV
+          else
+            # For pushes, just use 'latest' tag only
+            echo "VERSION=latest" >> $GITHUB_ENV
+            echo "IS_RELEASE=false" >> $GITHUB_ENV
+          fi
+
       - name: Send Initial Slack Message
         id: send_initial_slack_release
         uses: rennf93/good-comms@master
@@ -23,14 +42,14 @@ jobs:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           STATUS: 'Started'
           CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
-          AUTHOR_NAME: 'FastAPI Guard - Containerized Demo Release'
+          AUTHOR_NAME: 'FastAPI Guard - Containerized Release'
           AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
           AUTHOR_ICON: ':whale:'
-          TITLE: 'Containerized Demo Release Started'
+          TITLE: 'Containerized Release Started'
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
               .
-              *NEW VERSION v${{ github.event.release.tag_name }} TRIGGERED CONTAINERIZED DEMO RELEASE!*
+              *${{ env.IS_RELEASE == 'true' && format('NEW VERSION v{0}', env.VERSION) || 'EXAMPLE CODE CHANGES' }} TRIGGERED CONTAINERIZED RELEASE!*
 
               Commit:
               ${{ github.event.head_commit.message }}
@@ -49,19 +68,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build/Push Demo
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/fastapi-guard:${{ github.event.release.tag_name }}
-            ghcr.io/${{ github.repository_owner }}/fastapi-guard:latest
-          labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.description="Security middleware library for FastAPI"
-            org.opencontainers.image.licenses=MIT
+      - name: Set up Docker Compose
+        run: |
+          docker-compose --version
+
+      - name: Build with Docker Compose
+        working-directory: ./examples
+        run: |
+          docker-compose build
+
+      - name: Tag and Push to GitHub Container Registry
+        run: |
+          # Tag the image built with Docker Compose
+          docker tag examples_fastapi-guard-example:latest ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest
+
+          # For releases, also create a version-specific tag
+          if [[ "${{ env.IS_RELEASE }}" == "true" ]]; then
+            docker tag examples_fastapi-guard-example:latest ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
+            docker push ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
+          fi
+
+          # Always push the latest tag
+          docker push ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest
 
       - name: Notify Success on Slack Channel
         uses: rennf93/good-comms@master
@@ -70,15 +98,18 @@ jobs:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           STATUS: 'Success'
           CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
-          AUTHOR_NAME: 'FastAPI Guard - Containerized Demo Release'
+          AUTHOR_NAME: 'FastAPI Guard - Containerized Release'
           AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
           AUTHOR_ICON: ':gem:'
-          TITLE: 'Containerized Demo Release Successful'
+          TITLE: 'Containerized Release Successful'
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/pkgs/container/fastapi-guard'
           MESSAGE: |
             .
-            *Containerized Demo v${{ github.event.release.tag_name }} Published to GHCR!*
+            *Containerized Release ${{ env.IS_RELEASE == 'true' && format('v{0}', env.VERSION) || '(from code changes)' }} Published to GHCR!*
             .
+            Example App: `ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest`
+            ${{ env.IS_RELEASE == 'true' && format('Version tag: `ghcr.io/{0}/fastapi-guard-example:{1}`', github.repository_owner, env.VERSION) || '' }}
+
             Commit message:
               ${{ github.event.head_commit.message }}
 
@@ -96,16 +127,16 @@ jobs:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           STATUS: 'Failed'
           CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
-          AUTHOR_NAME: 'FastAPI Guard - Containerized Demo Release'
+          AUTHOR_NAME: 'FastAPI Guard - Containerized Release'
           AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
           AUTHOR_ICON: ':skull:'
-          TITLE: 'Containerized Demo Release Failed'
+          TITLE: 'Containerized Release Failed'
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
-            *Containerized Demo Release v${{ github.event.release.tag_name }} Failed!*
+            *Containerized Release ${{ env.IS_RELEASE == 'true' && format('v{0}', env.VERSION) || '(from code changes)' }} Failed!*
             .
-            Containerized Demo Release failed for commit:
+            Containerized Release failed for commit:
               ${{ github.event.head_commit.message }}
 
             Commit URL:

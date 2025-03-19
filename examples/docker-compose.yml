@@ -1,0 +1,26 @@
+services:
+  fastapi-guard-example:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --reload
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - REDIS_PREFIX=${REDIS_PREFIX:-"fastapi_guard:"}
+      - IPINFO_TOKEN=${IPINFO_TOKEN:-"test_token"}
+    depends_on:
+      redis:
+        condition: service_started
+
+  redis:
+    image: redis:8.0-M03-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --save 60 1 --loglevel warning
+
+volumes:
+  redis-data:
