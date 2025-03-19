@@ -72,24 +72,28 @@ jobs:
         with:
           version: latest
 
-      - name: Build Docker Images
+      - name: Build with Docker Compose
+        working-directory: .
         run: |
-          docker compose build fastapi-guard-example:latest
+          docker compose build
 
-          if [[ "${{ env.IS_RELEASE }}" == "true" ]]; then
-            docker compose build fastapi-guard-example:${{ env.VERSION }}
-          fi
+      - name: List Docker images
+        run: |
+          echo "Available Docker images:"
+          docker images
 
       - name: Tag and Push to GHCR
         run: |
-          docker tag fastapi-guard-example:latest ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest
+          IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "fastapi-guard-example" | head -n 1)
+          echo "Using image: ${IMAGE_NAME}"
+
+          docker tag ${IMAGE_NAME} ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest
+          docker push ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest
 
           if [[ "${{ env.IS_RELEASE }}" == "true" ]]; then
-            docker tag fastapi-guard-example:latest ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
+            docker tag ${IMAGE_NAME} ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
             docker push ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
           fi
-
-          docker push ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest
 
       - name: Notify Success on Slack Channel
         uses: rennf93/good-comms@master
