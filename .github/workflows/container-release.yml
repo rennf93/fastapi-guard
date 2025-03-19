@@ -60,7 +60,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Log in to GitHub Container Registry
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -72,18 +72,16 @@ jobs:
         with:
           version: latest
 
-      - name: Build with Docker Compose
+      - name: Build, Tag and Push to GHCR
         run: |
-          docker compose build fastapi-guard-example
-
-      - name: Tag and Push to GitHub Container Registry
-        run: |
+          docker compose build fastapi-guard-example:latest
           docker tag fastapi-guard-example:latest ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest
 
           if [[ "${{ env.IS_RELEASE }}" == "true" ]]; then
-            docker tag fastapi-guard-example:latest ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
-            docker push ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
-          fi
+            docker compose build fastapi-guard-example:${{ env.VERSION }}
+              docker tag fastapi-guard-example:latest ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
+              docker push ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
+            fi
 
           docker push ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest
 
