@@ -18,7 +18,7 @@ class IPInfoManager:
         self.token = token
         self.db_path = db_path or Path("data/ipinfo/country_asn.mmdb")
         self.reader: maxminddb.Reader | None = None
-        self.redis_handler = None
+        self.redis_handler: Any = None
 
     async def initialize(self) -> None:
         """Initialize the database"""
@@ -64,15 +64,14 @@ class IPInfoManager:
                             f.write(await response.read())
 
                         if self.redis_handler is not None:
-                            if self.db_path.exists():
-                                with open(self.db_path, "rb") as f:
-                                    db_content = f.read().decode("latin-1")
-                                await self.redis_handler.set_key(
-                                    "ipinfo",
-                                    "database",
-                                    db_content,
-                                    ttl=86400,  # 24 hours
-                                )
+                            with open(self.db_path, "rb") as f:
+                                db_content = f.read().decode("latin-1")
+                            await self.redis_handler.set_key(
+                                "ipinfo",
+                                "database",
+                                db_content,
+                                ttl=86400,  # 24 hours
+                            )
                         return
                 except Exception:
                     if attempt == retries - 1:

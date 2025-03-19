@@ -65,7 +65,7 @@ async def test_database_retry_success(tmp_path):
     """Test successful download after retry"""
     db = IPInfoManager(token="test", db_path=tmp_path / "test.mmdb")
     mock_response = Mock()
-    mock_response.raise_for_status = AsyncMock()
+    mock_response.raise_for_status = Mock()
     mock_response.__aenter__ = AsyncMock(return_value=mock_response)
     mock_response.__aexit__ = AsyncMock()
     mock_response.read = AsyncMock(return_value=b"test data")
@@ -252,6 +252,7 @@ async def test_redis_cache_update(tmp_path):
 
     mock_response = AsyncMock()
     mock_response.__aenter__.return_value = mock_response
+    mock_response.raise_for_status = Mock()
     mock_response.read.return_value = b"new_db_data"
 
     with (
