@@ -178,9 +178,3 @@ cython_debug/
 #.idea/
 .DS_Store
 manual_testing/
-
-
-.venv_3.10/
-.venv_3.11/
-.venv_3.12/
-.venv_3.13/
