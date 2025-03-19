@@ -1,0 +1,5 @@
+fastapi
+fastapi-guard
+redis
+requests
+uvicorn

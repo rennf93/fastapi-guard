@@ -1,19 +1,18 @@
+import logging
+import os
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 from fastapi import Request
+
+from guard.handlers.cloud_handler import cloud_handler
 from guard.models import SecurityConfig
 from guard.utils import (
+    check_ip_country,
+    detect_penetration_attempt,
     is_ip_allowed,
     is_user_agent_allowed,
-    detect_penetration_attempt,
-    check_ip_country,
 )
-from guard.handlers.cloud_handler import cloud_handler
-import os
-import pytest
-from unittest.mock import patch
-from unittest.mock import Mock
-from unittest.mock import AsyncMock
-import logging
-
 
 IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
 
@@ -25,30 +24,24 @@ async def test_is_ip_allowed(security_config, mocker):
     """
     mocker.patch("guard.utils.check_ip_country", return_value=False)
 
-    assert await is_ip_allowed("127.0.0.1", security_config) == True
-    assert await is_ip_allowed("192.168.1.1", security_config) == False
+    assert await is_ip_allowed("127.0.0.1", security_config)
+    assert not await is_ip_allowed("192.168.1.1", security_config)
 
-    empty_config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        whitelist=[],
-        blacklist=[]
-    )
-    assert await is_ip_allowed("127.0.0.1", empty_config) == True
-    assert await is_ip_allowed("192.168.1.1", empty_config) == True
+    empty_config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, whitelist=[], blacklist=[])
+    assert await is_ip_allowed("127.0.0.1", empty_config)
+    assert await is_ip_allowed("192.168.1.1", empty_config)
 
     whitelist_config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        whitelist=["127.0.0.1"]
+        ipinfo_token=IPINFO_TOKEN, whitelist=["127.0.0.1"]
     )
-    assert await is_ip_allowed("127.0.0.1", whitelist_config) == True
-    assert await is_ip_allowed("192.168.1.1", whitelist_config) == False
+    assert await is_ip_allowed("127.0.0.1", whitelist_config)
+    assert not await is_ip_allowed("192.168.1.1", whitelist_config)
 
     blacklist_config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        blacklist=["192.168.1.1"]
+        ipinfo_token=IPINFO_TOKEN, blacklist=["192.168.1.1"]
     )
-    assert await is_ip_allowed("127.0.0.1", blacklist_config) == True
-    assert await is_ip_allowed("192.168.1.1", blacklist_config) == False
+    assert await is_ip_allowed("127.0.0.1", blacklist_config)
+    assert not await is_ip_allowed("192.168.1.1", blacklist_config)
 
 
 @pytest.mark.asyncio
@@ -56,8 +49,8 @@ async def test_is_user_agent_allowed(security_config):
     """
     Test the is_user_agent_allowed function with allowed and blocked user agents.
     """
-    assert await is_user_agent_allowed("goodbot", security_config) == True
-    assert await is_user_agent_allowed("badbot", security_config) == False
+    assert await is_user_agent_allowed("goodbot", security_config)
+    assert not await is_user_agent_allowed("badbot", security_config)
 
 
 @pytest.mark.asyncio
@@ -81,7 +74,7 @@ async def test_detect_penetration_attempt():
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request) == False
+    assert not await detect_penetration_attempt(request)
 
 
 @pytest.mark.asyncio
@@ -105,12 +98,15 @@ async def test_detect_penetration_attempt_xss():
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request) == True
+    assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
 async def test_detect_penetration_attempt_sql_injection():
     """Test SQL injection detection."""
+
     async def receive():
         return {"type": "http.request", "body": b""}
 
@@ -125,7 +121,9 @@ async def test_detect_penetration_attempt_sql_injection():
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request) == True
+    assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -149,7 +147,9 @@ async def test_detect_penetration_attempt_directory_traversal():
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request) == True
+    assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -173,7 +173,9 @@ async def test_detect_penetration_attempt_command_injection():
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request) == True
+    assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -197,7 +199,9 @@ async def test_detect_penetration_attempt_ssrf():
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request) == True
+    assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -221,7 +225,9 @@ async def test_detect_penetration_attempt_open_redirect():
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request) == True
+    assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -245,7 +251,9 @@ async def test_detect_penetration_attempt_crlf_injection():
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request) == True
+    assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -269,12 +277,15 @@ async def test_detect_penetration_attempt_path_manipulation():
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request) == True
+    assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
 async def test_detect_penetration_attempt_shell_injection():
     """Test shell injection detection."""
+
     async def receive():
         return {"type": "http.request", "body": b""}
 
@@ -289,7 +300,7 @@ async def test_detect_penetration_attempt_shell_injection():
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request) == True
+    assert await detect_penetration_attempt(request)
 
     legitimate_request = Request(
         scope={
@@ -302,7 +313,7 @@ async def test_detect_penetration_attempt_shell_injection():
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(legitimate_request) == False
+    assert not await detect_penetration_attempt(legitimate_request)
 
 
 @pytest.mark.asyncio
@@ -326,21 +337,27 @@ async def test_detect_penetration_attempt_nosql_injection():
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request) == True
+    assert await detect_penetration_attempt(request)
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
 async def test_detect_penetration_attempt_json_injection():
     """Test JSON content detection."""
+
     async def receive_malicious():
-        return {"type": "http.request", "body": b'''
+        return {
+            "type": "http.request",
+            "body": b"""
             {
                 "script": "<script>alert(1)</script>",
                 "sql": "UNION SELECT * FROM users",
                 "cmd": ";cat /etc/passwd",
                 "path": "../../../etc/shadow"
             }
-        '''}
+        """,
+        }
 
     request = Request(
         scope={
@@ -349,17 +366,19 @@ async def test_detect_penetration_attempt_json_injection():
             "path": "/",
             "headers": [
                 (b"content-type", b"application/json"),
-                (b"content-length", b"150")
+                (b"content-length", b"150"),
             ],
             "query_string": b"",
             "client": ("127.0.0.1", 12345),
         },
         receive=receive_malicious,
     )
-    assert await detect_penetration_attempt(request) == True
+    assert await detect_penetration_attempt(request)
 
     async def receive_legitimate():
-        return {"type": "http.request", "body": b'''
+        return {
+            "type": "http.request",
+            "body": b"""
             {
                 "user_id": 123,
                 "name": "John Doe",
@@ -369,7 +388,8 @@ async def test_detect_penetration_attempt_json_injection():
                     "notifications": true
                 }
             }
-        '''}
+        """,
+        }
 
     legitimate_request = Request(
         scope={
@@ -378,14 +398,14 @@ async def test_detect_penetration_attempt_json_injection():
             "path": "/",
             "headers": [
                 (b"content-type", b"application/json"),
-                (b"content-length", b"160")
+                (b"content-length", b"160"),
             ],
             "query_string": b"",
             "client": ("127.0.0.1", 12345),
         },
         receive=receive_legitimate,
     )
-    assert await detect_penetration_attempt(legitimate_request) == False
+    assert not await detect_penetration_attempt(legitimate_request)
 
 
 @pytest.mark.asyncio
@@ -411,7 +431,10 @@ async def test_detect_penetration_attempt_http_header_injection():
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request) == True
+    assert await detect_penetration_attempt(request)
+
+    body = await request.body()
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -422,72 +445,40 @@ async def test_get_ip_country(mocker):
     mock_db.get_country.return_value = "US"
     mock_db.reader = True
 
-    config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        blocked_countries=["CN"]
-    )
+    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, blocked_countries=["CN"])
 
-    country = await check_ip_country(
-        "1.1.1.1",
-        config,
-        mock_db
-    )
-    assert country == False  # Not blocked
+    country = await check_ip_country("1.1.1.1", config, mock_db)
+    assert not country  # Not blocked
 
     mock_db.get_country.return_value = "CN"
-    country = await check_ip_country(
-        "1.1.1.1",
-        config,
-        mock_db
-    )
-    assert country == True  # Blocked
+    country = await check_ip_country("1.1.1.1", config, mock_db)
+    assert country  # Blocked
 
 
 @pytest.mark.asyncio
-async def test_is_ip_allowed_cloud_providers(
-    security_config,
-    mocker
-):
+async def test_is_ip_allowed_cloud_providers(security_config, mocker):
     """
     Test the is_ip_allowed function with cloud provider IP blocking.
     """
-    mocker.patch(
-        "guard.utils.check_ip_country",
-        return_value=True
-    )
+    mocker.patch("guard.utils.check_ip_country", return_value=True)
     mocker.patch.object(
         cloud_handler,
         "is_cloud_ip",
-        side_effect=lambda ip,
-        providers: ip.startswith("13."),
+        side_effect=lambda ip, providers: ip.startswith("13."),
     )
 
-    config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        block_cloud_providers={"AWS"}
-    )
+    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, block_cloud_providers={"AWS"})
 
-    assert await is_ip_allowed(
-        "127.0.0.1",
-        config
-    ) == True
-    assert await is_ip_allowed(
-        "13.59.255.255",
-        config
-    ) == False
-    assert await is_ip_allowed(
-        "8.8.8.8",
-        config
-    ) == True
+    assert await is_ip_allowed("127.0.0.1", config)
+    assert not await is_ip_allowed("13.59.255.255", config)
+    assert await is_ip_allowed("8.8.8.8", config)
 
 
 @pytest.mark.asyncio
 async def test_check_ip_country():
     """Test country checking functionality."""
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        blocked_countries=["CN"],
-        whitelist_countries=["US"]
+        ipinfo_token=IPINFO_TOKEN, blocked_countries=["CN"], whitelist_countries=["US"]
     )
 
     with patch("guard.handlers.ipinfo_handler.IPInfoManager") as MockIPInfoManager:
@@ -503,21 +494,13 @@ async def test_check_ip_country():
                 "query_string": b"",
                 "client": ("127.0.0.1", 12345),
             },
-            receive=lambda: {"type": "http.request"}
+            receive=lambda: {"type": "http.request"},
         )
 
-        assert await check_ip_country(
-            request,
-            config,
-            mock_db
-        ) == True
+        assert await check_ip_country(request, config, mock_db)
 
         mock_db.get_country.return_value = "US"
-        assert await check_ip_country(
-            request,
-            config,
-            mock_db
-        ) == False
+        assert not await check_ip_country(request, config, mock_db)
 
 
 @pytest.mark.asyncio
@@ -529,18 +512,15 @@ async def test_whitelisted_country(security_config, mocker):
 
     security_config.whitelist_countries = ["US"]
 
-    assert await check_ip_country("8.8.8.8", security_config, mock_ipinfo) is False
+    assert not await check_ip_country("8.8.8.8", security_config, mock_ipinfo)
 
 
 @pytest.mark.asyncio
 async def test_cloud_provider_blocking(security_config, mocker):
-    mocker.patch(
-        "guard.utils.cloud_handler.is_cloud_ip",
-        return_value=True
-    )
+    mocker.patch("guard.utils.cloud_handler.is_cloud_ip", return_value=True)
     security_config.block_cloud_providers = {"AWS"}
 
-    assert await is_ip_allowed("8.8.8.8", security_config) is False
+    assert not await is_ip_allowed("8.8.8.8", security_config)
 
 
 @pytest.mark.asyncio
@@ -552,7 +532,7 @@ async def test_check_ip_country_no_reader(security_config):
     mock_ipinfo.get_country.return_value = "US"
 
     result = await check_ip_country("1.1.1.1", security_config, mock_ipinfo)
-    assert result is False
+    assert not result
     mock_ipinfo.initialize.assert_called_once()
 
 
@@ -564,16 +544,14 @@ async def test_check_ip_country_no_country_found(security_config):
     mock_ipinfo.get_country.return_value = None
 
     result = await check_ip_country("1.1.1.1", security_config, mock_ipinfo)
-    assert result is False
+    assert not result
 
 
 @pytest.mark.asyncio
 async def test_check_ip_country_no_countries_configured(caplog):
     """Test check_ip_country when no countries are blocked or whitelisted."""
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        blocked_countries=[],
-        whitelist_countries=[]
+        ipinfo_token=IPINFO_TOKEN, blocked_countries=[], whitelist_countries=[]
     )
 
     mock_ipinfo = Mock()
@@ -582,7 +560,7 @@ async def test_check_ip_country_no_countries_configured(caplog):
 
     with caplog.at_level(logging.WARNING):
         result = await check_ip_country("1.1.1.1", config, mock_ipinfo)
-        assert result is False
+        assert not result
         assert "No countries blocked or whitelisted" in caplog.text
         assert "1.1.1.1" in caplog.text
 
@@ -602,10 +580,12 @@ async def test_check_ip_country_no_countries_configured(caplog):
         },
         receive=receive,
     )
+    body = await request.body()
+    assert body == b""
 
     with caplog.at_level(logging.WARNING):
         result = await check_ip_country(request, config, mock_ipinfo)
-        assert result is False
+        assert not result
         assert "No countries blocked or whitelisted" in caplog.text
         assert "2.2.2.2" in caplog.text
 
@@ -614,62 +594,52 @@ async def test_check_ip_country_no_countries_configured(caplog):
 async def test_is_ip_allowed_cidr_blacklist():
     """Test the is_ip_allowed function with CIDR notation in blacklist."""
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        blacklist=["192.168.1.0/24"],
-        whitelist=[]
+        ipinfo_token=IPINFO_TOKEN, blacklist=["192.168.1.0/24"], whitelist=[]
     )
 
-    assert await is_ip_allowed("192.168.1.100", config) == False
-    assert await is_ip_allowed("192.168.1.1", config) == False
-    assert await is_ip_allowed("192.168.1.254", config) == False
+    assert not await is_ip_allowed("192.168.1.100", config)
+    assert not await is_ip_allowed("192.168.1.1", config)
+    assert not await is_ip_allowed("192.168.1.254", config)
 
-    assert await is_ip_allowed("192.168.2.1", config) == True
-    assert await is_ip_allowed("192.168.0.1", config) == True
-    assert await is_ip_allowed("10.0.0.1", config) == True
+    assert await is_ip_allowed("192.168.2.1", config)
+    assert await is_ip_allowed("192.168.0.1", config)
+    assert await is_ip_allowed("10.0.0.1", config)
 
     config_multiple = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
-        blacklist=[
-            "192.168.1.0/24",
-            "10.0.0.0/8"
-        ],
-        whitelist=[]
+        blacklist=["192.168.1.0/24", "10.0.0.0/8"],
+        whitelist=[],
     )
 
-    assert await is_ip_allowed("192.168.1.100", config_multiple) == False
-    assert await is_ip_allowed("10.10.10.10", config_multiple) == False
-    assert await is_ip_allowed("172.16.0.1", config_multiple) == True
+    assert not await is_ip_allowed("192.168.1.100", config_multiple)
+    assert not await is_ip_allowed("10.10.10.10", config_multiple)
+    assert await is_ip_allowed("172.16.0.1", config_multiple)
 
 
 @pytest.mark.asyncio
 async def test_is_ip_allowed_cidr_whitelist():
     """Test the is_ip_allowed function with CIDR notation in whitelist."""
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
-        whitelist=["192.168.1.0/24"],
-        blacklist=[]
+        ipinfo_token=IPINFO_TOKEN, whitelist=["192.168.1.0/24"], blacklist=[]
     )
 
-    assert await is_ip_allowed("192.168.1.100", config) == True
-    assert await is_ip_allowed("192.168.1.1", config) == True
-    assert await is_ip_allowed("192.168.1.254", config) == True
+    assert await is_ip_allowed("192.168.1.100", config)
+    assert await is_ip_allowed("192.168.1.1", config)
+    assert await is_ip_allowed("192.168.1.254", config)
 
-    assert await is_ip_allowed("192.168.2.1", config) == False
-    assert await is_ip_allowed("192.168.0.1", config) == False
-    assert await is_ip_allowed("10.0.0.1", config) == False
+    assert not await is_ip_allowed("192.168.2.1", config)
+    assert not await is_ip_allowed("192.168.0.1", config)
+    assert not await is_ip_allowed("10.0.0.1", config)
 
     config_multiple = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
-        whitelist=[
-            "192.168.1.0/24",
-            "10.0.0.0/8"
-        ],
-        blacklist=[]
+        whitelist=["192.168.1.0/24", "10.0.0.0/8"],
+        blacklist=[],
     )
 
-    assert await is_ip_allowed("192.168.1.100", config_multiple) == True
-    assert await is_ip_allowed("10.10.10.10", config_multiple) == True
-    assert await is_ip_allowed("172.16.0.1", config_multiple) == False
+    assert await is_ip_allowed("192.168.1.100", config_multiple)
+    assert await is_ip_allowed("10.10.10.10", config_multiple)
+    assert not await is_ip_allowed("172.16.0.1", config_multiple)
 
 
 @pytest.mark.asyncio
@@ -679,7 +649,7 @@ async def test_is_ip_allowed_invalid_ip(caplog):
 
     with caplog.at_level(logging.ERROR):
         result = await is_ip_allowed("invalid-ip", config)
-        assert result is False
+        assert not result
 
 
 @pytest.mark.asyncio
@@ -692,7 +662,7 @@ async def test_is_ip_allowed_general_exception(caplog, mocker):
 
     with caplog.at_level(logging.ERROR):
         result = await is_ip_allowed("192.168.1.1", config)
-        assert result is True
+        assert result
         assert "Error checking IP 192.168.1.1" in caplog.text
         assert "Unexpected error" in caplog.text
 
@@ -700,6 +670,7 @@ async def test_is_ip_allowed_general_exception(caplog, mocker):
 @pytest.mark.asyncio
 async def test_detect_penetration_attempt_body_error():
     """Test penetration detection with body reading error."""
+
     async def receive():
         raise Exception("Body read error")
 
@@ -710,7 +681,7 @@ async def test_detect_penetration_attempt_body_error():
             "path": "/",
             "headers": [
                 (b"content-type", b"application/json"),
-                (b"content-length", b"10")
+                (b"content-length", b"10"),
             ],
             "query_string": b"",
             "client": ("127.0.0.1", 12345),
@@ -718,25 +689,19 @@ async def test_detect_penetration_attempt_body_error():
         receive=receive,
     )
 
-    assert await detect_penetration_attempt(request) == False
+    assert not await detect_penetration_attempt(request)
 
 
 @pytest.mark.asyncio
 async def test_is_ip_allowed_blocked_country(mocker):
     """Test is_ip_allowed with blocked country."""
-    config = SecurityConfig(
-        ipinfo_token="test",
-        blocked_countries=["CN"]
-    )
+    config = SecurityConfig(ipinfo_token="test", blocked_countries=["CN"])
 
     mock_ipinfo = Mock()
     mock_ipinfo.reader = True
     mock_ipinfo.get_country.return_value = "CN"
 
-    mocker.patch(
-        "guard.utils.check_ip_country",
-        return_value=True
-    )
+    mocker.patch("guard.utils.check_ip_country", return_value=True)
 
     result = await is_ip_allowed("192.168.1.1", config, mock_ipinfo)
-    assert result is False
+    assert not result

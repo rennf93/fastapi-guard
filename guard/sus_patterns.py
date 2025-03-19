@@ -1,8 +1,5 @@
 import re
-from typing import (
-    List,
-    Set
-)
+from typing import Any, ClassVar, Optional
 
 
 class SusPatterns:
@@ -16,11 +13,11 @@ class SusPatterns:
     and retrieve patterns.
     """
 
-    _instance = None
+    _instance: ClassVar[Optional["SusPatterns"]] = None
 
-    custom_patterns: Set[str] = set()
+    custom_patterns: set[str] = set()
 
-    patterns: List[str] = [
+    patterns: list[str] = [
         # XSS - Enhanced patterns
         r"<script[^>]*>[^<]*<\/script\s*>",  # Basic script tag
         r"javascript:\s*[^\s]+",  # javascript: protocol
@@ -36,12 +33,15 @@ class SusPatterns:
         r"(?:<object[^>]*>[\s\S]*?<\/object\s*>)",  # Suspicious objects
         r"(?:<embed[^>]*>[\s\S]*?<\/embed\s*>)",  # Suspicious embeds
         r"(?:<applet[^>]*>[\s\S]*?<\/applet\s*>)",  # Java applets
-
         # SQL Injection - Enhanced patterns
+        # Basic SELECT statements
+        r"(?i)SELECT\s+[\w\s,\*]+\s+FROM\s+[\w\s\._]+",
+        # UNION-based queries
+        r"(?i)UNION\s+(?:ALL\s+)?SELECT",
         # Logic-based
         r"(?i)('\s*(?:OR|AND)\s*[\(\s]*'?[\d\w]+\s*(?:=|LIKE|<|>|<=|>=)\s*"
         r"[\(\s]*'?[\d\w]+)",
-        # UNION-based
+        # UNION-based (original pattern)
         r"(?i)(UNION\s+(?:ALL\s+)?SELECT\s+(?:NULL[,\s]*)+|\(\s*SELECT\s+"
         r"(?:@@|VERSION))",
         r"(?i)(?:INTO\s+(?:OUTFILE|DUMPFILE)\s+'[^']+')",  # File operations
@@ -51,7 +51,6 @@ class SusPatterns:
         # Comment-based
         r"(?i)(?:\/\*![0-9]*\s*(?:OR|AND|UNION|SELECT|INSERT|DELETE|DROP|"
         r"CONCAT|CHAR|UPDATE)\b)",
-
         # Directory Traversal - Enhanced patterns
         r"(?:\.\./|\.\\/){2,}",  # Multiple traversal
         # Sensitive files
@@ -60,7 +59,6 @@ class SusPatterns:
         r"(?:boot\.ini|win\.ini|system\.ini|config\.sys)\s*$",  # Windows files
         r"(?:\/proc\/self\/environ$)",  # Process information
         r"(?:\/var\/log\/[^\/]+$)",  # Log files
-
         # Command Injection - Enhanced patterns
         # Basic commands
         r";\s*(?:ls|cat|rm|chmod|chown|wget|curl|nc|netcat|ping|telnet)\s+"
@@ -73,7 +71,6 @@ class SusPatterns:
         r"(?:^|;)\s*(?:bash|sh|ksh|csh|tsch|zsh|ash)\s+-[a-zA-Z]+",
         # PHP functions
         r"\b(?:eval|system|exec|shell_exec|passthru|popen|proc_open)\s*\(",
-
         # File Inclusion - Enhanced patterns
         # Protocols
         r"(?:php|data|zip|rar|file|glob|expect|input|phpinfo|zlib|phar|ssh2|"
@@ -81,49 +78,45 @@ class SusPatterns:
         # URLs
         r"(?:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(?:\/?)(?:"
         r"[a-zA-Z0-9\-\.\?,'/\\\+&amp;%\$#_]*)?)",
-
         # LDAP Injection - Enhanced patterns
         r"\(\s*[|&]\s*\(\s*[^)]+=[*]",  # Wildcards
         r"(?:\*(?:[\s\d\w]+\s*=|=\s*[\d\w\s]+))",  # Attribute matching
         r"(?:\(\s*[&|]\s*)",  # Logic operations
-
         # XML Injection - Enhanced patterns
         r"<!(?:ENTITY|DOCTYPE)[^>]+SYSTEM[^>]+>",  # XXE
         r"(?:<!\[CDATA\[.*?\]\]>)",  # CDATA sections
         r"(?:<\?xml.*?\?>)",  # XML declarations
-
         # SSRF - Enhanced patterns
         # Local addresses
         r"(?:localhost|127\.0\.0\.1|0\.0\.0\.0|[::]|(?:169\.254|192\.168|10\.|"
         r"172\.(?:1[6-9]|2[0-9]|3[01]))\.)",
         r"(?:file|dict|gopher|jar|tftp)://[^\s]+",  # Dangerous protocols
-
         # NoSQL Injection - Enhanced patterns
         # MongoDB
         r"\{\s*\$(?:where|gt|lt|ne|eq|regex|in|nin|all|size|exists|type|mod|"
         r"options):",
         r"(?:\{\s*\$[a-zA-Z]+\s*:\s*(?:\{|\[))",  # Nested operators
-
         # File Upload - Enhanced patterns
         r"(?i)filename=[\"'].*?\.(?:php\d*|phar|phtml|exe|jsp|asp|aspx|sh|"
         r"bash|rb|py|pl|cgi|com|bat|cmd|vbs|vbe|js|ws|wsf|msi|hta)[\"\']",
-
         # Path Traversal - Enhanced patterns
         # Encoded traversal
         r"(?:%2e%2e|%252e%252e|%uff0e%uff0e|%c0%ae%c0%ae|%e0%40%ae|%c0%ae"
         r"%e0%80%ae|%25c0%25ae)/",
-
         # Template Injection - New category
         # Basic template injection
         r"\{\{\s*[^\}]*(?:system|exec|popen|eval|require|include)\s*\}\}",
         # Alternative syntax
         r"\{\%\s*[^\%]*(?:system|exec|popen|eval|require|include)\s*\%\}",
-
         # HTTP Response Splitting - New category
         r"[\r\n]\s*(?:HTTP\/[0-9.]+|Location:|Set-Cookie:)",
     ]
 
-    def __new__(cls):
+    compiled_patterns: list[re.Pattern]
+    compiled_custom_patterns: set[re.Pattern]
+    redis_handler: Any = None
+
+    def __new__(cls) -> "SusPatterns":
         """
         Ensure only one instance of SusPatterns
         is created (singleton pattern).
@@ -133,41 +126,28 @@ class SusPatterns:
             of the SusPatterns class.
         """
         if cls._instance is None:
-            cls._instance = super(
-                SusPatterns,
-                cls
-            ).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance.compiled_patterns = [
-                re.compile(
-                    pattern,
-                    re.IGNORECASE | re.MULTILINE
-                )
+                re.compile(pattern, re.IGNORECASE | re.MULTILINE)
                 for pattern in cls.patterns
             ]
             cls._instance.compiled_custom_patterns = set()
             cls._instance.redis_handler = None
         return cls._instance
 
-    async def initialize_redis(self, redis_handler):
+    async def initialize_redis(self, redis_handler: Any) -> None:
         """Initialize Redis connection and load cached patterns"""
         self.redis_handler = redis_handler
         if self.redis_handler:
-            cached_patterns = await self.redis_handler.get_key(
-                "patterns",
-                "custom"
-            )
+            cached_patterns = await self.redis_handler.get_key("patterns", "custom")
             if cached_patterns:
-                patterns = cached_patterns.split(',')
+                patterns = cached_patterns.split(",")
                 for pattern in patterns:
                     if pattern not in self.custom_patterns:
                         await self.add_pattern(pattern, custom=True)
 
     @classmethod
-    async def add_pattern(
-        cls,
-        pattern: str,
-        custom: bool = False
-    ) -> None:
+    async def add_pattern(cls, pattern: str, custom: bool = False) -> None:
         """
         Add a new pattern to either the custom or
         default patterns list.
@@ -178,38 +158,23 @@ class SusPatterns:
             to custom patterns; otherwise, add to
             default patterns. Defaults to False.
         """
-        compiled_pattern = re.compile(
-            pattern,
-            re.IGNORECASE | re.MULTILINE
-        )
-        if custom:
-            cls._instance.compiled_custom_patterns.add(
-                compiled_pattern
-            )
-            cls._instance.custom_patterns.add(
-                pattern
-            )
+        instance = cls()
 
-            if cls._instance.redis_handler:
-                await cls._instance.redis_handler.set_key(
-                    "patterns",
-                    "custom",
-                    ','.join(cls._instance.custom_patterns)
+        compiled_pattern = re.compile(pattern, re.IGNORECASE | re.MULTILINE)
+        if custom:
+            instance.compiled_custom_patterns.add(compiled_pattern)
+            instance.custom_patterns.add(pattern)
+
+            if instance.redis_handler:
+                await instance.redis_handler.set_key(
+                    "patterns", "custom", ",".join(instance.custom_patterns)
                 )
         else:
-            cls._instance.compiled_patterns.append(
-                compiled_pattern
-            )
-            cls._instance.patterns.append(
-                pattern
-            )
+            instance.compiled_patterns.append(compiled_pattern)
+            instance.patterns.append(pattern)
 
     @classmethod
-    async def remove_pattern(
-        cls,
-        pattern: str,
-        custom: bool = False
-    ) -> None:
+    async def remove_pattern(cls, pattern: str, custom: bool = False) -> None:
         """
         Remove a pattern from either the
         custom or default patterns list.
@@ -220,40 +185,25 @@ class SusPatterns:
             from custom patterns; otherwise, remove
             from default patterns. Defaults to False.
         """
-        compiled_pattern = re.compile(
-            pattern,
-            re.IGNORECASE | re.MULTILINE
-        )
-        if custom:
-            cls._instance.compiled_custom_patterns.discard(
-                compiled_pattern
-            )
-            cls._instance.custom_patterns.discard(
-                pattern
-            )
+        instance = cls()
 
-            if cls._instance.redis_handler:
-                await cls._instance.redis_handler.set_key(
-                    "patterns",
-                    "custom",
-                    ','.join(cls._instance.custom_patterns)
+        compiled_pattern = re.compile(pattern, re.IGNORECASE | re.MULTILINE)
+        if custom:
+            instance.compiled_custom_patterns.discard(compiled_pattern)
+            instance.custom_patterns.discard(pattern)
+
+            if instance.redis_handler:
+                await instance.redis_handler.set_key(
+                    "patterns", "custom", ",".join(instance.custom_patterns)
                 )
         else:
-            cls._instance.compiled_patterns = [
-                p
-                for p in cls._instance.compiled_patterns
-                if p.pattern != pattern
+            instance.compiled_patterns = [
+                p for p in instance.compiled_patterns if p.pattern != pattern
             ]
-            cls._instance.patterns = [
-                p
-                for p in cls._instance.patterns
-                if p != pattern
-            ]
+            instance.patterns = [p for p in instance.patterns if p != pattern]
 
     @classmethod
-    async def get_all_patterns(
-        cls
-    ) -> List[str]:
+    async def get_all_patterns(cls) -> list[str]:
         """
         Retrieve all patterns, including
         both default and custom patterns.
@@ -262,14 +212,12 @@ class SusPatterns:
             List[str]: A list containing
             all default and custom patterns.
         """
-        return cls._instance.patterns + list(
-            cls._instance.custom_patterns
-        )
+        instance = cls()
+
+        return instance.patterns + list(instance.custom_patterns)
 
     @classmethod
-    async def get_all_compiled_patterns(
-        cls
-    ) -> List[re.Pattern]:
+    async def get_all_compiled_patterns(cls) -> list[re.Pattern]:
         """
         Retrieve all compiled patterns,
         including both default and custom patterns.
@@ -278,6 +226,6 @@ class SusPatterns:
             List[re.Pattern]: A list containing
             all default and custom compiled patterns.
         """
-        return cls._instance.compiled_patterns + list(
-            cls._instance.compiled_custom_patterns
-        )
+        instance = cls()
+
+        return instance.compiled_patterns + list(instance.compiled_custom_patterns)

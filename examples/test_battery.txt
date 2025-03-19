@@ -1,0 +1,67 @@
+# Basic access
+
+curl http://0.0.0.0:8000/
+curl http://0.0.0.0:8000/docs
+curl http://0.0.0.0:8000/redoc
+curl http://0.0.0.0:8000/test
+
+
+# Rate limit (5 requests allowed)
+for i in {1..5}; do
+    curl http://0.0.0.0:8000/
+    echo "Request $i"
+    sleep 0.1
+done
+
+
+# Auto-ban (threshold=5)
+for i in {1..5}; do
+    curl "http://0.0.0.0:8000/test?input=<script>alert(1)</script>";
+    echo "";
+    sleep 0.1;
+done
+
+
+# Whitelist Tests
+curl http://0.0.0.0:8000/  # Should work (0.0.0.0)
+curl -H "X-Forwarded-For: 0.0.0.0" http://0.0.0.0:8000/
+curl -H "X-Forwarded-For: 192.168.0.1" http://0.0.0.0:8000/
+curl -H "X-Forwarded-For: 10.0.0.100" http://0.0.0.0:8000/
+
+# User Agent Tests
+
+
+# XSS Tests
+curl "http://0.0.0.0:8000/test?input=<script>alert(1)</script>"
+curl "http://0.0.0.0:8000/test?input=javascript:alert(1)"
+curl "http://0.0.0.0:8000/test?input=<img%20src=x%20onerror=alert(1)>"
+
+
+# SQL Injection Tests
+curl "http://0.0.0.0:8000/test?query=SELECT%20*%20FROM%20users"
+curl "http://0.0.0.0:8000/test?query=UNION%20SELECT%20password%20FROM%20users"
+curl "http://0.0.0.0:8000/test?query=1%27%20OR%20%271%27%3D%271"
+
+
+# Path Traversal Tests
+curl "http://0.0.0.0:8000/test?path=../../../etc/passwd"
+curl "http://0.0.0.0:8000/test?path=..\..\windows\win.ini"
+
+
+# Command Injection Tests
+curl "http://0.0.0.0:8000/test?cmd=;ls;pwd;"
+curl "http://0.0.0.0:8000/test?cmd=|cat%20/etc/passwd"
+curl "http://0.0.0.0:8000/test?cmd=\$(whoami)"
+
+
+# AWS IP Test
+curl -H "X-Forwarded-For: 3.2.1.0" http://0.0.0.0:8000/
+
+
+# GCP IP Test
+curl -H "X-Forwarded-For: 35.190.0.0" http://0.0.0.0:8000/
+
+
+# AZ IP Test
+curl -H "X-Forwarded-For: 52.183.224.0" http://0.0.0.0:8000/
+

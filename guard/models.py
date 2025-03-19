@@ -1,25 +1,10 @@
-from fastapi import (
-    Request,
-    Response
-)
-from ipaddress import (
-    ip_network,
-    IPv4Address
-)
+from collections.abc import Awaitable, Callable
+from ipaddress import IPv4Address, ip_network
 from pathlib import Path
-from pydantic import (
-    BaseModel,
-    field_validator,
-    Field
-)
-from typing import (
-    Awaitable,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Set
-)
+from typing import Any
+
+from fastapi import Request, Response
+from pydantic import BaseModel, Field, field_validator
 
 
 class SecurityConfig(BaseModel):
@@ -37,18 +22,15 @@ class SecurityConfig(BaseModel):
     Country codes should be specified in ISO 3166-1 alpha-2 format.
     """
 
-    ipinfo_token: str = Field(
-        ...,
-        description="IPInfo API token for IP geolocation"
-    )
+    ipinfo_token: str = Field(..., description="IPInfo API token for IP geolocation")
     """
     str:
         The IPInfo API token for IP geolocation.
     """
 
-    ipinfo_db_path: Optional[Path] = Field(
+    ipinfo_db_path: Path | None = Field(
         default=Path("data/ipinfo/country_asn.mmdb"),
-        description="Path to the IPInfo database file"
+        description="Path to the IPInfo database file",
     )
     """
     Optional[Path]:
@@ -57,16 +39,16 @@ class SecurityConfig(BaseModel):
 
     enable_redis: bool = Field(
         default=True,
-        description="Enable/disable Redis for distributed state management"
+        description="Enable/disable Redis for distributed state management",
     )
     """
     bool:
         Whether to enable Redis for distributed state management.
     """
 
-    redis_url: Optional[str] = Field(
+    redis_url: str | None = Field(
         default="redis://localhost:6379",
-        description="Redis URL for distributed state management"
+        description="Redis URL for distributed state management",
     )
     """
     Optional[str]:
@@ -75,16 +57,15 @@ class SecurityConfig(BaseModel):
 
     redis_prefix: str = Field(
         default="fastapi_guard:",
-        description="Prefix for Redis keys to avoid collisions with other apps"
+        description="Prefix for Redis keys to avoid collisions with other apps",
     )
     """
     str:
         The prefix for Redis keys to avoid collisions with other applications.
     """
 
-    whitelist: Optional[List[str]] = Field(
-        default=None,
-        description="Allowed IP addresses or CIDR ranges"
+    whitelist: list[str] | None = Field(
+        default=None, description="Allowed IP addresses or CIDR ranges"
     )
     """
     Optional[List[str]]:
@@ -93,9 +74,8 @@ class SecurityConfig(BaseModel):
         If set to None, no whitelist is applied.
     """
 
-    blacklist: List[str] = Field(
-        default=[],
-        description="Blocked IP addresses or CIDR ranges"
+    blacklist: list[str] = Field(
+        default=[], description="Blocked IP addresses or CIDR ranges"
     )
     """
     List[str]:
@@ -103,9 +83,8 @@ class SecurityConfig(BaseModel):
         ranges that are always blocked.
     """
 
-    whitelist_countries: List[str] = Field(
-        default=[],
-        description="A list of country codes that are always allowed"
+    whitelist_countries: list[str] = Field(
+        default=[], description="A list of country codes that are always allowed"
     )
     """
     List[str]:
@@ -113,18 +92,16 @@ class SecurityConfig(BaseModel):
         always allowed.
     """
 
-    blocked_countries: List[str] = Field(
-        default=[],
-        description="A list of country codes that are always blocked"
+    blocked_countries: list[str] = Field(
+        default=[], description="A list of country codes that are always blocked"
     )
     """
     List[str]:
         A list of country codes that are always blocked.
     """
 
-    blocked_user_agents: List[str] = Field(
-        default=[],
-        description="Blocked user agents"
+    blocked_user_agents: list[str] = Field(
+        default=[], description="Blocked user agents"
     )
     """
     List[str]:
@@ -133,8 +110,7 @@ class SecurityConfig(BaseModel):
     """
 
     auto_ban_threshold: int = Field(
-        default=20,
-        description="Number of suspicious requests before auto-ban"
+        default=20, description="Number of suspicious requests before auto-ban"
     )
     """
     int:
@@ -143,8 +119,7 @@ class SecurityConfig(BaseModel):
     """
 
     auto_ban_duration: int = Field(
-        default=3600,
-        description="Duration of auto-ban in seconds (default: 1 hour)"
+        default=3600, description="Duration of auto-ban in seconds (default: 1 hour)"
     )
     """
     int:
@@ -153,9 +128,9 @@ class SecurityConfig(BaseModel):
         reaching the auto-ban threshold.
     """
 
-    custom_log_file: Optional[str] = Field(
+    custom_log_file: str | None = Field(
         default=None,
-        description="The path to a custom log file for logging security events"
+        description="The path to a custom log file for logging security events",
     )
     """
     Optional[str]:
@@ -163,9 +138,8 @@ class SecurityConfig(BaseModel):
         for logging security events.
     """
 
-    custom_error_responses: Dict[int, str] = Field(
-        default={},
-        description="Custom error for specific HTTP status codes"
+    custom_error_responses: dict[int, str] = Field(
+        default={}, description="Custom error for specific HTTP status codes"
     )
     """
     Dict[int, str]:
@@ -174,8 +148,7 @@ class SecurityConfig(BaseModel):
     """
 
     rate_limit: int = Field(
-        default=10,
-        description="Maximum requests per rate_limit_window"
+        default=10, description="Maximum requests per rate_limit_window"
     )
     """
     int:
@@ -184,8 +157,7 @@ class SecurityConfig(BaseModel):
     """
 
     rate_limit_window: int = Field(
-        default=60,
-        description="Rate limiting time window (seconds)"
+        default=60, description="Rate limiting time window (seconds)"
     )
     """
     int:
@@ -193,8 +165,7 @@ class SecurityConfig(BaseModel):
     """
 
     enforce_https: bool = Field(
-        default=False,
-        description="Whether to enforce HTTPS connections"
+        default=False, description="Whether to enforce HTTPS connections"
     )
     """
     bool:
@@ -202,14 +173,8 @@ class SecurityConfig(BaseModel):
         If True, all HTTP requests will be redirected to HTTPS.
     """
 
-    custom_request_check: Optional[
-        Callable[
-            [Request],
-            Awaitable[Optional[Response]]
-        ]
-    ] = Field(
-        default=None,
-        description="Perform additional checks on the request"
+    custom_request_check: Callable[[Request], Awaitable[Response | None]] | None = (
+        Field(default=None, description="Perform additional checks on the request")
     )
     """
     Optional[
@@ -225,14 +190,9 @@ class SecurityConfig(BaseModel):
         will be sent instead of continuing the middleware chain.
     """
 
-    custom_response_modifier: Optional[
-        Callable[
-            [Response],
-            Awaitable[Response]
-        ]
-    ] = Field(
+    custom_response_modifier: Callable[[Response], Awaitable[Response]] | None = Field(
         default=None,
-        description="A custom function to modify the response before it's sent"
+        description="A custom function to modify the response before it's sent",
     )
     """
     Optional[
@@ -243,18 +203,14 @@ class SecurityConfig(BaseModel):
         the response before it's sent.
     """
 
-    enable_cors: bool = Field(
-        default=False,
-        description="Enable/disable CORS"
-    )
+    enable_cors: bool = Field(default=False, description="Enable/disable CORS")
     """
     bool:
         Whether to enable CORS.
     """
 
-    cors_allow_origins: List[str] = Field(
-        default=["*"],
-        description="Origins allowed in CORS requests"
+    cors_allow_origins: list[str] = Field(
+        default=["*"], description="Origins allowed in CORS requests"
     )
     """
     List[str]:
@@ -262,15 +218,9 @@ class SecurityConfig(BaseModel):
         are allowed to access the API.
     """
 
-    cors_allow_methods: List[str] = Field(
-        default=[
-            "GET",
-            "POST",
-            "PUT",
-            "DELETE",
-            "OPTIONS"
-        ],
-        description="Methods allowed in CORS requests"
+    cors_allow_methods: list[str] = Field(
+        default=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        description="Methods allowed in CORS requests",
     )
     """
     List[str]:
@@ -278,9 +228,8 @@ class SecurityConfig(BaseModel):
         are allowed to access the API.
     """
 
-    cors_allow_headers: List[str] = Field(
-        default=["*"],
-        description="Headers allowed in CORS requests"
+    cors_allow_headers: list[str] = Field(
+        default=["*"], description="Headers allowed in CORS requests"
     )
     """
     List[str]:
@@ -289,8 +238,7 @@ class SecurityConfig(BaseModel):
     """
 
     cors_allow_credentials: bool = Field(
-        default=False,
-        description="Whether to allow credentials in CORS requests"
+        default=False, description="Whether to allow credentials in CORS requests"
     )
     """
     bool:
@@ -298,9 +246,8 @@ class SecurityConfig(BaseModel):
         in CORS requests.
     """
 
-    cors_expose_headers: List[str] = Field(
-        default=[],
-        description="Headers exposed in CORS responses"
+    cors_expose_headers: list[str] = Field(
+        default=[], description="Headers exposed in CORS responses"
     )
     """
     List[str]:
@@ -309,8 +256,7 @@ class SecurityConfig(BaseModel):
     """
 
     cors_max_age: int = Field(
-        default=600,
-        description="Maximum age of CORS preflight results"
+        default=600, description="Maximum age of CORS preflight results"
     )
     """
     int:
@@ -319,9 +265,8 @@ class SecurityConfig(BaseModel):
         request can be cached.
     """
 
-    block_cloud_providers: Optional[Set[str]] = Field(
-        default=None,
-        description="Set of cloud provider names to block"
+    block_cloud_providers: set[str] | None = Field(
+        default=None, description="Set of cloud provider names to block"
     )
     """
     Optional[Set[str]]:
@@ -329,16 +274,16 @@ class SecurityConfig(BaseModel):
         Supported values: 'AWS', 'GCP', 'Azure'
     """
 
-    exclude_paths: List[str] = Field(
+    exclude_paths: list[str] = Field(
         default=[
-            '/docs',
-            '/redoc',
-            '/openapi.json',
-            '/openapi.yaml',
-            '/favicon.ico',
-            '/static',
+            "/docs",
+            "/redoc",
+            "/openapi.json",
+            "/openapi.yaml",
+            "/favicon.ico",
+            "/static",
         ],
-        description="Paths to exclude from security checks"
+        description="Paths to exclude from security checks",
     )
     """
     List[str]:
@@ -346,8 +291,7 @@ class SecurityConfig(BaseModel):
     """
 
     enable_ip_banning: bool = Field(
-        default=False,
-        description="Enable/disable IP banning functionality"
+        default=False, description="Enable/disable IP banning functionality"
     )
     """
     bool:
@@ -355,8 +299,7 @@ class SecurityConfig(BaseModel):
     """
 
     enable_rate_limiting: bool = Field(
-        default=True,
-        description="Enable/disable rate limiting functionality"
+        default=True, description="Enable/disable rate limiting functionality"
     )
     """
     bool:
@@ -364,19 +307,15 @@ class SecurityConfig(BaseModel):
     """
 
     enable_penetration_detection: bool = Field(
-        default=False,
-        description="Enable/disable penetration attempt detection"
+        default=False, description="Enable/disable penetration attempt detection"
     )
     """
     bool:
         Whether to enable penetration attempt detection.
     """
 
-    @field_validator('whitelist', 'blacklist')
-    def validate_ip_lists(
-        cls,
-        v: Optional[List[str]]
-    ) -> Optional[List[str]]:
+    @field_validator("whitelist", "blacklist")
+    def validate_ip_lists(cls, v: list[str] | None) -> list[str] | None:
         """Validate IP addresses and CIDR ranges in whitelist/blacklist."""
         if v is None:
             return None
@@ -384,18 +323,18 @@ class SecurityConfig(BaseModel):
         validated = []
         for entry in v:
             try:
-                if '/' in entry:
+                if "/" in entry:
                     network = ip_network(entry, strict=False)
                     validated.append(str(network))
                 else:
                     addr = IPv4Address(entry)
                     validated.append(str(addr))
             except ValueError:
-                raise ValueError(f"Invalid IP or CIDR range: {entry}")
+                raise ValueError(f"Invalid IP or CIDR range: {entry}") from None
         return validated
 
-    @field_validator('block_cloud_providers', mode='before')
-    def validate_cloud_providers(cls, v):
+    @field_validator("block_cloud_providers", mode="before")
+    def validate_cloud_providers(cls, v: Any) -> set[str]:
         valid_providers = {"AWS", "GCP", "Azure"}
         if v is None:
             return set()

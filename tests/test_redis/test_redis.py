@@ -1,11 +1,14 @@
+import asyncio
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from fastapi import FastAPI, status, HTTPException
-from guard.handlers.redis_handler import RedisManager
-from guard.models import SecurityConfig
-from redis.exceptions import ConnectionError
+from fastapi import FastAPI, HTTPException, status
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
-import asyncio
+from redis.exceptions import ConnectionError
+
+from guard.handlers.redis_handler import RedisManager
+from guard.models import SecurityConfig
 
 
 @pytest.mark.asyncio
@@ -181,22 +184,19 @@ async def test_redis_increment_operations(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_redis_connection_context(security_config_redis):
-    """Test Redis connection context manager"""
+async def test_redis_connection_context_get_error(security_config_redis, monkeypatch):
+    """Test Redis connection get operation with error"""
     handler = RedisManager(security_config_redis)
     await handler.initialize()
 
-    # Test normal connection usage
-    async with handler.get_connection() as conn:
-        await conn.set("test:key", "value")
-        value = await conn.get("test:key")
-        assert value == "value"
+    async def mock_get(*args, **kwargs):
+        raise ConnectionError("Test connection error on get")
 
-    # Test connection error handling
-    await handler.close()
     with pytest.raises(HTTPException) as exc_info:
         async with handler.get_connection() as conn:
+            monkeypatch.setattr(conn, "get", mock_get)
             await conn.get("test:key")
+
     assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
     await handler.close()
@@ -207,8 +207,10 @@ async def test_redis_connection_failures(security_config_redis):
     """Test Redis connection failure scenarios"""
     # Test initialization failure
     bad_config = SecurityConfig(
-        **{**security_config_redis.model_dump(),
-           "redis_url": "redis://nonexistent:6379"}
+        **{
+            **security_config_redis.model_dump(),
+            "redis_url": "redis://nonexistent:6379",
+        }
     )
     handler = RedisManager(bad_config)
     with pytest.raises(HTTPException) as exc_info:
@@ -251,8 +253,7 @@ async def test_redis_disabled_operations(security_config_redis):
 async def test_redis_failed_initialization_operations(security_config_redis):
     """Test operations after failed initialization"""
     bad_config = SecurityConfig(
-        **{**security_config_redis.model_dump(),
-           "redis_url": "redis://invalid:6379"}
+        **{**security_config_redis.model_dump(), "redis_url": "redis://invalid:6379"}
     )
     handler = RedisManager(bad_config)
 
@@ -263,3 +264,52 @@ async def test_redis_failed_initialization_operations(security_config_redis):
     with pytest.raises(HTTPException) as exc_info:
         await handler.set_key("test", "key", "value")
     assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+
+@pytest.mark.asyncio
+async def test_redis_url_none(security_config_redis):
+    """Test Redis initialization when redis_url is None"""
+    security_config_redis.redis_url = None
+
+    handler = RedisManager(security_config_redis)
+
+    with patch("logging.Logger.warning") as mock_warning:
+        await handler.initialize()
+        mock_warning.assert_called_once_with("Redis URL is None, skipping connection")
+        assert handler._redis is None
+
+
+@pytest.mark.asyncio
+async def test_safe_operation_redis_disabled(security_config):
+    """Test safe_operation when Redis is disabled"""
+    handler = RedisManager(security_config)
+
+    mock_func = AsyncMock()
+    result = await handler.safe_operation(mock_func)
+
+    assert result is None
+    mock_func.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_connection_context_redis_none(security_config_redis):
+    """Test when Redis is None after initialization attempt"""
+    handler = RedisManager(security_config_redis)
+
+    initialize_called = False
+
+    async def mocked_initialize():
+        nonlocal initialize_called
+        initialize_called = True
+
+    handler.initialize = mocked_initialize
+
+    handler._closed = False
+    handler._redis = None
+
+    with pytest.raises(HTTPException) as exc_info:
+        await handler.get_connection().__aenter__()
+
+    assert initialize_called, "initialize() was not called"
+    assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+    assert "Redis connection failed" in exc_info.value.detail
