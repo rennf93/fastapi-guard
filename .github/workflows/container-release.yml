@@ -69,13 +69,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Compose
-        run: |
-          docker-compose --version
+        uses: docker/setup-compose-action@v1
+        with:
+          version: latest
 
       - name: Build with Docker Compose
         working-directory: ./examples
         run: |
-          docker-compose build
+          docker compose build
 
       - name: Tag and Push to GitHub Container Registry
         run: |
