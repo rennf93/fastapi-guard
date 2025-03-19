@@ -4,10 +4,10 @@ on:
   push:
     branches:
       - master
+      - feature/patterns-and-decorators
   pull_request_target:
     branches:
       - master
-      # - feature/patterns-and-decorators
 
 jobs:
   pre-commit:
@@ -89,7 +89,7 @@ jobs:
 
       - name: Run tests
         run: |
-          IPINFO_TOKEN='${{ secrets.IPINFO_TOKEN }}' REDIS_URL='redis://localhost:6379' REDIS_PREFIX='test:fastapi_guard:' poetry run pytest -v --cov=.
+          IPINFO_TOKEN='${{ secrets.IPINFO_TOKEN }}' REDIS_URL='redis://localhost:6379' REDIS_PREFIX='test:fastapi_guard:' poetry run pytest -v --cov=guard
 
       - name: Notify Success on Slack Channel
         uses: rennf93/good-comms@master

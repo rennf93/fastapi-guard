@@ -1,4 +1,5 @@
 import re
+from typing import Any, ClassVar, Optional
 
 
 class SusPatterns:
@@ -12,7 +13,7 @@ class SusPatterns:
     and retrieve patterns.
     """
 
-    _instance = None
+    _instance: ClassVar[Optional["SusPatterns"]] = None
 
     custom_patterns: set[str] = set()
 
@@ -111,7 +112,11 @@ class SusPatterns:
         r"[\r\n]\s*(?:HTTP\/[0-9.]+|Location:|Set-Cookie:)",
     ]
 
-    def __new__(cls):
+    compiled_patterns: list[re.Pattern]
+    compiled_custom_patterns: set[re.Pattern]
+    redis_handler: Any = None
+
+    def __new__(cls) -> "SusPatterns":
         """
         Ensure only one instance of SusPatterns
         is created (singleton pattern).
@@ -130,7 +135,7 @@ class SusPatterns:
             cls._instance.redis_handler = None
         return cls._instance
 
-    async def initialize_redis(self, redis_handler):
+    async def initialize_redis(self, redis_handler: Any) -> None:
         """Initialize Redis connection and load cached patterns"""
         self.redis_handler = redis_handler
         if self.redis_handler:
@@ -153,18 +158,20 @@ class SusPatterns:
             to custom patterns; otherwise, add to
             default patterns. Defaults to False.
         """
+        instance = cls()
+
         compiled_pattern = re.compile(pattern, re.IGNORECASE | re.MULTILINE)
         if custom:
-            cls._instance.compiled_custom_patterns.add(compiled_pattern)
-            cls._instance.custom_patterns.add(pattern)
+            instance.compiled_custom_patterns.add(compiled_pattern)
+            instance.custom_patterns.add(pattern)
 
-            if cls._instance.redis_handler:
-                await cls._instance.redis_handler.set_key(
-                    "patterns", "custom", ",".join(cls._instance.custom_patterns)
+            if instance.redis_handler:
+                await instance.redis_handler.set_key(
+                    "patterns", "custom", ",".join(instance.custom_patterns)
                 )
         else:
-            cls._instance.compiled_patterns.append(compiled_pattern)
-            cls._instance.patterns.append(pattern)
+            instance.compiled_patterns.append(compiled_pattern)
+            instance.patterns.append(pattern)
 
     @classmethod
     async def remove_pattern(cls, pattern: str, custom: bool = False) -> None:
@@ -178,20 +185,22 @@ class SusPatterns:
             from custom patterns; otherwise, remove
             from default patterns. Defaults to False.
         """
+        instance = cls()
+
         compiled_pattern = re.compile(pattern, re.IGNORECASE | re.MULTILINE)
         if custom:
-            cls._instance.compiled_custom_patterns.discard(compiled_pattern)
-            cls._instance.custom_patterns.discard(pattern)
+            instance.compiled_custom_patterns.discard(compiled_pattern)
+            instance.custom_patterns.discard(pattern)
 
-            if cls._instance.redis_handler:
-                await cls._instance.redis_handler.set_key(
-                    "patterns", "custom", ",".join(cls._instance.custom_patterns)
+            if instance.redis_handler:
+                await instance.redis_handler.set_key(
+                    "patterns", "custom", ",".join(instance.custom_patterns)
                 )
         else:
-            cls._instance.compiled_patterns = [
-                p for p in cls._instance.compiled_patterns if p.pattern != pattern
+            instance.compiled_patterns = [
+                p for p in instance.compiled_patterns if p.pattern != pattern
             ]
-            cls._instance.patterns = [p for p in cls._instance.patterns if p != pattern]
+            instance.patterns = [p for p in instance.patterns if p != pattern]
 
     @classmethod
     async def get_all_patterns(cls) -> list[str]:
@@ -203,7 +212,9 @@ class SusPatterns:
             List[str]: A list containing
             all default and custom patterns.
         """
-        return cls._instance.patterns + list(cls._instance.custom_patterns)
+        instance = cls()
+
+        return instance.patterns + list(instance.custom_patterns)
 
     @classmethod
     async def get_all_compiled_patterns(cls) -> list[re.Pattern]:
@@ -215,6 +226,6 @@ class SusPatterns:
             List[re.Pattern]: A list containing
             all default and custom compiled patterns.
         """
-        return cls._instance.compiled_patterns + list(
-            cls._instance.compiled_custom_patterns
-        )
+        instance = cls()
+
+        return instance.compiled_patterns + list(instance.compiled_custom_patterns)

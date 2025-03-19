@@ -424,10 +424,12 @@ async def test_cloud_ip_blocking_with_refresh():
     """Test cloud IP blocking with refresh functionality"""
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN, block_cloud_providers={"AWS", "GCP", "Azure"}
+        ipinfo_token=IPINFO_TOKEN,
+        block_cloud_providers={"AWS", "GCP", "Azure"},
+        enable_redis=False,
     )
-    middleware = SecurityMiddleware(app, config)
 
+    middleware = SecurityMiddleware(app, config)
     middleware.last_cloud_ip_refresh = time.time() - 3700
 
     mock_refresh = Mock()
@@ -458,6 +460,19 @@ async def test_cloud_ip_blocking_with_refresh():
         mock_refresh.reset_mock()
         await middleware.dispatch(request, mock_call_next)
         mock_refresh.assert_not_called()
+
+    # Redis enabled
+    config.enable_redis = True
+    middleware = SecurityMiddleware(app, config)
+    middleware.last_cloud_ip_refresh = time.time() - 3700
+
+    mock_refresh_async = AsyncMock()
+    with (
+        patch.object(cloud_handler, "refresh_async", mock_refresh_async),
+        patch.object(cloud_handler, "is_cloud_ip", return_value=False),
+    ):
+        await middleware.dispatch(request, mock_call_next)
+        mock_refresh_async.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -645,7 +660,9 @@ async def test_redis_initialization(security_config_redis):
         patch.object(ip_ban_manager, "initialize_redis") as ipban_init,
         patch.object(IPInfoManager, "initialize_redis") as ipinfo_init,
         patch.object(SusPatterns(), "initialize_redis") as sus_init,
-        patch.object(cloud_handler, "refresh", new_callable=AsyncMock) as cloud_refresh,
+        patch.object(
+            cloud_handler, "refresh_async", new_callable=AsyncMock
+        ) as cloud_refresh,
     ):
         await middleware.initialize()
 
@@ -670,6 +687,38 @@ async def test_redis_disabled(security_config):
 
     assert middleware.redis_handler is None
 
-    # Should not raise errors when Redis-dependent features are called
     await middleware.initialize()
     await middleware.cleanup_rate_limits()
+
+
+@pytest.mark.asyncio
+async def test_request_without_client(security_config):
+    """Test handling of request without client info"""
+    app = FastAPI()
+    middleware = SecurityMiddleware(app, security_config)
+
+    call_next_called = False
+
+    async def mock_call_next(request):
+        nonlocal call_next_called
+        call_next_called = True
+        return Response("OK")
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [],
+            "query_string": b"",
+            "server": ("testserver", 80),
+            "scheme": "http",
+            # No 'client' key here
+        }
+    )
+    request._receive = lambda: {"type": "http.request", "body": b""}
+
+    response = await middleware.dispatch(request, mock_call_next)
+
+    assert call_next_called, "call_next should be called when client is None"
+    assert response.status_code == status.HTTP_200_OK

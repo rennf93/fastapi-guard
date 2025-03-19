@@ -65,7 +65,7 @@ async def test_database_retry_success(tmp_path):
     """Test successful download after retry"""
     db = IPInfoManager(token="test", db_path=tmp_path / "test.mmdb")
     mock_response = Mock()
-    mock_response.raise_for_status = AsyncMock()
+    mock_response.raise_for_status = Mock()
     mock_response.__aenter__ = AsyncMock(return_value=mock_response)
     mock_response.__aexit__ = AsyncMock()
     mock_response.read = AsyncMock(return_value=b"test data")
@@ -252,6 +252,7 @@ async def test_redis_cache_update(tmp_path):
 
     mock_response = AsyncMock()
     mock_response.__aenter__.return_value = mock_response
+    mock_response.raise_for_status = Mock()
     mock_response.read.return_value = b"new_db_data"
 
     with (
@@ -272,9 +273,22 @@ async def test_redis_initialization_flow(tmp_path):
     db = IPInfoManager(token="test", db_path=tmp_path / "test.mmdb")
     mock_redis = AsyncMock()
 
-    # Verify initialization sequence
     with patch.object(db, "initialize", new_callable=AsyncMock) as mock_init:
         await db.initialize_redis(mock_redis)
 
         assert db.redis_handler is mock_redis
         mock_init.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_get_country_result_without_country(tmp_path):
+    """Test get_country when result doesn't contain country key"""
+    db = IPInfoManager(token="test", db_path=tmp_path / "test.mmdb")
+    db.reader = Mock()
+
+    db.reader.get.return_value = {"some_other_field": "value"}
+
+    assert db.get_country("1.1.1.1") is None
+
+    db.reader.get.return_value = None
+    assert db.get_country("1.1.1.1") is None

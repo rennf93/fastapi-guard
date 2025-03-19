@@ -1,6 +1,7 @@
 from collections.abc import Awaitable, Callable
 from ipaddress import IPv4Address, ip_network
 from pathlib import Path
+from typing import Any
 
 from fastapi import Request, Response
 from pydantic import BaseModel, Field, field_validator
@@ -333,7 +334,7 @@ class SecurityConfig(BaseModel):
         return validated
 
     @field_validator("block_cloud_providers", mode="before")
-    def validate_cloud_providers(cls, v):
+    def validate_cloud_providers(cls, v: Any) -> set[str]:
         valid_providers = {"AWS", "GCP", "Azure"}
         if v is None:
             return set()
