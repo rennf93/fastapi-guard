@@ -687,6 +687,38 @@ async def test_redis_disabled(security_config):
 
     assert middleware.redis_handler is None
 
-    # Should not raise errors when Redis-dependent features are called
     await middleware.initialize()
     await middleware.cleanup_rate_limits()
+
+
+@pytest.mark.asyncio
+async def test_request_without_client(security_config):
+    """Test handling of request without client info"""
+    app = FastAPI()
+    middleware = SecurityMiddleware(app, security_config)
+
+    call_next_called = False
+
+    async def mock_call_next(request):
+        nonlocal call_next_called
+        call_next_called = True
+        return Response("OK")
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [],
+            "query_string": b"",
+            "server": ("testserver", 80),
+            "scheme": "http",
+            # No 'client' key here
+        }
+    )
+    request._receive = lambda: {"type": "http.request", "body": b""}
+
+    response = await middleware.dispatch(request, mock_call_next)
+
+    assert call_next_called, "call_next should be called when client is None"
+    assert response.status_code == status.HTTP_200_OK
