@@ -80,16 +80,13 @@ jobs:
 
       - name: Tag and Push to GitHub Container Registry
         run: |
-          # Tag the image built with Docker Compose
-          docker tag examples_fastapi-guard-example:latest ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest
+          docker tag fastapi-guard-example:latest ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest
 
-          # For releases, also create a version-specific tag
           if [[ "${{ env.IS_RELEASE }}" == "true" ]]; then
-            docker tag examples_fastapi-guard-example:latest ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
+            docker tag fastapi-guard-example:latest ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
             docker push ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
           fi
 
-          # Always push the latest tag
           docker push ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest
 
       - name: Notify Success on Slack Channel
