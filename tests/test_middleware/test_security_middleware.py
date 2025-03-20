@@ -15,11 +15,11 @@ from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
 from guard.sus_patterns import SusPatterns
 
-IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
+IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 
 
 @pytest.mark.asyncio
-async def test_rate_limiting():
+async def test_rate_limiting() -> None:
     """
     Test the rate limiting functionality
     of the SecurityMiddleware.
@@ -34,7 +34,7 @@ async def test_rate_limiting():
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
-    async def read_root():
+    async def read_root() -> dict[str, str]:
         return {"message": "Hello World"}
 
     async with AsyncClient(
@@ -56,7 +56,7 @@ async def test_rate_limiting():
 
 
 @pytest.mark.asyncio
-async def test_ip_whitelist_blacklist():
+async def test_ip_whitelist_blacklist() -> None:
     """
     Test the IP whitelist/blacklist
     functionality of the SecurityMiddleware.
@@ -68,7 +68,7 @@ async def test_ip_whitelist_blacklist():
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
-    async def read_root():
+    async def read_root() -> dict[str, str]:
         return {"message": "Hello World"}
 
     async with AsyncClient(
@@ -85,7 +85,7 @@ async def test_ip_whitelist_blacklist():
 
 
 @pytest.mark.asyncio
-async def test_user_agent_filtering():
+async def test_user_agent_filtering() -> None:
     """
     Test the user agent filtering
     functionality of the SecurityMiddleware.
@@ -95,7 +95,7 @@ async def test_user_agent_filtering():
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
-    async def read_root():
+    async def read_root() -> dict[str, str]:
         return {"message": "Hello World"}
 
     async with AsyncClient(
@@ -109,7 +109,7 @@ async def test_user_agent_filtering():
 
 
 @pytest.mark.asyncio
-async def test_rate_limiting_multiple_ips(reset_state, security_middleware):
+async def test_rate_limiting_multiple_ips(reset_state: None) -> None:
     """
     Test the rate limiting functionality
     of the SecurityMiddleware with multiple IPs.
@@ -126,7 +126,7 @@ async def test_rate_limiting_multiple_ips(reset_state, security_middleware):
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
-    async def read_root():
+    async def read_root() -> dict[str, str]:
         return {"message": "Hello World"}
 
     async with AsyncClient(
@@ -152,7 +152,7 @@ async def test_rate_limiting_multiple_ips(reset_state, security_middleware):
 
 
 @pytest.mark.asyncio
-async def test_middleware_multiple_configs():
+async def test_middleware_multiple_configs() -> None:
     """
     Test the SecurityMiddleware
     with multiple configurations.
@@ -167,7 +167,7 @@ async def test_middleware_multiple_configs():
     app.add_middleware(SecurityMiddleware, config=config2)
 
     @app.get("/")
-    async def read_root():
+    async def read_root() -> dict[str, str]:
         return {"message": "Hello World"}
 
     async with AsyncClient(
@@ -183,14 +183,14 @@ async def test_middleware_multiple_configs():
 
 
 @pytest.mark.asyncio
-async def test_custom_request_check():
+async def test_custom_request_check() -> None:
     """
     Test the custom request check
     functionality of the SecurityMiddleware.
     """
     app = FastAPI()
 
-    async def custom_check(request: Request):
+    async def custom_check(request: Request) -> Response | None:
         if request.headers.get("X-Custom-Header") == "block":
             return Response("Custom block", status_code=status.HTTP_403_FORBIDDEN)
         return None
@@ -201,7 +201,7 @@ async def test_custom_request_check():
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
-    async def read_root():
+    async def read_root() -> dict[str, str]:
         return {"message": "Hello World"}
 
     async with AsyncClient(
@@ -216,7 +216,7 @@ async def test_custom_request_check():
 
 
 @pytest.mark.asyncio
-async def test_custom_error_responses():
+async def test_custom_error_responses() -> None:
     """
     Test the custom error responses.
     """
@@ -235,7 +235,7 @@ async def test_custom_error_responses():
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
-    async def read_root():
+    async def read_root() -> dict[str, str]:
         return {"message": "Hello World"}
 
     async with AsyncClient(
@@ -255,7 +255,7 @@ async def test_custom_error_responses():
 
 
 @pytest.mark.asyncio
-async def test_cors_configuration():
+async def test_cors_configuration() -> None:
     app = FastAPI()
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
@@ -288,7 +288,7 @@ async def test_cors_configuration():
 
 
 @pytest.mark.asyncio
-async def test_cors_configuration_missing_expose_headers():
+async def test_cors_configuration_missing_expose_headers() -> None:
     """Test CORS configuration when expose-headers is not present"""
     app = FastAPI()
     config = SecurityConfig(
@@ -320,7 +320,7 @@ async def test_cors_configuration_missing_expose_headers():
 
 
 @pytest.mark.asyncio
-async def test_cloud_ip_blocking():
+async def test_cloud_ip_blocking() -> None:
     app = FastAPI()
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN, block_cloud_providers={"AWS", "GCP", "Azure"}
@@ -328,7 +328,7 @@ async def test_cloud_ip_blocking():
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
-    async def read_root():
+    async def read_root() -> dict[str, str]:
         return {"message": "Hello World"}
 
     with patch.object(cloud_handler, "is_cloud_ip", return_value=True):
@@ -349,7 +349,7 @@ async def test_cloud_ip_blocking():
 
 
 @pytest.mark.asyncio
-async def test_cloud_ip_refresh():
+async def test_cloud_ip_refresh() -> None:
     app = FastAPI()
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN, block_cloud_providers={"AWS", "GCP", "Azure"}
@@ -360,7 +360,7 @@ async def test_cloud_ip_refresh():
         "guard.handlers.cloud_handler.CloudManager.is_cloud_ip", return_value=False
     ) as mock_is_cloud_ip:
 
-        async def receive():
+        async def receive() -> dict[str, str | bytes]:
             return {"type": "http.request", "body": b"test_body"}
 
         request = Request(
@@ -380,7 +380,7 @@ async def test_cloud_ip_refresh():
         body = await request.body()
         assert body == b"test_body"
 
-        async def mock_call_next(request):
+        async def mock_call_next(request: Request) -> Response:
             return Response("OK")
 
         response = await middleware.dispatch(request, mock_call_next)
@@ -391,7 +391,7 @@ async def test_cloud_ip_refresh():
 
 
 @pytest.mark.asyncio
-async def test_cleanup_rate_limits(security_middleware):
+async def test_cleanup_rate_limits(security_middleware: SecurityMiddleware) -> None:
     security_middleware.request_times.update(
         {"expired_ip": [time.time() - 200], "fresh_ip": [time.time() - 30]}
     )
@@ -403,13 +403,13 @@ async def test_cleanup_rate_limits(security_middleware):
 
 
 @pytest.mark.asyncio
-async def test_excluded_paths():
+async def test_excluded_paths() -> None:
     app = FastAPI()
     config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, exclude_paths=["/health"])
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/health")
-    async def health():
+    async def health() -> dict[str, str]:
         return {"status": "ok"}
 
     async with AsyncClient(
@@ -420,7 +420,7 @@ async def test_excluded_paths():
 
 
 @pytest.mark.asyncio
-async def test_cloud_ip_blocking_with_refresh():
+async def test_cloud_ip_blocking_with_refresh() -> None:
     """Test cloud IP blocking with refresh functionality"""
     app = FastAPI()
     config = SecurityConfig(
@@ -430,13 +430,17 @@ async def test_cloud_ip_blocking_with_refresh():
     )
 
     middleware = SecurityMiddleware(app, config)
-    middleware.last_cloud_ip_refresh = time.time() - 3700
+    middleware.last_cloud_ip_refresh = int(time.time() - 3700)
 
     mock_refresh = Mock()
     with (
         patch.object(cloud_handler, "refresh", mock_refresh),
         patch.object(cloud_handler, "is_cloud_ip", return_value=False),
     ):
+
+        async def receive() -> dict[str, str | bytes]:
+            return {"type": "http.request", "body": b""}
+
         request = Request(
             scope={
                 "type": "http",
@@ -447,11 +451,14 @@ async def test_cloud_ip_blocking_with_refresh():
                 "query_string": b"",
                 "server": ("testserver", 80),
                 "scheme": "http",
-            }
+            },
+            receive=receive,
         )
-        request._receive = lambda: {"type": "http.request", "body": b""}
 
-        async def mock_call_next(request):
+        body = await request.body()
+        assert body == b""
+
+        async def mock_call_next(request: Request) -> Response:
             return Response("OK")
 
         await middleware.dispatch(request, mock_call_next)
@@ -464,7 +471,7 @@ async def test_cloud_ip_blocking_with_refresh():
     # Redis enabled
     config.enable_redis = True
     middleware = SecurityMiddleware(app, config)
-    middleware.last_cloud_ip_refresh = time.time() - 3700
+    middleware.last_cloud_ip_refresh = int(time.time() - 3700)
 
     mock_refresh_async = AsyncMock()
     with (
@@ -476,7 +483,7 @@ async def test_cloud_ip_blocking_with_refresh():
 
 
 @pytest.mark.asyncio
-async def test_cors_disabled():
+async def test_cors_disabled() -> None:
     """Test CORS configuration when disabled"""
     app = FastAPI()
     config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, enable_cors=False)
@@ -486,7 +493,7 @@ async def test_cors_disabled():
 
 
 @pytest.mark.asyncio
-async def test_https_enforcement():
+async def test_https_enforcement() -> None:
     """Test HTTPS enforcement functionality"""
     app = FastAPI()
     config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, enforce_https=True)
@@ -495,7 +502,7 @@ async def test_https_enforcement():
     handler_called = False
 
     @app.get("/")
-    async def read_root():
+    async def read_root() -> dict[str, str]:
         nonlocal handler_called
         handler_called = True
         return {"message": "Hello World"}
@@ -520,7 +527,7 @@ async def test_https_enforcement():
 
 
 @pytest.mark.asyncio
-async def test_cleanup_expired_request_times():
+async def test_cleanup_expired_request_times() -> None:
     """Test cleanup of expired request times"""
     app = FastAPI()
     config = SecurityConfig(
@@ -548,7 +555,7 @@ async def test_cleanup_expired_request_times():
 
 
 @pytest.mark.asyncio
-async def test_penetration_detection_disabled():
+async def test_penetration_detection_disabled() -> None:
     """Test when penetration detection is disabled"""
     app = FastAPI()
     config = SecurityConfig(
@@ -557,11 +564,11 @@ async def test_penetration_detection_disabled():
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
-    async def read_root():
+    async def read_root() -> dict[str, str]:
         return {"message": "Hello World"}
 
     @app.get("/wp-admin")
-    async def admin_page():
+    async def admin_page() -> dict[str, str]:
         return {"message": "Admin"}
 
     async with AsyncClient(
@@ -575,7 +582,7 @@ async def test_penetration_detection_disabled():
 
 
 @pytest.mark.asyncio
-async def test_cloud_ip_blocking_with_logging():
+async def test_cloud_ip_blocking_with_logging() -> None:
     """Test cloud IP blocking with logging functionality"""
     app = FastAPI()
     config = SecurityConfig(
@@ -588,7 +595,7 @@ async def test_cloud_ip_blocking_with_logging():
 
     call_next_executed = False
 
-    async def mock_call_next(request):
+    async def mock_call_next(request: Request) -> Response:
         nonlocal call_next_executed
         call_next_executed = True
         return Response("OK")
@@ -598,6 +605,10 @@ async def test_cloud_ip_blocking_with_logging():
         patch("guard.middleware.log_suspicious_activity") as mock_log,
         patch("guard.middleware.is_ip_allowed", return_value=True),
     ):
+
+        async def receive() -> dict[str, str | bytes]:
+            return {"type": "http.request", "body": b""}
+
         request = Request(
             scope={
                 "type": "http",
@@ -608,9 +619,12 @@ async def test_cloud_ip_blocking_with_logging():
                 "query_string": b"",
                 "server": ("testserver", 80),
                 "scheme": "http",
-            }
+            },
+            receive=receive,
         )
-        request._receive = lambda: {"type": "http.request", "body": b""}
+
+        body = await request.body()
+        assert body == b""
 
         response = await middleware.dispatch(request, mock_call_next)
 
@@ -627,6 +641,10 @@ async def test_cloud_ip_blocking_with_logging():
         patch.object(cloud_handler, "is_cloud_ip", return_value=False),
         patch("guard.middleware.is_ip_allowed", return_value=True),
     ):
+
+        async def receive2() -> dict[str, str | bytes]:
+            return {"type": "http.request", "body": b""}
+
         request = Request(
             scope={
                 "type": "http",
@@ -637,9 +655,12 @@ async def test_cloud_ip_blocking_with_logging():
                 "query_string": b"",
                 "server": ("testserver", 80),
                 "scheme": "http",
-            }
+            },
+            receive=receive2,
         )
-        request._receive = lambda: {"type": "http.request", "body": b""}
+
+        body = await request.body()
+        assert body == b""
 
         response = await middleware.dispatch(request, mock_call_next)
 
@@ -648,7 +669,7 @@ async def test_cloud_ip_blocking_with_logging():
 
 
 @pytest.mark.asyncio
-async def test_redis_initialization(security_config_redis):
+async def test_redis_initialization(security_config_redis: SecurityConfig) -> None:
     """Test Redis initialization in SecurityMiddleware"""
     app = FastAPI()
     middleware = SecurityMiddleware(app, security_config_redis)
@@ -679,7 +700,7 @@ async def test_redis_initialization(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_redis_disabled(security_config):
+async def test_redis_disabled(security_config: SecurityConfig) -> None:
     """Test middleware behavior when Redis is disabled"""
     app = FastAPI()
     security_config.enable_redis = False
@@ -692,17 +713,20 @@ async def test_redis_disabled(security_config):
 
 
 @pytest.mark.asyncio
-async def test_request_without_client(security_config):
+async def test_request_without_client(security_config: SecurityConfig) -> None:
     """Test handling of request without client info"""
     app = FastAPI()
     middleware = SecurityMiddleware(app, security_config)
 
     call_next_called = False
 
-    async def mock_call_next(request):
+    async def mock_call_next(request: Request) -> Response:
         nonlocal call_next_called
         call_next_called = True
         return Response("OK")
+
+    async def receive() -> dict[str, str | bytes]:
+        return {"type": "http.request", "body": b""}
 
     request = Request(
         scope={
@@ -714,9 +738,12 @@ async def test_request_without_client(security_config):
             "server": ("testserver", 80),
             "scheme": "http",
             # No 'client' key here
-        }
+        },
+        receive=receive,
     )
-    request._receive = lambda: {"type": "http.request", "body": b""}
+
+    body = await request.body()
+    assert body == b""
 
     response = await middleware.dispatch(request, mock_call_next)
 

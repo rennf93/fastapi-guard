@@ -1,8 +1,10 @@
 import logging
 import os
+from typing import Any
 
 import pytest
 from fastapi import Request
+from pytest_mock import MockerFixture
 
 from guard.models import SecurityConfig
 from guard.utils import (
@@ -13,11 +15,13 @@ from guard.utils import (
     setup_custom_logging,
 )
 
-IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
+IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 
 
 @pytest.mark.asyncio
-async def test_is_ip_allowed(security_config, mocker):
+async def test_is_ip_allowed(
+    security_config: SecurityConfig, mocker: MockerFixture
+) -> None:
     """
     Test the is_ip_allowed function
     with various IP addresses.
@@ -45,7 +49,7 @@ async def test_is_ip_allowed(security_config, mocker):
 
 
 @pytest.mark.asyncio
-async def test_is_user_agent_allowed(security_config):
+async def test_is_user_agent_allowed(security_config: SecurityConfig) -> None:
     """
     Test the is_user_agent_allowed function
     with allowed and blocked user agents.
@@ -55,14 +59,16 @@ async def test_is_user_agent_allowed(security_config):
 
 
 @pytest.mark.asyncio
-async def test_custom_logging(reset_state, security_config, tmp_path):
+async def test_custom_logging(
+    reset_state: None, security_config: SecurityConfig, tmp_path: Any
+) -> None:
     """
     Test the custom logging.
     """
     log_file = tmp_path / "test_log.log"
     logger = await setup_custom_logging(str(log_file))
 
-    async def receive():
+    async def receive() -> dict[str, bytes | str]:
         return {"type": "http.request", "body": b"test_body"}
 
     request = Request(
@@ -87,13 +93,13 @@ async def test_custom_logging(reset_state, security_config, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_log_request(caplog):
+async def test_log_request(caplog: Any) -> None:
     """
     Test the log_request function to ensure
     it logs the request details correctly.
     """
 
-    async def receive():
+    async def receive() -> dict[str, bytes | str]:
         return {"type": "http.request", "body": b"test_body"}
 
     request = Request(
@@ -119,12 +125,12 @@ async def test_log_request(caplog):
 
 
 @pytest.mark.asyncio
-async def test_log_suspicious_activity(caplog):
+async def test_log_suspicious_activity(caplog: Any) -> None:
     """
     Test the log_suspicious_activity function.
     """
 
-    async def receive():
+    async def receive() -> dict[str, bytes | str]:
         return {"type": "http.request", "body": b"test_body"}
 
     request = Request(
@@ -151,7 +157,7 @@ async def test_log_suspicious_activity(caplog):
 
 
 @pytest.mark.asyncio
-async def test_setup_custom_logging():
+async def test_setup_custom_logging() -> None:
     """
     Test the setup_custom_logging function.
     """

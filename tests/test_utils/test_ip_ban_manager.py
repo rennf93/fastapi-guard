@@ -12,11 +12,11 @@ from guard.handlers.redis_handler import RedisManager
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
 
-IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
+IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 
 
 @pytest.mark.asyncio
-async def test_ip_ban_manager(reset_state):
+async def test_ip_ban_manager(reset_state: None) -> None:
     """
     Test the IPBanManager.
     """
@@ -33,7 +33,7 @@ async def test_ip_ban_manager(reset_state):
 
 
 @pytest.mark.asyncio
-async def test_automatic_ip_ban(reset_state):
+async def test_automatic_ip_ban(reset_state: None) -> None:
     """
     Test the automatic IP banning.
     """
@@ -62,7 +62,7 @@ async def test_automatic_ip_ban(reset_state):
 
 
 @pytest.mark.asyncio
-async def test_reset_ip_ban_manager():
+async def test_reset_ip_ban_manager() -> None:
     """
     Test the IPBanManager reset method.
     """
@@ -72,7 +72,7 @@ async def test_reset_ip_ban_manager():
 
 
 @pytest.mark.asyncio
-async def test_ban_ip_concurrent_access():
+async def test_ban_ip_concurrent_access() -> None:
     manager = IPBanManager()
     ip = "192.168.1.100"
     await asyncio.gather(*[manager.ban_ip(ip, 1) for _ in range(10)])
@@ -80,7 +80,7 @@ async def test_ban_ip_concurrent_access():
 
 
 @pytest.mark.asyncio
-async def test_ip_ban_manager_with_redis(security_config_redis):
+async def test_ip_ban_manager_with_redis(security_config_redis: SecurityConfig) -> None:
     """Test IPBanManager with Redis integration"""
     manager = IPBanManager()
     redis_mgr = RedisManager(security_config_redis)
@@ -108,7 +108,9 @@ async def test_ip_ban_manager_with_redis(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_ip_ban_manager_redis_reset(security_config_redis):
+async def test_ip_ban_manager_redis_reset(
+    security_config_redis: SecurityConfig,
+) -> None:
     """Test IPBanManager reset with Redis"""
     manager = IPBanManager()
     redis_mgr = RedisManager(security_config_redis)
@@ -132,7 +134,9 @@ async def test_ip_ban_manager_redis_reset(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_ip_ban_manager_redis_expired_cleanup(security_config_redis):
+async def test_ip_ban_manager_redis_expired_cleanup(
+    security_config_redis: SecurityConfig,
+) -> None:
     """Test cleanup of expired bans in Redis"""
     manager = IPBanManager()
     redis_mgr = RedisManager(security_config_redis)

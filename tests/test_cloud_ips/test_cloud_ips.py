@@ -1,4 +1,5 @@
 import ipaddress
+from collections.abc import Generator
 from unittest.mock import Mock, patch
 
 import pytest
@@ -10,15 +11,16 @@ from guard.handlers.cloud_handler import (
     fetch_gcp_ip_ranges,
 )
 from guard.handlers.redis_handler import RedisManager
+from guard.models import SecurityConfig
 
 
 @pytest.fixture
-def mock_requests_get():
+def mock_requests_get() -> Generator[Mock, None, None]:
     with patch("guard.handlers.cloud_handler.requests.get") as mock_get:
         yield mock_get
 
 
-def test_fetch_aws_ip_ranges(mock_requests_get):
+def test_fetch_aws_ip_ranges(mock_requests_get: Mock) -> None:
     mock_response = Mock()
     mock_response.json.return_value = {
         "prefixes": [
@@ -33,7 +35,7 @@ def test_fetch_aws_ip_ranges(mock_requests_get):
     assert ipaddress.IPv4Network("10.0.0.0/8") not in result
 
 
-def test_fetch_gcp_ip_ranges(mock_requests_get):
+def test_fetch_gcp_ip_ranges(mock_requests_get: Mock) -> None:
     mock_response = Mock()
     mock_response.json.return_value = {
         "prefixes": [{"ipv4Prefix": "172.16.0.0/12"}, {"ipv6Prefix": "2001:db8::/32"}]
@@ -45,7 +47,7 @@ def test_fetch_gcp_ip_ranges(mock_requests_get):
     assert len(result) == 1
 
 
-def test_fetch_azure_ip_ranges(mock_requests_get):
+def test_fetch_azure_ip_ranges(mock_requests_get: Mock) -> None:
     mock_html_response = Mock()
     mock_html_response.text = """
     Some HTML content
@@ -65,7 +67,7 @@ def test_fetch_azure_ip_ranges(mock_requests_get):
     assert len(result) == 1
 
 
-def test_cloud_ip_ranges():
+def test_cloud_ip_ranges() -> None:
     with (
         patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
         patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp,
@@ -85,7 +87,7 @@ def test_cloud_ip_ranges():
 
 
 @pytest.mark.asyncio
-async def test_cloud_ip_refresh():
+async def test_cloud_ip_refresh() -> None:
     with (
         patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
         patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp,
@@ -105,7 +107,7 @@ async def test_cloud_ip_refresh():
         assert cloud_ranges.is_cloud_ip("192.168.1.1", {"AWS"})
 
 
-def test_cloud_ip_ranges_error_handling():
+def test_cloud_ip_ranges_error_handling() -> None:
     with (
         patch(
             "guard.handlers.cloud_handler.fetch_aws_ip_ranges",
@@ -127,18 +129,18 @@ def test_cloud_ip_ranges_error_handling():
         assert not cloud_ranges.is_cloud_ip("10.0.0.1", {"Azure"})
 
 
-def test_cloud_ip_ranges_invalid_ip():
+def test_cloud_ip_ranges_invalid_ip() -> None:
     cloud_ranges = CloudManager()
     assert not cloud_ranges.is_cloud_ip("invalid_ip", {"AWS", "GCP", "Azure"})
 
 
-def test_fetch_aws_ip_ranges_error(mock_requests_get):
+def test_fetch_aws_ip_ranges_error(mock_requests_get: Mock) -> None:
     mock_requests_get.side_effect = Exception("API failure")
     result = fetch_aws_ip_ranges()
     assert result == set()
 
 
-def test_fetch_gcp_ip_ranges_error(mock_requests_get):
+def test_fetch_gcp_ip_ranges_error(mock_requests_get: Mock) -> None:
     mock_response = Mock()
     mock_response.json.side_effect = Exception("Invalid JSON")
     mock_requests_get.return_value = mock_response
@@ -146,19 +148,19 @@ def test_fetch_gcp_ip_ranges_error(mock_requests_get):
     assert result == set()
 
 
-def test_cloud_manager_refresh_handling():
+def test_cloud_manager_refresh_handling() -> None:
     manager = CloudManager()
     original_count = len(manager.ip_ranges.get("AWS", []))
     manager.refresh()
     assert len(manager.ip_ranges["AWS"]) == original_count
 
 
-def test_is_cloud_ip_ipv6():
+def test_is_cloud_ip_ipv6() -> None:
     manager = CloudManager()
     assert not manager.is_cloud_ip("2001:db8::1", {"AWS"})
 
 
-def test_fetch_azure_ip_ranges_url_not_found(mock_requests_get):
+def test_fetch_azure_ip_ranges_url_not_found(mock_requests_get: Mock) -> None:
     mock_html_response = Mock()
     mock_html_response.text = "HTML without download link"
     mock_requests_get.return_value = mock_html_response
@@ -167,7 +169,7 @@ def test_fetch_azure_ip_ranges_url_not_found(mock_requests_get):
     assert result == set()
 
 
-def test_fetch_azure_ip_ranges_download_failure(mock_requests_get):
+def test_fetch_azure_ip_ranges_download_failure(mock_requests_get: Mock) -> None:
     mock_html_response = Mock()
     mock_html_response.text = '<a href="https://download.microsoft.com/valid.json">'
     mock_download_response = Mock()
@@ -180,7 +182,7 @@ def test_fetch_azure_ip_ranges_download_failure(mock_requests_get):
 
 
 @pytest.mark.asyncio
-async def test_cloud_ip_redis_caching(security_config_redis):
+async def test_cloud_ip_redis_caching(security_config_redis: SecurityConfig) -> None:
     """Test CloudManager with Redis caching"""
     with patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws:
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
@@ -219,7 +221,7 @@ async def test_cloud_ip_redis_caching(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_cloud_ip_redis_cache_hit(security_config_redis):
+async def test_cloud_ip_redis_cache_hit(security_config_redis: SecurityConfig) -> None:
     """Test CloudManager using cached Redis values"""
     redis_handler = RedisManager(security_config_redis)
     await redis_handler.initialize()
@@ -240,7 +242,7 @@ async def test_cloud_ip_redis_cache_hit(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_cloud_ip_redis_sync_async(security_config_redis):
+async def test_cloud_ip_redis_sync_async(security_config_redis: SecurityConfig) -> None:
     """Test CloudManager sync/async refresh behavior"""
     manager = CloudManager()
 
@@ -266,7 +268,9 @@ async def test_cloud_ip_redis_sync_async(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_cloud_ip_redis_error_handling(security_config_redis):
+async def test_cloud_ip_redis_error_handling(
+    security_config_redis: SecurityConfig,
+) -> None:
     """Test CloudManager error handling during Redis operations"""
     with patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws:
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
