@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Learn how to implement 2FA in a FastAPI application using Two-Fast-Auth">
+        <meta name="description" content="Learn how to use FastAPI Guard with a complete example application">
       
       
       
@@ -20,7 +20,7 @@
     
     
       
-        <title>Example Application - Two-Fast-Auth - FastAPI Guard</title>
+        <title>Example Application - FastAPI Guard Demo - FastAPI Guard</title>
       
     
     
@@ -123,7 +123,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Example Application - Two-Fast-Auth
+              Example Application - FastAPI Guard Demo
             
           </span>
         </div>
@@ -1139,6 +1139,101 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#features-demonstrated" class="md-nav__link">
+    <span class="md-ellipsis">
+      Features Demonstrated
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Code Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-example-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running the Example App
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running the Example App">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-docker-compose-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Docker Compose (Recommended)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker-compose-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Docker Compose File
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      Test Endpoints
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-security-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing Security Features
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Environment Variables
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#source-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Source Code
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1157,7 +1252,108 @@
 
 
 <h1 id="example-application">Example Application<a class="headerlink" href="#example-application" title="Permanent link">&para;</a></h1>
-<p>```python</p>
+<p>FastAPI Guard comes with a fully functional example application that demonstrates its key security features. This example serves both as a reference implementation and a testing ground for your security settings.</p>
+<h2 id="features-demonstrated">Features Demonstrated<a class="headerlink" href="#features-demonstrated" title="Permanent link">&para;</a></h2>
+<p>The example app demonstrates:</p>
+<ul>
+<li>IP whitelist/blacklist filtering</li>
+<li>Rate limiting</li>
+<li>Penetration detection and prevention</li>
+<li>Auto-banning of suspicious IPs</li>
+<li>Geolocation-based filtering</li>
+<li>User agent filtering</li>
+<li>Redis integration</li>
+</ul>
+<h2 id="code-overview">Code Overview<a class="headerlink" href="#code-overview" title="Permanent link">&para;</a></h2>
+<p>The example app is built using FastAPI and shows how to integrate FastAPI Guard as middleware:</p>
+<p><a href="https://github.com/rennf93/fastapi-guard/blob/master/examples/main.py">Example Code</a></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityMiddleware</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityConfig</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Initialize FastAPI app</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;FastAPI Guard Playground&quot;</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Configure FastAPI Guard</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="c1"># Whitelist/Blacklist</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">whitelist</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;0.0.0.0/32&quot;</span><span class="p">,</span> <span class="s2">&quot;0.0.0.0&quot;</span><span class="p">],</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">blacklist</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;192.168.1.100/32&quot;</span><span class="p">,</span> <span class="s2">&quot;192.168.1.100&quot;</span><span class="p">],</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="o">...</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="p">)</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">SecurityMiddleware</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="running-the-example-app">Running the Example App<a class="headerlink" href="#running-the-example-app" title="Permanent link">&para;</a></h2>
+<h3 id="using-docker-compose-recommended">Using Docker Compose (Recommended)<a class="headerlink" href="#using-docker-compose-recommended" title="Permanent link">&para;</a></h3>
+<p>The easiest way to run the example is with Docker Compose, which automatically sets up Redis:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Clone the repository</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/rennf93/fastapi-guard.git
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nb">cd</span><span class="w"> </span>fastapi-guard/examples
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Start the app with Redis</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>docker<span class="w"> </span>compose<span class="w"> </span>up
+</span></code></pre></div>
+<p>The Docker Compose file does the following:
+- Builds the FastAPI Guard example app
+- Runs Redis with persistent data volume
+- Connects the application to Redis
+- Exposes the app on port 8000</p>
+<h3 id="docker-compose-file">Docker Compose File<a class="headerlink" href="#docker-compose-file" title="Permanent link">&para;</a></h3>
+<p><a href="https://github.com/rennf93/fastapi-guard/blob/master/examples/docker-compose.yml">Docker Compose File</a></p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">services</span><span class="p">:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">fastapi-guard-example</span><span class="p">:</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">build</span><span class="p">:</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">      </span><span class="nt">context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="nt">dockerfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./Dockerfile</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">uvicorn main:app --host 0.0.0.0 --reload</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8000:8000&quot;</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">REDIS_URL=redis://redis:6379</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">REDIS_PREFIX=${REDIS_PREFIX:-&quot;fastapi_guard:&quot;}</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IPINFO_TOKEN=${IPINFO_TOKEN:-&quot;test_token&quot;}</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">      </span><span class="nt">redis</span><span class="p">:</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service_started</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+</span></code></pre></div>
+<h2 id="test-endpoints">Test Endpoints<a class="headerlink" href="#test-endpoints" title="Permanent link">&para;</a></h2>
+<p>Once running, you can access the following endpoints:</p>
+<ul>
+<li><strong><code>/</code></strong>: Basic endpoint to test connection and rate limiting</li>
+<li><strong><code>/ip</code></strong>: Returns your client IP address as seen by the server</li>
+<li><strong><code>/test?input=&lt;script&gt;alert(1)&lt;/script&gt;</code></strong>: Test with various inputs to trigger penetration detection</li>
+<li><strong><code>/docs</code></strong>: Swagger UI documentation for interactive testing</li>
+</ul>
+<h2 id="testing-security-features">Testing Security Features<a class="headerlink" href="#testing-security-features" title="Permanent link">&para;</a></h2>
+<p>You can use the included test battery to verify security features:</p>
+<p><a href="https://github.com/rennf93/fastapi-guard/blob/master/examples/test_battery.txt">Test battery</a></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># For rate limiting (will trigger after 15 requests)</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="o">{</span><span class="m">1</span>..20<span class="o">}</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>curl<span class="w"> </span>http://0.0.0.0:8000/<span class="p">;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot; Request </span><span class="nv">$i</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span>sleep<span class="w"> </span><span class="m">0</span>.2<span class="p">;</span><span class="w"> </span><span class="k">done</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># For XSS detection</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>curl<span class="w"> </span><span class="s2">&quot;http://0.0.0.0:8000/test?input=&lt;script&gt;alert(1)&lt;/script&gt;&quot;</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># For SQL injection detection</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>curl<span class="w"> </span><span class="s2">&quot;http://0.0.0.0:8000/test?query=SELECT%20*%20FROM%20users&quot;</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># For path traversal detection</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>curl<span class="w"> </span><span class="s2">&quot;http://0.0.0.0:8000/test?path=../../../etc/passwd&quot;</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="c1"># For command injection detection</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>curl<span class="w"> </span><span class="s2">&quot;http://0.0.0.0:8000/test?cmd=;ls;pwd;&quot;</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>...
+</span></code></pre></div>
+<h2 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
+<p>The example app supports the following environment variables:</p>
+<ul>
+<li><code>IPINFO_TOKEN</code>: Your IPInfo API token (default: test_token)</li>
+<li><code>REDIS_URL</code>: Redis connection URL (default: redis://redis:6379)</li>
+<li><code>REDIS_PREFIX</code>: Prefix for Redis keys (default: fastapi_guard:)</li>
+</ul>
+<h2 id="source-code">Source Code<a class="headerlink" href="#source-code" title="Permanent link">&para;</a></h2>
+<p>You can find the complete example code in the <a href="https://github.com/rennf93/fastapi-guard/tree/master/examples">examples directory</a> of the GitHub repository.</p>
 
 
 
