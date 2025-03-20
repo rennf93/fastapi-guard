@@ -110,5 +110,5 @@ The example app includes endpoints to test various security features of FastAPI 
 - [Security Features](tutorial/security/rate-limiting.md)
 - [API Reference](api/overview.md)
 - [Redis Integration Guide](tutorial/redis-integration/caching.md)
-
+- [Example App](tutorial/examples/example-app.md)
 [📖 **Learn More in the Tutorial**](tutorial/first-steps.md)
