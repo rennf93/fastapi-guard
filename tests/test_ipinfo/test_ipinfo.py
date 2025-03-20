@@ -1,5 +1,6 @@
 import time
 from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import maxminddb
@@ -71,9 +72,13 @@ async def test_database_retry_success(tmp_path: Path) -> None:
     mock_response.__aexit__ = AsyncMock()
     mock_response.read = AsyncMock(return_value=b"test data")
 
-    def side_effect(*args, **kwargs):
-        side_effect.calls = getattr(side_effect, "calls", 0) + 1
-        if side_effect.calls == 1:
+    # Use a closure to track the number of calls
+    call_count = 0
+
+    def side_effect_function(*args: Any, **kwargs: Any) -> AsyncMock:
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
             raise Exception("First fail")
         return mock_response
 
@@ -84,14 +89,14 @@ async def test_database_retry_success(tmp_path: Path) -> None:
     mock_open = Mock(return_value=mock_file_context)
 
     with (
-        patch("aiohttp.ClientSession.get", side_effect=side_effect) as mock_get,
+        patch("aiohttp.ClientSession.get", side_effect=side_effect_function),
         patch("builtins.open", mock_open),
         patch("os.makedirs"),
         patch("asyncio.sleep") as mock_sleep,
     ):
         await db._download_database()
 
-        assert mock_get.call_count == 2
+        assert call_count == 2  # Check calls through our counter
         mock_file.write.assert_called_with(b"test data")
         mock_sleep.assert_called_once_with(1)
 

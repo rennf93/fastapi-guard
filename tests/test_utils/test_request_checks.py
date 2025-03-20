@@ -64,7 +64,7 @@ async def test_detect_penetration_attempt() -> None:
     function with a normal request.
     """
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
 
     request = Request(
@@ -88,7 +88,7 @@ async def test_detect_penetration_attempt_xss() -> None:
     function with an XSS attempt.
     """
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
 
     request = Request(
@@ -111,7 +111,7 @@ async def test_detect_penetration_attempt_xss() -> None:
 async def test_detect_penetration_attempt_sql_injection() -> None:
     """Test SQL injection detection."""
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
 
     request = Request(
@@ -137,7 +137,7 @@ async def test_detect_penetration_attempt_directory_traversal() -> None:
     function with a directory traversal attempt.
     """
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
 
     request = Request(
@@ -163,7 +163,7 @@ async def test_detect_penetration_attempt_command_injection() -> None:
     function with a command injection attempt.
     """
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
 
     request = Request(
@@ -189,7 +189,7 @@ async def test_detect_penetration_attempt_ssrf() -> None:
     function with an SSRF attempt.
     """
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
 
     request = Request(
@@ -215,7 +215,7 @@ async def test_detect_penetration_attempt_open_redirect() -> None:
     function with an open redirect attempt.
     """
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
 
     request = Request(
@@ -241,7 +241,7 @@ async def test_detect_penetration_attempt_crlf_injection() -> None:
     function with a CRLF injection attempt.
     """
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
 
     request = Request(
@@ -267,7 +267,7 @@ async def test_detect_penetration_attempt_path_manipulation() -> None:
     function with a path manipulation attempt.
     """
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
 
     request = Request(
@@ -290,7 +290,7 @@ async def test_detect_penetration_attempt_path_manipulation() -> None:
 async def test_detect_penetration_attempt_shell_injection() -> None:
     """Test shell injection detection."""
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
 
     request = Request(
@@ -327,7 +327,7 @@ async def test_detect_penetration_attempt_nosql_injection() -> None:
     function with a NoSQL injection attempt.
     """
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
 
     request = Request(
@@ -350,7 +350,7 @@ async def test_detect_penetration_attempt_nosql_injection() -> None:
 async def test_detect_penetration_attempt_json_injection() -> None:
     """Test JSON content detection."""
 
-    async def receive_malicious():
+    async def receive_malicious() -> dict[str, str | bytes]:
         return {
             "type": "http.request",
             "body": b"""
@@ -379,7 +379,7 @@ async def test_detect_penetration_attempt_json_injection() -> None:
     )
     assert await detect_penetration_attempt(request)
 
-    async def receive_legitimate():
+    async def receive_legitimate() -> dict[str, str | bytes]:
         return {
             "type": "http.request",
             "body": b"""
@@ -419,7 +419,7 @@ async def test_detect_penetration_attempt_http_header_injection() -> None:
     function with an HTTP header injection attempt.
     """
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
 
     request = Request(
@@ -487,7 +487,7 @@ async def test_check_ip_country() -> None:
         ipinfo_token=IPINFO_TOKEN, blocked_countries=["CN"], whitelist_countries=["US"]
     )
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
 
     with patch("guard.handlers.ipinfo_handler.IPInfoManager") as MockIPInfoManager:
@@ -586,7 +586,7 @@ async def test_check_ip_country_no_countries_configured(
 
     caplog.clear()
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
 
     request = Request(
@@ -693,7 +693,7 @@ async def test_is_ip_allowed_general_exception(
 async def test_detect_penetration_attempt_body_error() -> None:
     """Test penetration detection with body reading error."""
 
-    async def receive():
+    async def receive() -> dict[str, str | bytes]:
         raise Exception("Body read error")
 
     request = Request(
