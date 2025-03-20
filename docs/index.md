@@ -39,6 +39,55 @@ config = SecurityConfig(
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
+## Example App
+
+Inside [examples](https://github.com/rennf93/fastapi-guard/tree/master/examples), you can find a simple example app that demonstrates how to use FastAPI Guard.
+
+You can also download the example app as a Docker container from [GitHub Container Registry](https://github.com/orgs/rennf93/packages/container/fastapi-guard-example).
+
+```bash
+# Pull the latest version
+docker pull ghcr.io/rennf93/fastapi-guard-example:latest
+
+# Or pull a specific version (matches library releases)
+docker pull ghcr.io/rennf93/fastapi-guard-example:v1.0.0
+```
+
+### Running the Example App
+
+#### Using Docker Compose (Recommended)
+
+The easiest way to run the example app is with Docker Compose, which automatically sets up Redis:
+
+```bash
+# Clone the repository
+git clone https://github.com/rennf93/fastapi-guard.git
+cd fastapi-guard/examples
+
+# Start the app with Redis
+docker compose up
+```
+
+This will start both the FastAPI Guard example app and Redis service. The app will be available at http://0.0.0.0:8000.
+
+#### Using Docker Container Only
+
+Alternatively, you can run just the container:
+
+```bash
+# Run with default settings
+docker run -host 0.0.0.0 -p 8000:8000 ghcr.io/rennf93/fastapi-guard-example:latest
+
+# Run with custom Redis connection
+docker run -host 0.0.0.0 -p 8000:8000
+ -e REDIS_URL=redis://your-redis-host:your-redis-port
+ -e REDIS_PREFIX=your-redis-prefix
+ -e IPINFO_TOKEN=your-ipinfo-token
+ ghcr.io/rennf93/fastapi-guard-example:latest
+```
+
+The example app includes endpoints to test various security features of FastAPI Guard. Access the Swagger documentation at http://0.0.0.0:8000/docs after running the container.
+
 ## Features
 
 - **IP Whitelisting and Blacklisting**: Control access based on IP addresses.
