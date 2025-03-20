@@ -67,7 +67,7 @@ nav:
     - CloudManager: api/cloud-manager.md
     - Utilities: api/utilities.md
   - Examples:
-    - Example App: examples/example-app.md
+    - Example App: tutorial/examples/example-app.md
   - Release Notes: release-notes.md
 
 markdown_extensions:
