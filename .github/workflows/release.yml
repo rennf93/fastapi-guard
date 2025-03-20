@@ -95,7 +95,7 @@ jobs:
         with:
           OWNER: ${{ github.repository_owner }}
           REPOSITORY: ${{ github.event.repository.name }}
-          ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACCESS_TOKEN: ${{ secrets.PAT_TOKEN }}
           SECRET_NAME: DOCS_VERSION
           SECRET_VALUE: ${{ github.event.release.tag_name }}
 
