@@ -39,7 +39,7 @@ async def test_automatic_ip_ban(reset_state: None) -> None:
     """
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
+        ipinfo_token=str(IPINFO_TOKEN),
         enable_ip_banning=True,
         enable_penetration_detection=True,
         auto_ban_threshold=3,
@@ -108,7 +108,9 @@ async def test_ip_ban_manager_with_redis(security_config_redis: SecurityConfig) 
 
 
 @pytest.mark.asyncio
-async def test_ip_ban_manager_redis_reset(security_config_redis: SecurityConfig) -> None:
+async def test_ip_ban_manager_redis_reset(
+    security_config_redis: SecurityConfig,
+) -> None:
     """Test IPBanManager reset with Redis"""
     manager = IPBanManager()
     redis_mgr = RedisManager(security_config_redis)
@@ -132,7 +134,9 @@ async def test_ip_ban_manager_redis_reset(security_config_redis: SecurityConfig)
 
 
 @pytest.mark.asyncio
-async def test_ip_ban_manager_redis_expired_cleanup(security_config_redis: SecurityConfig) -> None:
+async def test_ip_ban_manager_redis_expired_cleanup(
+    security_config_redis: SecurityConfig,
+) -> None:
     """Test cleanup of expired bans in Redis"""
     manager = IPBanManager()
     redis_mgr = RedisManager(security_config_redis)

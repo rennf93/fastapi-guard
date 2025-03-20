@@ -19,7 +19,9 @@ IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
 
 
 @pytest.mark.asyncio
-async def test_is_ip_allowed(security_config: SecurityConfig, mocker: MockerFixture) -> None:
+async def test_is_ip_allowed(
+    security_config: SecurityConfig, mocker: MockerFixture
+) -> None:
     """
     Test the is_ip_allowed function
     with various IP addresses.
@@ -29,18 +31,20 @@ async def test_is_ip_allowed(security_config: SecurityConfig, mocker: MockerFixt
     assert await is_ip_allowed("127.0.0.1", security_config)
     assert not await is_ip_allowed("192.168.1.1", security_config)
 
-    empty_config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, whitelist=[], blacklist=[])
+    empty_config = SecurityConfig(
+        ipinfo_token=str(IPINFO_TOKEN), whitelist=[], blacklist=[]
+    )
     assert await is_ip_allowed("127.0.0.1", empty_config)
     assert await is_ip_allowed("192.168.1.1", empty_config)
 
     whitelist_config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN, whitelist=["127.0.0.1"]
+        ipinfo_token=str(IPINFO_TOKEN), whitelist=["127.0.0.1"]
     )
     assert await is_ip_allowed("127.0.0.1", whitelist_config)
     assert not await is_ip_allowed("192.168.1.1", whitelist_config)
 
     blacklist_config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN, blacklist=["192.168.1.1"]
+        ipinfo_token=str(IPINFO_TOKEN), blacklist=["192.168.1.1"]
     )
     assert await is_ip_allowed("127.0.0.1", blacklist_config)
     assert not await is_ip_allowed("192.168.1.1", blacklist_config)
@@ -57,14 +61,16 @@ async def test_is_user_agent_allowed(security_config: SecurityConfig) -> None:
 
 
 @pytest.mark.asyncio
-async def test_custom_logging(reset_state: None, security_config: SecurityConfig, tmp_path: Any) -> None:
+async def test_custom_logging(
+    reset_state: None, security_config: SecurityConfig, tmp_path: Any
+) -> None:
     """
     Test the custom logging.
     """
     log_file = tmp_path / "test_log.log"
     logger = await setup_custom_logging(str(log_file))
 
-    async def receive() -> dict[str, bytes]:
+    async def receive() -> dict[str, bytes | str]:
         return {"type": "http.request", "body": b"test_body"}
 
     request = Request(
@@ -95,7 +101,7 @@ async def test_log_request(caplog: Any) -> None:
     it logs the request details correctly.
     """
 
-    async def receive() -> dict[str, bytes]:
+    async def receive() -> dict[str, bytes | str]:
         return {"type": "http.request", "body": b"test_body"}
 
     request = Request(
@@ -126,7 +132,7 @@ async def test_log_suspicious_activity(caplog: Any) -> None:
     Test the log_suspicious_activity function.
     """
 
-    async def receive() -> dict[str, bytes]:
+    async def receive() -> dict[str, bytes | str]:
         return {"type": "http.request", "body": b"test_body"}
 
     request = Request(

@@ -109,7 +109,7 @@ async def test_user_agent_filtering():
 
 
 @pytest.mark.asyncio
-async def test_rate_limiting_multiple_ips(reset_state, security_middleware):
+async def test_rate_limiting_multiple_ips(reset_state):
     """
     Test the rate limiting functionality
     of the SecurityMiddleware with multiple IPs.
