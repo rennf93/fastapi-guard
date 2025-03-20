@@ -6,6 +6,17 @@ keywords: release notes, fastapi guard, security middleware, api security
 
 # Release Notes
 
+## v1.1.0 (2025-03-21)
+### New Features
+- Added proper typing throughout the codebase
+- Added custom Docker container for example app
+- Added better Docker Compose support
+
+### Improvements
+- Fixed multiple typing issues across test files
+- Improved documentation for Docker container usage
+- Enhanced serialization of Redis data
+
 ## v1.0.0 (2025-02-19)
 ### New Features
 - Added Redis integration for distributed state management
