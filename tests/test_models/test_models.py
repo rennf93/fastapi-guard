@@ -3,7 +3,7 @@ import pytest
 from guard.models import SecurityConfig
 
 
-def test_security_config_validation():
+def test_security_config_validation() -> None:
     valid_config = SecurityConfig(
         ipinfo_token="valid_token",
         whitelist=["10.0.0.0/24", "192.168.1.1"],
@@ -12,27 +12,27 @@ def test_security_config_validation():
     assert valid_config.whitelist == ["10.0.0.0/24", "192.168.1.1"]
 
 
-def test_invalid_ip_validation():
+def test_invalid_ip_validation() -> None:
     with pytest.raises(ValueError):
         SecurityConfig(
             ipinfo_token="test", whitelist=["invalid.ip"], blacklist=["256.0.0.0"]
         )
 
 
-def test_cloud_provider_validation():
+def test_cloud_provider_validation() -> None:
     config = SecurityConfig(
         ipinfo_token="test", block_cloud_providers={"AWS", "INVALID"}
     )
     assert config.block_cloud_providers == {"AWS"}
 
 
-def test_security_config_none_whitelist():
+def test_security_config_none_whitelist() -> None:
     """Test that None whitelist is handled correctly"""
     config = SecurityConfig(ipinfo_token="test", whitelist=None)
     assert config.whitelist is None
 
 
-def test_none_cloud_providers():
+def test_none_cloud_providers() -> None:
     """Test that None cloud_providers is handled correctly"""
     config = SecurityConfig(ipinfo_token="test", block_cloud_providers=None)
     assert config.block_cloud_providers == set()

@@ -1,10 +1,12 @@
 import asyncio
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi import FastAPI, HTTPException, status
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
+from pytest_mock import MockerFixture
 from redis.exceptions import ConnectionError
 
 from guard.handlers.redis_handler import RedisManager
@@ -12,14 +14,14 @@ from guard.models import SecurityConfig
 
 
 @pytest.mark.asyncio
-async def test_redis_basic_operations(security_config_redis):
+async def test_redis_basic_operations(security_config_redis: SecurityConfig) -> None:
     """Test basic Redis operations"""
     app = FastAPI()
     handler = RedisManager(security_config_redis)
     await handler.initialize()
 
     @app.get("/")
-    async def read_root():
+    async def read_root() -> dict[str, str]:
         # Test set and get
         await handler.set_key("test", "key1", "value1")
         value = await handler.get_key("test", "key1")
@@ -46,14 +48,14 @@ async def test_redis_basic_operations(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_redis_disabled(security_config):
+async def test_redis_disabled(security_config: SecurityConfig) -> None:
     """Test Redis operations when disabled"""
     app = FastAPI()
     handler = RedisManager(security_config)
     await handler.initialize()
 
     @app.get("/")
-    async def read_root():
+    async def read_root() -> dict[str, str]:
         assert not security_config.enable_redis
         assert handler._redis is None
         result = await handler.set_key("test", "key1", "value1")
@@ -70,15 +72,15 @@ async def test_redis_disabled(security_config):
 
 
 @pytest.mark.asyncio
-async def test_redis_error_handling(security_config_redis):
+async def test_redis_error_handling(security_config_redis: SecurityConfig) -> None:
     """Test Redis error handling"""
     app = FastAPI()
     handler = RedisManager(security_config_redis)
     await handler.initialize()
 
     @app.get("/")
-    async def read_root():
-        async def _fail_operation(conn):
+    async def read_root() -> dict[str, str]:
+        async def _fail_operation(conn: Any) -> None:
             raise ConnectionError("Test connection error")
 
         with pytest.raises(HTTPException) as exc_info:
@@ -96,19 +98,19 @@ async def test_redis_error_handling(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_redis_connection_retry(security_config_redis, mocker):
+async def test_redis_connection_retry(security_config_redis: SecurityConfig, mocker: MockerFixture) -> None:
     """Test Redis connection retry mechanism"""
     app = FastAPI()
     handler = RedisManager(security_config_redis)
     await handler.initialize()
 
-    async def mock_get(*args, **kwargs):
+    async def mock_get(*args: Any, **kwargs: Any) -> None:
         raise ConnectionError("Test connection error")
 
     handler._redis.get = mock_get
 
     @app.get("/")
-    async def read_root():
+    async def read_root() -> dict[str, str]:
         with pytest.raises(HTTPException) as exc_info:
             await handler.get_key("test", "retry")
         assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -122,14 +124,14 @@ async def test_redis_connection_retry(security_config_redis, mocker):
 
 
 @pytest.mark.asyncio
-async def test_redis_ttl_operations(security_config_redis):
+async def test_redis_ttl_operations(security_config_redis: SecurityConfig) -> None:
     """Test Redis TTL operations"""
     app = FastAPI()
     handler = RedisManager(security_config_redis)
     await handler.initialize()
 
     @app.get("/")
-    async def read_root():
+    async def read_root() -> dict[str, str]:
         # Test set with TTL
         await handler.set_key("test", "ttl_key", "value", ttl=1)
         value = await handler.get_key("test", "ttl_key")
@@ -151,14 +153,14 @@ async def test_redis_ttl_operations(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_redis_increment_operations(security_config_redis):
+async def test_redis_increment_operations(security_config_redis: SecurityConfig) -> None:
     """Test Redis increment operations"""
     app = FastAPI()
     handler = RedisManager(security_config_redis)
     await handler.initialize()
 
     @app.get("/")
-    async def read_root():
+    async def read_root() -> dict[str, str]:
         # Test increment without TTL
         value = await handler.incr("test", "counter")
         assert value == 1
@@ -184,12 +186,12 @@ async def test_redis_increment_operations(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_redis_connection_context_get_error(security_config_redis, monkeypatch):
+async def test_redis_connection_context_get_error(security_config_redis: SecurityConfig, monkeypatch: Any) -> None:
     """Test Redis connection get operation with error"""
     handler = RedisManager(security_config_redis)
     await handler.initialize()
 
-    async def mock_get(*args, **kwargs):
+    async def mock_get(*args: Any, **kwargs: Any) -> None:
         raise ConnectionError("Test connection error on get")
 
     with pytest.raises(HTTPException) as exc_info:
@@ -203,7 +205,7 @@ async def test_redis_connection_context_get_error(security_config_redis, monkeyp
 
 
 @pytest.mark.asyncio
-async def test_redis_connection_failures(security_config_redis):
+async def test_redis_connection_failures(security_config_redis: SecurityConfig) -> None:
     """Test Redis connection failure scenarios"""
     # Test initialization failure
     bad_config = SecurityConfig(
@@ -236,7 +238,7 @@ async def test_redis_connection_failures(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_redis_disabled_operations(security_config_redis):
+async def test_redis_disabled_operations(security_config_redis: SecurityConfig) -> None:
     """Test Redis operations when Redis is disabled"""
     security_config_redis.enable_redis = False
     handler = RedisManager(security_config_redis)
@@ -250,7 +252,7 @@ async def test_redis_disabled_operations(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_redis_failed_initialization_operations(security_config_redis):
+async def test_redis_failed_initialization_operations(security_config_redis: SecurityConfig) -> None:
     """Test operations after failed initialization"""
     bad_config = SecurityConfig(
         **{**security_config_redis.model_dump(), "redis_url": "redis://invalid:6379"}
@@ -267,7 +269,7 @@ async def test_redis_failed_initialization_operations(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_redis_url_none(security_config_redis):
+async def test_redis_url_none(security_config_redis: SecurityConfig) -> None:
     """Test Redis initialization when redis_url is None"""
     security_config_redis.redis_url = None
 
@@ -280,7 +282,7 @@ async def test_redis_url_none(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_safe_operation_redis_disabled(security_config):
+async def test_safe_operation_redis_disabled(security_config: SecurityConfig) -> None:
     """Test safe_operation when Redis is disabled"""
     handler = RedisManager(security_config)
 
@@ -292,13 +294,13 @@ async def test_safe_operation_redis_disabled(security_config):
 
 
 @pytest.mark.asyncio
-async def test_connection_context_redis_none(security_config_redis):
+async def test_connection_context_redis_none(security_config_redis: SecurityConfig) -> None:
     """Test when Redis is None after initialization attempt"""
     handler = RedisManager(security_config_redis)
 
     initialize_called = False
 
-    async def mocked_initialize():
+    async def mocked_initialize() -> None:
         nonlocal initialize_called
         initialize_called = True
 

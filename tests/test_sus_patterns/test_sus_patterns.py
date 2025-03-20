@@ -3,11 +3,12 @@ import re
 import pytest
 
 from guard.handlers.redis_handler import RedisManager
+from guard.models import SecurityConfig
 from guard.sus_patterns import SusPatterns
 
 
 @pytest.mark.asyncio
-async def test_add_pattern():
+async def test_add_pattern() -> None:
     """
     Test adding a custom pattern to SusPatterns.
     """
@@ -18,7 +19,7 @@ async def test_add_pattern():
 
 
 @pytest.mark.asyncio
-async def test_remove_pattern():
+async def test_remove_pattern() -> None:
     """
     Test removing a custom pattern from SusPatterns.
     """
@@ -30,7 +31,7 @@ async def test_remove_pattern():
 
 
 @pytest.mark.asyncio
-async def test_get_all_patterns():
+async def test_get_all_patterns() -> None:
     """
     Test retrieving all patterns (default and custom) from SusPatterns.
     """
@@ -44,18 +45,18 @@ async def test_get_all_patterns():
 
 
 @pytest.mark.asyncio
-async def test_invalid_pattern_handling():
+async def test_invalid_pattern_handling() -> None:
     with pytest.raises(re.error):
         await SusPatterns.add_pattern(r"invalid(regex", custom=True)
 
 
 @pytest.mark.asyncio
-async def test_remove_nonexistent_pattern():
+async def test_remove_nonexistent_pattern() -> None:
     sus_patterns = SusPatterns()
     await sus_patterns.remove_pattern("nonexistent", custom=True)
 
 
-def test_singleton_behavior():
+def test_singleton_behavior() -> None:
     instance1 = SusPatterns()
     instance2 = SusPatterns()
     assert instance1 is instance2
@@ -63,7 +64,7 @@ def test_singleton_behavior():
 
 
 @pytest.mark.asyncio
-async def test_add_default_pattern():
+async def test_add_default_pattern() -> None:
     """
     Test adding a default pattern to SusPatterns.
     """
@@ -78,7 +79,7 @@ async def test_add_default_pattern():
 
 
 @pytest.mark.asyncio
-async def test_remove_default_pattern():
+async def test_remove_default_pattern() -> None:
     """
     Test removing a default pattern from SusPatterns.
     """
@@ -102,7 +103,7 @@ async def test_remove_default_pattern():
 
 
 @pytest.mark.asyncio
-async def test_redis_initialization(security_config_redis):
+async def test_redis_initialization(security_config_redis: SecurityConfig) -> None:
     """Test Redis initialization and pattern caching"""
     # Setup
     redis_handler = RedisManager(security_config_redis)
@@ -124,7 +125,7 @@ async def test_redis_initialization(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_redis_pattern_persistence(security_config_redis):
+async def test_redis_pattern_persistence(security_config_redis: SecurityConfig) -> None:
     """Test pattern persistence to Redis"""
     redis_handler = RedisManager(security_config_redis)
     await redis_handler.initialize()
@@ -152,7 +153,7 @@ async def test_redis_pattern_persistence(security_config_redis):
 
 
 @pytest.mark.asyncio
-async def test_redis_disabled():
+async def test_redis_disabled() -> None:
     """Test SusPatterns behavior when Redis is disabled"""
     sus_patterns = SusPatterns()
 
@@ -169,7 +170,7 @@ async def test_redis_disabled():
 
 
 @pytest.mark.asyncio
-async def test_get_all_compiled_patterns():
+async def test_get_all_compiled_patterns() -> None:
     """Test retrieving all compiled patterns"""
     sus_patterns = SusPatterns()
 
