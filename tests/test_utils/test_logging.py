@@ -15,7 +15,7 @@ from guard.utils import (
     setup_custom_logging,
 )
 
-IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
+IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 
 
 @pytest.mark.asyncio
@@ -31,20 +31,18 @@ async def test_is_ip_allowed(
     assert await is_ip_allowed("127.0.0.1", security_config)
     assert not await is_ip_allowed("192.168.1.1", security_config)
 
-    empty_config = SecurityConfig(
-        ipinfo_token=str(IPINFO_TOKEN), whitelist=[], blacklist=[]
-    )
+    empty_config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, whitelist=[], blacklist=[])
     assert await is_ip_allowed("127.0.0.1", empty_config)
     assert await is_ip_allowed("192.168.1.1", empty_config)
 
     whitelist_config = SecurityConfig(
-        ipinfo_token=str(IPINFO_TOKEN), whitelist=["127.0.0.1"]
+        ipinfo_token=IPINFO_TOKEN, whitelist=["127.0.0.1"]
     )
     assert await is_ip_allowed("127.0.0.1", whitelist_config)
     assert not await is_ip_allowed("192.168.1.1", whitelist_config)
 
     blacklist_config = SecurityConfig(
-        ipinfo_token=str(IPINFO_TOKEN), blacklist=["192.168.1.1"]
+        ipinfo_token=IPINFO_TOKEN, blacklist=["192.168.1.1"]
     )
     assert await is_ip_allowed("127.0.0.1", blacklist_config)
     assert not await is_ip_allowed("192.168.1.1", blacklist_config)

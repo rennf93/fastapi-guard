@@ -12,7 +12,7 @@ from guard.handlers.redis_handler import RedisManager
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
 
-IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
+IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 
 
 @pytest.mark.asyncio
@@ -39,7 +39,7 @@ async def test_automatic_ip_ban(reset_state: None) -> None:
     """
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=str(IPINFO_TOKEN),
+        ipinfo_token=IPINFO_TOKEN,
         enable_ip_banning=True,
         enable_penetration_detection=True,
         auto_ban_threshold=3,

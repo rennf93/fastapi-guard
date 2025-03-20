@@ -13,9 +13,9 @@ from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
 from guard.sus_patterns import SusPatterns
 
-IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
-REDIS_URL = os.getenv("REDIS_URL")
-REDIS_PREFIX = os.getenv("REDIS_PREFIX")
+IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
+REDIS_URL = str(os.getenv("REDIS_URL"))
+REDIS_PREFIX = str(os.getenv("REDIS_PREFIX"))
 
 
 @pytest.fixture(autouse=True)
@@ -38,7 +38,7 @@ def security_config() -> SecurityConfig:
         SecurityConfig: A configured SecurityConfig object.
     """
     return SecurityConfig(
-        ipinfo_token=str(IPINFO_TOKEN),
+        ipinfo_token=IPINFO_TOKEN,
         enable_redis=False,
         whitelist=["127.0.0.1"],
         blacklist=["192.168.1.1"],
@@ -64,7 +64,7 @@ def security_config() -> SecurityConfig:
 @pytest.fixture
 async def security_middleware() -> AsyncGenerator[SecurityMiddleware, None]:
     config = SecurityConfig(
-        ipinfo_token=str(IPINFO_TOKEN),
+        ipinfo_token=IPINFO_TOKEN,
         whitelist=[],
         blacklist=[],
         auto_ban_threshold=10,
@@ -87,9 +87,9 @@ def ipinfo_db_path(tmp_path_factory: TempPathFactory) -> Path:
 def security_config_redis(ipinfo_db_path: Path) -> SecurityConfig:
     """SecurityConfig with Redis enabled"""
     return SecurityConfig(
-        ipinfo_token=str(IPINFO_TOKEN),
-        redis_url=str(REDIS_URL),
-        redis_prefix=str(REDIS_PREFIX),
+        ipinfo_token=IPINFO_TOKEN,
+        redis_url=REDIS_URL,
+        redis_prefix=REDIS_PREFIX,
         whitelist=["127.0.0.1"],
         blacklist=["192.168.1.1"],
         blocked_countries=["CN"],
@@ -115,9 +115,9 @@ def security_config_redis(ipinfo_db_path: Path) -> SecurityConfig:
 async def redis_cleanup() -> None:
     """Clean Redis test keys before each test"""
     config = SecurityConfig(
-        ipinfo_token=str(IPINFO_TOKEN),
-        redis_url=str(REDIS_URL),
-        redis_prefix=str(REDIS_PREFIX),
+        ipinfo_token=IPINFO_TOKEN,
+        redis_url=REDIS_URL,
+        redis_prefix=REDIS_PREFIX,
     )
     handler = RedisManager(config)
     await handler.initialize()

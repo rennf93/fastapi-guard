@@ -15,7 +15,7 @@ from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
 from guard.sus_patterns import SusPatterns
 
-IPINFO_TOKEN = os.getenv("IPINFO_TOKEN")
+IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 
 
 @pytest.mark.asyncio
