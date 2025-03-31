@@ -1,5 +1,10 @@
 <p align="center">
-  <a href="https://rennf93.github.io/fastapi-guard/latest/"><img src="https://rennf93.github.io/fastapi-guard/latest/assets/big_logo.svg" alt="FastAPI"></a>
+    <a href="https://rennf93.github.io/fastapi-guard/latest/">
+        <img
+            src="https://rennf93.github.io/fastapi-guard/latest/assets/big_logo.svg"
+            alt="FastAPI Guard"
+        >
+    </a>
 </p>
 
 ---
@@ -9,24 +14,76 @@
 </p>
 
 <p align="center">
-    <a href="https://badge.fury.io/py/fastapi-guard"><img src="https://badge.fury.io/py/fastapi-guard.svg?cache=none&icon=si%3Apython&icon_color=%23008cb4" alt="PyPiVersion"></a>
-    <a href="https://github.com/rennf93/fastapi-guard/actions/workflows/release.yml"><img src="https://github.com/rennf93/fastapi-guard/actions/workflows/release.yml/badge.svg" alt="Release"></a>
-    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"></a>
-    <a href="https://github.com/rennf93/fastapi-guard/actions/workflows/ci.yml"><img src="https://github.com/rennf93/fastapi-guard/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-    <a href="https://github.com/rennf93/fastapi-guard/actions/workflows/code-ql.yml"><img src="https://github.com/rennf93/fastapi-guard/actions/workflows/code-ql.yml/badge.svg" alt="CodeQL"></a>
+    <a href="https://badge.fury.io/py/fastapi-guard">
+        <img
+            src="https://badge.fury.io/py/fastapi-guard.svg?cache=none&icon=si%3Apython&icon_color=%23008cb4"
+            alt="PyPiVersion"
+        >
+    </a>
+    <a href="https://github.com/rennf93/fastapi-guard/actions/workflows/release.yml">
+        <img
+            src="https://github.com/rennf93/fastapi-guard/actions/workflows/release.yml/badge.svg"
+            alt="Release"
+        >
+    </a>
+    <a href="https://opensource.org/licenses/MIT">
+        <img
+            src="https://img.shields.io/badge/License-MIT-yellow.svg"
+            alt="License"
+        >
+    </a>
+    <a href="https://github.com/rennf93/fastapi-guard/actions/workflows/ci.yml">
+        <img
+            src="https://github.com/rennf93/fastapi-guard/actions/workflows/ci.yml/badge.svg"
+            alt="CI"
+        >
+    </a>
+    <a href="https://github.com/rennf93/fastapi-guard/actions/workflows/code-ql.yml">
+        <img
+            src="https://github.com/rennf93/fastapi-guard/actions/workflows/code-ql.yml/badge.svg"
+            alt="CodeQL"
+        >
+    </a>
 </p>
 
 <p align="center">
-    <a href="https://github.com/rennf93/fastapi-guard/actions/workflows/pages/pages-build-deployment"><img src="https://github.com/rennf93/fastapi-guard/actions/workflows/pages/pages-build-deployment/badge.svg?branch=gh-pages" alt="PagesBuildDeployment"></a>
-    <a href="https://github.com/rennf93/fastapi-guard/actions/workflows/docs.yml"><img src="https://github.com/rennf93/fastapi-guard/actions/workflows/docs.yml/badge.svg" alt="DocsUpdate"></a>
-    <img alt="last-commit" src="https://img.shields.io/github/last-commit/rennf93/fastapi-guard?style=flat&amp;logo=git&amp;logoColor=white&amp;color=0080ff" class="inline-block mx-1" style="margin: 0px 2px;">
+    <a href="https://github.com/rennf93/fastapi-guard/actions/workflows/pages/pages-build-deployment">
+        <img
+            src="https://github.com/rennf93/fastapi-guard/actions/workflows/pages/pages-build-deployment/badge.svg?branch=gh-pages"
+            alt="PagesBuildDeployment"
+        >
+    </a>
+    <a href="https://github.com/rennf93/fastapi-guard/actions/workflows/docs.yml">
+        <img
+            src="https://github.com/rennf93/fastapi-guard/actions/workflows/docs.yml/badge.svg"
+            alt="DocsUpdate"
+        >
+    </a>
+    <img
+        src="https://img.shields.io/github/last-commit/rennf93/fastapi-guard?style=flat&amp;logo=git&amp;logoColor=white&amp;color=0080ff"
+        alt="last-commit"
+    >
 </p>
 
 <p align="center">
-    <img alt="Python" src="https://img.shields.io/badge/Python-3776AB.svg?style=flat&amp;logo=Python&amp;logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
-    <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-009688.svg?style=flat&amp;logo=FastAPI&amp;logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
-    <img alt="Redis" src="https://img.shields.io/badge/Redis-FF4438.svg?style=flat&amp;logo=Redis&amp;logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
-    <a href="https://pepy.tech/project/fastapi-guard"><img src="https://pepy.tech/badge/fastapi-guard" alt="Downloads"></a>
+    <img
+        src="https://img.shields.io/badge/Python-3776AB.svg?style=flat&amp;logo=Python&amp;logoColor=white"
+        alt="Python"
+    >
+    <img
+        src="https://img.shields.io/badge/FastAPI-009688.svg?style=flat&amp;logo=FastAPI&amp;logoColor=white"
+        alt="FastAPI"
+    >
+    <img
+        src="https://img.shields.io/badge/Redis-FF4438.svg?style=flat&amp;logo=Redis&amp;logoColor=white"
+        alt="Redis"
+    >
+    <a href="https://pepy.tech/project/fastapi-guard">
+        <img
+            src="https://pepy.tech/badge/fastapi-guard"
+            alt="Downloads"
+        >
+    </a>
 </p>
 
 ---
