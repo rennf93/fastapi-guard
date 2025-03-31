@@ -1,18 +1,33 @@
-![FastAPI Guard Logo](docs/assets/big_logo.svg)
+<p align="center">
+  <a href="https://rennf93.github.io/fastapi-guard/latest/"><img src="https://rennf93.github.io/fastapi-guard/latest/assets/big_logo.svg" alt="FastAPI"></a>
+</p>
 
 ---
 
-[![PyPI version](https://badge.fury.io/py/fastapi-guard.svg?cache=none&icon=si%3Apython&icon_color=%23008cb4)](https://badge.fury.io/py/fastapi-guard)
-[![Release](https://github.com/rennf93/fastapi-guard/actions/workflows/release.yml/badge.svg)](https://github.com/rennf93/fastapi-guard/actions/workflows/release.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/rennf93/fastapi-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/rennf93/fastapi-guard/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/rennf93/fastapi-guard/actions/workflows/code-ql.yml/badge.svg)](https://github.com/rennf93/fastapi-guard/actions/workflows/code-ql.yml)
+<p align="center">
+    <strong>fastapi-guard is a security library for FastAPI that provides middleware to control IPs, log requests, detect penetration attempts and more. It integrates seamlessly with FastAPI to offer robust protection against various security threats.</strong>
+</p>
 
-[![pages-build-deployment](https://github.com/rennf93/fastapi-guard/actions/workflows/pages/pages-build-deployment/badge.svg?branch=gh-pages)](https://github.com/rennf93/fastapi-guard/actions/workflows/pages/pages-build-deployment)
-[![Docs Update](https://github.com/rennf93/fastapi-guard/actions/workflows/docs.yml/badge.svg)](https://github.com/rennf93/fastapi-guard/actions/workflows/docs.yml)
-[![Downloads](https://pepy.tech/badge/fastapi-guard)](https://pepy.tech/project/fastapi-guard)
+<p align="center">
+    <a href="https://badge.fury.io/py/fastapi-guard"><img src="https://badge.fury.io/py/fastapi-guard.svg?cache=none&icon=si%3Apython&icon_color=%23008cb4" alt="PyPiVersion"></a>
+    <a href="https://github.com/rennf93/fastapi-guard/actions/workflows/release.yml"><img src="https://github.com/rennf93/fastapi-guard/actions/workflows/release.yml/badge.svg" alt="Release"></a>
+    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"></a>
+    <a href="https://github.com/rennf93/fastapi-guard/actions/workflows/ci.yml"><img src="https://github.com/rennf93/fastapi-guard/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+    <a href="https://github.com/rennf93/fastapi-guard/actions/workflows/code-ql.yml"><img src="https://github.com/rennf93/fastapi-guard/actions/workflows/code-ql.yml/badge.svg" alt="CodeQL"></a>
+</p>
 
-`fastapi-guard` is a security library for FastAPI that provides middleware to control IPs, log requests, and detect penetration attempts. It integrates seamlessly with FastAPI to offer robust protection against various security threats.
+<p align="center">
+    <a href="https://github.com/rennf93/fastapi-guard/actions/workflows/pages/pages-build-deployment"><img src="https://github.com/rennf93/fastapi-guard/actions/workflows/pages/pages-build-deployment/badge.svg?branch=gh-pages" alt="PagesBuildDeployment"></a>
+    <a href="https://github.com/rennf93/fastapi-guard/actions/workflows/docs.yml"><img src="https://github.com/rennf93/fastapi-guard/actions/workflows/docs.yml/badge.svg" alt="DocsUpdate"></a>
+    <img alt="last-commit" src="https://img.shields.io/github/last-commit/rennf93/fastapi-guard?style=flat&amp;logo=git&amp;logoColor=white&amp;color=0080ff" class="inline-block mx-1" style="margin: 0px 2px;">
+</p>
+
+<p align="center">
+    <img alt="Python" src="https://img.shields.io/badge/Python-3776AB.svg?style=flat&amp;logo=Python&amp;logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
+    <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-009688.svg?style=flat&amp;logo=FastAPI&amp;logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
+    <img alt="Redis" src="https://img.shields.io/badge/Redis-FF4438.svg?style=flat&amp;logo=Redis&amp;logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
+    <a href="https://pepy.tech/project/fastapi-guard"><img src="https://pepy.tech/badge/fastapi-guard" alt="Downloads"></a>
+</p>
 
 ---
 

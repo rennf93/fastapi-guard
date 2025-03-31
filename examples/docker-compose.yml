@@ -10,6 +10,8 @@ services:
       - REDIS_URL=redis://redis:6379
       - REDIS_PREFIX=${REDIS_PREFIX:-"fastapi_guard:"}
       - IPINFO_TOKEN=${IPINFO_TOKEN:-"test_token"}
+    volumes:
+      - ./:/app:z
     depends_on:
       redis:
         condition: service_started

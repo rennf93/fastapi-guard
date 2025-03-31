@@ -26,3 +26,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app/
 
 RUN mkdir -p /app/data/ipinfo
+
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--reload"]
