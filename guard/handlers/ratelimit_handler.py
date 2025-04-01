@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, Optional
 
 from cachetools import TTLCache
 from fastapi import Request, Response, status
@@ -14,7 +14,11 @@ class RateLimitHandler:
     Handles rate limiting functionality with in-memory and Redis storage options.
     """
 
-    _instance = None
+    _instance: Optional["RateLimitHandler"] = None
+    config: SecurityConfig
+    request_times: TTLCache
+    logger: logging.Logger
+    redis_handler: Any = None
 
     def __new__(cls, config: SecurityConfig) -> "RateLimitHandler":
         if cls._instance is None:
@@ -66,8 +70,8 @@ class RateLimitHandler:
                     request, f"Rate limit exceeded for IP: {client_ip}", self.logger
                 )
                 return await create_error_response(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    default_message="Too many requests",
+                    status.HTTP_429_TOO_MANY_REQUESTS,
+                    "Too many requests",
                 )
             return None
 
@@ -81,8 +85,8 @@ class RateLimitHandler:
                 request, f"Rate limit exceeded for IP: {client_ip}", self.logger
             )
             return await create_error_response(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                default_message="Too many requests",
+                status.HTTP_429_TOO_MANY_REQUESTS,
+                "Too many requests",
             )
 
         return None

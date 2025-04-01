@@ -2,6 +2,11 @@
 PYTHON_VERSIONS = 3.10 3.11 3.12 3.13
 DEFAULT_PYTHON = 3.10
 
+# Activate VEnv
+.PHONY: activate
+activate:
+	@source .venv/bin/activate
+
 # Install dependencies
 .PHONY: install-deps
 install-deps:
@@ -36,6 +41,11 @@ restart: stop start-example
 lint:
 	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "ruff format . ; ruff check . ; mypy ."
 	@$(MAKE) stop
+
+# Fix code
+.PHONY: fix
+fix:
+	@poetry run ruff check --fix .
 
 # Run tests (default Python version)
 .PHONY: test
