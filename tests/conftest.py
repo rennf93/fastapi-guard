@@ -8,6 +8,7 @@ from pytest import TempPathFactory
 
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import reset_global_state
+from guard.handlers.ratelimit_handler import rate_limit_handler
 from guard.handlers.redis_handler import RedisManager
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
@@ -119,12 +120,18 @@ async def redis_cleanup() -> None:
         redis_url=REDIS_URL,
         redis_prefix=REDIS_PREFIX,
     )
-    handler = RedisManager(config)
-    await handler.initialize()
+    redis_handler = RedisManager(config)
+    await redis_handler.initialize()
     try:
-        async with handler.get_connection() as conn:
-            keys = await conn.keys(f"{REDIS_PREFIX}*")
-            if keys:
-                await conn.delete(*keys)
+        await redis_handler.delete_pattern(f"{REDIS_PREFIX}*")
     finally:
-        await handler.close()
+        await redis_handler.close()
+
+
+@pytest.fixture(autouse=True)
+async def reset_rate_limiter() -> None:
+    """Reset rate limiter between tests to avoid interference"""
+    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN)
+    rate_limit = rate_limit_handler(config)
+    rate_limit.request_times.clear()
+    await rate_limit.reset()

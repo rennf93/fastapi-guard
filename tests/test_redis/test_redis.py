@@ -1,4 +1,5 @@
 import asyncio
+import os
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
@@ -11,6 +12,8 @@ from redis.exceptions import ConnectionError
 
 from guard.handlers.redis_handler import RedisManager
 from guard.models import SecurityConfig
+
+IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 
 
 @pytest.mark.asyncio
@@ -325,3 +328,16 @@ async def test_connection_context_redis_none(
     assert initialize_called, "initialize() was not called"
     assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert "Redis connection failed" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_redis_keys_and_delete_pattern_with_redis_disabled() -> None:
+    """Test keys and delete_pattern functions when Redis is disabled"""
+    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, enable_redis=False)
+    handler = RedisManager(config)
+
+    keys_result = await handler.keys("*")
+    assert keys_result is None
+
+    delete_result = await handler.delete_pattern("*")
+    assert delete_result is None

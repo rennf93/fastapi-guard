@@ -3,7 +3,6 @@ import logging
 import time
 from collections.abc import Awaitable, Callable
 
-from cachetools import TTLCache
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
@@ -12,6 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
 from guard.handlers.ipinfo_handler import IPInfoManager
+from guard.handlers.ratelimit_handler import RateLimitHandler
 from guard.models import SecurityConfig
 from guard.sus_patterns import SusPatterns
 from guard.utils import (
@@ -47,20 +47,14 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         """
         super().__init__(app)
         self.config = config
-        self.rate_limit = config.rate_limit
-        self.rate_limit_window = config.rate_limit_window
-        self.request_counts: TTLCache = TTLCache(
-            maxsize=10000, ttl=self.rate_limit_window
-        )
         self.logger = logging.getLogger(__name__)
-        self.ip_request_counts: TTLCache = TTLCache(maxsize=10000, ttl=3600)
         self.last_cloud_ip_refresh = 0
-        self.request_times: dict[str, list[float]] = {}
         self.suspicious_request_counts: dict[str, int] = {}
         self.last_cleanup = time.time()
         self.ipinfo_db = IPInfoManager(
             token=config.ipinfo_token, db_path=config.ipinfo_db_path
         )
+        self.rate_limit_handler = RateLimitHandler(config)
 
         # Initialize Redis handler if enabled
         self.redis_handler = None
@@ -166,24 +160,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             )
 
         # Rate limit
-        if self.config.enable_rate_limiting:
-            current_time = time.time()
-            window_start = current_time - self.rate_limit_window
-
-            requests = [
-                t for t in self.request_times.get(client_ip, []) if t > window_start
-            ]
-
-            if len(requests) >= self.rate_limit:
-                await log_suspicious_activity(
-                    request, f"Rate limit exceeded for IP: {client_ip}", self.logger
-                )
-                return await self.create_error_response(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    default_message="Too many requests",
-                )
-
-            self.request_times[client_ip] = requests + [current_time]
+        rate_limit_response = await self.rate_limit_handler.check_rate_limit(
+            request, client_ip, self.create_error_response
+        )
+        if rate_limit_response:
+            return rate_limit_response
 
         # Sus Activity
         if self.config.enable_penetration_detection:
@@ -246,8 +227,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         return Response(custom_message, status_code=status_code)
 
     async def reset(self) -> None:
-        self.request_counts.clear()
-        self.ip_request_counts.clear()
+        await self.rate_limit_handler.reset()
 
     @staticmethod
     def configure_cors(app: FastAPI, config: SecurityConfig) -> bool:
@@ -271,19 +251,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             return True
         return False
 
-    async def cleanup_rate_limits(self) -> None:
-        """Clean up expired rate limit windows"""
-        current_time = time.time()
-        if current_time - self.last_cleanup > 60:
-            window_start = current_time - self.config.rate_limit_window
-            for ip in list(self.request_times.keys()):
-                self.request_times[ip] = [
-                    t for t in self.request_times[ip] if t > window_start
-                ]
-                if not self.request_times[ip]:
-                    del self.request_times[ip]
-            self.last_cleanup = current_time
-
     async def initialize(self) -> None:
         """Initialize all components asynchronously"""
         if self.config.enable_redis and self.redis_handler:
@@ -291,5 +258,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             await cloud_handler.initialize_redis(self.redis_handler)
             await ip_ban_manager.initialize_redis(self.redis_handler)
             await self.ipinfo_db.initialize_redis(self.redis_handler)
+            await self.rate_limit_handler.initialize_redis(self.redis_handler)
             await SusPatterns().initialize_redis(self.redis_handler)
             await cloud_handler.refresh_async()
