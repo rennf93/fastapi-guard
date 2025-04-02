@@ -86,7 +86,6 @@ Your API is now protected by FastAPI Guard! 🛡️
 ## What's Next
 
 - Learn about [IP Management](ip-management/banning.md)
-- Configure [Rate Limiting](security/rate-limiting.md)
+- Configure [Rate Limiting](ip-management/rate-limiter.md)
 - Set up [Penetration Detection](security/penetration-detection.md)
 - Learn about [Redis Integration](redis-integration/caching.md)
-- Configure [Distributed Rate Limiting](security/rate-limiting.md)
