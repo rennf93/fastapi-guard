@@ -6,12 +6,17 @@ from typing import Any
 
 import aiohttp
 import maxminddb
+from maxminddb import Reader
 
 
 class IPInfoManager:
     """Handler for IPInfo's IP to Country ASN database"""
 
     _instance = None
+    token: str
+    db_path: Path
+    reader: Reader | None = None
+    redis_handler: Any = None
 
     def __new__(
         cls: type["IPInfoManager"], token: str, db_path: Path | None = None

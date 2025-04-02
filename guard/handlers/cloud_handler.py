@@ -79,6 +79,9 @@ class CloudManager:
     """Manages cloud provider IP ranges with optional Redis caching."""
 
     _instance = None
+    ip_ranges: dict[str, set[ipaddress.IPv4Network]]
+    redis_handler: Any = None
+    logger: logging.Logger
 
     def __new__(cls: type["CloudManager"]) -> "CloudManager":
         if cls._instance is None:

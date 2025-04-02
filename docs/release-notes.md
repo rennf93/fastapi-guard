@@ -12,6 +12,9 @@ keywords: release notes, fastapi guard, security middleware, api security
 - TTLCache-based in-memory rate limiting still available
 - Extended Redis support for distributed rate limiting
 
+### Improvements
+- Standardized Singleton pattern across all handlers
+
 ## v1.1.0 (2025-03-21)
 ### New Features
 - Added proper typing throughout the codebase

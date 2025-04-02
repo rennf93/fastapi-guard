@@ -10,6 +10,8 @@ class IPBanManager:
     """
 
     _instance = None
+    banned_ips: TTLCache
+    redis_handler: Any = None
 
     def __new__(cls: type["IPBanManager"]) -> "IPBanManager":
         if cls._instance is None:
