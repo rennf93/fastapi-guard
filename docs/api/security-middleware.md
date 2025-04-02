@@ -49,6 +49,13 @@ async def create_error_response(
     """
 ```
 
+## Handler Integration
+The middleware works with singleton handler instances:
+
+- All handler classes (IPBanManager, CloudManager, etc.) use the singleton pattern
+- The middleware initializes these existing instances
+- Handlers persist their state throughout the application lifecycle
+
 ## Redis Configuration
 Enable Redis in SecurityConfig:
 

@@ -24,12 +24,26 @@ FastAPI Guard consists of several core components:
 ```python
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
-from guard.handlers.cloud_handler import CloudManager
-from guard.handlers.ipban_handler import IPBanManager
+from guard.handlers.cloud_handler import CloudManager, cloud_handler
+from guard.handlers.ipban_handler import IPBanManager, ip_ban_manager
 from guard.handlers.ipinfo_handler import IPInfoManager
-from guard.handlers.ratelimit_handler import RateLimitHandler
+from guard.handlers.ratelimit_handler import RateLimitHandler, rate_limit_handler
 from guard.handlers.redis_handler import RedisManager
 from guard.sus_patterns import SusPatterns
+```
+
+## Singleton Pattern
+Most handler classes use a singleton pattern with `__new__` to ensure only one instance:
+
+```python
+class ExampleHandler:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs) -> "ExampleHandler":
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            # Initialize instance attributes
+        return cls._instance
 ```
 
 ## Configuration Model
