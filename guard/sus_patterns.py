@@ -1,5 +1,5 @@
 import re
-from typing import Any, ClassVar, Optional
+from typing import Any
 
 
 class SusPatterns:
@@ -13,7 +13,7 @@ class SusPatterns:
     and retrieve patterns.
     """
 
-    _instance: ClassVar[Optional["SusPatterns"]] = None
+    _instance = None
 
     custom_patterns: set[str] = set()
 
@@ -116,7 +116,7 @@ class SusPatterns:
     compiled_custom_patterns: set[re.Pattern]
     redis_handler: Any = None
 
-    def __new__(cls) -> "SusPatterns":
+    def __new__(cls: type["SusPatterns"]) -> "SusPatterns":
         """
         Ensure only one instance of SusPatterns
         is created (singleton pattern).

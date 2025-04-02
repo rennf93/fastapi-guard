@@ -20,7 +20,9 @@ class RateLimitHandler:
     logger: logging.Logger
     redis_handler: Any = None
 
-    def __new__(cls, config: SecurityConfig) -> "RateLimitHandler":
+    def __new__(
+        cls: type["RateLimitHandler"], config: SecurityConfig
+    ) -> "RateLimitHandler":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance.config = config

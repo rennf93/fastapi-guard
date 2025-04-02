@@ -8,6 +8,7 @@ from pytest import TempPathFactory
 
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import reset_global_state
+from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.handlers.ratelimit_handler import rate_limit_handler
 from guard.handlers.redis_handler import RedisManager
 from guard.middleware import SecurityMiddleware
@@ -21,10 +22,25 @@ REDIS_PREFIX = str(os.getenv("REDIS_PREFIX"))
 
 @pytest.fixture(autouse=True)
 async def reset_state() -> AsyncGenerator[None, None]:
+    # Reset IPBanManager
     await reset_global_state()
+
+    # Reset SusPatterns
     original_patterns = SusPatterns.patterns.copy()
     SusPatterns._instance = None
-    cloud_handler.ip_ranges = {}
+
+    # Reset CloudManager
+    cloud_instance = cloud_handler._instance
+    if cloud_instance:
+        cloud_instance.ip_ranges = {"AWS": set(), "GCP": set(), "Azure": set()}
+        cloud_instance.redis_handler = None
+
+    # Reset IPInfoManager
+    if IPInfoManager._instance:
+        if IPInfoManager._instance.reader:
+            IPInfoManager._instance.reader.close()
+        IPInfoManager._instance = None
+
     yield
     SusPatterns.patterns = original_patterns.copy()
     SusPatterns._instance = None

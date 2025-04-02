@@ -162,3 +162,31 @@ async def test_ip_ban_manager_redis_expired_cleanup(
     assert not await redis_mgr.exists("banned_ips", ip)
 
     await redis_mgr.close()
+
+
+@pytest.mark.asyncio
+async def test_ban_in_redis_not_in_cache(security_config_redis: SecurityConfig) -> None:
+    """Test when a ban exists in Redis but not in local cache"""
+    manager = IPBanManager()
+    redis_mgr = RedisManager(security_config_redis)
+    await redis_mgr.initialize()
+    await manager.initialize_redis(redis_mgr)
+
+    manager.banned_ips.clear()
+
+    ip = "192.168.100.100"
+    # Future expiry in Redis (active ban)
+    future_expiry = str(time.time() + 3600)  # 1 hour in the future
+    await redis_mgr.set_key("banned_ips", ip, future_expiry)
+
+    # Before check - IP should not be in local cache
+    assert ip not in manager.banned_ips
+
+    # Finding active ban in Redis
+    assert await manager.is_ip_banned(ip)
+
+    # IP in local cache with correct expiry
+    assert ip in manager.banned_ips
+    assert abs(manager.banned_ips[ip] - float(future_expiry)) < 0.01
+
+    await redis_mgr.close()

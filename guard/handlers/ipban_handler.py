@@ -9,12 +9,14 @@ class IPBanManager:
     A class for managing IP bans.
     """
 
-    def __init__(self) -> None:
-        """
-        Initialize the IPBanManager.
-        """
-        self.banned_ips: TTLCache = TTLCache(maxsize=10000, ttl=3600)
-        self.redis_handler: Any | None = None
+    _instance = None
+
+    def __new__(cls: type["IPBanManager"]) -> "IPBanManager":
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance.banned_ips = TTLCache(maxsize=10000, ttl=3600)
+            cls._instance.redis_handler = None
+        return cls._instance
 
     async def initialize_redis(self, redis_handler: Any) -> None:
         self.redis_handler = redis_handler

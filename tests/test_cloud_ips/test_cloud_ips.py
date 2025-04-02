@@ -72,12 +72,14 @@ def test_cloud_ip_ranges() -> None:
         patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
         patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp,
         patch("guard.handlers.cloud_handler.fetch_azure_ip_ranges") as mock_azure,
+        patch("guard.handlers.cloud_handler.CloudManager._initial_refresh"),
     ):
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
         mock_gcp.return_value = {ipaddress.IPv4Network("172.16.0.0/12")}
         mock_azure.return_value = {ipaddress.IPv4Network("10.0.0.0/8")}
 
         cloud_ranges = CloudManager()
+        cloud_ranges._refresh_sync()
 
         assert cloud_ranges.is_cloud_ip("192.168.0.1", {"AWS"})
         assert not cloud_ranges.is_cloud_ip("192.168.0.1", {"GCP"})
@@ -92,12 +94,14 @@ async def test_cloud_ip_refresh() -> None:
         patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
         patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp,
         patch("guard.handlers.cloud_handler.fetch_azure_ip_ranges") as mock_azure,
+        patch("guard.handlers.cloud_handler.CloudManager._initial_refresh"),
     ):
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
         mock_gcp.return_value = {ipaddress.IPv4Network("172.16.0.0/12")}
         mock_azure.return_value = {ipaddress.IPv4Network("10.0.0.0/8")}
 
         cloud_ranges = CloudManager()
+        cloud_ranges._refresh_sync()
         assert cloud_ranges.is_cloud_ip("192.168.0.1", {"AWS"})
 
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.1.0/24")}
@@ -149,10 +153,21 @@ def test_fetch_gcp_ip_ranges_error(mock_requests_get: Mock) -> None:
 
 
 def test_cloud_manager_refresh_handling() -> None:
-    manager = CloudManager()
-    original_count = len(manager.ip_ranges.get("AWS", []))
-    manager.refresh()
-    assert len(manager.ip_ranges["AWS"]) == original_count
+    with (
+        patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
+        patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp,
+        patch("guard.handlers.cloud_handler.fetch_azure_ip_ranges") as mock_azure,
+        patch("guard.handlers.cloud_handler.CloudManager._initial_refresh"),
+    ):
+        mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
+        mock_gcp.return_value = {ipaddress.IPv4Network("172.16.0.0/12")}
+        mock_azure.return_value = {ipaddress.IPv4Network("10.0.0.0/8")}
+
+        manager = CloudManager()
+        assert len(manager.ip_ranges["AWS"]) == 0
+
+        manager.refresh()
+        assert len(manager.ip_ranges["AWS"]) == 1
 
 
 def test_is_cloud_ip_ipv6() -> None:
@@ -244,13 +259,19 @@ async def test_cloud_ip_redis_cache_hit(security_config_redis: SecurityConfig) -
 @pytest.mark.asyncio
 async def test_cloud_ip_redis_sync_async(security_config_redis: SecurityConfig) -> None:
     """Test CloudManager sync/async refresh behavior"""
-    manager = CloudManager()
-
-    # Test sync refresh when Redis is disabled
-    with patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws:
+    with (
+        patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
+        patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp,
+        patch("guard.handlers.cloud_handler.fetch_azure_ip_ranges") as mock_azure,
+        patch("guard.handlers.cloud_handler.CloudManager._initial_refresh"),
+    ):
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
+        mock_gcp.return_value = {ipaddress.IPv4Network("172.16.0.0/12")}
+        mock_azure.return_value = {ipaddress.IPv4Network("10.0.0.0/8")}
 
-        # Sync refresh should work when Redis is disabled
+        manager = CloudManager()
+        manager.redis_handler = None
+
         manager.refresh()
         assert manager.is_cloud_ip("192.168.0.1", {"AWS"})
 
@@ -259,7 +280,6 @@ async def test_cloud_ip_redis_sync_async(security_config_redis: SecurityConfig) 
         await redis_handler.initialize()
         await manager.initialize_redis(redis_handler)
 
-        # Sync refresh should raise error when Redis is enabled
         with pytest.raises(RuntimeError) as exc_info:
             manager.refresh()
         assert str(exc_info.value) == "Use async refresh() when Redis is enabled"
