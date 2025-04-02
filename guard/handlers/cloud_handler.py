@@ -190,4 +190,5 @@ class CloudManager:
             return False
 
 
+# Instance
 cloud_handler = CloudManager()

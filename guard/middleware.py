@@ -13,7 +13,7 @@ from guard.handlers.ipban_handler import ip_ban_manager
 from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.handlers.ratelimit_handler import RateLimitHandler
 from guard.models import SecurityConfig
-from guard.sus_patterns import SusPatterns
+from guard.sus_patterns import sus_patterns_handler
 from guard.utils import (
     detect_penetration_attempt,
     is_ip_allowed,
@@ -259,5 +259,5 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             await ip_ban_manager.initialize_redis(self.redis_handler)
             await self.ipinfo_db.initialize_redis(self.redis_handler)
             await self.rate_limit_handler.initialize_redis(self.redis_handler)
-            await SusPatterns().initialize_redis(self.redis_handler)
+            await sus_patterns_handler.initialize_redis(self.redis_handler)
             await cloud_handler.refresh_async()

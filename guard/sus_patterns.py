@@ -229,3 +229,7 @@ class SusPatterns:
         instance = cls()
 
         return instance.compiled_patterns + list(instance.compiled_custom_patterns)
+
+
+# Instance
+sus_patterns_handler = SusPatterns()

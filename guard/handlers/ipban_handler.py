@@ -74,6 +74,7 @@ class IPBanManager:
                     await conn.delete(*keys)
 
 
+# Instance
 ip_ban_manager = IPBanManager()
 
 

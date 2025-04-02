@@ -9,7 +9,7 @@ from fastapi import Request
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.models import SecurityConfig
-from guard.sus_patterns import SusPatterns
+from guard.sus_patterns import sus_patterns_handler
 
 
 async def setup_custom_logging(log_file: str) -> logging.Logger:
@@ -253,7 +253,7 @@ async def detect_penetration_attempt(request: Request) -> bool:
             detected, False otherwise.
     """
 
-    suspicious_patterns = await SusPatterns().get_all_compiled_patterns()
+    suspicious_patterns = await sus_patterns_handler.get_all_compiled_patterns()
 
     async def check_value(value: str) -> bool:
         try:

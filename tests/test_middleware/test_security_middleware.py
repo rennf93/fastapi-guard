@@ -16,7 +16,7 @@ from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.handlers.ratelimit_handler import rate_limit_handler
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
-from guard.sus_patterns import SusPatterns
+from guard.sus_patterns import sus_patterns_handler
 
 IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 
@@ -674,7 +674,7 @@ async def test_redis_initialization(security_config_redis: SecurityConfig) -> No
         patch.object(cloud_handler, "initialize_redis") as cloud_init,
         patch.object(ip_ban_manager, "initialize_redis") as ipban_init,
         patch.object(IPInfoManager, "initialize_redis") as ipinfo_init,
-        patch.object(SusPatterns(), "initialize_redis") as sus_init,
+        patch.object(sus_patterns_handler, "initialize_redis") as sus_init,
         patch.object(
             cloud_handler, "refresh_async", new_callable=AsyncMock
         ) as cloud_refresh,

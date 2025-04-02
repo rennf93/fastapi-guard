@@ -13,7 +13,7 @@ from guard.handlers.ratelimit_handler import rate_limit_handler
 from guard.handlers.redis_handler import RedisManager
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
-from guard.sus_patterns import SusPatterns
+from guard.sus_patterns import sus_patterns_handler
 
 IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 REDIS_URL = str(os.getenv("REDIS_URL"))
@@ -26,8 +26,8 @@ async def reset_state() -> AsyncGenerator[None, None]:
     await reset_global_state()
 
     # Reset SusPatterns
-    original_patterns = SusPatterns.patterns.copy()
-    SusPatterns._instance = None
+    original_patterns = sus_patterns_handler.patterns.copy()
+    sus_patterns_handler._instance = None
 
     # Reset CloudManager
     cloud_instance = cloud_handler._instance
@@ -42,8 +42,8 @@ async def reset_state() -> AsyncGenerator[None, None]:
         IPInfoManager._instance = None
 
     yield
-    SusPatterns.patterns = original_patterns.copy()
-    SusPatterns._instance = None
+    sus_patterns_handler.patterns = original_patterns.copy()
+    sus_patterns_handler._instance = None
 
 
 @pytest.fixture

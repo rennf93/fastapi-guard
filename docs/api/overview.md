@@ -19,17 +19,22 @@ FastAPI Guard consists of several core components:
 - **RateLimitHandler**: Handles rate limiting functionality
 - **RedisManager**: Handles Redis connections and atomic operations
 
-## Key Classes
+## Key Classes and Instances
 
 ```python
+# Core middleware
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
+
+# Handler classes and their pre-initialized instances
 from guard.handlers.cloud_handler import CloudManager, cloud_handler
 from guard.handlers.ipban_handler import IPBanManager, ip_ban_manager
-from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.handlers.ratelimit_handler import RateLimitHandler, rate_limit_handler
-from guard.handlers.redis_handler import RedisManager
-from guard.sus_patterns import SusPatterns
+from guard.handlers.redis_handler import RedisManager, redis_handler
+from guard.sus_patterns import SusPatterns, sus_patterns_handler
+
+# Special case - requires parameters
+from guard.handlers.ipinfo_handler import IPInfoManager
 ```
 
 ## Singleton Pattern
