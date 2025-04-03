@@ -67,7 +67,10 @@ async def test_ip_whitelist_blacklist() -> None:
     """
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN, whitelist=["127.0.0.1"], blacklist=["192.168.1.1"]
+        ipinfo_token=IPINFO_TOKEN,
+        whitelist=["127.0.0.1"],
+        blacklist=["192.168.1.1"],
+        enable_penetration_detection=False,
     )
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -126,6 +129,7 @@ async def test_rate_limiting_multiple_ips(reset_state: None) -> None:
         enable_rate_limiting=True,
         whitelist=[],
         blacklist=[],
+        enable_penetration_detection=False,
     )
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -162,9 +166,16 @@ async def test_middleware_multiple_configs() -> None:
     with multiple configurations.
     """
     app = FastAPI()
-    config1 = SecurityConfig(ipinfo_token=IPINFO_TOKEN, blocked_user_agents=[r"badbot"])
+    config1 = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        blocked_user_agents=[r"badbot"],
+        enable_penetration_detection=False,
+    )
     config2 = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN, whitelist=["127.0.0.1"], blacklist=["192.168.1.1"]
+        ipinfo_token=IPINFO_TOKEN,
+        whitelist=["127.0.0.1"],
+        blacklist=["192.168.1.1"],
+        enable_penetration_detection=False,
     )
 
     app.add_middleware(SecurityMiddleware, config=config1)
@@ -235,6 +246,7 @@ async def test_custom_error_responses() -> None:
         rate_limit=5,
         rate_limit_window=1,
         auto_ban_threshold=10,
+        enable_penetration_detection=False,
     )
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -356,7 +368,9 @@ async def test_cloud_ip_blocking() -> None:
 async def test_cloud_ip_refresh() -> None:
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN, block_cloud_providers={"AWS", "GCP", "Azure"}
+        ipinfo_token=IPINFO_TOKEN,
+        block_cloud_providers={"AWS", "GCP", "Azure"},
+        enable_penetration_detection=False,
     )
     middleware = SecurityMiddleware(app, config)
 
@@ -426,6 +440,7 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
         ipinfo_token=IPINFO_TOKEN,
         block_cloud_providers={"AWS", "GCP", "Azure"},
         enable_redis=False,
+        enable_penetration_detection=False,
     )
 
     middleware = SecurityMiddleware(app, config)
@@ -583,6 +598,7 @@ async def test_cloud_ip_blocking_with_logging() -> None:
         ipinfo_token=IPINFO_TOKEN,
         block_cloud_providers={"AWS", "GCP", "Azure"},
         whitelist=[],
+        enable_penetration_detection=False,
     )
     middleware = SecurityMiddleware(app, config)
     await middleware.setup_logger()
