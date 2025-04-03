@@ -9,20 +9,20 @@ from guard.models import SecurityConfig
 from guard.utils import log_suspicious_activity
 
 
-class RateLimitHandler:
+class RateLimitManager:
     """
     Handles rate limiting functionality with in-memory and Redis storage options.
     """
 
-    _instance: Optional["RateLimitHandler"] = None
+    _instance: Optional["RateLimitManager"] = None
     config: SecurityConfig
     request_times: TTLCache
     logger: logging.Logger
     redis_handler: Any = None
 
     def __new__(
-        cls: type["RateLimitHandler"], config: SecurityConfig
-    ) -> "RateLimitHandler":
+        cls: type["RateLimitManager"], config: SecurityConfig
+    ) -> "RateLimitManager":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance.config = config
@@ -108,4 +108,4 @@ class RateLimitHandler:
 
 
 # Instance
-rate_limit_handler = RateLimitHandler
+rate_limit_handler = RateLimitManager

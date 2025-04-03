@@ -16,7 +16,7 @@ FastAPI Guard consists of several core components:
 - **SusPatterns**: Manages suspicious patterns for threat detection
 - **CloudManager**: Handles cloud provider IP range detection
 - **Utilities**: Helper functions for logging and request analysis
-- **RateLimitHandler**: Handles rate limiting functionality
+- **RateLimitManager**: Handles rate limiting functionality
 - **RedisManager**: Handles Redis connections and atomic operations
 
 ## Key Classes and Instances
@@ -29,7 +29,7 @@ from guard.models import SecurityConfig
 # Handler classes and their pre-initialized instances
 from guard.handlers.cloud_handler import CloudManager, cloud_handler
 from guard.handlers.ipban_handler import IPBanManager, ip_ban_manager
-from guard.handlers.ratelimit_handler import RateLimitHandler, rate_limit_handler
+from guard.handlers.ratelimit_handler import RateLimitManager, rate_limit_handler
 from guard.handlers.redis_handler import RedisManager, redis_handler
 from guard.sus_patterns import SusPatterns, sus_patterns_handler
 

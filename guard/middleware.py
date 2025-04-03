@@ -11,7 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
 from guard.handlers.ipinfo_handler import IPInfoManager
-from guard.handlers.ratelimit_handler import RateLimitHandler
+from guard.handlers.ratelimit_handler import RateLimitManager
 from guard.models import SecurityConfig
 from guard.sus_patterns import sus_patterns_handler
 from guard.utils import (
@@ -54,7 +54,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self.ipinfo_db = IPInfoManager(
             token=config.ipinfo_token, db_path=config.ipinfo_db_path
         )
-        self.rate_limit_handler = RateLimitHandler(config)
+        self.rate_limit_handler = RateLimitManager(config)
 
         # Initialize Redis handler if enabled
         self.redis_handler = None

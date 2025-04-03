@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from guard.handlers.cloud_handler import (
-    CloudManager,
+    cloud_handler,
     fetch_aws_ip_ranges,
     fetch_azure_ip_ranges,
     fetch_gcp_ip_ranges,
@@ -72,20 +72,19 @@ def test_cloud_ip_ranges() -> None:
         patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
         patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp,
         patch("guard.handlers.cloud_handler.fetch_azure_ip_ranges") as mock_azure,
-        patch("guard.handlers.cloud_handler.CloudManager._initial_refresh"),
+        patch("guard.handlers.cloud_handler.cloud_handler._initial_refresh"),
     ):
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
         mock_gcp.return_value = {ipaddress.IPv4Network("172.16.0.0/12")}
         mock_azure.return_value = {ipaddress.IPv4Network("10.0.0.0/8")}
 
-        cloud_ranges = CloudManager()
-        cloud_ranges._refresh_sync()
+        cloud_handler._refresh_sync()
 
-        assert cloud_ranges.is_cloud_ip("192.168.0.1", {"AWS"})
-        assert not cloud_ranges.is_cloud_ip("192.168.0.1", {"GCP"})
-        assert cloud_ranges.is_cloud_ip("172.16.0.1", {"GCP"})
-        assert cloud_ranges.is_cloud_ip("10.0.0.1", {"Azure"})
-        assert not cloud_ranges.is_cloud_ip("8.8.8.8", {"AWS", "GCP", "Azure"})
+        assert cloud_handler.is_cloud_ip("192.168.0.1", {"AWS"})
+        assert not cloud_handler.is_cloud_ip("192.168.0.1", {"GCP"})
+        assert cloud_handler.is_cloud_ip("172.16.0.1", {"GCP"})
+        assert cloud_handler.is_cloud_ip("10.0.0.1", {"Azure"})
+        assert not cloud_handler.is_cloud_ip("8.8.8.8", {"AWS", "GCP", "Azure"})
 
 
 @pytest.mark.asyncio
@@ -94,21 +93,20 @@ async def test_cloud_ip_refresh() -> None:
         patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
         patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp,
         patch("guard.handlers.cloud_handler.fetch_azure_ip_ranges") as mock_azure,
-        patch("guard.handlers.cloud_handler.CloudManager._initial_refresh"),
+        patch("guard.handlers.cloud_handler.cloud_handler._initial_refresh"),
     ):
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
         mock_gcp.return_value = {ipaddress.IPv4Network("172.16.0.0/12")}
         mock_azure.return_value = {ipaddress.IPv4Network("10.0.0.0/8")}
 
-        cloud_ranges = CloudManager()
-        cloud_ranges._refresh_sync()
-        assert cloud_ranges.is_cloud_ip("192.168.0.1", {"AWS"})
+        cloud_handler._refresh_sync()
+        assert cloud_handler.is_cloud_ip("192.168.0.1", {"AWS"})
 
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.1.0/24")}
-        cloud_ranges.refresh()
+        cloud_handler.refresh()
 
-        assert not cloud_ranges.is_cloud_ip("192.168.0.1", {"AWS"})
-        assert cloud_ranges.is_cloud_ip("192.168.1.1", {"AWS"})
+        assert not cloud_handler.is_cloud_ip("192.168.0.1", {"AWS"})
+        assert cloud_handler.is_cloud_ip("192.168.1.1", {"AWS"})
 
 
 def test_cloud_ip_ranges_error_handling() -> None:
@@ -126,16 +124,13 @@ def test_cloud_ip_ranges_error_handling() -> None:
             side_effect=Exception("Azure error"),
         ),
     ):
-        cloud_ranges = CloudManager()
-
-        assert not cloud_ranges.is_cloud_ip("192.168.0.1", {"AWS"})
-        assert not cloud_ranges.is_cloud_ip("172.16.0.1", {"GCP"})
-        assert not cloud_ranges.is_cloud_ip("10.0.0.1", {"Azure"})
+        assert not cloud_handler.is_cloud_ip("192.168.0.1", {"AWS"})
+        assert not cloud_handler.is_cloud_ip("172.16.0.1", {"GCP"})
+        assert not cloud_handler.is_cloud_ip("10.0.0.1", {"Azure"})
 
 
 def test_cloud_ip_ranges_invalid_ip() -> None:
-    cloud_ranges = CloudManager()
-    assert not cloud_ranges.is_cloud_ip("invalid_ip", {"AWS", "GCP", "Azure"})
+    assert not cloud_handler.is_cloud_ip("invalid_ip", {"AWS", "GCP", "Azure"})
 
 
 def test_fetch_aws_ip_ranges_error(mock_requests_get: Mock) -> None:
@@ -157,22 +152,20 @@ def test_cloud_manager_refresh_handling() -> None:
         patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
         patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp,
         patch("guard.handlers.cloud_handler.fetch_azure_ip_ranges") as mock_azure,
-        patch("guard.handlers.cloud_handler.CloudManager._initial_refresh"),
+        patch("guard.handlers.cloud_handler.cloud_handler._initial_refresh"),
     ):
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
         mock_gcp.return_value = {ipaddress.IPv4Network("172.16.0.0/12")}
         mock_azure.return_value = {ipaddress.IPv4Network("10.0.0.0/8")}
 
-        manager = CloudManager()
-        assert len(manager.ip_ranges["AWS"]) == 0
+        assert len(cloud_handler.ip_ranges["AWS"]) == 0
 
-        manager.refresh()
-        assert len(manager.ip_ranges["AWS"]) == 1
+        cloud_handler.refresh()
+        assert len(cloud_handler.ip_ranges["AWS"]) == 1
 
 
 def test_is_cloud_ip_ipv6() -> None:
-    manager = CloudManager()
-    assert not manager.is_cloud_ip("2001:db8::1", {"AWS"})
+    assert not cloud_handler.is_cloud_ip("2001:db8::1", {"AWS"})
 
 
 def test_fetch_azure_ip_ranges_url_not_found(mock_requests_get: Mock) -> None:
@@ -203,34 +196,33 @@ async def test_cloud_ip_redis_caching(security_config_redis: SecurityConfig) -> 
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
 
         # Create manager and initialize Redis
-        manager = CloudManager()
         redis_handler = RedisManager(security_config_redis)
         await redis_handler.initialize()
 
         # Initialize Redis and perform initial refresh
-        await manager.initialize_redis(redis_handler)
+        await cloud_handler.initialize_redis(redis_handler)
 
         # Verify initial fetch and cache
-        assert manager.is_cloud_ip("192.168.0.1", {"AWS"})
+        assert cloud_handler.is_cloud_ip("192.168.0.1", {"AWS"})
         cached = await redis_handler.get_key("cloud_ranges", "AWS")
         assert cached == "192.168.0.0/24"
 
         # Change mock return value and refresh
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.1.0/24")}
-        await manager.refresh_async()
+        await cloud_handler.refresh_async()
 
         # Clear Redis cache to force refresh
         await redis_handler.delete("cloud_ranges", "AWS")
-        await manager.refresh_async()
+        await cloud_handler.refresh_async()
 
         # Test error handling
         mock_aws.side_effect = Exception("API Error")
-        await manager.refresh_async()
-        assert manager.is_cloud_ip("192.168.1.1", {"AWS"})
+        await cloud_handler.refresh_async()
+        assert cloud_handler.is_cloud_ip("192.168.1.1", {"AWS"})
 
         # Test refresh_async without Redis
-        manager.redis_handler = None
-        await manager.refresh_async()
+        cloud_handler.redis_handler = None
+        await cloud_handler.refresh_async()
 
         await redis_handler.close()
 
@@ -245,12 +237,11 @@ async def test_cloud_ip_redis_cache_hit(security_config_redis: SecurityConfig) -
     await redis_handler.set_key("cloud_ranges", "AWS", "192.168.0.0/24")
 
     # Initialize manager with Redis
-    manager = CloudManager()
-    await manager.initialize_redis(redis_handler)
+    await cloud_handler.initialize_redis(redis_handler)
 
     # Verify manager uses cached value
     with patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws:
-        assert manager.is_cloud_ip("192.168.0.1", {"AWS"})
+        assert cloud_handler.is_cloud_ip("192.168.0.1", {"AWS"})
         mock_aws.assert_not_called()
 
     await redis_handler.close()
@@ -263,25 +254,24 @@ async def test_cloud_ip_redis_sync_async(security_config_redis: SecurityConfig) 
         patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
         patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp,
         patch("guard.handlers.cloud_handler.fetch_azure_ip_ranges") as mock_azure,
-        patch("guard.handlers.cloud_handler.CloudManager._initial_refresh"),
+        patch("guard.handlers.cloud_handler.cloud_handler._initial_refresh"),
     ):
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
         mock_gcp.return_value = {ipaddress.IPv4Network("172.16.0.0/12")}
         mock_azure.return_value = {ipaddress.IPv4Network("10.0.0.0/8")}
 
-        manager = CloudManager()
-        manager.redis_handler = None
+        cloud_handler.redis_handler = None
 
-        manager.refresh()
-        assert manager.is_cloud_ip("192.168.0.1", {"AWS"})
+        cloud_handler.refresh()
+        assert cloud_handler.is_cloud_ip("192.168.0.1", {"AWS"})
 
         # Enable Redis
         redis_handler = RedisManager(security_config_redis)
         await redis_handler.initialize()
-        await manager.initialize_redis(redis_handler)
+        await cloud_handler.initialize_redis(redis_handler)
 
         with pytest.raises(RuntimeError) as exc_info:
-            manager.refresh()
+            cloud_handler.refresh()
         assert str(exc_info.value) == "Use async refresh() when Redis is enabled"
 
         await redis_handler.close()
@@ -295,7 +285,6 @@ async def test_cloud_ip_redis_error_handling(
     with patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws:
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
 
-        manager = CloudManager()
         redis_handler = RedisManager(security_config_redis)
         await redis_handler.initialize()
 
@@ -304,13 +293,13 @@ async def test_cloud_ip_redis_error_handling(
 
         # Initialize Redis and test error handling
         mock_aws.side_effect = Exception("API Error")
-        await manager.initialize_redis(redis_handler)
+        await cloud_handler.initialize_redis(redis_handler)
 
         # Test provider not in ip_ranges during error
-        manager.ip_ranges.pop("AWS", None)
-        await manager.refresh_async()
+        cloud_handler.ip_ranges.pop("AWS", None)
+        await cloud_handler.refresh_async()
 
-        assert isinstance(manager.ip_ranges["AWS"], set)
-        assert len(manager.ip_ranges["AWS"]) == 0
+        assert isinstance(cloud_handler.ip_ranges["AWS"], set)
+        assert len(cloud_handler.ip_ranges["AWS"]) == 0
 
         await redis_handler.close()

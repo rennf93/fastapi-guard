@@ -94,6 +94,11 @@ test-3.13:
 local-test:
 	@poetry run pytest -v --cov=.
 
+# Prune
+.PHONY: prune
+prune:
+	@docker system prune -f
+
 # Help
 .PHONY: help
 help:

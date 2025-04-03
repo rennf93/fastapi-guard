@@ -361,7 +361,7 @@ async def test_cloud_ip_refresh() -> None:
     middleware = SecurityMiddleware(app, config)
 
     with patch(
-        "guard.handlers.cloud_handler.CloudManager.is_cloud_ip", return_value=False
+        "guard.handlers.cloud_handler.cloud_handler.is_cloud_ip", return_value=False
     ) as mock_is_cloud_ip:
 
         async def receive() -> dict[str, str | bytes]:

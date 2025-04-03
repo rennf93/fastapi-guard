@@ -2,7 +2,7 @@
 from guard.handlers.cloud_handler import CloudManager, cloud_handler
 from guard.handlers.ipban_handler import IPBanManager, ip_ban_manager
 from guard.handlers.ipinfo_handler import IPInfoManager
-from guard.handlers.ratelimit_handler import RateLimitHandler, rate_limit_handler
+from guard.handlers.ratelimit_handler import RateLimitManager, rate_limit_handler
 from guard.handlers.redis_handler import RedisManager, redis_handler
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
@@ -16,7 +16,7 @@ __all__ = [
     "CloudManager",
     "IPInfoManager",
     "rate_limit_handler",
-    "RateLimitHandler",
+    "RateLimitManager",
     "redis_handler",
     "RedisManager",
     "sus_patterns_handler",

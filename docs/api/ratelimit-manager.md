@@ -1,16 +1,16 @@
 ---
-title: RateLimitHandler - FastAPI Guard
-description: API reference for the RateLimitHandler class in FastAPI Guard, handling rate limiting functionality
+title: RateLimitManager - FastAPI Guard
+description: API reference for the RateLimitManager class in FastAPI Guard, handling rate limiting functionality
 keywords: rate limiting, api security, fastapi, rate limit handler
 ---
 
-# RateLimitHandler
+# RateLimitManager
 
-The `RateLimitHandler` is responsible for managing rate limiting functionality in FastAPI Guard. It supports both in-memory rate limiting using TTLCache and distributed rate limiting using Redis.
+The `RateLimitManager` is responsible for managing rate limiting functionality in FastAPI Guard. It supports both in-memory rate limiting using TTLCache and distributed rate limiting using Redis.
 
 ## Overview
 
-Rate limiting is an essential security feature that protects your API from abuse by limiting the number of requests a client can make within a specific time window. The `RateLimitHandler` implements this functionality with the following features:
+Rate limiting is an essential security feature that protects your API from abuse by limiting the number of requests a client can make within a specific time window. The `RateLimitManager` implements this functionality with the following features:
 
 - **In-memory rate limiting**: Uses TTLCache for efficient, expiring counters
 - **Redis-based distributed rate limiting**: Optional support for distributed environments

@@ -6,7 +6,7 @@ keywords: rate limiting, api security, ddos protection, request throttling, fast
 
 # Rate Limiting
 
-Rate limiting is a crucial security feature that protects your API from abuse, DoS attacks, and excessive usage. FastAPI Guard provides a robust rate limiting system through the dedicated `RateLimitHandler` class.
+Rate limiting is a crucial security feature that protects your API from abuse, DoS attacks, and excessive usage. FastAPI Guard provides a robust rate limiting system through the dedicated `RateLimitManager` class.
 
 ## Basic Configuration
 
@@ -138,7 +138,7 @@ async def reset_rate_limits_for_user(user_id: str):
 
 ## Implementation Details
 
-The `RateLimitHandler` is implemented as a singleton to ensure consistent state across requests. It uses:
+The `RateLimitManager` is implemented as a singleton to ensure consistent state across requests. It uses:
 
 - TTLCache for in-memory storage with automatic expiration
 - Redis increments with TTL for distributed storage
@@ -154,6 +154,6 @@ The `RateLimitHandler` is implemented as a singleton to ensure consistent state 
 
 ## See Also
 
-- [RateLimitHandler API Reference](../../api/ratelimit-manager.md)
+- [RateLimitManager API Reference](../../api/ratelimit-manager.md)
 - [Redis Integration](../redis-integration/caching.md)
 - [Security Middleware](../../api/security-middleware.md)
