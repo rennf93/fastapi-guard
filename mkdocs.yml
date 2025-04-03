@@ -64,7 +64,7 @@ nav:
     - IPBanManager: api/ipban-manager.md
     - IPInfoManager: api/ipinfo-manager.md
     - RateLimitManager: api/ratelimit-manager.md
-    - SusPatterns: api/sus-patterns.md
+    - SusPatternsManager: api/sus-patterns.md
     - CloudManager: api/cloud-manager.md
     - Utilities: api/utilities.md
   - Examples:

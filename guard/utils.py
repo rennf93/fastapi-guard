@@ -8,8 +8,8 @@ from fastapi import Request
 
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipinfo_handler import IPInfoManager
+from guard.handlers.suspatterns_handler import sus_patterns_handler
 from guard.models import SecurityConfig
-from guard.sus_patterns import sus_patterns_handler
 
 
 async def setup_custom_logging(log_file: str) -> logging.Logger:

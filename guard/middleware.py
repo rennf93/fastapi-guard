@@ -12,8 +12,8 @@ from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
 from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.handlers.ratelimit_handler import RateLimitManager
+from guard.handlers.suspatterns_handler import sus_patterns_handler
 from guard.models import SecurityConfig
-from guard.sus_patterns import sus_patterns_handler
 from guard.utils import (
     detect_penetration_attempt,
     is_ip_allowed,

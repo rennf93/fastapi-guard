@@ -11,9 +11,9 @@ from guard.handlers.ipban_handler import reset_global_state
 from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.handlers.ratelimit_handler import rate_limit_handler
 from guard.handlers.redis_handler import RedisManager
+from guard.handlers.suspatterns_handler import sus_patterns_handler
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
-from guard.sus_patterns import sus_patterns_handler
 
 IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 REDIS_URL = str(os.getenv("REDIS_URL"))
@@ -25,7 +25,7 @@ async def reset_state() -> AsyncGenerator[None, None]:
     # Reset IPBanManager
     await reset_global_state()
 
-    # Reset SusPatterns
+    # Reset SusPatternsManager
     original_patterns = sus_patterns_handler.patterns.copy()
     sus_patterns_handler._instance = None
 

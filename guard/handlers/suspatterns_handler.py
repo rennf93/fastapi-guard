@@ -2,7 +2,7 @@ import re
 from typing import Any
 
 
-class SusPatterns:
+class SusPatternsManager:
     """
     A singleton class that manages suspicious
     patterns for security checks.
@@ -116,14 +116,14 @@ class SusPatterns:
     compiled_custom_patterns: set[re.Pattern]
     redis_handler: Any = None
 
-    def __new__(cls: type["SusPatterns"]) -> "SusPatterns":
+    def __new__(cls: type["SusPatternsManager"]) -> "SusPatternsManager":
         """
-        Ensure only one instance of SusPatterns
+        Ensure only one instance of SusPatternsManager
         is created (singleton pattern).
 
         Returns:
-            SusPatterns: The single instance
-            of the SusPatterns class.
+            SusPatternsManager: The single instance
+            of the SusPatternsManager class.
         """
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -232,4 +232,4 @@ class SusPatterns:
 
 
 # Instance
-sus_patterns_handler = SusPatterns()
+sus_patterns_handler = SusPatternsManager()

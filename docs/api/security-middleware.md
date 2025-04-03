@@ -68,10 +68,12 @@ config = SecurityConfig(
 ```
 
 The middleware automatically initializes:
-- CloudManager Redis integration
+- CloudManager cloud provider ip ranges
 - IPBanManager distributed banning
-- IPInfo database caching
-- SusPatterns synchronization
+- IPInfoManager IP geolocation
+- RateLimitManager rate limiting
+- RedisManager Redis caching
+- SusPatternsManager suspicious patterns
 
 ## Usage Example
 

@@ -2,11 +2,6 @@
 PYTHON_VERSIONS = 3.10 3.11 3.12 3.13
 DEFAULT_PYTHON = 3.10
 
-# Activate VEnv
-.PHONY: activate
-activate:
-	@source .venv/bin/activate
-
 # Install dependencies
 .PHONY: install-deps
 install-deps:
@@ -98,6 +93,11 @@ local-test:
 .PHONY: prune
 prune:
 	@docker system prune -f
+
+# Clean Cache Files
+.PHONY: clean
+clean:
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Help
 .PHONY: help

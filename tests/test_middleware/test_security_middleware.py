@@ -14,9 +14,9 @@ from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
 from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.handlers.ratelimit_handler import rate_limit_handler
+from guard.handlers.suspatterns_handler import sus_patterns_handler
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
-from guard.sus_patterns import sus_patterns_handler
 
 IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 
