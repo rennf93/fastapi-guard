@@ -6,7 +6,7 @@ keywords: release notes, fastapi guard, security middleware, api security
 
 # Release Notes
 
-## v1.2.0 (2025-04-03)
+## v1.2.0 (2025-04-04)
 ### New Features
 - Added dedicated `RateLimitManager` for improved rate limiting functionality
 - TTLCache-based in-memory rate limiting still available
