@@ -15,6 +15,7 @@ keywords: release notes, fastapi guard, security middleware, api security
 ### Improvements
 - Fixed rate limiting logic to properly handle rate limiting
 - Standardized Singleton pattern across all handlers
+- Added new `keys`and `delete_pattern` methods to `RedisManager` for easy key/pattern retrieval/cleanup
 
 ## v1.1.0 (2025-03-21)
 ### New Features
