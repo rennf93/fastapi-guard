@@ -49,6 +49,13 @@ async def create_error_response(
     """
 ```
 
+## Handler Integration
+The middleware works with singleton handler instances:
+
+- All handler classes (IPBanManager, CloudManager, etc.) use the singleton pattern
+- The middleware initializes these existing instances
+- Handlers persist their state throughout the application lifecycle
+
 ## Redis Configuration
 Enable Redis in SecurityConfig:
 
@@ -61,10 +68,12 @@ config = SecurityConfig(
 ```
 
 The middleware automatically initializes:
-- CloudManager Redis integration
+- CloudManager cloud provider ip ranges
 - IPBanManager distributed banning
-- IPInfo database caching
-- SusPatterns synchronization
+- IPInfoManager IP geolocation
+- RateLimitManager rate limiting
+- RedisManager Redis caching
+- SusPatternsManager suspicious patterns
 
 ## Usage Example
 

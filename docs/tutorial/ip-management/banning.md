@@ -51,4 +51,4 @@ Clear all active IP bans:
 @app.post("/admin/reset")
 async def reset_bans():
     await ip_ban_manager.reset()
-    return {"message": "All IP bans cleared"} 
+    return {"message": "All IP bans cleared"}

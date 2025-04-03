@@ -6,23 +6,35 @@ keywords: ip geolocation, country filtering, ipinfo integration, location detect
 
 # IPInfoManager
 
-The `IPInfoManager` class handles IP geolocation using IPInfo's database.
+The `IPInfoManager` class handles IP geolocation using IPInfo's database. It uses a singleton pattern to ensure only one instance exists throughout the application.
 
 ## Class Definition
 
 ```python
 class IPInfoManager:
-    def __init__(
-        self,
-        token: str,
-        db_path: Optional[Path] = None
-    ):
-        """
-        Initialize IPInfoManager with IPInfo token.
+    _instance = None
+    token: str
+    db_path: Path
+    reader: Reader | None = None
+    redis_handler: Any = None
 
-        :param token: IPInfo API token
-        :param db_path: Optional custom path for database storage
-        """
+    def __new__(cls: type["IPInfoManager"], token: str, db_path: Path | None = None) -> "IPInfoManager":
+        if not token:
+            raise ValueError("IPInfo token is required!")
+
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance.token = token
+            cls._instance.db_path = db_path or Path("data/ipinfo/country_asn.mmdb")
+            cls._instance.reader = None
+            cls._instance.redis_handler = None
+        # Update token
+        elif token:
+            cls._instance.token = token
+            # Update db_path
+            if db_path is not None:
+                cls._instance.db_path = db_path
+        return cls._instance
 ```
 
 ## Methods
@@ -39,7 +51,7 @@ async def initialize(self):
 ### get_country
 
 ```python
-def get_country(self, ip: str) -> Optional[str]:
+def get_country(self, ip: str) -> str | None:
     """
     Get country code for an IP address.
     """
@@ -84,4 +96,7 @@ print(f"Country: {country}")  # Output: "US"
 
 # Clean up
 ipinfo_db.close()
+
+# Get the same instance
+same_db = IPInfoManager(token="your_token")  # Same instance returned
 ```

@@ -8,10 +8,12 @@ from pytest import TempPathFactory
 
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import reset_global_state
+from guard.handlers.ipinfo_handler import IPInfoManager
+from guard.handlers.ratelimit_handler import rate_limit_handler
 from guard.handlers.redis_handler import RedisManager
+from guard.handlers.suspatterns_handler import sus_patterns_handler
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
-from guard.sus_patterns import SusPatterns
 
 IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 REDIS_URL = str(os.getenv("REDIS_URL"))
@@ -20,13 +22,28 @@ REDIS_PREFIX = str(os.getenv("REDIS_PREFIX"))
 
 @pytest.fixture(autouse=True)
 async def reset_state() -> AsyncGenerator[None, None]:
+    # Reset IPBanManager
     await reset_global_state()
-    original_patterns = SusPatterns.patterns.copy()
-    SusPatterns._instance = None
-    cloud_handler.ip_ranges = {}
+
+    # Reset SusPatternsManager
+    original_patterns = sus_patterns_handler.patterns.copy()
+    sus_patterns_handler._instance = None
+
+    # Reset CloudManager
+    cloud_instance = cloud_handler._instance
+    if cloud_instance:
+        cloud_instance.ip_ranges = {"AWS": set(), "GCP": set(), "Azure": set()}
+        cloud_instance.redis_handler = None
+
+    # Reset IPInfoManager
+    if IPInfoManager._instance:
+        if IPInfoManager._instance.reader:
+            IPInfoManager._instance.reader.close()
+        IPInfoManager._instance = None
+
     yield
-    SusPatterns.patterns = original_patterns.copy()
-    SusPatterns._instance = None
+    sus_patterns_handler.patterns = original_patterns.copy()
+    sus_patterns_handler._instance = None
 
 
 @pytest.fixture
@@ -119,12 +136,18 @@ async def redis_cleanup() -> None:
         redis_url=REDIS_URL,
         redis_prefix=REDIS_PREFIX,
     )
-    handler = RedisManager(config)
-    await handler.initialize()
+    redis_handler = RedisManager(config)
+    await redis_handler.initialize()
     try:
-        async with handler.get_connection() as conn:
-            keys = await conn.keys(f"{REDIS_PREFIX}*")
-            if keys:
-                await conn.delete(*keys)
+        await redis_handler.delete_pattern(f"{REDIS_PREFIX}*")
     finally:
-        await handler.close()
+        await redis_handler.close()
+
+
+@pytest.fixture(autouse=True)
+async def reset_rate_limiter() -> None:
+    """Reset rate limiter between tests to avoid interference"""
+    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN)
+    rate_limit = rate_limit_handler(config)
+    rate_limit.request_times.clear()
+    await rate_limit.reset()

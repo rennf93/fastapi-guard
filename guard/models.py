@@ -110,7 +110,7 @@ class SecurityConfig(BaseModel):
     """
 
     auto_ban_threshold: int = Field(
-        default=20, description="Number of suspicious requests before auto-ban"
+        default=10, description="Number of suspicious requests before auto-ban"
     )
     """
     int:
@@ -291,7 +291,7 @@ class SecurityConfig(BaseModel):
     """
 
     enable_ip_banning: bool = Field(
-        default=False, description="Enable/disable IP banning functionality"
+        default=True, description="Enable/disable IP banning functionality"
     )
     """
     bool:
@@ -307,7 +307,7 @@ class SecurityConfig(BaseModel):
     """
 
     enable_penetration_detection: bool = Field(
-        default=False, description="Enable/disable penetration attempt detection"
+        default=True, description="Enable/disable penetration attempt detection"
     )
     """
     bool:

@@ -1,17 +1,17 @@
 ---
-title: SusPatterns API - FastAPI Guard
+title: SusPatternsManager API - FastAPI Guard
 description: API documentation for FastAPI Guard's suspicious pattern detection and management system
 keywords: security patterns, threat detection, pattern management, security rules api
 ---
 
-# SusPatterns
+# SusPatternsManager
 
-The `SusPatterns` class manages suspicious patterns for security threat detection.
+The `SusPatternsManager` class manages suspicious patterns for security threat detection.
 
 ## Class Definition
 
 ```python
-class SusPatterns:
+class SusPatternsManager:
     """
     A singleton class that manages suspicious patterns
     for security checks.
@@ -63,7 +63,7 @@ Custom patterns are stored in Redis when enabled:
 
 ```python
 # Add pattern to Redis
-await SusPatterns.add_pattern(r"malicious.*", custom=True)
+await SusPatternsManager.add_pattern(r"malicious.*", custom=True)
 
 # Get patterns from Redis
 patterns = await redis.get_key("patterns", "custom")
@@ -72,19 +72,19 @@ patterns = await redis.get_key("patterns", "custom")
 ## Usage Example
 
 ```python
-from guard.sus_patterns import SusPatterns
+from guard.handlers.suspatterns_handler import SusPatternsManager
 
 # Add custom pattern
-await SusPatterns.add_pattern(
+await SusPatternsManager.add_pattern(
     r"malicious_pattern.*",
     custom=True
 )
 
 # Get all patterns
-patterns = await SusPatterns.get_all_patterns()
+patterns = await SusPatternsManager.get_all_patterns()
 
 # Remove pattern
-await SusPatterns.remove_pattern(
+await SusPatternsManager.remove_pattern(
     r"malicious_pattern.*",
     custom=True
 )

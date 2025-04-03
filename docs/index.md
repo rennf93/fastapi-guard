@@ -107,7 +107,7 @@ The example app includes endpoints to test various security features of FastAPI 
 - [Installation](installation.md)
 - [First Steps](tutorial/first-steps.md)
 - [IP Management](tutorial/ip-management/banning.md)
-- [Security Features](tutorial/security/rate-limiting.md)
+- [Rate Limiting](tutorial/ip-management/rate-limiter.md)
 - [API Reference](api/overview.md)
 - [Redis Integration Guide](tutorial/redis-integration/caching.md)
 - [Example App](tutorial/examples/example-app.md)

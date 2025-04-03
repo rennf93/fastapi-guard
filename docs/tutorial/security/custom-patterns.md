@@ -13,11 +13,11 @@ FastAPI Guard allows you to add custom patterns for detecting suspicious activit
 Add your own patterns to the detection system:
 
 ```python
-from guard.sus_patterns import SusPatterns
+from guard.handlers.suspatterns_handler import SusPatternsManager
 
 async def setup_patterns():
     # Add custom pattern
-    await SusPatterns.add_pattern(
+    await SusPatternsManager.add_pattern(
         r"malicious_pattern.*",
         custom=True
     )
@@ -29,19 +29,19 @@ You can add patterns for different types of attacks:
 
 ```python
 # Custom XSS pattern
-await SusPatterns.add_pattern(
+await SusPatternsManager.add_pattern(
     r"<script\s*src=.*>",
     custom=True
 )
 
 # Custom SQL injection pattern
-await SusPatterns.add_pattern(
+await SusPatternsManager.add_pattern(
     r";\s*DROP\s+TABLE",
     custom=True
 )
 
 # Custom file path pattern
-await SusPatterns.add_pattern(
+await SusPatternsManager.add_pattern(
     r"\.\.\/.*\/etc\/passwd",
     custom=True
 )
@@ -53,16 +53,16 @@ Remove or modify existing patterns:
 
 ```python
 # Remove a custom pattern
-await SusPatterns.remove_pattern(
+await SusPatternsManager.remove_pattern(
     r"malicious_pattern.*",
     custom=True
 )
 
 # Get all patterns
-patterns = await SusPatterns.get_all_patterns()
+patterns = await SusPatternsManager.get_all_patterns()
 
 # Get compiled patterns
-compiled_patterns = await SusPatterns.get_all_compiled_patterns()
+compiled_patterns = await SusPatternsManager.get_all_compiled_patterns()
 ```
 
 ## Pattern Testing
@@ -79,4 +79,4 @@ async def test_patterns(request: Request):
         "suspicious": is_suspicious,
         "request_body": await request.body()
     }
-``` 
+```

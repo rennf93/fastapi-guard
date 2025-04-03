@@ -6,19 +6,37 @@ from typing import Any
 
 import aiohttp
 import maxminddb
+from maxminddb import Reader
 
 
 class IPInfoManager:
     """Handler for IPInfo's IP to Country ASN database"""
 
-    def __init__(self, token: str, db_path: Path | None = None):
+    _instance = None
+    token: str
+    db_path: Path
+    reader: Reader | None = None
+    redis_handler: Any = None
+
+    def __new__(
+        cls: type["IPInfoManager"], token: str, db_path: Path | None = None
+    ) -> "IPInfoManager":
         if not token:
             raise ValueError("IPInfo token is required!")
 
-        self.token = token
-        self.db_path = db_path or Path("data/ipinfo/country_asn.mmdb")
-        self.reader: maxminddb.Reader | None = None
-        self.redis_handler: Any = None
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance.token = token
+            cls._instance.db_path = db_path or Path("data/ipinfo/country_asn.mmdb")
+            cls._instance.reader = None
+            cls._instance.redis_handler = None
+        # Update token
+        elif token:
+            cls._instance.token = token
+            # Update db_path
+            if db_path is not None:
+                cls._instance.db_path = db_path
+        return cls._instance
 
     async def initialize(self) -> None:
         """Initialize the database"""

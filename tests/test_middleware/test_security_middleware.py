@@ -1,9 +1,11 @@
-import asyncio
+import logging
 import os
 import time
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from cachetools import TTLCache
 from fastapi import FastAPI, Request, Response, status
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
@@ -11,9 +13,10 @@ from httpx._transports.asgi import ASGITransport
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
 from guard.handlers.ipinfo_handler import IPInfoManager
+from guard.handlers.ratelimit_handler import rate_limit_handler
+from guard.handlers.suspatterns_handler import sus_patterns_handler
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
-from guard.sus_patterns import SusPatterns
 
 IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 
@@ -49,7 +52,8 @@ async def test_rate_limiting() -> None:
         response = await client.get("/")
         assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
 
-        await asyncio.sleep(1)
+        handler = rate_limit_handler(config)
+        handler.request_times.clear()
 
         response = await client.get("/")
         assert response.status_code == status.HTTP_200_OK
@@ -357,7 +361,7 @@ async def test_cloud_ip_refresh() -> None:
     middleware = SecurityMiddleware(app, config)
 
     with patch(
-        "guard.handlers.cloud_handler.CloudManager.is_cloud_ip", return_value=False
+        "guard.handlers.cloud_handler.cloud_handler.is_cloud_ip", return_value=False
     ) as mock_is_cloud_ip:
 
         async def receive() -> dict[str, str | bytes]:
@@ -392,14 +396,9 @@ async def test_cloud_ip_refresh() -> None:
 
 @pytest.mark.asyncio
 async def test_cleanup_rate_limits(security_middleware: SecurityMiddleware) -> None:
-    security_middleware.request_times.update(
-        {"expired_ip": [time.time() - 200], "fresh_ip": [time.time() - 30]}
-    )
-
-    await security_middleware.cleanup_rate_limits()
-
-    assert len(security_middleware.request_times["fresh_ip"]) == 1
-    assert len(security_middleware.request_times["expired_ip"]) == 1
+    await security_middleware.rate_limit_handler.reset()
+    assert isinstance(security_middleware.rate_limit_handler.request_times, TTLCache)
+    assert len(security_middleware.rate_limit_handler.request_times) == 0
 
 
 @pytest.mark.asyncio
@@ -535,23 +534,18 @@ async def test_cleanup_expired_request_times() -> None:
     )
     middleware = SecurityMiddleware(app, config)
 
-    middleware.last_cleanup = 0
+    handler = middleware.rate_limit_handler
+    handler.request_times.clear()
 
-    current_time = time.time()
-    old_time = current_time - 120
+    handler.request_times["ip1"] = 5
+    handler.request_times["ip2"] = 3
 
-    middleware.request_times = {
-        "ip1": [old_time, old_time],
-        "ip2": [current_time],
-        "ip3": [old_time, current_time],
-    }
+    assert "ip1" in handler.request_times
+    assert "ip2" in handler.request_times
 
-    await middleware.cleanup_rate_limits()
-
-    assert "ip1" not in middleware.request_times
-    assert len(middleware.request_times["ip2"]) == 1
-    assert len(middleware.request_times["ip3"]) == 1
-    assert middleware.request_times["ip3"][0] == current_time
+    # Reset and verify cleared
+    await handler.reset()
+    assert len(handler.request_times) == 0
 
 
 @pytest.mark.asyncio
@@ -680,7 +674,7 @@ async def test_redis_initialization(security_config_redis: SecurityConfig) -> No
         patch.object(cloud_handler, "initialize_redis") as cloud_init,
         patch.object(ip_ban_manager, "initialize_redis") as ipban_init,
         patch.object(IPInfoManager, "initialize_redis") as ipinfo_init,
-        patch.object(SusPatterns(), "initialize_redis") as sus_init,
+        patch.object(sus_patterns_handler, "initialize_redis") as sus_init,
         patch.object(
             cloud_handler, "refresh_async", new_callable=AsyncMock
         ) as cloud_refresh,
@@ -707,9 +701,10 @@ async def test_redis_disabled(security_config: SecurityConfig) -> None:
     middleware = SecurityMiddleware(app, security_config)
 
     assert middleware.redis_handler is None
-
     await middleware.initialize()
-    await middleware.cleanup_rate_limits()
+
+    assert middleware.rate_limit_handler is not None
+    await middleware.rate_limit_handler.reset()
 
 
 @pytest.mark.asyncio
@@ -749,3 +744,89 @@ async def test_request_without_client(security_config: SecurityConfig) -> None:
 
     assert call_next_called, "call_next should be called when client is None"
     assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.asyncio
+async def test_rate_limiting_disabled() -> None:
+    """Test when rate limiting is disabled"""
+    app = FastAPI()
+    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, enable_rate_limiting=False)
+    app.add_middleware(SecurityMiddleware, config=config)
+
+    @app.get("/")
+    async def read_root() -> dict[str, str]:
+        return {"message": "Hello World"}
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        for _ in range(10):
+            response = await client.get("/")
+            assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.asyncio
+async def test_rate_limiting_with_redis(security_config_redis: SecurityConfig) -> None:
+    """Test rate limiting with Redis"""
+
+    app = FastAPI()
+    security_config_redis.rate_limit = 2
+    security_config_redis.rate_limit_window = 1
+
+    rate_handler = rate_limit_handler(security_config_redis)
+    await rate_handler.reset()
+
+    app.add_middleware(SecurityMiddleware, config=security_config_redis)
+
+    @app.get("/")
+    async def read_root() -> dict[str, str]:
+        return {"message": "Hello World"}
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        # First request - should be allowed
+        response = await client.get("/")
+        assert response.status_code == status.HTTP_200_OK
+
+        # Second request - should be allowed
+        response = await client.get("/")
+        assert response.status_code == status.HTTP_200_OK
+
+        # Third request - should be rate limited because count > limit
+        response = await client.get("/")
+        assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+
+        # Reset redis keys
+        await rate_handler.reset()
+
+        # After reset, should be allowed again
+        response = await client.get("/")
+        assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_reset_with_redis_errors(
+    security_config_redis: SecurityConfig,
+) -> None:
+    """Test rate limit reset handling Redis errors"""
+
+    security_config_redis.rate_limit = 2
+    security_config_redis.enable_rate_limiting = True
+
+    rate_handler = rate_limit_handler(security_config_redis)
+
+    # Mock redis_handler.keys to raise an exception
+    async def mock_keys(*args: Any) -> None:
+        raise Exception("Redis keys error")
+
+    with (
+        patch.object(rate_handler.redis_handler, "keys", mock_keys),
+        patch.object(logging.Logger, "error") as mock_logger,
+    ):
+        await rate_handler.reset()
+
+        # Verify error was logged
+        mock_logger.assert_called_once()
+        args = mock_logger.call_args[0]
+        assert "Failed to reset Redis rate limits" in args[0]

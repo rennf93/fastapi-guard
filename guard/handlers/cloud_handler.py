@@ -78,17 +78,23 @@ def fetch_azure_ip_ranges() -> set[ipaddress.IPv4Network]:
 class CloudManager:
     """Manages cloud provider IP ranges with optional Redis caching."""
 
-    def __init__(self) -> None:
-        """Initialize the CloudManager with empty IP ranges."""
-        self.ip_ranges: dict[str, set[ipaddress.IPv4Network]] = {
-            "AWS": set(),
-            "GCP": set(),
-            "Azure": set(),
-        }
-        self.redis_handler: Any = None
-        self.logger = logging.getLogger(__name__)
+    _instance = None
+    ip_ranges: dict[str, set[ipaddress.IPv4Network]]
+    redis_handler: Any = None
+    logger: logging.Logger
 
-        self._initial_refresh()
+    def __new__(cls: type["CloudManager"]) -> "CloudManager":
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance.ip_ranges = {
+                "AWS": set(),
+                "GCP": set(),
+                "Azure": set(),
+            }
+            cls._instance.redis_handler = None
+            cls._instance.logger = logging.getLogger(__name__)
+            cls._instance._initial_refresh()
+        return cls._instance
 
     def _initial_refresh(self) -> None:
         """Perform initial synchronous refresh if Redis is not used."""
@@ -184,4 +190,5 @@ class CloudManager:
             return False
 
 
+# Instance
 cloud_handler = CloudManager()

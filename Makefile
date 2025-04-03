@@ -37,6 +37,11 @@ lint:
 	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "ruff format . ; ruff check . ; mypy ."
 	@$(MAKE) stop
 
+# Fix code
+.PHONY: fix
+fix:
+	@poetry run ruff check --fix .
+
 # Run tests (default Python version)
 .PHONY: test
 test:
@@ -83,6 +88,16 @@ test-3.13:
 .PHONY: local-test
 local-test:
 	@poetry run pytest -v --cov=.
+
+# Prune
+.PHONY: prune
+prune:
+	@docker system prune -f
+
+# Clean Cache Files
+.PHONY: clean
+clean:
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Help
 .PHONY: help
