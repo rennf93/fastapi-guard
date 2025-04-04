@@ -30,12 +30,11 @@ class IPInfoManager:
             cls._instance.db_path = db_path or Path("data/ipinfo/country_asn.mmdb")
             cls._instance.reader = None
             cls._instance.redis_handler = None
-        # Update token
-        elif token:
-            cls._instance.token = token
-            # Update db_path
-            if db_path is not None:
-                cls._instance.db_path = db_path
+
+        cls._instance.token = token
+        # Update db_path
+        if db_path is not None:
+            cls._instance.db_path = db_path
         return cls._instance
 
     async def initialize(self) -> None:

@@ -185,9 +185,11 @@ class RedisManager:
 
         async def _keys(conn: Redis) -> list[str]:
             full_pattern = f"{self.config.redis_prefix}{pattern}"
-            return await conn.keys(full_pattern)
+            keys = await conn.keys(full_pattern)
+            return [str(k) for k in keys] if keys else []
 
-        return await self.safe_operation(_keys)
+        result = await self.safe_operation(_keys)
+        return result if result is not None else []
 
     async def delete_pattern(self, pattern: str) -> int | None:
         """Delete all keys matching a pattern"""
@@ -199,7 +201,8 @@ class RedisManager:
             keys = await conn.keys(full_pattern)
             if not keys:
                 return 0
-            return await conn.delete(*keys)
+            result = await conn.delete(*keys)
+            return int(result) if result is not None else 0
 
         result = await self.safe_operation(_delete_pattern)
         return int(result) if result is not None else 0
