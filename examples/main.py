@@ -121,7 +121,7 @@ app.add_middleware(SecurityMiddleware, config=config)
     },
     tags=["Basic Tests"],
 )
-async def root():
+async def root() -> MessageResponse:
     """
     Simple endpoint that returns a hello message.
 
@@ -130,7 +130,7 @@ async def root():
     - IP blocking (if your IP is in the blacklist)
     - Auto-banning (if you've triggered the security middleware)
     """
-    return {"message": "Hello World"}
+    return MessageResponse(message="Hello World")
 
 
 @app.get(
@@ -146,7 +146,7 @@ async def root():
     },
     tags=["Information"],
 )
-async def get_ip(request: Request):
+async def get_ip(request: Request) -> IPResponse:
     """
     Returns the client's IP address.
 
@@ -156,7 +156,7 @@ async def get_ip(request: Request):
     client_ip = "unknown"
     if request.client:
         client_ip = request.client.host
-    return {"ip": client_ip}
+    return IPResponse(ip=client_ip)
 
 
 @app.get(
@@ -189,7 +189,7 @@ async def test_endpoint(
     cmd: str | None = Query(
         None, description="Parameter to test command injection", example=";ls;pwd;"
     ),
-):
+) -> TestResponse:
     """
     Test endpoint to trigger penetration detection.
 
@@ -201,7 +201,7 @@ async def test_endpoint(
     - **cmd**: Used to test command injection detection
     """
     request_params = input or query or path or cmd
-    return {"message": "Test endpoint", "request_params": request_params}
+    return TestResponse(message="Test endpoint", request_params=request_params)
 
 
 # TODO: Unban IP (reset IPBanManager) endpoint.
