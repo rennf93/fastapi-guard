@@ -1519,6 +1519,7 @@
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">enable_cors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">cors_allow_origins</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">]</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">SecurityMiddleware</span><span class="o">.</span><span class="n">configure_cors</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">security_config</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="advanced-configuration">Advanced Configuration<a class="headerlink" href="#advanced-configuration" title="Permanent link">&para;</a></h2>
 <p>Configure specific CORS settings:</p>
@@ -1534,6 +1535,7 @@
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">cors_expose_headers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;X-Custom-Header&quot;</span><span class="p">],</span>
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="n">cors_max_age</span><span class="o">=</span><span class="mi">600</span>
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="p">)</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">SecurityMiddleware</span><span class="o">.</span><span class="n">configure_cors</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">security_config</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="origin-patterns">Origin Patterns<a class="headerlink" href="#origin-patterns" title="Permanent link">&para;</a></h2>
 <p>Use patterns to match multiple origins:</p>
@@ -1544,6 +1546,7 @@
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="s2">&quot;https://*.api.example.com&quot;</span>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="p">]</span>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">)</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">SecurityMiddleware</span><span class="o">.</span><span class="n">configure_cors</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">security_config</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="credentials-support">Credentials Support<a class="headerlink" href="#credentials-support" title="Permanent link">&para;</a></h2>
 <p>Enable credentials support for authenticated requests:</p>
@@ -1554,21 +1557,23 @@
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        <span class="s2">&quot;https://app.example.com&quot;</span>  <span class="c1"># Must be specific origin when using credentials</span>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="p">]</span>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="p">)</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">SecurityMiddleware</span><span class="o">.</span><span class="n">configure_cors</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">security_config</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="custom-headers">Custom Headers<a class="headerlink" href="#custom-headers" title="Permanent link">&para;</a></h2>
 <p>Configure custom headers for CORS:</p>
-<p>```python
-config = SecurityConfig(
-    enable_cors=True,
-    cors_allow_headers=[
-        "Authorization",
-        "Content-Type",
-        "X-Custom-Header"
-    ],
-    cors_expose_headers=[
-        "X-Custom-Response-Header"
-    ]
-) </p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">enable_cors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">cors_allow_headers</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        <span class="s2">&quot;Authorization&quot;</span><span class="p">,</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        <span class="s2">&quot;Content-Type&quot;</span><span class="p">,</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>        <span class="s2">&quot;X-Custom-Header&quot;</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="p">],</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">cors_expose_headers</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>        <span class="s2">&quot;X-Custom-Response-Header&quot;</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="p">]</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="p">)</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="n">SecurityMiddleware</span><span class="o">.</span><span class="n">configure_cors</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">security_config</span><span class="p">)</span>
+</span></code></pre></div>
 
 
 

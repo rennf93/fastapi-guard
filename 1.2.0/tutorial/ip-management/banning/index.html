@@ -1520,11 +1520,11 @@
 </span></code></pre></div>
 <h2 id="reset-all-bans">Reset All Bans<a class="headerlink" href="#reset-all-bans" title="Permanent link">&para;</a></h2>
 <p>Clear all active IP bans:</p>
-<p>```python
-@app.post("/admin/reset")
-async def reset_bans():
-    await ip_ban_manager.reset()
-    return {"message": "All IP bans cleared"}</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/admin/reset&quot;</span><span class="p">)</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reset_bans</span><span class="p">():</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="k">await</span> <span class="n">ip_ban_manager</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;All IP bans cleared&quot;</span><span class="p">}</span>
+</span></code></pre></div>
 
 
 
