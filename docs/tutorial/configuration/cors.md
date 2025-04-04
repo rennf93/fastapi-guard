@@ -17,6 +17,7 @@ config = SecurityConfig(
     enable_cors=True,
     cors_allow_origins=["*"]
 )
+SecurityMiddleware.configure_cors(app, security_config)
 ```
 
 ## Advanced Configuration
@@ -36,6 +37,7 @@ config = SecurityConfig(
     cors_expose_headers=["X-Custom-Header"],
     cors_max_age=600
 )
+SecurityMiddleware.configure_cors(app, security_config)
 ```
 
 ## Origin Patterns
@@ -50,6 +52,7 @@ config = SecurityConfig(
         "https://*.api.example.com"
     ]
 )
+SecurityMiddleware.configure_cors(app, security_config)
 ```
 
 ## Credentials Support
@@ -64,6 +67,7 @@ config = SecurityConfig(
         "https://app.example.com"  # Must be specific origin when using credentials
     ]
 )
+SecurityMiddleware.configure_cors(app, security_config)
 ```
 
 ## Custom Headers
@@ -81,4 +85,6 @@ config = SecurityConfig(
     cors_expose_headers=[
         "X-Custom-Response-Header"
     ]
-) 
+)
+SecurityMiddleware.configure_cors(app, security_config)
+```

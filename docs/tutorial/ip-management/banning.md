@@ -52,3 +52,4 @@ Clear all active IP bans:
 async def reset_bans():
     await ip_ban_manager.reset()
     return {"message": "All IP bans cleared"}
+```
