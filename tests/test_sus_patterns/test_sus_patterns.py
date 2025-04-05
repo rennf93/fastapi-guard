@@ -24,7 +24,8 @@ async def test_remove_pattern() -> None:
     """
     pattern_to_remove = r"new_pattern"
     await sus_patterns_handler.add_pattern(pattern_to_remove, custom=True)
-    await sus_patterns_handler.remove_pattern(pattern_to_remove, custom=True)
+    result = await sus_patterns_handler.remove_pattern(pattern_to_remove, custom=True)
+    assert result is True
     assert pattern_to_remove not in sus_patterns_handler.custom_patterns
 
 
@@ -42,6 +43,38 @@ async def test_get_all_patterns() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_default_patterns() -> None:
+    """
+    Test retrieving only default patterns from SusPatternsManager.
+    """
+    default_patterns = sus_patterns_handler.patterns
+    custom_pattern = r"custom_pattern_test"
+    await sus_patterns_handler.add_pattern(custom_pattern, custom=True)
+
+    # Get only default patterns
+    patterns = await sus_patterns_handler.get_default_patterns()
+
+    assert custom_pattern not in patterns
+    assert all(pattern in patterns for pattern in default_patterns)
+
+
+@pytest.mark.asyncio
+async def test_get_custom_patterns() -> None:
+    """
+    Test retrieving only custom patterns from SusPatternsManager.
+    """
+    custom_pattern = r"custom_pattern_only"
+    await sus_patterns_handler.add_pattern(custom_pattern, custom=True)
+
+    # Get only custom patterns
+    patterns = await sus_patterns_handler.get_custom_patterns()
+
+    assert custom_pattern in patterns
+    default_pattern = sus_patterns_handler.patterns[0]
+    assert default_pattern not in patterns
+
+
+@pytest.mark.asyncio
 async def test_invalid_pattern_handling() -> None:
     with pytest.raises(re.error):
         await sus_patterns_handler.add_pattern(r"invalid(regex", custom=True)
@@ -49,7 +82,8 @@ async def test_invalid_pattern_handling() -> None:
 
 @pytest.mark.asyncio
 async def test_remove_nonexistent_pattern() -> None:
-    await sus_patterns_handler.remove_pattern("nonexistent", custom=True)
+    result = await sus_patterns_handler.remove_pattern("nonexistent", custom=True)
+    assert result is False
 
 
 def test_singleton_behavior() -> None:
@@ -86,14 +120,49 @@ async def test_remove_default_pattern() -> None:
 
         await sus_patterns_handler.add_pattern(pattern_to_remove, custom=False)
 
-        await sus_patterns_handler.remove_pattern(pattern_to_remove, custom=False)
+        result = await sus_patterns_handler.remove_pattern(
+            pattern_to_remove, custom=False
+        )
 
+        assert result is True
         assert pattern_to_remove not in sus_patterns_handler.patterns
         assert len(sus_patterns_handler.patterns) == len(original_patterns)
 
     finally:
         sus_patterns_handler.patterns = original_patterns.copy()
         sus_patterns_handler._instance = None
+
+
+@pytest.mark.asyncio
+async def test_get_compiled_patterns_separation() -> None:
+    """
+    Test separation of compiled patterns
+    """
+    # Setup
+    default_pattern = r"default_test_pattern_\d+"
+    custom_pattern = r"custom_test_pattern_\d+"
+
+    # Add patterns
+    await sus_patterns_handler.add_pattern(default_pattern, custom=False)
+    await sus_patterns_handler.add_pattern(custom_pattern, custom=True)
+
+    # Get separated compiled patterns
+    default_compiled = await sus_patterns_handler.get_default_compiled_patterns()
+    custom_compiled = await sus_patterns_handler.get_custom_compiled_patterns()
+
+    # Test default compiled patterns
+    test_default_string = "default_test_pattern_123"
+    default_matched = any(p.search(test_default_string) for p in default_compiled)
+    assert default_matched
+
+    # Test custom compiled patterns
+    test_custom_string = "custom_test_pattern_456"
+    custom_matched = any(p.search(test_custom_string) for p in custom_compiled)
+    assert custom_matched
+
+    # Verify separation
+    assert len(default_compiled) == len(sus_patterns_handler.compiled_patterns)
+    assert len(custom_compiled) == len(sus_patterns_handler.compiled_custom_patterns)
 
 
 @pytest.mark.asyncio
@@ -135,7 +204,8 @@ async def test_redis_pattern_persistence(security_config_redis: SecurityConfig) 
     assert test_pattern in cached_patterns.split(",")
 
     # Remove pattern
-    await sus_patterns_handler.remove_pattern(test_pattern, custom=True)
+    result = await sus_patterns_handler.remove_pattern(test_pattern, custom=True)
+    assert result is True
 
     # Verify pattern was removed from Redis
     cached_patterns = await redis_handler.get_key("patterns", "custom")
@@ -156,7 +226,8 @@ async def test_redis_disabled() -> None:
     await sus_patterns_handler.add_pattern(test_pattern, custom=True)
     assert test_pattern in sus_patterns_handler.custom_patterns
 
-    await sus_patterns_handler.remove_pattern(test_pattern, custom=True)
+    result = await sus_patterns_handler.remove_pattern(test_pattern, custom=True)
+    assert result is True
     assert test_pattern not in sus_patterns_handler.custom_patterns
 
 

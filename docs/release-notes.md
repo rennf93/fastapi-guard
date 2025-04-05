@@ -6,6 +6,18 @@ keywords: release notes, fastapi guard, security middleware, api security
 
 # Release Notes
 
+## v1.2.1 (2025-04-05)
+
+### New Features
+- Added new pattern management methods to `SusPatternsManager`:
+  - `get_default_patterns()` and `get_custom_patterns()` for separate pattern access
+  - `get_default_compiled_patterns()` and `get_custom_compiled_patterns()` for separate compiled pattern access
+- Enhanced `remove_pattern()` method to return success/failure status
+
+### Improvements
+- Fixed issue with default pattern removal in `SusPatternsManager`
+- Improved pattern separation between default and custom patterns
+
 ## v1.2.0 (2025-04-04)
 ### New Features
 - Added dedicated `RateLimitManager` for improved rate limiting functionality
