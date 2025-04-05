@@ -4,9 +4,35 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'compose.yml'
+      - 'data/**'
+      - 'Dockerfile'
+      - 'examples/**'
+      - 'guard/**'
+      - 'mypy.ini'
+      - '.pre-commit-config.yaml'
+      - 'pyproject.toml'
+      - 'pytest.ini'
+      - 'reqs.pip'
+      - 'setup.py'
+      - 'tests/**'
   pull_request_target:
     branches:
       - master
+    paths:
+      - 'compose.yml'
+      - 'data/**'
+      - 'Dockerfile'
+      - 'examples/**'
+      - 'guard/**'
+      - 'mypy.ini'
+      - '.pre-commit-config.yaml'
+      - 'pyproject.toml'
+      - 'pytest.ini'
+      - 'reqs.pip'
+      - 'setup.py'
+      - 'tests/**'
 
 jobs:
   pre-commit:

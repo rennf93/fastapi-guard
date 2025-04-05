@@ -3,8 +3,34 @@ name: CodeQL
 on:
   push:
     branches: [master]
+    paths:
+      - 'compose.yml'
+      - 'data/**'
+      - 'Dockerfile'
+      - 'examples/**'
+      - 'guard/**'
+      - 'mypy.ini'
+      - '.pre-commit-config.yaml'
+      - 'pyproject.toml'
+      - 'pytest.ini'
+      - 'reqs.pip'
+      - 'setup.py'
+      - 'tests/**'
   pull_request:
     branches: [master]
+    paths:
+      - 'compose.yml'
+      - 'data/**'
+      - 'Dockerfile'
+      - 'examples/**'
+      - 'guard/**'
+      - 'mypy.ini'
+      - '.pre-commit-config.yaml'
+      - 'pyproject.toml'
+      - 'pytest.ini'
+      - 'reqs.pip'
+      - 'setup.py'
+      - 'tests/**'
   schedule:
     - cron: '0 0 * * 1'
 
