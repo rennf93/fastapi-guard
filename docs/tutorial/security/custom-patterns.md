@@ -53,16 +53,32 @@ Remove or modify existing patterns:
 
 ```python
 # Remove a custom pattern
-await SusPatternsManager.remove_pattern(
+success = await SusPatternsManager.remove_pattern(
     r"malicious_pattern.*",
     custom=True
 )
+if success:
+    print("Pattern removed successfully")
+else:
+    print("Pattern not found")
 
-# Get all patterns
-patterns = await SusPatternsManager.get_all_patterns()
+# Get all patterns (both default and custom)
+all_patterns = await SusPatternsManager.get_all_patterns()
 
-# Get compiled patterns
-compiled_patterns = await SusPatternsManager.get_all_compiled_patterns()
+# Get only default patterns
+default_patterns = await SusPatternsManager.get_default_patterns()
+
+# Get only custom patterns
+custom_patterns = await SusPatternsManager.get_custom_patterns()
+
+# Get all compiled patterns
+all_compiled_patterns = await SusPatternsManager.get_all_compiled_patterns()
+
+# Get only default compiled patterns
+default_compiled = await SusPatternsManager.get_default_compiled_patterns()
+
+# Get only custom compiled patterns
+custom_compiled = await SusPatternsManager.get_custom_compiled_patterns()
 ```
 
 ## Pattern Testing
