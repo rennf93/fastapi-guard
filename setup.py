@@ -8,7 +8,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="fastapi_guard",
-    version="1.2.1",
+    version="1.2.2",
     packages=find_packages(include=["guard", "guard.*"]),
     install_requires=[
         "aiohttp",
@@ -52,6 +52,6 @@ setup(
     ],
     include_package_data=True,
     package_data={
-        "fastapi_guard": ["py.typed"],
+        "guard": ["py.typed"],
     },
 )

@@ -6,6 +6,13 @@ keywords: release notes, fastapi guard, security middleware, api security
 
 # Release Notes
 
+## v1.2.2 (2025-04-07)
+### Improvements
+- Added an empty `py.typed`
+- Fixed the `package_data` configuration in `setup.py`
+- Added `mypy` configuration to `pyproject.toml`
+- Added `MANIFEST.in`
+
 ## v1.2.1 (2025-04-05)
 
 ### New Features
