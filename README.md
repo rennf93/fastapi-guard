@@ -51,8 +51,6 @@
 
 ## Documentation
 
-📖 **[Functional Documentation & Tutorial](https://renzof93.medium.com/secure-your-fastapi-applications-with-fastapi-guard-539ed8c2a58c)** - Medium Article on FastAPI Guard overview, scope, basic usage and configuration.
-
 📚 **[Documentation](https://rennf93.github.io/fastapi-guard)** - Full technical documentation and deep dive into its inner workings.
 
 ## Prerequisites
