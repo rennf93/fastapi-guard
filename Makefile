@@ -3,13 +3,13 @@ PYTHON_VERSIONS = 3.10 3.11 3.12 3.13
 DEFAULT_PYTHON = 3.10
 
 # Install dependencies
-.PHONY: install-deps
-install-deps:
+.PHONY: install
+install:
 	@poetry install
 
 # Update dependencies
-.PHONY: update-deps
-update-deps:
+.PHONY: lock
+lock:
 	@poetry lock
 
 # Start example-app
@@ -88,6 +88,11 @@ test-3.13:
 .PHONY: local-test
 local-test:
 	@poetry run pytest -v --cov=.
+
+# Serve docs
+.PHONY: serve-docs
+serve-docs:
+	@poetry run mkdocs serve
 
 # Prune
 .PHONY: prune
