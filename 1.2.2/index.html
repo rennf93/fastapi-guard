@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.12">
     
     
       
@@ -26,7 +26,7 @@
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.4af4bdda.min.css">
+      <link rel="stylesheet" href="assets/stylesheets/main.2afb09e1.min.css">
       
         
         <link rel="stylesheet" href="assets/stylesheets/palette.06af60db.min.css">
@@ -478,6 +478,24 @@
   
     <nav class="md-nav" aria-label="Example App">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#live-playground" class="md-nav__link">
+    <span class="md-ellipsis">
+      Live Playground
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker-container" class="md-nav__link">
+    <span class="md-ellipsis">
+      Docker Container
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#running-the-example-app" class="md-nav__link">
@@ -1479,6 +1497,24 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#live-playground" class="md-nav__link">
+    <span class="md-ellipsis">
+      Live Playground
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker-container" class="md-nav__link">
+    <span class="md-ellipsis">
+      Docker Container
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#running-the-example-app" class="md-nav__link">
     <span class="md-ellipsis">
       Running the Example App
@@ -1582,6 +1618,11 @@
 </span></code></pre></div>
 <h2 id="example-app">Example App<a class="headerlink" href="#example-app" title="Permanent link">&para;</a></h2>
 <p>Inside <a href="https://github.com/rennf93/fastapi-guard/tree/master/examples">examples</a>, you can find a simple example app that demonstrates how to use FastAPI Guard.</p>
+<h3 id="live-playground">Live Playground<a class="headerlink" href="#live-playground" title="Permanent link">&para;</a></h3>
+<p>Try FastAPI Guard features directly in your browser:</p>
+<p><strong><a href="https://playground.fastapi-guard.com">https://playground.fastapi-guard.com</a></strong></p>
+<p>This interactive demo allows you to explore FastAPI Guard's capabilities without any setup.</p>
+<h3 id="docker-container">Docker Container<a class="headerlink" href="#docker-container" title="Permanent link">&para;</a></h3>
 <p>You can also download the example app as a Docker container from <a href="https://github.com/orgs/rennf93/packages/container/fastapi-guard-example">GitHub Container Registry</a>.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Pull the latest version</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>docker<span class="w"> </span>pull<span class="w"> </span>ghcr.io/rennf93/fastapi-guard-example:latest
@@ -1606,10 +1647,10 @@
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>docker<span class="w"> </span>run<span class="w"> </span>-host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000<span class="w"> </span>ghcr.io/rennf93/fastapi-guard-example:latest
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Run with custom Redis connection</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>docker<span class="w"> </span>run<span class="w"> </span>-host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w"> </span>-e<span class="w"> </span><span class="nv">REDIS_URL</span><span class="o">=</span>redis://your-redis-host:your-redis-port
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w"> </span>-e<span class="w"> </span><span class="nv">REDIS_PREFIX</span><span class="o">=</span>your-redis-prefix
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w"> </span>-e<span class="w"> </span><span class="nv">IPINFO_TOKEN</span><span class="o">=</span>your-ipinfo-token
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>docker<span class="w"> </span>run<span class="w"> </span>-host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w"> </span>-e<span class="w"> </span><span class="nv">REDIS_URL</span><span class="o">=</span>redis://your-redis-host:your-redis-port<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w"> </span>-e<span class="w"> </span><span class="nv">REDIS_PREFIX</span><span class="o">=</span>your-redis-prefix<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w"> </span>-e<span class="w"> </span><span class="nv">IPINFO_TOKEN</span><span class="o">=</span>your-ipinfo-token<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w"> </span>ghcr.io/rennf93/fastapi-guard-example:latest
 </span></code></pre></div>
 <p>The example app includes endpoints to test various security features of FastAPI Guard. Access the Swagger documentation at http://0.0.0.0:8000/docs after running the container.</p>
