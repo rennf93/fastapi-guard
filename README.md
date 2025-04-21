@@ -53,6 +53,8 @@
 
 📚 **[Documentation](https://rennf93.github.io/fastapi-guard)** - Full technical documentation and deep dive into its inner workings.
 
+🎮 **[Live Playground](https://playground.fastapi-guard.com)** - Testing playground for FastAPI Guard's features in action.
+
 ## Prerequisites
 
 Before using `fastapi-guard`, you'll need to obtain an IPInfo token:

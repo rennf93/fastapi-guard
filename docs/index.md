@@ -43,6 +43,16 @@ app.add_middleware(SecurityMiddleware, config=config)
 
 Inside [examples](https://github.com/rennf93/fastapi-guard/tree/master/examples), you can find a simple example app that demonstrates how to use FastAPI Guard.
 
+### Live Playground
+
+Try FastAPI Guard features directly in your browser:
+
+**[https://playground.fastapi-guard.com](https://playground.fastapi-guard.com)**
+
+This interactive demo allows you to explore FastAPI Guard's capabilities without any setup.
+
+### Docker Container
+
 You can also download the example app as a Docker container from [GitHub Container Registry](https://github.com/orgs/rennf93/packages/container/fastapi-guard-example).
 
 ```bash
@@ -79,10 +89,10 @@ Alternatively, you can run just the container:
 docker run -host 0.0.0.0 -p 8000:8000 ghcr.io/rennf93/fastapi-guard-example:latest
 
 # Run with custom Redis connection
-docker run -host 0.0.0.0 -p 8000:8000
- -e REDIS_URL=redis://your-redis-host:your-redis-port
- -e REDIS_PREFIX=your-redis-prefix
- -e IPINFO_TOKEN=your-ipinfo-token
+docker run -host 0.0.0.0 -p 8000:8000 \
+ -e REDIS_URL=redis://your-redis-host:your-redis-port \
+ -e REDIS_PREFIX=your-redis-prefix \
+ -e IPINFO_TOKEN=your-ipinfo-token \
  ghcr.io/rennf93/fastapi-guard-example:latest
 ```
 

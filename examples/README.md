@@ -2,6 +2,12 @@
 
 This example demonstrates how to use FastAPI Guard as middleware in your FastAPI application.
 
+## Playground
+
+You can try FastAPI Guard without installation at the interactive demo site:
+
+**[https://playground.fastapi-guard.com](https://playground.fastapi-guard.com)**
+
 ## Running the example
 
 ### Using Docker Compose
