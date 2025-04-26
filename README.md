@@ -177,17 +177,41 @@ config = SecurityConfig(
 
 ### Penetration Attempt Detection
 
+Enable penetration attempt detection using the `enable_penetration_detection` option.
+
+```python
+config = SecurityConfig(
+    enable_penetration_detection=True,  # True by default
+)
+```
+
+Optional: Enable `passive mode` to log suspicious activity without blocking requests.
+
+```python
+config = SecurityConfig(
+    passive_mode=True,  # False by default
+)
+```
+
+### Custom Penetration Detection
+
 Detect and log potential penetration attempts using the `detect_penetration_attempt` function.
 
 ```python
-from fastapi import Request
+from fastapi import Request, Response, status
+from fastapi.responses import JSONResponse
 from guard.utils import detect_penetration_attempt
 
 @app.post("/submit")
 async def submit_data(request: Request):
-    if await detect_penetration_attempt(request):
-        return {"error": "Potential attack detected"}
+    is_suspicious, trigger_info = await detect_penetration_attempt(request)
+    if is_suspicious:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"error": f"Suspicious activity detected: {trigger_info}"}
+        )
     return {"message": "Data submitted successfully"}
+
 ```
 
 ### Custom Logging

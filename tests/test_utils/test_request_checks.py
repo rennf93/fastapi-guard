@@ -78,7 +78,8 @@ async def test_detect_penetration_attempt() -> None:
         },
         receive=receive,
     )
-    assert not await detect_penetration_attempt(request)
+    result, _ = await detect_penetration_attempt(request)
+    assert not result
 
 
 @pytest.mark.asyncio
@@ -102,7 +103,8 @@ async def test_detect_penetration_attempt_xss() -> None:
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request)
+    result, _ = await detect_penetration_attempt(request)
+    assert result
     body = await request.body()
     assert body == b""
 
@@ -125,7 +127,8 @@ async def test_detect_penetration_attempt_sql_injection() -> None:
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request)
+    result, _ = await detect_penetration_attempt(request)
+    assert result
     body = await request.body()
     assert body == b""
 
@@ -151,7 +154,8 @@ async def test_detect_penetration_attempt_directory_traversal() -> None:
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request)
+    result, _ = await detect_penetration_attempt(request)
+    assert result
     body = await request.body()
     assert body == b""
 
@@ -177,7 +181,8 @@ async def test_detect_penetration_attempt_command_injection() -> None:
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request)
+    result, _ = await detect_penetration_attempt(request)
+    assert result
     body = await request.body()
     assert body == b""
 
@@ -304,7 +309,8 @@ async def test_detect_penetration_attempt_shell_injection() -> None:
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request)
+    result, _ = await detect_penetration_attempt(request)
+    assert result
 
     legitimate_request = Request(
         scope={
@@ -317,7 +323,8 @@ async def test_detect_penetration_attempt_shell_injection() -> None:
         },
         receive=receive,
     )
-    assert not await detect_penetration_attempt(legitimate_request)
+    result, _ = await detect_penetration_attempt(legitimate_request)
+    assert not result
 
 
 @pytest.mark.asyncio
@@ -377,7 +384,8 @@ async def test_detect_penetration_attempt_json_injection() -> None:
         },
         receive=receive_malicious,
     )
-    assert await detect_penetration_attempt(request)
+    result, _ = await detect_penetration_attempt(request)
+    assert result
 
     async def receive_legitimate() -> dict[str, str | bytes]:
         return {
@@ -409,7 +417,8 @@ async def test_detect_penetration_attempt_json_injection() -> None:
         },
         receive=receive_legitimate,
     )
-    assert not await detect_penetration_attempt(legitimate_request)
+    result, _ = await detect_penetration_attempt(legitimate_request)
+    assert not result
 
 
 @pytest.mark.asyncio
@@ -435,7 +444,8 @@ async def test_detect_penetration_attempt_http_header_injection() -> None:
         },
         receive=receive,
     )
-    assert await detect_penetration_attempt(request)
+    result, _ = await detect_penetration_attempt(request)
+    assert result
 
     body = await request.body()
     assert body == b""
@@ -711,7 +721,8 @@ async def test_detect_penetration_attempt_body_error() -> None:
         receive=receive,
     )
 
-    assert not await detect_penetration_attempt(request)
+    result, _ = await detect_penetration_attempt(request)
+    assert not result
 
 
 @pytest.mark.asyncio

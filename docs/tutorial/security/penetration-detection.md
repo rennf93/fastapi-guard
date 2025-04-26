@@ -44,10 +44,11 @@ from guard.utils import detect_penetration_attempt
 
 @app.post("/api/data")
 async def submit_data(request: Request):
-    if await detect_penetration_attempt(request):
+    is_suspicious, trigger_info = await detect_penetration_attempt(request)
+    if is_suspicious:
         return JSONResponse(
             status_code=400,
-            content={"error": "Suspicious activity detected"}
+            content={"error": f"Suspicious activity detected: {trigger_info}"}
         )
     # Process legitimate request
     return {"status": "success"}
@@ -67,4 +68,42 @@ config = SecurityConfig(
 Example log output:
 ```
 2024-01-20 10:15:23 - WARNING - Suspicious activity detected from 192.168.1.1: POST /api/data - Reason: SQL injection attempt
-``` 
+```
+
+## Passive Mode
+
+When `passive_mode` is enabled, FastAPI Guard will:
+
+1. Detect potential penetration attempts (work as usual)
+2. Log them with detailed information about what triggered the detection
+3. Allow the requests to proceed without blocking
+
+This helps you understand your traffic patterns and fine-tune your security settings before enforcing blocks that might affect legitimate users.
+
+### How to Use Passive Mode
+
+```python
+from fastapi import FastAPI
+from guard import SecurityMiddleware, SecurityConfig
+
+app = FastAPI()
+
+# Create a configuration with passive mode enabled
+config = SecurityConfig(
+    ipinfo_token="your_ipinfo_token",
+    enable_penetration_detection=True,  # True by default
+    passive_mode=True,  # Enable passive mode
+)
+
+# Add the middleware to your application
+app.add_middleware(SecurityMiddleware, config=config)
+```
+
+### Checking Logs
+
+When using passive mode, watch your logs for entries starting with "[PASSIVE MODE]". These entries provide detailed information about what triggered the detection, including:
+
+- The client's IP address
+- The HTTP method and URL
+- The specific pattern that was matched
+- Which part of the request triggered the detection (query parameter, body, header, etc.)

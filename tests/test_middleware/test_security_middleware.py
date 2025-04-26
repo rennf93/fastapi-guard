@@ -612,7 +612,7 @@ async def test_cloud_ip_blocking_with_logging() -> None:
 
     with (
         patch.object(cloud_handler, "is_cloud_ip", return_value=True),
-        patch("guard.middleware.log_suspicious_activity") as mock_log,
+        patch("guard.middleware.log_activity") as mock_log,
         patch("guard.middleware.is_ip_allowed", return_value=True),
     ):
 
@@ -638,8 +638,11 @@ async def test_cloud_ip_blocking_with_logging() -> None:
 
         response = await middleware.dispatch(request, mock_call_next)
 
-        mock_log.assert_called_once_with(
-            request, "Blocked cloud provider IP: 13.59.255.255", middleware.logger
+        mock_log.assert_any_call(
+            request,
+            middleware.logger,
+            log_type="suspicious",
+            reason="Blocked cloud provider IP: 13.59.255.255",
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -846,3 +849,67 @@ async def test_rate_limit_reset_with_redis_errors(
         mock_logger.assert_called_once()
         args = mock_logger.call_args[0]
         assert "Failed to reset Redis rate limits" in args[0]
+
+
+@pytest.mark.asyncio
+async def test_passive_mode_penetration_detection() -> None:
+    """Test penetration detection in passive mode"""
+    app = FastAPI()
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        passive_mode=True,
+        whitelist=[],
+    )
+    middleware = SecurityMiddleware(app, config)
+    await middleware.setup_logger()
+
+    call_next_called = False
+
+    async def mock_call_next(request: Request) -> Response:
+        nonlocal call_next_called
+        call_next_called = True
+        return Response("OK")
+
+    with (
+        patch(
+            "guard.middleware.detect_penetration_attempt",
+            return_value=(True, "SQL injection attempt"),
+        ) as mock_detect,
+        patch("guard.middleware.log_activity") as mock_log,
+    ):
+
+        async def receive() -> dict[str, str | bytes]:
+            return {"type": "http.request", "body": b"' OR 1=1; --"}
+
+        request = Request(
+            scope={
+                "type": "http",
+                "method": "GET",
+                "path": "/login",
+                "headers": [(b"user-agent", b"test-agent")],
+                "client": ("192.168.1.1", 12345),
+                "query_string": b"",
+                "server": ("testserver", 80),
+                "scheme": "http",
+            },
+            receive=receive,
+        )
+
+        body = await request.body()
+        assert b"' OR 1=1; --" in body
+
+        response = await middleware.dispatch(request, mock_call_next)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert call_next_called, "call_next should be called in passive mode"
+
+        mock_detect.assert_called_once_with(request)
+
+        mock_log.assert_any_call(
+            request,
+            middleware.logger,
+            log_type="suspicious",
+            reason="Suspicious activity detected: 192.168.1.1",
+            passive_mode=True,
+            trigger_info="SQL injection attempt",
+        )

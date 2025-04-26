@@ -2,7 +2,6 @@
 import logging
 import re
 from ipaddress import IPv4Address, ip_network
-from typing import Any
 
 from fastapi import Request
 
@@ -27,45 +26,32 @@ async def setup_custom_logging(log_file: str) -> logging.Logger:
     return logger
 
 
-async def log_request(request: Request, logger: logging.Logger) -> None:
-    """
-    Log the details of
-    an incoming request.
-
-    Args:
-        request (Request):
-            The FastAPI request object.
-        logger (logging.Logger):
-            The logger instance to use.
-    """
-    client_ip = "unknown"
-    if request.client:
-        client_ip = request.client.host
-
-    method = request.method
-    url = str(request.url)
-    headers: dict[str, Any] = dict(request.headers)
-    message = "Request from"
-    details = f"{message} {client_ip}: {method} {url}"
-    reason_message = f"Headers: {headers}"
-    logger.info(f"{details} - {reason_message}")
-
-
-async def log_suspicious_activity(
-    request: Request, reason: str, logger: logging.Logger
+async def log_activity(
+    request: Request,
+    logger: logging.Logger,
+    log_type: str = "request",
+    reason: str = "",
+    passive_mode: bool = False,
+    trigger_info: str = "",
 ) -> None:
     """
-    Log suspicious activity
-    detected in a request.
+    Universal logging function for all types of requests and activities.
 
     Args:
         request (Request):
             The FastAPI request object.
-        reason (str):
-            The reason for flagging
-            the activity as suspicious.
         logger (logging.Logger):
             The logger instance to use.
+        log_type (str, optional):
+            Type of log entry: "request" or "suspicious".
+            Defaults to "request".
+        reason (str, optional):
+            The reason for flagging activity (for suspicious activity).
+        passive_mode (bool, optional):
+            Whether this is being logged in passive mode.
+            If True, adds "[PASSIVE MODE]" prefix to the log.
+        trigger_info (str, optional):
+            Additional information about what triggered the detection.
     """
     client_ip = "unknown"
     if request.client:
@@ -74,9 +60,29 @@ async def log_suspicious_activity(
     method = request.method
     url = str(request.url)
     headers = dict(request.headers)
-    message = "Suspicious activity detected from "
-    details = f"{message} {client_ip}: {method} {url}"
-    reason_message = f"Reason: {reason} - Headers: {headers}"
+
+    if log_type == "request":
+        message = "Request from"
+        details = f"{message} {client_ip}: {method} {url}"
+        reason_message = f"Headers: {headers}"
+    elif log_type == "suspicious":
+        if passive_mode:
+            message = "[PASSIVE MODE] Penetration attempt detected from "
+            details = f"{message} {client_ip}: {method} {url}"
+
+            trigger_message = f"Trigger: {trigger_info}" if trigger_info else ""
+            reason_message = f"Headers: {headers}"
+            if trigger_message:
+                reason_message = f"{trigger_message} - {reason_message}"
+        else:
+            message = "Suspicious activity detected from "
+            details = f"{message} {client_ip}: {method} {url}"
+            reason_message = f"Reason: {reason} - Headers: {headers}"
+    else:
+        message = f"{log_type.capitalize()} from"
+        details = f"{message} {client_ip}: {method} {url}"
+        reason_message = f"Details: {reason} - Headers: {headers}"
+
     logger.warning(f"{details} - {reason_message}")
 
 
@@ -232,7 +238,7 @@ async def is_ip_allowed(
         return True
 
 
-async def detect_penetration_attempt(request: Request) -> bool:
+async def detect_penetration_attempt(request: Request) -> tuple[bool, str]:
     """
     Detect potential penetration
     attempts in the request.
@@ -248,43 +254,49 @@ async def detect_penetration_attempt(request: Request) -> bool:
             The FastAPI request object to analyze.
 
     Returns:
-        bool:
-            True if a potential attack is
-            detected, False otherwise.
+        tuple[bool, str]:
+            First element is True if a potential attack is detected, False otherwise.
+            Second element is trigger information if detected, empty string otherwise.
     """
 
     suspicious_patterns = await sus_patterns_handler.get_all_compiled_patterns()
 
-    async def check_value(value: str) -> bool:
+    async def check_value(value: str) -> tuple[bool, str]:
         try:
             import json
 
             data = json.loads(value)
             if isinstance(data, dict):
-                return any(
-                    pattern.search(str(v))
-                    for v in data.values()
-                    if isinstance(v, str)
-                    for pattern in suspicious_patterns
-                )
+                for pattern in suspicious_patterns:
+                    for k, v in data.items():
+                        if isinstance(v, str) and pattern.search(v):
+                            return (
+                                True,
+                                f"JSON field '{k}' matched pattern '{pattern.pattern}'",
+                            )
+                return False, ""
         except json.JSONDecodeError:
-            return any(pattern.search(value) for pattern in suspicious_patterns)
-        return False
+            for pattern in suspicious_patterns:
+                if pattern.search(value):
+                    return True, f"Value matched pattern '{pattern.pattern}'"
+        return False, ""
 
     # Query params
-    for value in request.query_params.values():
-        if await check_value(value):
+    for key, value in request.query_params.items():
+        detected, trigger = await check_value(value)
+        if detected:
             message = "Potential attack detected from"
             client_ip = "unknown"
             if request.client:
                 client_ip = request.client.host
             details = f"{client_ip}: {value}"
-            reason_message = "Suspicious pattern: query param"
+            reason_message = f"Suspicious pattern in query param '{key}'"
             logging.warning(f"{message} {details} - {reason_message}")
-            return True
+            return True, f"Query param '{key}': {trigger}"
 
     # Path
-    if await check_value(request.url.path):
+    detected, trigger = await check_value(request.url.path)
+    if detected:
         message = "Potential attack detected from"
         client_ip = "unknown"
         if request.client:
@@ -292,7 +304,7 @@ async def detect_penetration_attempt(request: Request) -> bool:
         details = f"{client_ip}: {request.url.path}"
         reason_message = "Suspicious pattern: path"
         logging.warning(f"{message} {details} - {reason_message}")
-        return True
+        return True, f"URL path: {trigger}"
 
     # Headers
     excluded_headers = {
@@ -308,20 +320,23 @@ async def detect_penetration_attempt(request: Request) -> bool:
         "sec-fetch-dest",
     }
     for key, value in request.headers.items():
-        if key.lower() not in excluded_headers and await check_value(value):
-            message = "Potential attack detected from"
-            client_ip = "unknown"
-            if request.client:
-                client_ip = request.client.host
-            details = f"{client_ip}: {key}={value}"
-            reason_message = "Suspicious pattern: header"
-            logging.warning(f"{message} {details} - {reason_message}")
-            return True
+        if key.lower() not in excluded_headers:
+            detected, trigger = await check_value(value)
+            if detected:
+                message = "Potential attack detected from"
+                client_ip = "unknown"
+                if request.client:
+                    client_ip = request.client.host
+                details = f"{client_ip}: {key}={value}"
+                reason_message = "Suspicious pattern: header"
+                logging.warning(f"{message} {details} - {reason_message}")
+                return True, f"Header '{key}': {trigger}"
 
     # Body
     try:
         body = (await request.body()).decode()
-        if await check_value(body):
+        detected, trigger = await check_value(body)
+        if detected:
             message = "Potential attack detected from"
             client_ip = "unknown"
             if request.client:
@@ -329,8 +344,8 @@ async def detect_penetration_attempt(request: Request) -> bool:
             details = f"{client_ip}: {body}"
             reason_message = "Suspicious pattern: body"
             logging.warning(f"{message} {details} - {reason_message}")
-            return True
+            return True, f"Request body: {trigger}"
     except Exception:
         pass
 
-    return False
+    return False, ""

@@ -22,6 +22,15 @@ class SecurityConfig(BaseModel):
     Country codes should be specified in ISO 3166-1 alpha-2 format.
     """
 
+    passive_mode: bool = Field(
+        default=False,
+        description="Enable Log-Only mode. Won't block requests, only log.",
+    )
+    """
+    bool:
+        Enable Log-Only mode. Won't block requests, only log.
+    """
+
     ipinfo_token: str = Field(..., description="IPInfo API token for IP geolocation")
     """
     str:

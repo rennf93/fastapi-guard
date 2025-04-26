@@ -6,7 +6,7 @@ keywords: fastapi logging, security logging, event monitoring, log configuration
 
 # Logging Configuration
 
-FastAPI Guard provides detailed logging capabilities for security events.
+FastAPI Guard includes powerful logging capabilities to help you monitor and track security-related events in your application.
 
 ## Basic Logging Setup
 
@@ -33,39 +33,62 @@ config = SecurityConfig(
 
 ## Custom Logger
 
-Use the logging utilities directly:
+```python
+from guard.utils import setup_custom_logging
+
+# Setup custom logging to a file
+logger = await setup_custom_logging("security.log")
+```
+
+## Logging
+
+FastAPI Guard uses a unified logging approach with the `log_activity` function that handles different types of log events:
 
 ```python
-from guard.utils import setup_custom_logging, log_suspicious_activity
+from guard.utils import log_activity
 
-# Setup logger
-logger = await setup_custom_logging("custom.log")
+# Log a regular request
+await log_activity(request, logger)
 
 # Log suspicious activity
-await log_suspicious_activity(
+await log_activity(
     request,
-    "Suspicious pattern detected",
-    logger
+    logger,
+    log_type="suspicious",
+    reason="Suspicious IP address detected"
+)
+
+# Log penetration attempt in passive mode
+await log_activity(
+    request,
+    logger,
+    log_type="suspicious",
+    reason="SQL injection attempt detected",
+    passive_mode=True,
+    trigger_info="Detected pattern: ' OR 1=1 --"
 )
 ```
 
+## Logging Parameters
+
+The `log_activity` function accepts the following parameters:
+
+- `request`: The FastAPI request object
+- `logger`: The logger instance to use
+- `log_type`: Type of log entry (default: "request", can also be "suspicious")
+- `reason`: Reason for flagging an activity
+- `passive_mode`: Whether to format log as passive mode detection
+- `trigger_info`: Details about what triggered detection
+
 ## Log Format
 
-Default log format:
-```
-2024-01-20 10:15:23 - WARNING - Suspicious activity detected from 192.168.1.1: POST /api/data - Headers: {'User-Agent': 'curl/7.64.1'}
-```
+By default, logs include the following information:
 
-## Request Logging
-
-Log all incoming requests:
-
-```python
-from guard.utils import log_request
-
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    await log_request(request, logger)
-    response = await call_next(request)
-    return response
-``` 
+- Timestamp
+- Client IP address
+- HTTP method
+- Request path
+- Request headers
+- Request body (if available)
+- Reason for logging (for suspicious activities)
+- Detection trigger details (for penetration attempts)
