@@ -318,6 +318,9 @@ async def detect_penetration_attempt(request: Request) -> tuple[bool, str]:
         "sec-fetch-site",
         "sec-fetch-mode",
         "sec-fetch-dest",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
     }
     for key, value in request.headers.items():
         if key.lower() not in excluded_headers:

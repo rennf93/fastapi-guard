@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - feature/passive-mode
     paths:
       - 'compose.yml'
       - 'data/**'
