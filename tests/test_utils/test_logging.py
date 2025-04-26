@@ -10,8 +10,7 @@ from guard.models import SecurityConfig
 from guard.utils import (
     is_ip_allowed,
     is_user_agent_allowed,
-    log_request,
-    log_suspicious_activity,
+    log_activity,
     setup_custom_logging,
 )
 
@@ -85,7 +84,7 @@ async def test_custom_logging(
     body = await request.body()
     assert body == b"test_body"
 
-    await log_request(request, logger)
+    await log_activity(request, logger)
 
     with open(log_file) as f:
         log_content = f.read()
@@ -118,7 +117,7 @@ async def test_log_request(caplog: Any) -> None:
 
     logger = logging.getLogger(__name__)
     with caplog.at_level(logging.INFO):
-        await log_request(request, logger)
+        await log_activity(request, logger)
 
     assert "Request from 127.0.0.1: GET /" in caplog.text
     assert "Headers: {'user-agent': 'test-agent'}" in caplog.text
@@ -127,7 +126,7 @@ async def test_log_request(caplog: Any) -> None:
 @pytest.mark.asyncio
 async def test_log_suspicious_activity(caplog: Any) -> None:
     """
-    Test the log_suspicious_activity function.
+    Test the log_activity function with suspicious activity.
     """
 
     async def receive() -> dict[str, bytes | str]:
@@ -149,11 +148,90 @@ async def test_log_suspicious_activity(caplog: Any) -> None:
 
     logger = logging.getLogger(__name__)
     with caplog.at_level(logging.WARNING):
-        await log_suspicious_activity(request, "Suspicious activity detected", logger)
+        await log_activity(
+            request,
+            logger,
+            log_type="suspicious",
+            reason="Suspicious activity detected",
+        )
 
     assert "Suspicious activity detected" in caplog.text
     assert "127.0.0.1" in caplog.text
     assert "GET /" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_log_suspicious_activity_passive_mode(caplog: Any) -> None:
+    """
+    Test the log_activity function with suspicious activity in passive mode.
+    """
+
+    async def receive() -> dict[str, bytes | str]:
+        return {"type": "http.request", "body": b"test_body"}
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [(b"user-agent", b"test-agent")],
+            "query_string": b"",
+            "client": ("127.0.0.1", 12345),
+        },
+        receive=receive,
+    )
+    body = await request.body()
+    assert body == b"test_body"
+
+    logger = logging.getLogger(__name__)
+    with caplog.at_level(logging.WARNING):
+        await log_activity(
+            request,
+            logger,
+            log_type="suspicious",
+            reason="Suspicious activity detected",
+            passive_mode=True,
+            trigger_info="SQL injection attempt",
+        )
+
+    assert "[PASSIVE MODE] Penetration attempt detected from" in caplog.text
+    assert "127.0.0.1" in caplog.text
+    assert "GET /" in caplog.text
+    assert "Trigger: SQL injection attempt" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_log_custom_type(caplog: Any) -> None:
+    """
+    Test the log_activity function with a custom log type.
+    """
+
+    async def receive() -> dict[str, bytes | str]:
+        return {"type": "http.request", "body": b"test_body"}
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [(b"user-agent", b"test-agent")],
+            "query_string": b"",
+            "client": ("127.0.0.1", 12345),
+        },
+        receive=receive,
+    )
+    body = await request.body()
+    assert body == b"test_body"
+
+    logger = logging.getLogger(__name__)
+    with caplog.at_level(logging.WARNING):
+        await log_activity(
+            request, logger, log_type="custom_event", reason="Custom event reason"
+        )
+
+    assert "Custom_event from 127.0.0.1: GET /" in caplog.text
+    assert "Details: Custom event reason" in caplog.text
+    assert "Headers: {'user-agent': 'test-agent'}" in caplog.text
 
 
 @pytest.mark.asyncio

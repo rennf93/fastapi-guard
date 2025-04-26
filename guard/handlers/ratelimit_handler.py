@@ -6,7 +6,7 @@ from cachetools import TTLCache
 from fastapi import Request, Response, status
 
 from guard.models import SecurityConfig
-from guard.utils import log_suspicious_activity
+from guard.utils import log_activity
 
 
 class RateLimitManager:
@@ -68,8 +68,11 @@ class RateLimitManager:
             )
 
             if count and count > self.config.rate_limit:
-                await log_suspicious_activity(
-                    request, f"Rate limit exceeded for IP: {client_ip}", self.logger
+                await log_activity(
+                    request,
+                    self.logger,
+                    log_type="suspicious",
+                    reason=f"Rate limit exceeded for IP: {client_ip}",
                 )
                 return await create_error_response(
                     status.HTTP_429_TOO_MANY_REQUESTS,
@@ -83,8 +86,11 @@ class RateLimitManager:
 
         # Check if limit exceeded
         if current_count >= self.config.rate_limit:
-            await log_suspicious_activity(
-                request, f"Rate limit exceeded for IP: {client_ip}", self.logger
+            await log_activity(
+                request,
+                self.logger,
+                log_type="suspicious",
+                reason=f"Rate limit exceeded for IP: {client_ip}",
             )
             return await create_error_response(
                 status.HTTP_429_TOO_MANY_REQUESTS,

@@ -6,6 +6,12 @@ keywords: release notes, fastapi guard, security middleware, api security
 
 # Release Notes
 
+## v1.3.2 (2025-04-27)
+### New Features
+- Created an interactive [FastAPI Guard Playground](https://playground.fastapi-guard.com)
+- Added `passive_mode` option to log suspicious activity without blocking requests
+- Enhanced `detect_penetration_attempt` function to return trigger information
+
 ## v1.2.2 (2025-04-07)
 ### Improvements
 - Added an empty `py.typed`

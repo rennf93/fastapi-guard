@@ -18,8 +18,7 @@ from guard.utils import (
     detect_penetration_attempt,
     is_ip_allowed,
     is_user_agent_allowed,
-    log_request,
-    log_suspicious_activity,
+    log_activity,
     setup_custom_logging,
 )
 
@@ -108,7 +107,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # Log request
-        await log_request(request, self.logger)
+        await log_activity(request, self.logger)
 
         # Refresh cloud IP ranges
         if (
@@ -119,8 +118,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         # IP banning
         if await ip_ban_manager.is_ip_banned(client_ip):
-            await log_suspicious_activity(
-                request, f"Banned IP attempted access: {client_ip}", self.logger
+            await log_activity(
+                request,
+                self.logger,
+                log_type="suspicious",
+                reason=f"Banned IP attempted access: {client_ip}",
             )
             return await self.create_error_response(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -129,8 +131,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         # Whitelist/blacklist
         if not await is_ip_allowed(client_ip, self.config):
-            await log_suspicious_activity(
-                request, f"IP not allowed: {client_ip}", self.logger
+            await log_activity(
+                request,
+                self.logger,
+                log_type="suspicious",
+                reason=f"IP not allowed: {client_ip}",
             )
             return await self.create_error_response(
                 status_code=status.HTTP_403_FORBIDDEN, default_message="Forbidden"
@@ -140,8 +145,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if self.config.block_cloud_providers and cloud_handler.is_cloud_ip(
             client_ip, self.config.block_cloud_providers
         ):
-            await log_suspicious_activity(
-                request, f"Blocked cloud provider IP: {client_ip}", self.logger
+            await log_activity(
+                request,
+                self.logger,
+                log_type="suspicious",
+                reason=f"Blocked cloud provider IP: {client_ip}",
             )
             return await self.create_error_response(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -151,8 +159,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # User agent
         user_agent = request.headers.get("User-Agent", "")
         if not await is_user_agent_allowed(user_agent, self.config):
-            await log_suspicious_activity(
-                request, f"Blocked user agent: {user_agent}", self.logger
+            await log_activity(
+                request,
+                self.logger,
+                log_type="suspicious",
+                reason=f"Blocked user agent: {user_agent}",
             )
             return await self.create_error_response(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -168,39 +179,55 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         # Sus Activity
         if self.config.enable_penetration_detection:
-            if await detect_penetration_attempt(request):
+            detection_result, trigger_info = await detect_penetration_attempt(request)
+            sus_specs = f"{client_ip} - {trigger_info}"
+            if detection_result:
                 self.suspicious_request_counts[client_ip] = (
                     self.suspicious_request_counts.get(client_ip, 0) + 1
                 )
 
-                # Check banning
-                if (
-                    self.config.enable_ip_banning
-                    and self.suspicious_request_counts[client_ip]
-                    >= self.config.auto_ban_threshold
-                ):
-                    await ip_ban_manager.ban_ip(
-                        client_ip, self.config.auto_ban_duration
-                    )
-                    await log_suspicious_activity(
+                # Block and Ban
+                if not self.config.passive_mode:
+                    # Check banning
+                    if (
+                        self.config.enable_ip_banning
+                        and self.suspicious_request_counts[client_ip]
+                        >= self.config.auto_ban_threshold
+                    ):
+                        await ip_ban_manager.ban_ip(
+                            client_ip, self.config.auto_ban_duration
+                        )
+                        await log_activity(
+                            request,
+                            self.logger,
+                            log_type="suspicious",
+                            reason=f"IP banned due to suspicious activity: {sus_specs}",
+                        )
+                        return await self.create_error_response(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            default_message="IP has been banned",
+                        )
+
+                    await log_activity(
                         request,
-                        f"IP banned due to suspicious activity: {client_ip}",
                         self.logger,
+                        log_type="suspicious",
+                        reason=f"Suspicious activity detected for IP: {sus_specs}",
                     )
                     return await self.create_error_response(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        default_message="IP has been banned",
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        default_message="Suspicious activity detected",
                     )
-
-                await log_suspicious_activity(
-                    request,
-                    f"Suspicious activity detected for IP: {client_ip}",
-                    self.logger,
-                )
-                return await self.create_error_response(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    default_message="Suspicious activity detected",
-                )
+                # Passive mode: just log, no blocking
+                else:
+                    await log_activity(
+                        request,
+                        self.logger,
+                        log_type="suspicious",
+                        reason=f"Suspicious activity detected: {client_ip}",
+                        passive_mode=True,
+                        trigger_info=trigger_info,
+                    )
 
         # Custom request
         if self.config.custom_request_check:

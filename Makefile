@@ -6,26 +6,33 @@ DEFAULT_PYTHON = 3.10
 .PHONY: install
 install:
 	@poetry install
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Update dependencies
 .PHONY: lock
 lock:
 	@poetry lock
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Start example-app
 .PHONY: start-example
 start-example:
 	@COMPOSE_BAKE=true PYTHON_VERSION=$(DEFAULT_PYTHON) docker compose up --build fastapi-guard-example
+	@docker compose down --rmi all --remove-orphans -v
+	@docker system prune -f
 
 .PHONY: run-example
 run-example:
 	@COMPOSE_BAKE=true docker compose build fastapi-guard-example
 	@docker compose up fastapi-guard-example
+	@docker compose down --rmi all --remove-orphans -v
+	@docker system prune -f
 
 # Stop
 .PHONY: stop
 stop:
 	@docker compose down --rmi all --remove-orphans -v
+	@docker system prune -f
 
 # Restart
 .PHONY: restart
@@ -35,18 +42,21 @@ restart: stop start-example
 .PHONY: lint
 lint:
 	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "ruff format . ; ruff check . ; mypy ."
-	@$(MAKE) stop
+	@docker compose down --rmi all --remove-orphans -v
+	@docker system prune -f
 
 # Fix code
 .PHONY: fix
 fix:
 	@poetry run ruff check --fix .
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Run tests (default Python version)
 .PHONY: test
 test:
 	@COMPOSE_BAKE=true PYTHON_VERSION=$(DEFAULT_PYTHON) docker compose run --rm --build fastapi-guard pytest -v --cov=.
-	@$(MAKE) stop
+	@docker compose down --rmi all --remove-orphans -v
+	@docker system prune -f
 
 # Run All Python versions
 .PHONY: test-all
@@ -58,7 +68,8 @@ test-3.10:
 	@docker compose down -v fastapi-guard
 	@COMPOSE_BAKE=true PYTHON_VERSION=3.10 docker compose build fastapi-guard
 	@PYTHON_VERSION=3.10 docker compose run --rm fastapi-guard pytest -v --cov=.
-	@$(MAKE) stop
+	@docker compose down --rmi all --remove-orphans -v
+	@docker system prune -f
 
 # Python 3.11
 .PHONY: test-3.11
@@ -66,7 +77,8 @@ test-3.11:
 	@docker compose down -v fastapi-guard
 	@COMPOSE_BAKE=true PYTHON_VERSION=3.11 docker compose build fastapi-guard
 	@PYTHON_VERSION=3.11 docker compose run --rm fastapi-guard pytest -v --cov=.
-	@$(MAKE) stop
+	@docker compose down --rmi all --remove-orphans -v
+	@docker system prune -f
 
 # Python 3.12
 .PHONY: test-3.12
@@ -74,7 +86,8 @@ test-3.12:
 	@docker compose down -v fastapi-guard
 	@COMPOSE_BAKE=true PYTHON_VERSION=3.12 docker compose build fastapi-guard
 	@PYTHON_VERSION=3.12 docker compose run --rm fastapi-guard pytest -v --cov=.
-	@$(MAKE) stop
+	@docker compose down --rmi all --remove-orphans -v
+	@docker system prune -f
 
 # Python 3.13
 .PHONY: test-3.13
@@ -82,17 +95,20 @@ test-3.13:
 	@docker compose down -v fastapi-guard
 	@COMPOSE_BAKE=true PYTHON_VERSION=3.13 docker compose build fastapi-guard
 	@PYTHON_VERSION=3.13 docker compose run --rm fastapi-guard pytest -v --cov=.
-	@$(MAKE) stop
+	@docker compose down --rmi all --remove-orphans -v
+	@docker system prune -f
 
 # Local testing
 .PHONY: local-test
 local-test:
 	@poetry run pytest -v --cov=.
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Serve docs
 .PHONY: serve-docs
 serve-docs:
 	@poetry run mkdocs serve
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Prune
 .PHONY: prune

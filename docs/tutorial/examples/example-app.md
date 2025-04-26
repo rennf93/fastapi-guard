@@ -133,3 +133,49 @@ The example app supports the following environment variables:
 ## Source Code
 
 You can find the complete example code in the [examples directory](https://github.com/rennf93/fastapi-guard/tree/master/examples) of the GitHub repository.
+
+## Example with Passive Mode
+
+For production deployments where you want to assess potential false positives before fully enabling penetration detection, use the passive mode:
+
+```python
+from fastapi import FastAPI
+from guard import SecurityMiddleware, SecurityConfig
+
+app = FastAPI(title="My API with Security")
+
+config = SecurityConfig(
+    ipinfo_token="your_ipinfo_token_here",
+
+    # Rate limiting
+    rate_limit=100,  # Allow 100 requests
+    rate_limit_window=60,  # per minute
+
+    # IP filtering
+    whitelist=["127.0.0.1", "192.168.1.0/24"],  # Office network
+
+    # Geolocation
+    blocked_countries=["XX", "YY"],  # Block specific countries
+
+    # Penetration detection with passive mode
+    enable_penetration_detection=True,
+    passive_mode=True,  # Don't block, just log
+
+    # Auto-banning (will only be logged in passive mode)
+    enable_ip_banning=True,
+    auto_ban_threshold=5,  # Number of suspicious requests before ban
+    auto_ban_duration=3600,  # Ban duration in seconds (1 hour)
+
+    # Redis for distributed deployment (optional)
+    enable_redis=True,
+    redis_url="redis://localhost:6379",
+)
+
+app.add_middleware(SecurityMiddleware, config=config)
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+```
+
+You can use any configuration with this mode, but it restricts penetration detection to passive mode. After running in this mode for some time and analyzing logs, you can switch to full protection mode by removing the `passive_mode=True` flag or setting it to `False` (false by default).

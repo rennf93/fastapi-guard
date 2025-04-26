@@ -90,9 +90,10 @@ from guard.utils import detect_penetration_attempt
 
 @app.post("/test/patterns")
 async def test_patterns(request: Request):
-    is_suspicious = await detect_penetration_attempt(request)
+    is_suspicious, trigger_info = await detect_penetration_attempt(request)
     return {
         "suspicious": is_suspicious,
+        "trigger_info": trigger_info,
         "request_body": await request.body()
     }
 ```

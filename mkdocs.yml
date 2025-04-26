@@ -52,6 +52,7 @@ nav:
     - Security Features:
       - Penetration Detection: tutorial/security/penetration-detection.md
       - Custom Patterns: tutorial/security/custom-patterns.md
+      - Security Monitoring: tutorial/security/monitoring.md
     - Configuration:
       - CORS: tutorial/configuration/cors.md
       - Logging: tutorial/configuration/logging.md
