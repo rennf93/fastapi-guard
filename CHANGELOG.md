@@ -1,6 +1,6 @@
 # Release Notes
 
-## v1.4.0 (2025-04-29)
+## v1.4.0 (2025-04-30)
 ### New Features
 - Added configurable logging levels for normal and suspicious requests
 - Enhanced log_activity function to support all logging levels
@@ -44,7 +44,7 @@
 ### Improvements
 - Fixed rate limiting logic to properly handle rate limiting
 - Standardized Singleton pattern across all handlers
-- Added new `keys`and `delete_pattern` methods to `RedisManager` for easy key/pattern retrieval/cleanup
+- Added new `keys` and `delete_pattern` methods to `RedisManager` for easy key/pattern retrieval/cleanup
 
 ## v1.1.0 (2025-03-21)
 ### New Features

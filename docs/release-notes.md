@@ -6,7 +6,7 @@ keywords: release notes, fastapi guard, security middleware, api security
 
 # Release Notes
 
-## v1.3.3 (2025-04-29)
+## v1.3.3 (2025-04-30)
 ### New Features
 - Added configurable logging levels for normal and suspicious requests
 - Enhanced log_activity function to support all logging levels
