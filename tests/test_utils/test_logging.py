@@ -16,15 +16,6 @@ from guard.utils import (
 
 IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 
-LOG_LEVELS: list[Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None] = [
-    "INFO",
-    "DEBUG",
-    "WARNING",
-    "ERROR",
-    "CRITICAL",
-    None,
-]
-
 
 @pytest.mark.asyncio
 async def test_is_ip_allowed(
@@ -281,6 +272,17 @@ async def test_log_level(caplog: pytest.LogCaptureFixture) -> None:
     assert body == b"test_body"
 
     logger = logging.getLogger(__name__)
+
+    LOG_LEVELS: list[
+        Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None
+    ] = [
+        "INFO",
+        "DEBUG",
+        "WARNING",
+        "ERROR",
+        "CRITICAL",
+        None,
+    ]
 
     for level in LOG_LEVELS:
         caplog.clear()
