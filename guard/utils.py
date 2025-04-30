@@ -2,6 +2,7 @@
 import logging
 import re
 from ipaddress import IPv4Address, ip_network
+from typing import Literal
 
 from fastapi import Request
 
@@ -33,6 +34,7 @@ async def log_activity(
     reason: str = "",
     passive_mode: bool = False,
     trigger_info: str = "",
+    level: Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None = "WARNING",
 ) -> None:
     """
     Universal logging function for all types of requests and activities.
@@ -52,7 +54,13 @@ async def log_activity(
             If True, adds "[PASSIVE MODE]" prefix to the log.
         trigger_info (str, optional):
             Additional information about what triggered the detection.
+        level (Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"], optional):
+            The log level to use. If None, logging is disabled.
+            Defaults to "WARNING".
     """
+    if level is None:
+        return
+
     client_ip = "unknown"
     if request.client:
         client_ip = request.client.host
@@ -83,7 +91,18 @@ async def log_activity(
         details = f"{message} {client_ip}: {method} {url}"
         reason_message = f"Details: {reason} - Headers: {headers}"
 
-    logger.warning(f"{details} - {reason_message}")
+    msg = f"{details} - {reason_message}"
+
+    if level == "INFO":
+        logger.info(msg)
+    elif level == "DEBUG":
+        logger.debug(msg)
+    elif level == "WARNING":
+        logger.warning(msg)
+    elif level == "ERROR":
+        logger.error(msg)
+    elif level == "CRITICAL":
+        logger.critical(msg)
 
 
 async def is_user_agent_allowed(user_agent: str, config: SecurityConfig) -> bool:

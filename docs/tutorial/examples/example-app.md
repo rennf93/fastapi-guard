@@ -157,6 +157,11 @@ config = SecurityConfig(
     # Geolocation
     blocked_countries=["XX", "YY"],  # Block specific countries
 
+    # Logging configuration
+    log_request_level="INFO",       # Log normal requests as INFO (for development)
+    # log_request_level=None,       # Or disable for production
+    log_suspicious_level="WARNING", # Keep suspicious activity at WARNING level
+
     # Penetration detection with passive mode
     enable_penetration_detection=True,
     passive_mode=True,  # Don't block, just log

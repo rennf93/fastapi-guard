@@ -27,6 +27,29 @@ config = SecurityConfig(
 
 In passive mode, FastAPI Guard will detect potential penetration attempts, but instead of blocking the request, it will only log the incident with the prefix `[PASSIVE MODE]` in your logs. This helps identify false positives before enabling full blocking mode.
 
+## Configurable Log Levels
+
+FastAPI Guard allows you to configure different log levels for normal and suspicious requests:
+
+```python
+config = SecurityConfig(
+    ipinfo_token="your_ipinfo_token_here",
+
+    # Normal requests logged at INFO level (or None to disable)
+    log_request_level="INFO",
+
+    # Security events logged at WARNING level
+    log_suspicious_level="WARNING"
+)
+```
+
+This separation allows:
+- Quieter logs in production by disabling or reducing normal request logging
+- Maintaining visibility for security events
+- Different log routing based on severity
+
+Available log levels include: `"INFO"`, `"DEBUG"`, `"WARNING"`, `"ERROR"`, `"CRITICAL"`, and `None` (to disable).
+
 ## Log Analysis
 
 FastAPI Guard logs contain valuable security intelligence, including:

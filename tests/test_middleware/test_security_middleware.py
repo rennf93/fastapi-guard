@@ -643,6 +643,7 @@ async def test_cloud_ip_blocking_with_logging() -> None:
             middleware.logger,
             log_type="suspicious",
             reason="Blocked cloud provider IP: 13.59.255.255",
+            level="WARNING",
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -912,4 +913,5 @@ async def test_passive_mode_penetration_detection() -> None:
             reason="Suspicious activity detected: 192.168.1.1",
             passive_mode=True,
             trigger_info="SQL injection attempt",
+            level="WARNING",
         )

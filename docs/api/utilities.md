@@ -30,14 +30,13 @@ async def log_activity(
     log_type: str = "request",
     reason: str = "",
     passive_mode: bool = False,
-    trigger_info: str = ""
+    trigger_info: str = "",
+    level: Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None = "WARNING"
 ):
     """
     Universal logging function for all types of requests and activities.
     """
 ```
-
-This is a unified logging function that handles regular requests, suspicious activities, and passive mode logging.
 
 Parameters:
 - `request`: The FastAPI request object
@@ -46,6 +45,9 @@ Parameters:
 - `reason`: Reason for flagging an activity
 - `passive_mode`: Whether to enable passive mode logging format
 - `trigger_info`: Details about what triggered detection
+- `level`: The logging level to use. If `None`, logging is disabled. Defaults to "WARNING".
+
+This is a unified logging function that handles regular requests, suspicious activities, and passive mode logging.
 
 ## Security Check Functions
 
