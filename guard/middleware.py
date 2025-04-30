@@ -107,7 +107,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # Log request
-        await log_activity(request, self.logger)
+        await log_activity(request, self.logger, level=self.config.log_request_level)
 
         # Refresh cloud IP ranges
         if (
@@ -123,6 +123,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 self.logger,
                 log_type="suspicious",
                 reason=f"Banned IP attempted access: {client_ip}",
+                level=self.config.log_suspicious_level,
             )
             return await self.create_error_response(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -136,6 +137,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 self.logger,
                 log_type="suspicious",
                 reason=f"IP not allowed: {client_ip}",
+                level=self.config.log_suspicious_level,
             )
             return await self.create_error_response(
                 status_code=status.HTTP_403_FORBIDDEN, default_message="Forbidden"
@@ -150,6 +152,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 self.logger,
                 log_type="suspicious",
                 reason=f"Blocked cloud provider IP: {client_ip}",
+                level=self.config.log_suspicious_level,
             )
             return await self.create_error_response(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -164,6 +167,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 self.logger,
                 log_type="suspicious",
                 reason=f"Blocked user agent: {user_agent}",
+                level=self.config.log_suspicious_level,
             )
             return await self.create_error_response(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -202,6 +206,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                             self.logger,
                             log_type="suspicious",
                             reason=f"IP banned due to suspicious activity: {sus_specs}",
+                            level=self.config.log_suspicious_level,
                         )
                         return await self.create_error_response(
                             status_code=status.HTTP_403_FORBIDDEN,
@@ -213,6 +218,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                         self.logger,
                         log_type="suspicious",
                         reason=f"Suspicious activity detected for IP: {sus_specs}",
+                        level=self.config.log_suspicious_level,
                     )
                     return await self.create_error_response(
                         status_code=status.HTTP_400_BAD_REQUEST,
@@ -227,6 +233,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                         reason=f"Suspicious activity detected: {client_ip}",
                         passive_mode=True,
                         trigger_info=trigger_info,
+                        level=self.config.log_suspicious_level,
                     )
 
         # Custom request

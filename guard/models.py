@@ -1,7 +1,7 @@
 from collections.abc import Awaitable, Callable
 from ipaddress import IPv4Address, ip_network
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import Request, Response
 from pydantic import BaseModel, Field, field_validator
@@ -321,6 +321,22 @@ class SecurityConfig(BaseModel):
     """
     bool:
         Whether to enable penetration attempt detection.
+    """
+
+    log_suspicious_level: (
+        Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None
+    ) = Field(default="WARNING", description="Log level for suspicious requests")
+    """
+    Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None:
+        The logging level to use. If None, logging is disabled. Defaults to "WARNING".
+    """
+
+    log_request_level: (
+        Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None
+    ) = Field(default=None, description="Log level for requests")
+    """
+    Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None:
+        The logging level to use. If None, logging is disabled. Defaults to None.
     """
 
     @field_validator("whitelist", "blacklist")

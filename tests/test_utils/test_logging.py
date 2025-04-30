@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any
+from typing import Any, Literal
 
 import pytest
 from fastapi import Request
@@ -92,7 +92,7 @@ async def test_custom_logging(
 
 
 @pytest.mark.asyncio
-async def test_log_request(caplog: Any) -> None:
+async def test_log_request(caplog: pytest.LogCaptureFixture) -> None:
     """
     Test the log_request function to ensure
     it logs the request details correctly.
@@ -124,7 +124,7 @@ async def test_log_request(caplog: Any) -> None:
 
 
 @pytest.mark.asyncio
-async def test_log_suspicious_activity(caplog: Any) -> None:
+async def test_log_suspicious_activity(caplog: pytest.LogCaptureFixture) -> None:
     """
     Test the log_activity function with suspicious activity.
     """
@@ -161,7 +161,9 @@ async def test_log_suspicious_activity(caplog: Any) -> None:
 
 
 @pytest.mark.asyncio
-async def test_log_suspicious_activity_passive_mode(caplog: Any) -> None:
+async def test_log_suspicious_activity_passive_mode(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """
     Test the log_activity function with suspicious activity in passive mode.
     """
@@ -201,7 +203,7 @@ async def test_log_suspicious_activity_passive_mode(caplog: Any) -> None:
 
 
 @pytest.mark.asyncio
-async def test_log_custom_type(caplog: Any) -> None:
+async def test_log_custom_type(caplog: pytest.LogCaptureFixture) -> None:
     """
     Test the log_activity function with a custom log type.
     """
@@ -248,3 +250,48 @@ async def test_setup_custom_logging() -> None:
         if isinstance(h, logging.FileHandler | logging.StreamHandler)
     )
     assert handler_count >= 2
+
+
+@pytest.mark.asyncio
+async def test_log_level(caplog: pytest.LogCaptureFixture) -> None:
+    async def receive() -> dict[str, bytes | str]:
+        return {"type": "http.request", "body": b"test_body"}
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [(b"user-agent", b"test-agent")],
+            "query_string": b"",
+            "client": ("127.0.0.1", 12345),
+        },
+        receive=receive,
+    )
+    body = await request.body()
+    assert body == b"test_body"
+
+    logger = logging.getLogger(__name__)
+
+    LOG_LEVELS: list[
+        Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None
+    ] = [
+        "INFO",
+        "DEBUG",
+        "WARNING",
+        "ERROR",
+        "CRITICAL",
+        None,
+    ]
+
+    for level in LOG_LEVELS:
+        caplog.clear()
+
+        with caplog.at_level(logging.DEBUG):
+            await log_activity(request, logger, level=level)
+
+        if level is not None:
+            assert len(caplog.records) == 1
+            assert caplog.records[0].levelname == level
+        else:
+            assert len(caplog.records) == 0
