@@ -42,7 +42,7 @@ class SecurityConfig(BaseModel):
         description="Path to the IPInfo database file",
     )
     """
-    Optional[Path]:
+    Path | None:
         The path to the IPInfo database file.
     """
 
@@ -60,7 +60,7 @@ class SecurityConfig(BaseModel):
         description="Redis URL for distributed state management",
     )
     """
-    Optional[str]:
+    str | None:
         The URL of the Redis server.
     """
 
@@ -77,7 +77,7 @@ class SecurityConfig(BaseModel):
         default=None, description="Allowed IP addresses or CIDR ranges"
     )
     """
-    Optional[List[str]]:
+    list[str] | None:
         A list of IP addresses or
         ranges that are always allowed.
         If set to None, no whitelist is applied.
@@ -87,7 +87,7 @@ class SecurityConfig(BaseModel):
         default=[], description="Blocked IP addresses or CIDR ranges"
     )
     """
-    List[str]:
+    list[str]:
         A list of IP addresses or
         ranges that are always blocked.
     """
@@ -96,7 +96,7 @@ class SecurityConfig(BaseModel):
         default=[], description="A list of country codes that are always allowed"
     )
     """
-    List[str]:
+    list[str]:
         A list of country codes that are
         always allowed.
     """
@@ -105,7 +105,7 @@ class SecurityConfig(BaseModel):
         default=[], description="A list of country codes that are always blocked"
     )
     """
-    List[str]:
+    list[str]:
         A list of country codes that are always blocked.
     """
 
@@ -113,7 +113,7 @@ class SecurityConfig(BaseModel):
         default=[], description="Blocked user agents"
     )
     """
-    List[str]:
+    list[str]:
         A list of user agent strings or
         patterns that should be blocked.
     """
@@ -142,16 +142,32 @@ class SecurityConfig(BaseModel):
         description="The path to a custom log file for logging security events",
     )
     """
-    Optional[str]:
+    str | None:
         The path to a custom log file
         for logging security events.
+    """
+
+    log_suspicious_level: (
+        Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None
+    ) = Field(default="WARNING", description="Log level for suspicious requests")
+    """
+    Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None:
+        The logging level to use. If None, logging is disabled. Defaults to "WARNING".
+    """
+
+    log_request_level: (
+        Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None
+    ) = Field(default=None, description="Log level for requests")
+    """
+    Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None:
+        The logging level to use. If None, logging is disabled. Defaults to None.
     """
 
     custom_error_responses: dict[int, str] = Field(
         default={}, description="Custom error for specific HTTP status codes"
     )
     """
-    Dict[int, str]:
+    dict[int, str]:
         A dictionary of custom error
         responses for specific HTTP status codes.
     """
@@ -186,13 +202,10 @@ class SecurityConfig(BaseModel):
         Field(default=None, description="Perform additional checks on the request")
     )
     """
-    Optional[
-        Callable[[Request],
-        Awaitable[
-            Optional[
-                Response
-            ]
-    ]]]:
+    Callable[[Request],
+    Awaitable[
+        Response | None
+    ]] | None:
         A custom function to perform
         additional checks on the request.
         If it returns a Response, that response
@@ -204,10 +217,9 @@ class SecurityConfig(BaseModel):
         description="A custom function to modify the response before it's sent",
     )
     """
-    Optional[
-        Callable[[Response],
-        Awaitable[Response]
-    ]]:
+    Callable[[Response],
+    Awaitable[Response]
+    ] | None:
         A custom function to modify
         the response before it's sent.
     """
@@ -222,7 +234,7 @@ class SecurityConfig(BaseModel):
         default=["*"], description="Origins allowed in CORS requests"
     )
     """
-    List[str]:
+    list[str]:
         A list of origins that
         are allowed to access the API.
     """
@@ -232,7 +244,7 @@ class SecurityConfig(BaseModel):
         description="Methods allowed in CORS requests",
     )
     """
-    List[str]:
+    list[str]:
         A list of methods that
         are allowed to access the API.
     """
@@ -241,7 +253,7 @@ class SecurityConfig(BaseModel):
         default=["*"], description="Headers allowed in CORS requests"
     )
     """
-    List[str]:
+    list[str]:
         A list of headers that are
         allowed in CORS requests.
     """
@@ -259,7 +271,7 @@ class SecurityConfig(BaseModel):
         default=[], description="Headers exposed in CORS responses"
     )
     """
-    List[str]:
+    list[str]:
         A list of headers that
         are exposed in CORS responses.
     """
@@ -278,7 +290,7 @@ class SecurityConfig(BaseModel):
         default=None, description="Set of cloud provider names to block"
     )
     """
-    Optional[Set[str]]:
+    set[str] | None:
         A set of cloud provider names to block.
         Supported values: 'AWS', 'GCP', 'Azure'
     """
@@ -295,7 +307,7 @@ class SecurityConfig(BaseModel):
         description="Paths to exclude from security checks",
     )
     """
-    List[str]:
+    list[str]:
         A list of paths to exclude from security checks.
     """
 
@@ -321,22 +333,6 @@ class SecurityConfig(BaseModel):
     """
     bool:
         Whether to enable penetration attempt detection.
-    """
-
-    log_suspicious_level: (
-        Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None
-    ) = Field(default="WARNING", description="Log level for suspicious requests")
-    """
-    Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None:
-        The logging level to use. If None, logging is disabled. Defaults to "WARNING".
-    """
-
-    log_request_level: (
-        Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None
-    ) = Field(default=None, description="Log level for requests")
-    """
-    Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None:
-        The logging level to use. If None, logging is disabled. Defaults to None.
     """
 
     @field_validator("whitelist", "blacklist")

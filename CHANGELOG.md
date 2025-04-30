@@ -1,5 +1,15 @@
 # Release Notes
 
+## v1.4.0 (2025-04-29)
+### New Features
+- Added configurable logging levels for normal and suspicious requests
+- Enhanced log_activity function to support all logging levels
+- Added ability to completely disable request logging
+
+### Improvements
+- Improved performance by allowing complete disabling of normal request logging
+- Better log level control for different environments (dev/prod)
+
 ## v1.3.2 (2025-04-27)
 ### New Features
 - Created an interactive [FastAPI Guard Playground](https://playground.fastapi-guard.com)

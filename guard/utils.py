@@ -55,7 +55,7 @@ async def log_activity(
         trigger_info (str, optional):
             Additional information about what triggered the detection.
         level (Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"], optional):
-            The logging level to use. If None, logging is disabled.
+            The log level to use. If None, logging is disabled.
             Defaults to "WARNING".
     """
     if level is None:

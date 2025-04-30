@@ -18,16 +18,39 @@ config = SecurityConfig(
 )
 ```
 
-## Log Levels
+## Configurable Log Levels
 
-Configure different log levels:
+FastAPI Guard supports different log levels for normal and suspicious requests:
 
 ```python
-import logging
-
 config = SecurityConfig(
-    custom_log_file="security.log",
-    log_level=logging.WARNING
+    # Log normal requests as INFO (or set to None to disable)
+    log_request_level="INFO",
+
+    # Log suspicious activity as WARNING
+    log_suspicious_level="WARNING"
+)
+```
+
+Available log levels:
+- `"INFO"`: Informational messages
+- `"DEBUG"`: Detailed debug information
+- `"WARNING"`: Warning messages (default for suspicious activity)
+- `"ERROR"`: Error conditions
+- `"CRITICAL"`: Critical errors
+- `None`: Disable logging completely
+
+### Performance Optimization
+
+For high-traffic production environments, consider disabling normal request logging:
+
+```python
+config = SecurityConfig(
+    # Disable normal request logging (default)
+    log_request_level=None,
+
+    # Keep security event logging enabled
+    log_suspicious_level="WARNING"
 )
 ```
 
@@ -67,6 +90,14 @@ await log_activity(
     passive_mode=True,
     trigger_info="Detected pattern: ' OR 1=1 --"
 )
+
+# Log with specific level
+await log_activity(
+    request,
+    logger,
+    level="ERROR",
+    reason="Authentication failure"
+)
 ```
 
 ## Logging Parameters
@@ -79,6 +110,7 @@ The `log_activity` function accepts the following parameters:
 - `reason`: Reason for flagging an activity
 - `passive_mode`: Whether to format log as passive mode detection
 - `trigger_info`: Details about what triggered detection
+- `level`: The logging level to use. If `None`, logging is disabled. Defaults to "WARNING".
 
 ## Log Format
 
