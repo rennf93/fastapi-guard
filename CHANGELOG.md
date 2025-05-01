@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.5.0 (2025-05-01)
+### Improvements
+- IpInfo token is now only required when using country filtering or cloud blocking
+- Performance: Selective loading of IP geolocation database and cloud IP ranges
+- Only download/process IP geolocation data when country filtering is configured
+- Only fetch cloud provider IP ranges when cloud blocking is enabled
+- Reduced startup time and memory usage when not using all security features
+
 ## v1.4.0 (2025-04-30)
 ### New Features
 - Added configurable logging levels for normal and suspicious requests

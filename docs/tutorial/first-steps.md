@@ -26,7 +26,7 @@ Create a `SecurityConfig` instance with your desired settings:
 
 ```python
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",  # Required for geolocation
+    ipinfo_token="your_ipinfo_token_here",  # NOTE:Required for geolocation
     db_path="data/ipinfo/country_asn.mmdb",  # Optional, default: ./data/ipinfo/country_asn.mmdb
     enable_redis=True,  # Enable Redis integration
     redis_url="redis://localhost:6379",  # Redis URL
@@ -35,6 +35,8 @@ config = SecurityConfig(
     custom_log_file="security.log"  # Custom log file
 )
 ```
+
+Note: FastAPI Guard only loads resources as needed. The IPInfo database is only downloaded when country filtering and/or cloud blocking is configured, and cloud IP ranges are only fetched when cloud provider blocking is enabled.
 
 ## Add the Middleware
 

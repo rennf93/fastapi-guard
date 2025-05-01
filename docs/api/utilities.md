@@ -89,6 +89,15 @@ async def is_ip_allowed(
     """
 ```
 
+The `ipinfo_db` parameter is now properly optional - it's only needed when country filtering and/or cloud blocking is configured. If it's not provided when country filtering and/or cloud blocking is configured, the function will work correctly but won't apply country filtering rules and/or cloud blocking rules.
+
+This function intelligently handles:
+- Whitelist/blacklist checking
+- Country filtering (only when IPInfoManager is provided)
+- Cloud provider detection (only when cloud blocking is configured)
+
+This selective processing aligns with FastAPI Guard's smart resource loading to optimize performance.
+
 ### detect_penetration_attempt
 
 ```python

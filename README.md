@@ -57,7 +57,7 @@
 
 ## Prerequisites
 
-Before using `fastapi-guard`, you'll need to obtain an IPInfo token:
+Before using `fastapi-guard`'s country filtering features, you'll need to obtain an IPInfo token:
 
 1. Visit [IPInfo's website](https://ipinfo.io/signup) to create a free account
 2. After signing up, you'll receive an API token
@@ -66,6 +66,8 @@ Before using `fastapi-guard`, you'll need to obtain an IPInfo token:
    - Access to IP to Country database
    - Daily database updates
    - IPv4 & IPv6 support
+
+Note: IPInfo token is only required if you use country filtering and/or cloud blocking features (`blocked_countries`, `whitelist_countries` and/or `block_cloud_providers`).
 
 ## Features
 

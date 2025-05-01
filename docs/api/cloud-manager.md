@@ -27,7 +27,7 @@ class CloudManager:
             }
             cls._instance.redis_handler = None
             cls._instance.logger = logging.getLogger(__name__)
-            cls._instance._initial_refresh()
+            # IP ranges are loaded on-demand, not at initialization
         return cls._instance
 ```
 

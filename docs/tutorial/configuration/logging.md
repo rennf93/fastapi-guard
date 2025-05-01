@@ -26,7 +26,6 @@ FastAPI Guard supports different log levels for normal and suspicious requests:
 config = SecurityConfig(
     # Log normal requests as INFO (or set to None to disable)
     log_request_level="INFO",
-
     # Log suspicious activity as WARNING
     log_suspicious_level="WARNING"
 )
@@ -48,7 +47,6 @@ For high-traffic production environments, consider disabling normal request logg
 config = SecurityConfig(
     # Disable normal request logging (default)
     log_request_level=None,
-
     # Keep security event logging enabled
     log_suspicious_level="WARNING"
 )

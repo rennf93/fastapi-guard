@@ -17,7 +17,7 @@ pip install fastapi-guard
 
 ## Prerequisites
 
-Before using `fastapi-guard`, obtain an IPInfo token:
+Before using `fastapi-guard`'s country filtering and/or cloud blocking features, obtain an IPInfo token:
 
 1. Visit [IPInfo's website](https://ipinfo.io/signup) to create a free account.
 2. After signing up, you'll receive an API token.
@@ -26,6 +26,8 @@ Before using `fastapi-guard`, obtain an IPInfo token:
    - Access to IP to Country database.
    - Daily database updates.
    - IPv4 & IPv6 support.
+
+Note: The IPInfo token is only required when using the country filtering and/or cloud blocking features (`blocked_countries`, `whitelist_countries` and/or `block_cloud_providers`).
 
 **Usage Example**:
 
@@ -36,7 +38,7 @@ from guard.models import SecurityConfig
 
 app = FastAPI()
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",
+    ipinfo_token="your_ipinfo_token_here",  # NOTE: Required when using country/cloud blocking
     enable_redis=True,  # Enabled by default, disable to use in-memory storage
     redis_url="redis://localhost:6379/0",
     redis_prefix="prod:security:",
