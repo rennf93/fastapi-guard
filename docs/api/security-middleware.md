@@ -53,8 +53,10 @@ async def create_error_response(
 The middleware works with singleton handler instances:
 
 - All handler classes (IPBanManager, CloudManager, etc.) use the singleton pattern
-- The middleware initializes these existing instances
-- Handlers persist their state throughout the application lifecycle
+- The middleware initializes these existing instances conditionally based on configuration
+- IPInfo is only initialized when country filtering and/or cloud blocking is enabled
+- Cloud IP ranges are only loaded when cloud provider blocking is configured
+- This selective loading improves performance when not all features are used
 
 ## Redis Configuration
 Enable Redis in SecurityConfig:
@@ -85,7 +87,7 @@ from guard.models import SecurityConfig
 app = FastAPI()
 
 config = SecurityConfig(
-    ipinfo_token="your_token",
+    ipinfo_token="your_token",  # NOTE: Required when using country/cloud blocking
     rate_limit=100
 )
 

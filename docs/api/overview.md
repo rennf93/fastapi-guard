@@ -74,3 +74,29 @@ class SecurityConfig:
     ):
         # ... initialization
 ```
+
+## Optimized Loading
+
+FastAPI Guard uses a smart loading strategy to improve performance:
+
+- **IPInfoManager**: Only downloaded and initialized when country filtering and/or cloud blocking is configured
+- **CloudManager**: Only fetches cloud provider IP ranges when cloud blocking is enabled
+- **Handlers Initialization**: Middleware conditionally initializes components based on configuration
+
+This approach reduces startup time and memory usage when not all security features are needed.
+
+```python
+# Conditional loading example from middleware
+async def initialize(self) -> None:
+    if self.config.enable_redis and self.redis_handler:
+        await self.redis_handler.initialize()
+        # Only initialize when needed
+        if self.config.block_cloud_providers:
+            await cloud_handler.initialize_redis(
+                self.redis_handler, self.config.block_cloud_providers
+            )
+        await ip_ban_manager.initialize_redis(self.redis_handler)
+        # Only initialize if country filtering and/or cloud blocking is enabled
+        if self.ipinfo_db is not None:
+            await self.ipinfo_db.initialize_redis(self.redis_handler)
+```

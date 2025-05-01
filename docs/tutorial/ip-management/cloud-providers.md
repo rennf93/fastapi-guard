@@ -6,7 +6,7 @@ keywords: cloud ip blocking, aws blocking, gcp blocking, azure blocking, cloud s
 
 # Cloud Provider IP Blocking
 
-FastAPI Guard can automatically detect and block requests from major cloud providers.
+FastAPI Guard can automatically detect and block requests from major cloud providers. The IP ranges for these providers are only loaded when cloud blocking is enabled, improving startup performance.
 
 ## Supported Providers
 
@@ -21,6 +21,7 @@ Enable cloud provider IP blocking:
 
 ```python
 config = SecurityConfig(
+    ipinfo_token="your_ipinfo_token_here",  # NOTE: Required when using cloud blocking
     block_cloud_providers={"AWS", "GCP", "Azure"}
 )
 ```
@@ -31,6 +32,7 @@ Block specific providers:
 
 ```python
 config = SecurityConfig(
+    ipinfo_token="your_ipinfo_token_here",  # NOTE: Required when using cloud blocking
     block_cloud_providers={"AWS"}  # Only block AWS IPs
 )
 ```

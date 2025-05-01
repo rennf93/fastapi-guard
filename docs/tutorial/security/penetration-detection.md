@@ -90,7 +90,6 @@ app = FastAPI()
 
 # Create a configuration with passive mode enabled
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token",
     enable_penetration_detection=True,  # True by default
     passive_mode=True,  # Enable passive mode
 )

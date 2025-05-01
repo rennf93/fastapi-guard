@@ -6,7 +6,7 @@ keywords: ip geolocation, country blocking, ipinfo integration, location filteri
 
 # IP Geolocation
 
-FastAPI Guard uses IPInfo's database for IP geolocation and country-based filtering.
+FastAPI Guard uses IPInfo's database for IP geolocation and country-based filtering. The database is only downloaded and loaded when country filtering and/or cloud blocking features are configured, improving performance for applications that don't need these features.
 
 ## Setup
 
@@ -15,7 +15,7 @@ FastAPI Guard uses IPInfo's database for IP geolocation and country-based filter
 
 ```python
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",
+    ipinfo_token="your_ipinfo_token_here",  # NOTE: Required when using country filtering
     blocked_countries=["CN", "RU"],  # Block specific countries
     whitelist_countries=["US", "CA"],
     db_path="custom/ipinfo.db",  # Optional custom database path
@@ -29,7 +29,7 @@ Block requests from specific countries using ISO 3166-1 alpha-2 country codes:
 
 ```python
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",
+    ipinfo_token="your_ipinfo_token_here",  # NOTE: Required when using country filtering
     blocked_countries=[
         "CN",  # China
         "RU",  # Russia
@@ -45,7 +45,7 @@ Only allow requests from specific countries:
 
 ```python
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",
+    ipinfo_token="your_ipinfo_token_here",  # NOTE: Required when using country filtering
     whitelist_countries=[
         "US",  # United States
         "CA",  # Canada
@@ -62,7 +62,7 @@ You can also use the `IPInfoManager` directly for custom geolocation logic:
 ```python
 from guard.handlers.ipinfo_handler import IPInfoManager
 
-ipinfo_db = IPInfoManager(token="your_ipinfo_token_here")
+ipinfo_db = IPInfoManager(token="your_ipinfo_token_here")  # NOTE: Required when using custom geolocation
 await ipinfo_db.initialize()
 
 @app.get("/country/{ip}")

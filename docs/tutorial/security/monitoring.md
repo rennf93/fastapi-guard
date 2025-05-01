@@ -8,7 +8,6 @@ By default, FastAPI Guard logs all security events to standard Python logging fa
 
 ```python
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",
     custom_log_file="/path/to/security.log"
 )
 ```
@@ -19,7 +18,6 @@ When deploying in production environments, it's often best to start with passive
 
 ```python
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",
     enable_penetration_detection=True,
     passive_mode=True  # Log but don't block
 )
@@ -33,11 +31,8 @@ FastAPI Guard allows you to configure different log levels for normal and suspic
 
 ```python
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",
-
     # Normal requests logged at INFO level (or None to disable)
     log_request_level="INFO",
-
     # Security events logged at WARNING level
     log_suspicious_level="WARNING"
 )

@@ -60,7 +60,7 @@ You can also download the example app as a Docker container from [GitHub Contain
 docker pull ghcr.io/rennf93/fastapi-guard-example:latest
 
 # Or pull a specific version (matches library releases)
-docker pull ghcr.io/rennf93/fastapi-guard-example:v1.4.0
+docker pull ghcr.io/rennf93/fastapi-guard-example:v1.5.0
 ```
 
 ### Running the Example App
@@ -109,8 +109,9 @@ The example app includes endpoints to test various security features of FastAPI 
 - **CORS Configuration**: Configure CORS settings for your FastAPI application.
 - **Cloud Provider IP Blocking**: Block requests from cloud provider IPs (AWS, GCP, Azure).
 - **IP Geolocation**: Use IPInfo.io API to determine the country of an IP address.
-- **Flexible Storage**: Choose between Redis-backed distributed state or in-memory storage
-- **Automatic Fallback**: Seamless operation with/without Redis connection
+- **Optimized Performance**: Selective loading of external resources based on configuration.
+- **Flexible Storage**: Choose between Redis-backed distributed state or in-memory storage.
+- **Automatic Fallback**: Seamless operation with/without Redis connection.
 
 ## Documentation
 
