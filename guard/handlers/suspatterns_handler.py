@@ -88,8 +88,8 @@ class SusPatternsManager:
         r"(?:<\?xml.*?\?>)",  # XML declarations
         # SSRF - Enhanced patterns
         # Local addresses
-        r"(?:localhost|127\.0\.0\.1|0\.0\.0\.0|[::]|(?:169\.254|192\.168|10\.|"
-        r"172\.(?:1[6-9]|2[0-9]|3[01]))\.)",
+        r"(?:^|\s|/)(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::(?:\d*)\]|(?:169\.254|192\.168|10\.|"
+        r"172\.(?:1[6-9]|2[0-9]|3[01]))\.\d+)(?:\s|$|/)",
         r"(?:file|dict|gopher|jar|tftp)://[^\s]+",  # Dangerous protocols
         # NoSQL Injection - Enhanced patterns
         # MongoDB
