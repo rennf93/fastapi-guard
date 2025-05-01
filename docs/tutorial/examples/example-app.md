@@ -140,12 +140,12 @@ For production deployments where you want to assess potential false positives be
 
 ```python
 from fastapi import FastAPI
-from guard import SecurityMiddleware, SecurityConfig
+from guard import SecurityMiddleware, SecurityConfig, IPInfoManager
 
 app = FastAPI(title="My API with Security")
 
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",
+    geographical_ip_handler=IPInfoManager("your_ipinfo_token_here"),
 
     # Rate limiting
     rate_limit=100,  # Allow 100 requests

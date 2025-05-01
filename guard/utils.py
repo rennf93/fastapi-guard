@@ -7,9 +7,8 @@ from typing import Literal
 from fastapi import Request
 
 from guard.handlers.cloud_handler import cloud_handler
-from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.handlers.suspatterns_handler import sus_patterns_handler
-from guard.models import SecurityConfig
+from guard.models import GeographicalIPHandler, SecurityConfig
 
 
 async def setup_custom_logging(log_file: str) -> logging.Logger:
@@ -127,7 +126,9 @@ async def is_user_agent_allowed(user_agent: str, config: SecurityConfig) -> bool
 
 
 async def check_ip_country(
-    request: str | Request, config: SecurityConfig, ipinfo_db: IPInfoManager
+    request: str | Request,
+    config: SecurityConfig,
+    geographical_ip_handler: GeographicalIPHandler,
 ) -> bool:
     """
     Check if IP is from a blocked country
@@ -138,7 +139,7 @@ async def check_ip_country(
             The FastAPI request object or IP string.
         config (SecurityConfig):
             The security configuration object.
-        ipinfo_db (IPInfoManager):
+        geographical_ip_handler (GeographicalIPHandler):
             The IPInfo database handler.
 
     Returns:
@@ -159,15 +160,15 @@ async def check_ip_country(
         logging.warning(f"{message} {details} - {reason_message}")
         return False
 
-    if not ipinfo_db.reader:
-        await ipinfo_db.initialize()
+    if not geographical_ip_handler.is_initialized:
+        await geographical_ip_handler.initialize()
 
     ip = (
         request
         if isinstance(request, str)
         else (request.client.host if request.client else "unknown")
     )
-    country = ipinfo_db.get_country(ip)
+    country = geographical_ip_handler.get_country(ip)
 
     if not country:
         message = "IP not geolocated"
@@ -198,7 +199,9 @@ async def check_ip_country(
 
 
 async def is_ip_allowed(
-    ip: str, config: SecurityConfig, ipinfo_db: IPInfoManager | None = None
+    ip: str,
+    config: SecurityConfig,
+    geographical_ip_handler: GeographicalIPHandler | None = None,
 ) -> bool:
     """
     Check if the IP address is allowed
@@ -209,7 +212,7 @@ async def is_ip_allowed(
             The IP address to check.
         config (SecurityConfig):
             The security configuration object.
-        ipinfo_db (Optional[IPInfoManager]):
+        geographical_ip_handler (Optional[GeographicalIPHandler]):
             The IPInfo database handler.
 
     Returns:
@@ -239,8 +242,8 @@ async def is_ip_allowed(
             return False  # If whitelist exists but IP not in it
 
         # Blocked countries
-        if config.blocked_countries and ipinfo_db:
-            country = await check_ip_country(ip, config, ipinfo_db)
+        if config.blocked_countries and geographical_ip_handler:
+            country = await check_ip_country(ip, config, geographical_ip_handler)
             if country:
                 return False
 

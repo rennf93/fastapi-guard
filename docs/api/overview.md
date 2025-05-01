@@ -59,7 +59,7 @@ The `SecurityConfig` class is the central configuration point:
 class SecurityConfig:
     def __init__(
         self,
-        ipinfo_token: str,
+        geographical_ip_handler: GeographicalIPHandler | None = None,
         whitelist: Optional[List[str]] = None,
         blacklist: List[str] = [],
         blocked_countries: List[str] = [],
@@ -79,7 +79,7 @@ class SecurityConfig:
 
 FastAPI Guard uses a smart loading strategy to improve performance:
 
-- **IPInfoManager**: Only downloaded and initialized when country filtering and/or cloud blocking is configured
+- **IPInfoManager**: Only downloaded and initialized when country filtering is configured
 - **CloudManager**: Only fetches cloud provider IP ranges when cloud blocking is enabled
 - **Handlers Initialization**: Middleware conditionally initializes components based on configuration
 
@@ -97,6 +97,6 @@ async def initialize(self) -> None:
             )
         await ip_ban_manager.initialize_redis(self.redis_handler)
         # Only initialize if country filtering and/or cloud blocking is enabled
-        if self.ipinfo_db is not None:
-            await self.ipinfo_db.initialize_redis(self.redis_handler)
+        if self.geographical_ip_handler is not None:
+            await self.geographical_ip_handler.initialize_redis(self.redis_handler)
 ```

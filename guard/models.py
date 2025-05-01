@@ -1,11 +1,30 @@
 from collections.abc import Awaitable, Callable
 from ipaddress import IPv4Address, ip_network
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, Protocol, runtime_checkable
 
 from fastapi import Request, Response
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing_extensions import Self
+
+if TYPE_CHECKING:
+    from guard.handlers.redis_handler import RedisManager  # pragma: no cover
+
+
+@runtime_checkable
+class GeographicalIPHandler(Protocol):
+    """
+    Protocol for geographical IP handler.
+    """
+
+    @property
+    def is_initialized(self) -> bool: ...
+
+    async def initialize(self) -> None: ...
+
+    async def initialize_redis(self, redis_handler: "RedisManager") -> None: ...
+
+    def get_country(self, ip: str) -> str | None: ...
 
 
 class SecurityConfig(BaseModel):
@@ -23,6 +42,8 @@ class SecurityConfig(BaseModel):
     Country codes should be specified in ISO 3166-1 alpha-2 format.
     """
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     passive_mode: bool = Field(
         default=False,
         description="Enable Log-Only mode. Won't block requests, only log.",
@@ -32,23 +53,18 @@ class SecurityConfig(BaseModel):
         Enable Log-Only mode. Won't block requests, only log.
     """
 
-    ipinfo_token: str | None = Field(
-        default=None, description="IPInfo API token for IP geolocation"
+    geographical_ip_handler: GeographicalIPHandler | None = Field(
+        default=None,
+        description="Geographical IP handler to use for IP geolocation",
     )
     """
-    Optional[str]:
-        The IPInfo API token for IP geolocation.
+    GeographicalIPHandler | None:
+        The geographical IP handler to use for IP geolocation.
         Must be provided if blocked_countries or whitelist_countries is set.
-        Defaults to None.
-    """
+        Must implement the GeographicalIPHandler protocol.
 
-    ipinfo_db_path: Path | None = Field(
-        default=Path("data/ipinfo/country_asn.mmdb"),
-        description="Path to the IPInfo database file",
-    )
-    """
-    Path | None:
-        The path to the IPInfo database file.
+        This library provides a manager that uses the ipinfo API:
+        `from guard import IPInfoManager`
     """
 
     enable_redis: bool = Field(
@@ -340,6 +356,32 @@ class SecurityConfig(BaseModel):
         Whether to enable penetration attempt detection.
     """
 
+    ipinfo_token: str | None = Field(
+        default=None,
+        description="IPInfo API token for IP geolocation. Deprecated. "
+        "Use `geographical_ip_handler` instead.",
+        deprecated=True,
+    )
+    """
+    Optional[str]:
+        Deprecated. Use `geographical_ip_handler` instead.
+        The IPInfo API token for IP geolocation.
+        Must be provided if blocked_countries or whitelist_countries is set.
+        Defaults to None.
+    """
+
+    ipinfo_db_path: Path | None = Field(
+        default=Path("data/ipinfo/country_asn.mmdb"),
+        description="Path to the IPInfo database file. Deprecated. "
+        "Use `geographical_ip_handler` instead.",
+        deprecated=True,
+    )
+    """
+    Path | None:
+        Deprecated. Use `geographical_ip_handler` instead.
+        The path to the IPInfo database file.
+    """
+
     @field_validator("whitelist", "blacklist")
     def validate_ip_lists(cls, v: list[str] | None) -> list[str] | None:
         """Validate IP addresses and CIDR ranges in whitelist/blacklist."""
@@ -367,12 +409,21 @@ class SecurityConfig(BaseModel):
         return {p for p in v if p in valid_providers}
 
     @model_validator(mode="after")
-    def validate_ipinfo_token(self) -> Self:
-        if self.ipinfo_token is None and (
+    def validate_geographical_ip_handler_exists(self) -> Self:
+        if self.geographical_ip_handler is None and (
             self.blocked_countries or self.whitelist_countries
         ):
-            raise ValueError(
-                "ipinfo_token is required "
-                "if blocked_countries or whitelist_countries is set"
-            )
+            # Backwards compatibility with old config
+            if self.ipinfo_token:
+                from guard.handlers.ipinfo_handler import IPInfoManager
+
+                self.geographical_ip_handler = IPInfoManager(
+                    token=self.ipinfo_token,
+                    db_path=self.ipinfo_db_path,
+                )
+            else:
+                raise ValueError(
+                    "geographical_ip_handler is required "
+                    "if blocked_countries or whitelist_countries is set"
+                )
         return self

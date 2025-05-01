@@ -1,5 +1,8 @@
+from typing import Any
+
 import pytest
 
+from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.models import SecurityConfig
 
 
@@ -39,14 +42,50 @@ def test_none_cloud_providers() -> None:
 
 
 def test_missing_ipinfo_token() -> None:
-    """Test that missing ipinfo_token raises a ValueError"""
+    """Test that missing ipinfo_token and geographical_ip_handler raises a ValueError"""
     with pytest.raises(ValueError):
-        SecurityConfig(ipinfo_token=None, blocked_countries=["US"])
+        SecurityConfig(blocked_countries=["US"])
 
     with pytest.raises(ValueError):
-        SecurityConfig(ipinfo_token=None, whitelist_countries=["US"])
+        SecurityConfig(whitelist_countries=["US"])
 
     with pytest.raises(ValueError):
-        SecurityConfig(
-            ipinfo_token=None, blocked_countries=["US"], whitelist_countries=["US"]
-        )
+        SecurityConfig(blocked_countries=["US"], whitelist_countries=["US"])
+
+
+def test_geographical_ip_handler_validation() -> None:
+    ipinfo = IPInfoManager(token="test")
+    config = SecurityConfig(geographical_ip_handler=ipinfo)
+    assert config.geographical_ip_handler == ipinfo
+
+    class ValidGeographicalIPHandler:
+        @property
+        def is_initialized(self) -> bool:
+            return True
+
+        async def initialize(self) -> None:
+            return
+
+        async def initialize_redis(self, redis_handler: Any) -> None:
+            return
+
+        def get_country(self, ip: str) -> str | None:
+            return None
+
+    valid_instance = ValidGeographicalIPHandler()
+    config = SecurityConfig(geographical_ip_handler=valid_instance)
+    assert config.geographical_ip_handler == valid_instance
+
+    config = SecurityConfig(geographical_ip_handler=None)
+    assert config.geographical_ip_handler is None
+
+    class InvalidGeographicalIPHandler:
+        pass
+
+    with pytest.raises(ValueError):
+        SecurityConfig(geographical_ip_handler=InvalidGeographicalIPHandler())  # type: ignore
+
+
+def test_geographical_ip_handler_deprecated_fallback() -> None:
+    config = SecurityConfig(ipinfo_token="test", whitelist_countries=["US"])
+    assert isinstance(config.geographical_ip_handler, IPInfoManager)

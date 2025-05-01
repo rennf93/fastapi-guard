@@ -16,6 +16,7 @@ First, create a new FastAPI application:
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
+from guard.handlers.ipinfo_handler import IPInfoManager
 
 app = FastAPI()
 ```
@@ -26,7 +27,7 @@ Create a `SecurityConfig` instance with your desired settings:
 
 ```python
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",  # NOTE:Required for geolocation
+    geographical_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required for geolocation
     db_path="data/ipinfo/country_asn.mmdb",  # Optional, default: ./data/ipinfo/country_asn.mmdb
     enable_redis=True,  # Enable Redis integration
     redis_url="redis://localhost:6379",  # Redis URL
@@ -54,11 +55,12 @@ Here's a complete example showing basic usage:
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
+from guard.handlers.ipinfo_handler import IPInfoManager
 
 app = FastAPI()
 
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",
+    geographical_ip_handler=IPInfoManager("your_ipinfo_token_here"),
     enable_redis=True,  # Redis enabled
     redis_url="redis://localhost:6379",
     whitelist=["192.168.1.1"],

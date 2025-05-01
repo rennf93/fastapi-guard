@@ -35,10 +35,11 @@ Note: The IPInfo token is only required when using the country filtering and/or 
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
+from guard.handlers.ipinfo_handler import IPInfoManager
 
 app = FastAPI()
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",  # NOTE: Required when using country/cloud blocking
+    geographical_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required when using country blocking
     enable_redis=True,  # Enabled by default, disable to use in-memory storage
     redis_url="redis://localhost:6379/0",
     redis_prefix="prod:security:",

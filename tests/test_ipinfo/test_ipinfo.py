@@ -298,3 +298,8 @@ async def test_get_country_result_without_country(tmp_path: Path) -> None:
 
     db.reader.get.return_value = None
     assert db.get_country("1.1.1.1") is None
+
+
+def test_ipinfo_not_initialized() -> None:
+    db = IPInfoManager(token="test")
+    assert db.is_initialized is False

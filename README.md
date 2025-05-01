@@ -57,7 +57,7 @@
 
 ## Prerequisites
 
-Before using `fastapi-guard`'s country filtering features, you'll need to obtain an IPInfo token:
+If you want to use `fastapi-guard`'s country filtering features with the handler provided by this library, you'll need to obtain an IPInfo token:
 
 1. Visit [IPInfo's website](https://ipinfo.io/signup) to create a free account
 2. After signing up, you'll receive an API token
@@ -67,7 +67,7 @@ Before using `fastapi-guard`'s country filtering features, you'll need to obtain
    - Daily database updates
    - IPv4 & IPv6 support
 
-Note: IPInfo token is only required if you use country filtering and/or cloud blocking features (`blocked_countries`, `whitelist_countries` and/or `block_cloud_providers`).
+Note: This is only required if you use country filtering (`blocked_countries`, `whitelist_countries`). You can also provide your own handler that uses any other service.
 
 ## Features
 
@@ -79,7 +79,7 @@ Note: IPInfo token is only required if you use country filtering and/or cloud bl
 - **Custom Logging**: Log security events to a custom file.
 - **CORS Configuration**: Configure CORS settings for your FastAPI application.
 - **Cloud Provider IP Blocking**: Block requests from cloud provider IPs (AWS, GCP, Azure).
-- **IP Geolocation**: Use IPInfo.io API to determine the country of an IP address.
+- **IP Geolocation**: Use a service like IPInfo.io API to determine the country of an IP address.
 - **Distributed State Management**: (Optional) Redis integration for shared security state across instances
 - **Flexible Storage**: Redis-enabled distributed storage or in-memory storage for single instance deployments
 
@@ -101,12 +101,13 @@ To use `fastapi-guard`, you need to configure the middleware in your FastAPI app
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
+from guard.handlers.ipinfo_handler import IPInfoManager
 
 app = FastAPI()
 
 # Define your security configuration
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",  # Required for IP geolocation
+    geographical_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # Required for IP geolocation
     db_path="custom/ipinfo.db",  # Optional custom database path
     whitelist=["192.168.1.1"],
     blacklist=["10.0.0.1"],
@@ -254,7 +255,7 @@ config = SecurityConfig(
 
 ### IP Geolocation and Country Blocking
 
-The library uses IPInfo's [IP to Country database](https://ipinfo.io/products/free-ip-database) which provides:
+The library implements a handler that uses IPInfo's [IP to Country database](https://ipinfo.io/products/free-ip-database), which provides:
 
 - Full accuracy IP to country mapping
 - Daily updates
@@ -262,18 +263,57 @@ The library uses IPInfo's [IP to Country database](https://ipinfo.io/products/fr
 - Country and continent information
 - ASN details
 
-To use the geolocation features:
+To use the geolocation feature with this handler:
 
 ```python
+from guard.handlers.ipinfo_handler import IPInfoManager
+
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",
-    db_path="custom/ipinfo.db",  # Optional custom database path
+    geographical_ip_handler=IPInfoManager(
+        "your_ipinfo_token_here",
+        db_path="custom/ipinfo.db",  # Optional custom database path)
+    ),
     blocked_countries=["AR", "IT"],  # Block specific countries using ISO 3166-1 alpha-2 codes
     whitelist_countries=["US", "CA"]  # Optional: Only allow specific countries
 )
 ```
 
-The database is automatically downloaded and cached locally when the middleware starts, and it's updated daily to ensure accuracy.
+The database is automatically downloaded and cached locally when the middleware starts, if required, and it's updated daily to ensure accuracy.
+
+You can also use a service other than IPInfo, as long as you implement the same protocol:
+
+```python
+# implement the required methods of guard.models.GeographicalIPHandler class
+
+class CustomGeographicalIPHandler:
+    """
+    Your custom class.
+    """
+
+    @property
+    def is_initialized(self) -> bool:
+        # your implementation
+        ...
+
+    async def initialize(self) -> None:
+        # your implementation
+        ...
+
+    async def initialize_redis(self, redis_handler: "RedisManager") -> None:
+        # your implementation
+        ...
+
+    def get_country(self, ip: str) -> str | None:
+        # your implementation
+        ...
+
+
+config = SecurityConfig(
+    geographical_ip_handler=CustomGeographicalIPHandler(),
+    blocked_countries=["AR", "IT"],  # Block specific countries using ISO 3166-1 alpha-2 codes
+    whitelist_countries=["US", "CA"]  # Optional: Only allow specific countries
+)
+```
 
 ## Advanced Usage
 
@@ -336,8 +376,7 @@ The `SecurityConfig` class defines the structure for security configuration, inc
 
 #### Attributes
 
-- `ipinfo_token`: str - The IPInfo API token required for IP geolocation functionality.
-- `db_path`: Optional[str] - Custom path for IPInfo database storage (default: ./data/ipinfo/country_asn.mmdb)
+- `geographical_ip_handler`: GeographicalIPHandler - Protocol that allows for IP geolocation functionality
 - `enable_redis`: bool - Enable Redis for distributed state (default: True). When disabled, uses in-memory storage
 - `redis_url`: Optional[str] - Redis connection URL (default: "redis://localhost:6379")
 - `redis_prefix`: str - Prefix for Redis keys (default: "fastapi_guard:")
@@ -361,6 +400,8 @@ The `SecurityConfig` class defines the structure for security configuration, inc
 - `cors_expose_headers`: List[str] - A list of headers that are exposed in CORS responses.
 - `cors_max_age`: int - The maximum age in seconds that the results of a preflight request can be cached.
 - `block_cloud_providers`: Optional[Set[str]] - Case-sensitive cloud provider names to block. Valid values: 'AWS', 'GCP', 'Azure'. Invalid entries are silently ignored.
+- `ipinfo_token`: str (DEPRECATED) - The IPInfo API token required for IP geolocation functionality.
+- `ipinfo_db_path`: Optional[str] (DEPRECATED) - Custom path for IPInfo database storage (default: ./data/ipinfo/country_asn.mmdb)
 
 ## Contributing
 

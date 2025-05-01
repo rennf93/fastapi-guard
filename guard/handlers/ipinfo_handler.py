@@ -37,6 +37,10 @@ class IPInfoManager:
             cls._instance.db_path = db_path
         return cls._instance
 
+    @property
+    def is_initialized(self) -> bool:
+        return self.reader is not None
+
     async def initialize(self) -> None:
         """Initialize the database"""
         os.makedirs(self.db_path.parent, exist_ok=True)
