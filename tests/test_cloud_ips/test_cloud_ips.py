@@ -1,4 +1,5 @@
 import ipaddress
+import itertools
 from collections.abc import Generator
 from unittest.mock import Mock, patch
 
@@ -72,7 +73,6 @@ def test_cloud_ip_ranges() -> None:
         patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
         patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp,
         patch("guard.handlers.cloud_handler.fetch_azure_ip_ranges") as mock_azure,
-        patch("guard.handlers.cloud_handler.cloud_handler._initial_refresh"),
     ):
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
         mock_gcp.return_value = {ipaddress.IPv4Network("172.16.0.0/12")}
@@ -93,7 +93,6 @@ async def test_cloud_ip_refresh() -> None:
         patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
         patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp,
         patch("guard.handlers.cloud_handler.fetch_azure_ip_ranges") as mock_azure,
-        patch("guard.handlers.cloud_handler.cloud_handler._initial_refresh"),
     ):
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
         mock_gcp.return_value = {ipaddress.IPv4Network("172.16.0.0/12")}
@@ -107,6 +106,41 @@ async def test_cloud_ip_refresh() -> None:
 
         assert not cloud_handler.is_cloud_ip("192.168.0.1", {"AWS"})
         assert cloud_handler.is_cloud_ip("192.168.1.1", {"AWS"})
+
+
+@pytest.mark.asyncio
+async def test_cloud_ip_refresh_subset() -> None:
+    with (
+        patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
+        patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp,
+        patch("guard.handlers.cloud_handler.fetch_azure_ip_ranges") as mock_azure,
+    ):
+        mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
+        mock_gcp.return_value = {ipaddress.IPv4Network("172.16.0.0/12")}
+        mock_azure.return_value = {ipaddress.IPv4Network("10.0.0.0/8")}
+
+        providers = ["AWS", "GCP", "Azure"]
+        for r in range(1, 4):  # Test combinations of 1-3 providers
+            for combo in itertools.combinations(providers, r):
+                provider_set = set(combo)
+                cloud_handler.ip_ranges = {}
+                cloud_handler._refresh_sync(provider_set)
+
+                # Verify each provider in the combination works
+                if "AWS" in provider_set:
+                    assert cloud_handler.is_cloud_ip("192.168.0.1")
+                if "GCP" in provider_set:
+                    assert cloud_handler.is_cloud_ip("172.16.0.1")
+                if "Azure" in provider_set:
+                    assert cloud_handler.is_cloud_ip("10.0.0.1")
+
+                # Verify providers not in combination don't match
+                if "AWS" not in provider_set:
+                    assert not cloud_handler.is_cloud_ip("192.168.0.1")
+                if "GCP" not in provider_set:
+                    assert not cloud_handler.is_cloud_ip("172.16.0.1")
+                if "Azure" not in provider_set:
+                    assert not cloud_handler.is_cloud_ip("10.0.0.1")
 
 
 def test_cloud_ip_ranges_error_handling() -> None:
@@ -152,7 +186,6 @@ def test_cloud_manager_refresh_handling() -> None:
         patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
         patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp,
         patch("guard.handlers.cloud_handler.fetch_azure_ip_ranges") as mock_azure,
-        patch("guard.handlers.cloud_handler.cloud_handler._initial_refresh"),
     ):
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
         mock_gcp.return_value = {ipaddress.IPv4Network("172.16.0.0/12")}
@@ -192,7 +225,11 @@ def test_fetch_azure_ip_ranges_download_failure(mock_requests_get: Mock) -> None
 @pytest.mark.asyncio
 async def test_cloud_ip_redis_caching(security_config_redis: SecurityConfig) -> None:
     """Test CloudManager with Redis caching"""
-    with patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws:
+    with (
+        patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
+        patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges"),
+        patch("guard.handlers.cloud_handler.fetch_azure_ip_ranges"),
+    ):
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
 
         # Create manager and initialize Redis
@@ -254,7 +291,6 @@ async def test_cloud_ip_redis_sync_async(security_config_redis: SecurityConfig) 
         patch("guard.handlers.cloud_handler.fetch_aws_ip_ranges") as mock_aws,
         patch("guard.handlers.cloud_handler.fetch_gcp_ip_ranges") as mock_gcp,
         patch("guard.handlers.cloud_handler.fetch_azure_ip_ranges") as mock_azure,
-        patch("guard.handlers.cloud_handler.cloud_handler._initial_refresh"),
     ):
         mock_aws.return_value = {ipaddress.IPv4Network("192.168.0.0/24")}
         mock_gcp.return_value = {ipaddress.IPv4Network("172.16.0.0/12")}
@@ -297,7 +333,7 @@ async def test_cloud_ip_redis_error_handling(
 
         # Test provider not in ip_ranges during error
         cloud_handler.ip_ranges.pop("AWS", None)
-        await cloud_handler.refresh_async()
+        await cloud_handler.refresh_async({"AWS"})
 
         assert isinstance(cloud_handler.ip_ranges["AWS"], set)
         assert len(cloud_handler.ip_ranges["AWS"]) == 0

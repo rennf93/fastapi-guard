@@ -75,6 +75,9 @@ def fetch_azure_ip_ranges() -> set[ipaddress.IPv4Network]:
         return set()
 
 
+_ALL_PROVIDERS = set({"AWS", "GCP", "Azure"})
+
+
 class CloudManager:
     """Manages cloud provider IP ranges with optional Redis caching."""
 
@@ -93,48 +96,44 @@ class CloudManager:
             }
             cls._instance.redis_handler = None
             cls._instance.logger = logging.getLogger(__name__)
-            cls._instance._initial_refresh()
         return cls._instance
 
-    def _initial_refresh(self) -> None:
-        """Perform initial synchronous refresh if Redis is not used."""
-        if self.redis_handler is None:
-            self._refresh_sync()
-
-    def _refresh_sync(self) -> None:
+    def _refresh_sync(self, providers: set[str] = _ALL_PROVIDERS) -> None:
         """Synchronous refresh of cloud IP ranges."""
-        for provider, fetch_func in [
-            ("AWS", fetch_aws_ip_ranges),
-            ("GCP", fetch_gcp_ip_ranges),
-            ("Azure", fetch_azure_ip_ranges),
-        ]:
+        for provider in providers:
             try:
-                ranges = fetch_func()
+                ranges = {
+                    "AWS": fetch_aws_ip_ranges,
+                    "GCP": fetch_gcp_ip_ranges,
+                    "Azure": fetch_azure_ip_ranges,
+                }[provider]()
                 if ranges:
                     self.ip_ranges[provider] = ranges
             except Exception as e:
                 self.logger.error(f"Failed to fetch {provider} IP ranges: {str(e)}")
                 self.ip_ranges[provider] = set()
 
-    async def initialize_redis(self, redis_handler: Any) -> None:
+    async def initialize_redis(
+        self, redis_handler: Any, providers: set[str] = _ALL_PROVIDERS
+    ) -> None:
         """Initialize Redis connection and load cached ranges."""
         self.redis_handler = redis_handler
-        await self.refresh_async()
+        await self.refresh_async(providers)
 
-    def refresh(self) -> None:
+    def refresh(self, providers: set[str] = _ALL_PROVIDERS) -> None:
         """Synchronous refresh method for backward compatibility."""
         if self.redis_handler is None:
-            self._refresh_sync()
+            self._refresh_sync(providers)
         else:
             raise RuntimeError("Use async refresh() when Redis is enabled")
 
-    async def refresh_async(self) -> None:
+    async def refresh_async(self, providers: set[str] = _ALL_PROVIDERS) -> None:
         """Asynchronous refresh method for Redis-enabled operation."""
         if self.redis_handler is None:
-            self._refresh_sync()
+            self._refresh_sync(providers)
             return
 
-        for provider in ["AWS", "GCP", "Azure"]:
+        for provider in providers:
             try:
                 cached_ranges = await self.redis_handler.get_key(
                     "cloud_ranges", provider
@@ -167,7 +166,7 @@ class CloudManager:
                 if provider not in self.ip_ranges:
                     self.ip_ranges[provider] = set()
 
-    def is_cloud_ip(self, ip: str, providers: set[str]) -> bool:
+    def is_cloud_ip(self, ip: str, providers: set[str] = _ALL_PROVIDERS) -> bool:
         """
         Check if an IP belongs to specified cloud providers.
 

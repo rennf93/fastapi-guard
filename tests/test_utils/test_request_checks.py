@@ -480,10 +480,10 @@ async def test_is_ip_allowed_cloud_providers(
     mocker.patch.object(
         cloud_handler,
         "is_cloud_ip",
-        side_effect=lambda ip, providers: ip.startswith("13."),
+        side_effect=lambda ip, *_: ip.startswith("13."),
     )
 
-    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, block_cloud_providers={"AWS"})
+    config = SecurityConfig(block_cloud_providers={"AWS"})
 
     assert await is_ip_allowed("127.0.0.1", config)
     assert not await is_ip_allowed("13.59.255.255", config)
