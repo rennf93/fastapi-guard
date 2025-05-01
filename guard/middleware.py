@@ -50,9 +50,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self.last_cloud_ip_refresh = 0
         self.suspicious_request_counts: dict[str, int] = {}
         self.last_cleanup = time.time()
-        self.ipinfo_db = IPInfoManager(
-            token=config.ipinfo_token, db_path=config.ipinfo_db_path
-        )
+        self.ipinfo_db = None
+        if self.config.blocked_countries or self.config.whitelist_countries:
+            assert config.ipinfo_token is not None, "should be validated by config"
+            self.ipinfo_db = IPInfoManager(
+                token=config.ipinfo_token, db_path=config.ipinfo_db_path
+            )
         self.rate_limit_handler = RateLimitManager(config)
 
         # Initialize Redis handler if enabled
@@ -131,7 +134,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             )
 
         # Whitelist/blacklist
-        if not await is_ip_allowed(client_ip, self.config):
+        if not await is_ip_allowed(client_ip, self.config, self.ipinfo_db):
             await log_activity(
                 request,
                 self.logger,
@@ -246,10 +249,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
     async def refresh_cloud_ip_ranges(self) -> None:
         """Refresh cloud IP ranges asynchronously."""
+        if not self.config.block_cloud_providers:
+            return
+
         if self.config.enable_redis and self.redis_handler:
-            await cloud_handler.refresh_async()
+            await cloud_handler.refresh_async(self.config.block_cloud_providers)
         else:
-            cloud_handler.refresh()
+            cloud_handler.refresh(self.config.block_cloud_providers)
         self.last_cloud_ip_refresh = int(time.time())
 
     async def create_error_response(
@@ -289,9 +295,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         """Initialize all components asynchronously"""
         if self.config.enable_redis and self.redis_handler:
             await self.redis_handler.initialize()
-            await cloud_handler.initialize_redis(self.redis_handler)
+            if self.config.block_cloud_providers:
+                await cloud_handler.initialize_redis(
+                    self.redis_handler, self.config.block_cloud_providers
+                )
             await ip_ban_manager.initialize_redis(self.redis_handler)
-            await self.ipinfo_db.initialize_redis(self.redis_handler)
+            if self.ipinfo_db is not None:
+                await self.ipinfo_db.initialize_redis(self.redis_handler)
             await self.rate_limit_handler.initialize_redis(self.redis_handler)
             await sus_patterns_handler.initialize_redis(self.redis_handler)
-            await cloud_handler.refresh_async()

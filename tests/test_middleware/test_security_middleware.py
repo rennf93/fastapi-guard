@@ -497,6 +497,20 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
 
 
 @pytest.mark.asyncio
+async def test_refresh_cloud_ips_without_any_cloud() -> None:
+    app = FastAPI()
+    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, block_cloud_providers=None)
+    middleware = SecurityMiddleware(app, config)
+    with (
+        patch.object(cloud_handler, "refresh_async") as mock_refresh_async,
+        patch.object(cloud_handler, "refresh") as mock_refresh,
+    ):
+        await middleware.refresh_cloud_ip_ranges()
+        mock_refresh_async.assert_not_called()
+        mock_refresh.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_cors_disabled() -> None:
     """Test CORS configuration when disabled"""
     app = FastAPI()
@@ -686,6 +700,9 @@ async def test_cloud_ip_blocking_with_logging() -> None:
 async def test_redis_initialization(security_config_redis: SecurityConfig) -> None:
     """Test Redis initialization in SecurityMiddleware"""
     app = FastAPI()
+
+    security_config_redis.block_cloud_providers = {"AWS"}
+
     middleware = SecurityMiddleware(app, security_config_redis)
 
     # Mock external handlers
@@ -695,9 +712,6 @@ async def test_redis_initialization(security_config_redis: SecurityConfig) -> No
         patch.object(ip_ban_manager, "initialize_redis") as ipban_init,
         patch.object(IPInfoManager, "initialize_redis") as ipinfo_init,
         patch.object(sus_patterns_handler, "initialize_redis") as sus_init,
-        patch.object(
-            cloud_handler, "refresh_async", new_callable=AsyncMock
-        ) as cloud_refresh,
     ):
         await middleware.initialize()
 
@@ -705,12 +719,41 @@ async def test_redis_initialization(security_config_redis: SecurityConfig) -> No
         redis_init.assert_awaited_once()
 
         # Verify component initializations with Redis
-        cloud_init.assert_awaited_once_with(middleware.redis_handler)
+        cloud_init.assert_awaited_once_with(middleware.redis_handler, {"AWS"})
         ipban_init.assert_awaited_once_with(middleware.redis_handler)
         ipinfo_init.assert_awaited_once_with(middleware.redis_handler)
         sus_init.assert_awaited_once_with(middleware.redis_handler)
-        # Verify initial cloud refresh
-        cloud_refresh.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_redis_initialization_without_ipinfo_and_cloud(
+    security_config_redis: SecurityConfig,
+) -> None:
+    """Test Redis initialization in SecurityMiddleware"""
+    app = FastAPI()
+
+    security_config_redis.blocked_countries = []
+
+    middleware = SecurityMiddleware(app, security_config_redis)
+
+    # Mock external handlers
+    with (
+        patch.object(middleware.redis_handler, "initialize") as redis_init,
+        patch.object(cloud_handler, "initialize_redis") as cloud_init,
+        patch.object(ip_ban_manager, "initialize_redis") as ipban_init,
+        patch.object(IPInfoManager, "initialize_redis") as ipinfo_init,
+        patch.object(sus_patterns_handler, "initialize_redis") as sus_init,
+    ):
+        await middleware.initialize()
+
+        # Verify Redis handler initialization
+        redis_init.assert_awaited_once()
+
+        # Verify component initializations with Redis
+        cloud_init.assert_not_called()
+        ipban_init.assert_awaited_once_with(middleware.redis_handler)
+        ipinfo_init.assert_not_called()
+        sus_init.assert_awaited_once_with(middleware.redis_handler)
 
 
 @pytest.mark.asyncio

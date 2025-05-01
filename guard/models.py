@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import Request, Response
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+from typing_extensions import Self
 
 
 class SecurityConfig(BaseModel):
@@ -31,10 +32,14 @@ class SecurityConfig(BaseModel):
         Enable Log-Only mode. Won't block requests, only log.
     """
 
-    ipinfo_token: str = Field(..., description="IPInfo API token for IP geolocation")
+    ipinfo_token: str | None = Field(
+        default=None, description="IPInfo API token for IP geolocation"
+    )
     """
-    str:
+    Optional[str]:
         The IPInfo API token for IP geolocation.
+        Must be provided if blocked_countries or whitelist_countries is set.
+        Defaults to None.
     """
 
     ipinfo_db_path: Path | None = Field(
@@ -360,3 +365,14 @@ class SecurityConfig(BaseModel):
         if v is None:
             return set()
         return {p for p in v if p in valid_providers}
+
+    @model_validator(mode="after")
+    def validate_ipinfo_token(self) -> Self:
+        if self.ipinfo_token is None and (
+            self.blocked_countries or self.whitelist_countries
+        ):
+            raise ValueError(
+                "ipinfo_token is required "
+                "if blocked_countries or whitelist_countries is set"
+            )
+        return self
