@@ -55,7 +55,7 @@ def security_config() -> SecurityConfig:
         SecurityConfig: A configured SecurityConfig object.
     """
     return SecurityConfig(
-        geographical_ip_handler=IPInfoManager(IPINFO_TOKEN, None),
+        geo_ip_handler=IPInfoManager(IPINFO_TOKEN, None),
         enable_redis=False,
         whitelist=["127.0.0.1"],
         blacklist=["192.168.1.1"],
@@ -81,7 +81,7 @@ def security_config() -> SecurityConfig:
 @pytest.fixture
 async def security_middleware() -> AsyncGenerator[SecurityMiddleware, None]:
     config = SecurityConfig(
-        geographical_ip_handler=IPInfoManager(IPINFO_TOKEN),
+        geo_ip_handler=IPInfoManager(IPINFO_TOKEN),
         whitelist=[],
         blacklist=[],
         auto_ban_threshold=10,
@@ -104,7 +104,7 @@ def ipinfo_db_path(tmp_path_factory: TempPathFactory) -> Path:
 def security_config_redis(ipinfo_db_path: Path) -> SecurityConfig:
     """SecurityConfig with Redis enabled"""
     return SecurityConfig(
-        geographical_ip_handler=IPInfoManager(IPINFO_TOKEN, ipinfo_db_path),
+        geo_ip_handler=IPInfoManager(IPINFO_TOKEN, ipinfo_db_path),
         redis_url=REDIS_URL,
         redis_prefix=REDIS_PREFIX,
         whitelist=["127.0.0.1"],
@@ -132,7 +132,7 @@ def security_config_redis(ipinfo_db_path: Path) -> SecurityConfig:
 async def redis_cleanup() -> None:
     """Clean Redis test keys before each test"""
     config = SecurityConfig(
-        geographical_ip_handler=IPInfoManager(IPINFO_TOKEN, None),
+        geo_ip_handler=IPInfoManager(IPINFO_TOKEN, None),
         redis_url=REDIS_URL,
         redis_prefix=REDIS_PREFIX,
     )
@@ -147,7 +147,7 @@ async def redis_cleanup() -> None:
 @pytest.fixture(autouse=True)
 async def reset_rate_limiter() -> None:
     """Reset rate limiter between tests to avoid interference"""
-    config = SecurityConfig(geographical_ip_handler=IPInfoManager(IPINFO_TOKEN, None))
+    config = SecurityConfig(geo_ip_handler=IPInfoManager(IPINFO_TOKEN, None))
     rate_limit = rate_limit_handler(config)
     rate_limit.request_times.clear()
     await rate_limit.reset()

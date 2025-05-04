@@ -51,9 +51,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self.last_cleanup = time.time()
         self.rate_limit_handler = RateLimitManager(config)
 
-        self.geographical_ip_handler = None
+        self.geo_ip_handler = None
         if config.whitelist_countries or config.blocked_countries:
-            self.geographical_ip_handler = config.geographical_ip_handler
+            self.geo_ip_handler = config.geo_ip_handler
 
         # Initialize Redis handler if enabled
         self.redis_handler = None
@@ -131,9 +131,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             )
 
         # Whitelist/blacklist
-        if not await is_ip_allowed(
-            client_ip, self.config, self.geographical_ip_handler
-        ):
+        if not await is_ip_allowed(client_ip, self.config, self.geo_ip_handler):
             await log_activity(
                 request,
                 self.logger,
@@ -299,7 +297,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     self.redis_handler, self.config.block_cloud_providers
                 )
             await ip_ban_manager.initialize_redis(self.redis_handler)
-            if self.geographical_ip_handler is not None:
-                await self.geographical_ip_handler.initialize_redis(self.redis_handler)
+            if self.geo_ip_handler is not None:
+                await self.geo_ip_handler.initialize_redis(self.redis_handler)
             await self.rate_limit_handler.initialize_redis(self.redis_handler)
             await sus_patterns_handler.initialize_redis(self.redis_handler)

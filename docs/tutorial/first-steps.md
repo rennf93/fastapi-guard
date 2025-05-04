@@ -27,7 +27,7 @@ Create a `SecurityConfig` instance with your desired settings:
 
 ```python
 config = SecurityConfig(
-    geographical_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required for geolocation
+    geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required for geolocation
     db_path="data/ipinfo/country_asn.mmdb",  # Optional, default: ./data/ipinfo/country_asn.mmdb
     enable_redis=True,  # Enable Redis integration
     redis_url="redis://localhost:6379",  # Redis URL
@@ -60,7 +60,7 @@ from guard.handlers.ipinfo_handler import IPInfoManager
 app = FastAPI()
 
 config = SecurityConfig(
-    geographical_ip_handler=IPInfoManager("your_ipinfo_token_here"),
+    geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),
     enable_redis=True,  # Redis enabled
     redis_url="redis://localhost:6379",
     whitelist=["192.168.1.1"],

@@ -31,7 +31,7 @@ from guard.handlers.ipinfo_handler import IPInfoManager
 app = FastAPI()
 
 config = SecurityConfig(
-    geographical_ip_handler=IPInfoManager("your_token_here"),
+    geo_ip_handler=IPInfoManager("your_token_here"),
     enable_redis=False,
     rate_limit=100,
     auto_ban_threshold=5

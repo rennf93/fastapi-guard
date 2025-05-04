@@ -1,30 +1,13 @@
 from collections.abc import Awaitable, Callable
 from ipaddress import IPv4Address, ip_network
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Protocol, runtime_checkable
+from typing import Any, Literal
 
 from fastapi import Request, Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing_extensions import Self
 
-if TYPE_CHECKING:
-    from guard.handlers.redis_handler import RedisManager  # pragma: no cover
-
-
-@runtime_checkable
-class GeographicalIPHandler(Protocol):
-    """
-    Protocol for geographical IP handler.
-    """
-
-    @property
-    def is_initialized(self) -> bool: ...
-
-    async def initialize(self) -> None: ...
-
-    async def initialize_redis(self, redis_handler: "RedisManager") -> None: ...
-
-    def get_country(self, ip: str) -> str | None: ...
+from guard.protocols.geo_ip_protocol import GeoIPHandler
 
 
 class SecurityConfig(BaseModel):
@@ -53,15 +36,15 @@ class SecurityConfig(BaseModel):
         Enable Log-Only mode. Won't block requests, only log.
     """
 
-    geographical_ip_handler: GeographicalIPHandler | None = Field(
+    geo_ip_handler: GeoIPHandler | None = Field(
         default=None,
         description="Geographical IP handler to use for IP geolocation",
     )
     """
-    GeographicalIPHandler | None:
+    GeoIPHandler | None:
         The geographical IP handler to use for IP geolocation.
         Must be provided if blocked_countries or whitelist_countries is set.
-        Must implement the GeographicalIPHandler protocol.
+        Must implement the GeoIPHandler protocol.
 
         This library provides a manager that uses the ipinfo API:
         `from guard import IPInfoManager`
@@ -359,12 +342,12 @@ class SecurityConfig(BaseModel):
     ipinfo_token: str | None = Field(
         default=None,
         description="IPInfo API token for IP geolocation. Deprecated. "
-        "Use `geographical_ip_handler` instead.",
-        deprecated=True,
+        "Create a custom `geo_ip_handler` instead.",
+        # deprecated=True,
     )
     """
-    Optional[str]:
-        Deprecated. Use `geographical_ip_handler` instead.
+    str | None:
+        Deprecated. Create a custom `geo_ip_handler` instead.
         The IPInfo API token for IP geolocation.
         Must be provided if blocked_countries or whitelist_countries is set.
         Defaults to None.
@@ -373,12 +356,12 @@ class SecurityConfig(BaseModel):
     ipinfo_db_path: Path | None = Field(
         default=Path("data/ipinfo/country_asn.mmdb"),
         description="Path to the IPInfo database file. Deprecated. "
-        "Use `geographical_ip_handler` instead.",
-        deprecated=True,
+        "Create a custom `geo_ip_handler` instead.",
+        # deprecated=True,
     )
     """
     Path | None:
-        Deprecated. Use `geographical_ip_handler` instead.
+        Deprecated. Create a custom `geo_ip_handler` instead.
         The path to the IPInfo database file.
     """
 
@@ -409,21 +392,21 @@ class SecurityConfig(BaseModel):
         return {p for p in v if p in valid_providers}
 
     @model_validator(mode="after")
-    def validate_geographical_ip_handler_exists(self) -> Self:
-        if self.geographical_ip_handler is None and (
+    def validate_geo_ip_handler_exists(self) -> Self:
+        if self.geo_ip_handler is None and (
             self.blocked_countries or self.whitelist_countries
         ):
             # Backwards compatibility with old config
             if self.ipinfo_token:
                 from guard.handlers.ipinfo_handler import IPInfoManager
 
-                self.geographical_ip_handler = IPInfoManager(
+                self.geo_ip_handler = IPInfoManager(
                     token=self.ipinfo_token,
                     db_path=self.ipinfo_db_path,
                 )
             else:
                 raise ValueError(
-                    "geographical_ip_handler is required "
+                    "geo_ip_handler is required "
                     "if blocked_countries or whitelist_countries is set"
                 )
         return self

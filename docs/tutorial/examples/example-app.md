@@ -145,7 +145,7 @@ from guard import SecurityMiddleware, SecurityConfig, IPInfoManager
 app = FastAPI(title="My API with Security")
 
 config = SecurityConfig(
-    geographical_ip_handler=IPInfoManager("your_ipinfo_token_here"),
+    geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),
 
     # Rate limiting
     rate_limit=100,  # Allow 100 requests

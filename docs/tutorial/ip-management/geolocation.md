@@ -9,7 +9,7 @@ keywords: ip geolocation, country blocking, ipinfo integration, location filteri
 FastAPI Guard accepts an arbitrary class that implements geolocation and country-based filtering. All it needs is to implement the following protocol:
 
 ```python
-class GeographicalIPHandler(Protocol):
+class GeoIPHandler(Protocol):
     """
     Protocol for geographical IP handler.
     """
@@ -41,7 +41,7 @@ The geolocation handler is only initialized and used when country filtering is c
 
 ```python
 config = SecurityConfig(
-    geographical_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required when using country filtering
+    geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required when using country filtering
     blocked_countries=["CN", "RU"],  # Block specific countries
     whitelist_countries=["US", "CA"],
     db_path="custom/ipinfo.db",  # Optional custom database path
@@ -53,7 +53,7 @@ config = SecurityConfig(
 
 ```python
 
-class CustomGeographicalIPHandler:
+class CustomGeoIPHandler:
     """
     Your custom class.
     """
@@ -77,7 +77,7 @@ class CustomGeographicalIPHandler:
 
 
 config = SecurityConfig(
-    geographical_ip_handler=CustomGeographicalIPHandler(),
+    geo_ip_handler=CustomGeoIPHandler(),
     blocked_countries=["CN", "RU"],  # Block specific countries
     whitelist_countries=["US", "CA"],
     db_path="custom/ipinfo.db",  # Optional custom database path
@@ -91,7 +91,7 @@ Block requests from specific countries using ISO 3166-1 alpha-2 country codes:
 
 ```python
 config = SecurityConfig(
-    geographical_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required when using country filtering
+    geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required when using country filtering
     blocked_countries=[
         "CN",  # China
         "RU",  # Russia
@@ -107,7 +107,7 @@ Only allow requests from specific countries:
 
 ```python
 config = SecurityConfig(
-    geographical_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required when using country filtering
+    geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required when using country filtering
     whitelist_countries=[
         "US",  # United States
         "CA",  # Canada

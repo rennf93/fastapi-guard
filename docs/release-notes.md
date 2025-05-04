@@ -6,6 +6,19 @@ keywords: release notes, fastapi guard, security middleware, api security
 
 # Release Notes
 
+## vX.X.X (2025-05-XX)
+
+### New Features
+- IPInfo is now completely optional, you can implement your own `GeoIPHandler`
+- Added protocol-based design for customizable geographical IP handling
+- Introduced `GeoIPHandler` protocol allowing custom implementations
+- Separated protocol definitions into dedicated modules
+
+### Improvements
+- Deprecated `ipinfo_token` and `ipinfo_db_path` in favor of `geo_ip_handler`
+- Improved type safety and code readability
+- Added runtime type checking for custom GeoIP handlers
+
 ## v1.5.0 (2025-05-01)
 ### Improvements
 - IpInfo token is now only required when using country filtering or cloud blocking

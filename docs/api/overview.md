@@ -59,7 +59,7 @@ The `SecurityConfig` class is the central configuration point:
 class SecurityConfig:
     def __init__(
         self,
-        geographical_ip_handler: GeographicalIPHandler | None = None,
+        geo_ip_handler: GeoIPHandler | None = None,
         whitelist: Optional[List[str]] = None,
         blacklist: List[str] = [],
         blocked_countries: List[str] = [],
@@ -97,6 +97,6 @@ async def initialize(self) -> None:
             )
         await ip_ban_manager.initialize_redis(self.redis_handler)
         # Only initialize if country filtering and/or cloud blocking is enabled
-        if self.geographical_ip_handler is not None:
-            await self.geographical_ip_handler.initialize_redis(self.redis_handler)
+        if self.geo_ip_handler is not None:
+            await self.geo_ip_handler.initialize_redis(self.redis_handler)
 ```

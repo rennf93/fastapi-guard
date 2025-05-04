@@ -39,7 +39,7 @@ from guard.handlers.ipinfo_handler import IPInfoManager
 
 app = FastAPI()
 config = SecurityConfig(
-    geographical_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required when using country blocking
+    geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required when using country blocking and/or cloud blocking
     enable_redis=True,  # Enabled by default, disable to use in-memory storage
     redis_url="redis://localhost:6379/0",
     redis_prefix="prod:security:",

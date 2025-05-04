@@ -107,7 +107,7 @@ app = FastAPI()
 
 # Define your security configuration
 config = SecurityConfig(
-    geographical_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # Required for IP geolocation
+    geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # Required for IP geolocation
     db_path="custom/ipinfo.db",  # Optional custom database path
     whitelist=["192.168.1.1"],
     blacklist=["10.0.0.1"],
@@ -269,7 +269,7 @@ To use the geolocation feature with this handler:
 from guard.handlers.ipinfo_handler import IPInfoManager
 
 config = SecurityConfig(
-    geographical_ip_handler=IPInfoManager(
+    geo_ip_handler=IPInfoManager(
         "your_ipinfo_token_here",
         db_path="custom/ipinfo.db",  # Optional custom database path)
     ),
@@ -283,9 +283,9 @@ The database is automatically downloaded and cached locally when the middleware 
 You can also use a service other than IPInfo, as long as you implement the same protocol:
 
 ```python
-# implement the required methods of guard.models.GeographicalIPHandler class
+# implement the required methods of guard.models.GeoIPHandler class
 
-class CustomGeographicalIPHandler:
+class CustomGeoIPHandler:
     """
     Your custom class.
     """
@@ -309,7 +309,7 @@ class CustomGeographicalIPHandler:
 
 
 config = SecurityConfig(
-    geographical_ip_handler=CustomGeographicalIPHandler(),
+    geo_ip_handler=CustomGeoIPHandler(),
     blocked_countries=["AR", "IT"],  # Block specific countries using ISO 3166-1 alpha-2 codes
     whitelist_countries=["US", "CA"]  # Optional: Only allow specific countries
 )
@@ -376,7 +376,7 @@ The `SecurityConfig` class defines the structure for security configuration, inc
 
 #### Attributes
 
-- `geographical_ip_handler`: GeographicalIPHandler - Protocol that allows for IP geolocation functionality
+- `geo_ip_handler`: GeoIPHandler - Protocol that allows for IP geolocation functionality
 - `enable_redis`: bool - Enable Redis for distributed state (default: True). When disabled, uses in-memory storage
 - `redis_url`: Optional[str] - Redis connection URL (default: "redis://localhost:6379")
 - `redis_prefix`: str - Prefix for Redis keys (default: "fastapi_guard:")

@@ -99,7 +99,7 @@ config = SecurityConfig(
     # User Agent settings
     blocked_user_agents=["badbot", "malicious-crawler"],
     # IPInfo integration
-    geographical_ip_handler=IPInfoManager(str(IPINFO_TOKEN)),
+    geo_ip_handler=IPInfoManager(str(IPINFO_TOKEN)),
     blocked_countries=["CN", "RU"],
     # Redis integration
     # NOTE: enable_redis=True by default
