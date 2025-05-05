@@ -1,6 +1,15 @@
 # Release Notes
 
-## vX.X.X (2025-05-XX)
+## v2.0.0 (2025-05-05)
+
+### Security Fixes
+- **IMPORTANT**: Fixed Remote Header Injection vulnerability via X-Forwarded-For manipulation (GHSA-77q8-qmj7-x7pp)
+- **CVE ID**: CVE-2025-46814
+- Added secure client IP extraction with trusted proxy validation
+- Added new configuration parameters for proxy security:
+  - `trusted_proxies`: List of trusted proxy IPs or CIDR ranges
+  - `trusted_proxy_depth`: Configurable proxy chain depth
+  - `trust_x_forwarded_proto`: Option to trust X-Forwarded-Proto header
 
 ### New Features
 - IPInfo is now completely optional, you can implement your own `GeoIPHandler`

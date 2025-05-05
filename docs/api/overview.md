@@ -60,11 +60,11 @@ class SecurityConfig:
     def __init__(
         self,
         geo_ip_handler: GeoIPHandler | None = None,
-        whitelist: Optional[List[str]] = None,
-        blacklist: List[str] = [],
-        blocked_countries: List[str] = [],
-        whitelist_countries: List[str] = [],
-        blocked_user_agents: List[str] = [],
+        whitelist: list[str] | None = None,
+        blacklist: list[str] = [],
+        blocked_countries: list[str] = [],
+        whitelist_countries: list[str] = [],
+        blocked_user_agents: list[str] = [],
         auto_ban_threshold: int = 5,
         auto_ban_duration: int = 3600,
         rate_limit: int = 100,
@@ -96,7 +96,7 @@ async def initialize(self) -> None:
                 self.redis_handler, self.config.block_cloud_providers
             )
         await ip_ban_manager.initialize_redis(self.redis_handler)
-        # Only initialize if country filtering and/or cloud blocking is enabled
+        # Only initialize if country filtering is enabled
         if self.geo_ip_handler is not None:
             await self.geo_ip_handler.initialize_redis(self.redis_handler)
 ```

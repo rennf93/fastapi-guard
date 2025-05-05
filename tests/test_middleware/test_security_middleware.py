@@ -71,6 +71,7 @@ async def test_ip_whitelist_blacklist() -> None:
         whitelist=["127.0.0.1"],
         blacklist=["192.168.1.1"],
         enable_penetration_detection=False,
+        trusted_proxies=["127.0.0.1"],
     )
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -130,6 +131,7 @@ async def test_rate_limiting_multiple_ips(reset_state: None) -> None:
         whitelist=[],
         blacklist=[],
         enable_penetration_detection=False,
+        trusted_proxies=["127.0.0.1"],
     )
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -170,12 +172,14 @@ async def test_middleware_multiple_configs() -> None:
         ipinfo_token=IPINFO_TOKEN,
         blocked_user_agents=[r"badbot"],
         enable_penetration_detection=False,
+        trusted_proxies=["127.0.0.1"],
     )
     config2 = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
         whitelist=["127.0.0.1"],
         blacklist=["192.168.1.1"],
         enable_penetration_detection=False,
+        trusted_proxies=["127.0.0.1"],
     )
 
     app.add_middleware(SecurityMiddleware, config=config1)
@@ -247,6 +251,7 @@ async def test_custom_error_responses() -> None:
         rate_limit_window=1,
         auto_ban_threshold=10,
         enable_penetration_detection=False,
+        trusted_proxies=["127.0.0.1"],
     )
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -521,37 +526,40 @@ async def test_cors_disabled() -> None:
 
 
 @pytest.mark.asyncio
-async def test_https_enforcement() -> None:
-    """Test HTTPS enforcement functionality"""
+async def test_https_enforcement_with_xforwarded_proto() -> None:
+    """Test HTTPS enforcement with X-Forwarded-Proto header."""
     app = FastAPI()
-    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, enforce_https=True)
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        enforce_https=True,
+        trusted_proxies=["127.0.0.1"],
+        trust_x_forwarded_proto=True,
+    )
     app.add_middleware(SecurityMiddleware, config=config)
-
-    handler_called = False
 
     @app.get("/")
     async def read_root() -> dict[str, str]:
-        nonlocal handler_called
-        handler_called = True
         return {"message": "Hello World"}
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
-        response = await client.get("/")
+        # With X-Forwarded-Proto: https, should not redirect
+        response = await client.get("/", headers={"X-Forwarded-Proto": "https"})
+        assert response.status_code == status.HTTP_200_OK
+
+        # Without X-Forwarded-Proto: https, should redirect to HTTPS
+        response = await client.get("/", headers={"X-Forwarded-Proto": "http"})
         assert response.status_code == status.HTTP_301_MOVED_PERMANENTLY
         assert response.headers["location"].startswith("https://")
-        assert not handler_called, (
-            "Handler should not be called for redirected requests"
-        )
 
-    config.enforce_https = False
+    # Without trust_x_forwarded_proto, should always redirect
+    config.trust_x_forwarded_proto = False
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
-        response = await client.get("/")
-        assert response.status_code == status.HTTP_200_OK
-        assert handler_called, "Handler should be called for non-redirected requests"
+        response = await client.get("/", headers={"X-Forwarded-Proto": "https"})
+        assert response.status_code == status.HTTP_301_MOVED_PERMANENTLY
 
 
 @pytest.mark.asyncio

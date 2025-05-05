@@ -67,7 +67,7 @@ async def is_user_agent_allowed(
 
 ```python
 async def check_ip_country(
-    request: Union[str, Request],
+    request: str | Request,
     config: SecurityConfig,
     ipinfo_db: IPInfoManager
 ) -> bool:
@@ -82,14 +82,14 @@ async def check_ip_country(
 async def is_ip_allowed(
     ip: str,
     config: SecurityConfig,
-    ipinfo_db: Optional[IPInfoManager] = None
+    ipinfo_db: IPInfoManager | None = None
 ) -> bool:
     """
     Check if IP address is allowed.
     """
 ```
 
-The `ipinfo_db` parameter is now properly optional - it's only needed when country filtering and/or cloud blocking is configured. If it's not provided when country filtering and/or cloud blocking is configured, the function will work correctly but won't apply country filtering rules and/or cloud blocking rules.
+The `ipinfo_db` parameter is now properly optional - it's only needed when country filtering is configured. If it's not provided when country filtering is configured, the function will work correctly but won't apply country filtering rules rules.
 
 This function intelligently handles:
 - Whitelist/blacklist checking
@@ -129,6 +129,23 @@ async def submit_data(request: Request):
         return {"error": "Suspicious activity detected"}
     return {"success": True}
 ```
+
+### extract_client_ip
+
+```python
+def extract_client_ip(request: Request, config: SecurityConfig) -> str:
+    """
+    Securely extract the client IP address from the request, considering trusted proxies.
+
+    This function implements a secure approach to IP extraction that protects against
+    X-Forwarded-For header injection attacks.
+    """
+```
+
+This function provides a secure way to extract client IPs by:
+1. Only trusting X-Forwarded-For headers from configured trusted proxies
+2. Using the connecting IP when not from a trusted proxy
+3. Properly handling proxy chains based on configured depth
 
 ## Usage Examples
 
