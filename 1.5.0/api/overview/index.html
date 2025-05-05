@@ -1569,7 +1569,7 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">SecurityConfig</span><span class="p">:</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="n">ipinfo_token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="n">geo_ip_handler</span><span class="p">:</span> <span class="n">GeoIPHandler</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="n">whitelist</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="n">blacklist</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="n">blocked_countries</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
@@ -1587,7 +1587,7 @@
 <h2 id="optimized-loading">Optimized Loading<a class="headerlink" href="#optimized-loading" title="Permanent link">&para;</a></h2>
 <p>FastAPI Guard uses a smart loading strategy to improve performance:</p>
 <ul>
-<li><strong>IPInfoManager</strong>: Only downloaded and initialized when country filtering and/or cloud blocking is configured</li>
+<li><strong>IPInfoManager</strong>: Only downloaded and initialized when country filtering is configured</li>
 <li><strong>CloudManager</strong>: Only fetches cloud provider IP ranges when cloud blocking is enabled</li>
 <li><strong>Handlers Initialization</strong>: Middleware conditionally initializes components based on configuration</li>
 </ul>
@@ -1603,8 +1603,8 @@
 </span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>            <span class="p">)</span>
 </span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        <span class="k">await</span> <span class="n">ip_ban_manager</span><span class="o">.</span><span class="n">initialize_redis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">redis_handler</span><span class="p">)</span>
 </span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>        <span class="c1"># Only initialize if country filtering and/or cloud blocking is enabled</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ipinfo_db</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ipinfo_db</span><span class="o">.</span><span class="n">initialize_redis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">redis_handler</span><span class="p">)</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geo_ip_handler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">geo_ip_handler</span><span class="o">.</span><span class="n">initialize_redis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">redis_handler</span><span class="p">)</span>
 </span></code></pre></div>
 
 

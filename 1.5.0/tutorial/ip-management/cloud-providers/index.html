@@ -1546,16 +1546,14 @@
 <h2 id="basic-configuration">Basic Configuration<a class="headerlink" href="#basic-configuration" title="Permanent link">&para;</a></h2>
 <p>Enable cloud provider IP blocking:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">ipinfo_token</span><span class="o">=</span><span class="s2">&quot;your_ipinfo_token_here&quot;</span><span class="p">,</span>  <span class="c1"># NOTE: Required when using cloud blocking</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">block_cloud_providers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;AWS&quot;</span><span class="p">,</span> <span class="s2">&quot;GCP&quot;</span><span class="p">,</span> <span class="s2">&quot;Azure&quot;</span><span class="p">}</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">block_cloud_providers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;AWS&quot;</span><span class="p">,</span> <span class="s2">&quot;GCP&quot;</span><span class="p">,</span> <span class="s2">&quot;Azure&quot;</span><span class="p">}</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="selective-blocking">Selective Blocking<a class="headerlink" href="#selective-blocking" title="Permanent link">&para;</a></h2>
 <p>Block specific providers:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">ipinfo_token</span><span class="o">=</span><span class="s2">&quot;your_ipinfo_token_here&quot;</span><span class="p">,</span>  <span class="c1"># NOTE: Required when using cloud blocking</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">block_cloud_providers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;AWS&quot;</span><span class="p">}</span>  <span class="c1"># Only block AWS IPs</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">)</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">block_cloud_providers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;AWS&quot;</span><span class="p">}</span>  <span class="c1"># Only block AWS IPs</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="ip-range-updates">IP Range Updates<a class="headerlink" href="#ip-range-updates" title="Permanent link">&para;</a></h2>
 <p>Cloud IP ranges are automatically updated daily. You can manually refresh them:</p>

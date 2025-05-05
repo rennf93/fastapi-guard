@@ -6,17 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="First steps guide for implementing FastAPI Guard security features in your FastAPI application">
+        <meta name="description" content="Learn how to extend FastAPI Guard with custom protocols and handlers">
       
       
       
-        <link rel="canonical" href="https://rennf93.github.io/fastapi-guard/latest/1.5.0/tutorial/first-steps/">
+        <link rel="canonical" href="https://rennf93.github.io/fastapi-guard/latest/1.5.0/tutorial/advanced-customizations/">
       
       
-        <link rel="prev" href="../../installation/">
-      
-      
-        <link rel="next" href="../ip-management/banning/">
       
       
       <link rel="icon" href="../../assets/favicon.png">
@@ -24,7 +20,7 @@
     
     
       
-        <title>Getting Started with FastAPI Guard - FastAPI Guard</title>
+        <title>Advanced Customization - FastAPI Guard - FastAPI Guard</title>
       
     
     
@@ -90,7 +86,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#first-steps" class="md-skip">
+        <a href="#advanced-customization" class="md-skip">
           Skip to content
         </a>
       
@@ -127,7 +123,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Getting Started with FastAPI Guard
+              Advanced Customization - FastAPI Guard
             
           </span>
         </div>
@@ -279,13 +275,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../first-steps/" class="md-tabs__link">
           
   
   
@@ -454,10 +448,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -477,22 +469,19 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -505,7 +494,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Tutorial - User Guide
@@ -516,32 +505,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    First Steps
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../first-steps/" class="md-nav__link">
         
   
   
@@ -552,80 +519,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#create-a-fastapi-application" class="md-nav__link">
-    <span class="md-ellipsis">
-      Create a FastAPI application
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configure-security-settings" class="md-nav__link">
-    <span class="md-ellipsis">
-      Configure Security Settings
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#add-the-middleware" class="md-nav__link">
-    <span class="md-ellipsis">
-      Add the Middleware
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#complete-example" class="md-nav__link">
-    <span class="md-ellipsis">
-      Complete Example
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#run-the-application" class="md-nav__link">
-    <span class="md-ellipsis">
-      Run the Application
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#whats-next" class="md-nav__link">
-    <span class="md-ellipsis">
-      What's Next
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -654,20 +547,17 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
         
           
-          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
             
   
   
@@ -808,20 +698,17 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
             
   
   
@@ -937,20 +824,17 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
         
           
-          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
             
   
   
@@ -1480,54 +1364,117 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#create-a-fastapi-application" class="md-nav__link">
+  <a href="#protocol-based-architecture" class="md-nav__link">
     <span class="md-ellipsis">
-      Create a FastAPI application
+      Protocol-Based Architecture
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#configure-security-settings" class="md-nav__link">
+  <a href="#why-protocols" class="md-nav__link">
     <span class="md-ellipsis">
-      Configure Security Settings
+      Why Protocols?
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#add-the-middleware" class="md-nav__link">
+  <a href="#available-protocols" class="md-nav__link">
     <span class="md-ellipsis">
-      Add the Middleware
+      Available Protocols
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Available Protocols">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#geoiphandler-protocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      GeoIPHandler Protocol
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GeoIPHandler Protocol">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#method-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      Method Details:
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#redishandlerprotocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      RedisHandlerProtocol
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-protocols-are-used" class="md-nav__link">
+    <span class="md-ellipsis">
+      How Protocols Are Used
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#complete-example" class="md-nav__link">
+  <a href="#implementation-examples" class="md-nav__link">
     <span class="md-ellipsis">
-      Complete Example
+      Implementation Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implementation Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-custom-geo-ip-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example: Custom Geo IP Service
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#run-the-application" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#usage-in-application" class="md-nav__link">
     <span class="md-ellipsis">
-      Run the Application
+      Usage in Application
     </span>
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#whats-next" class="md-nav__link">
+  <a href="#technical-details-how-redis-integration-works" class="md-nav__link">
     <span class="md-ellipsis">
-      What's Next
+      Technical Details: How Redis Integration Works
     </span>
   </a>
   
@@ -1552,72 +1499,182 @@
   
 
 
-<h1 id="first-steps">First Steps<a class="headerlink" href="#first-steps" title="Permanent link">&para;</a></h1>
-<p>Let's start with a simple example that shows how to add FastAPI Guard to your application.</p>
-<h2 id="create-a-fastapi-application">Create a FastAPI application<a class="headerlink" href="#create-a-fastapi-application" title="Permanent link">&para;</a></h2>
-<p>First, create a new FastAPI application:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityMiddleware</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityConfig</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.handlers.ipinfo_handler</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPInfoManager</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
+<h1 id="advanced-customization">Advanced Customization<a class="headerlink" href="#advanced-customization" title="Permanent link">&para;</a></h1>
+<p>FastAPI Guard uses a protocol-based architecture that makes it highly extensible. This guide explains how the protocol system works and how to create custom implementations.</p>
+<h2 id="protocol-based-architecture">Protocol-Based Architecture<a class="headerlink" href="#protocol-based-architecture" title="Permanent link">&para;</a></h2>
+<p>FastAPI Guard uses Python's Protocol system to define interfaces that components must implement. This allows you to:</p>
+<ol>
+<li>Replace built-in handlers with custom implementations</li>
+<li>Extend functionality without modifying the core library</li>
+<li>Better separate concerns in your codebase</li>
+</ol>
+<h2 id="why-protocols">Why Protocols?<a class="headerlink" href="#why-protocols" title="Permanent link">&para;</a></h2>
+<p>The protocol system solves several important problems:</p>
+<ol>
+<li><strong>Avoiding dependency on third-party services</strong>: You can replace the built-in IPInfo geo-location with your own service</li>
+<li><strong>Preventing circular imports</strong>: The protocols help break dependency cycles in the codebase</li>
+<li><strong>Enabling extension points</strong>: Clear interfaces for adding custom functionality</li>
+</ol>
+<h2 id="available-protocols">Available Protocols<a class="headerlink" href="#available-protocols" title="Permanent link">&para;</a></h2>
+<h3 id="geoiphandler-protocol">GeoIPHandler Protocol<a class="headerlink" href="#geoiphandler-protocol" title="Permanent link">&para;</a></h3>
+<p>The <code>GeoIPHandler</code> protocol defines the interface for any geographical IP handler:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@runtime_checkable</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">GeoIPHandler</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Protocol for geographical IP handler.&quot;&quot;&quot;</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="nd">@property</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">is_initialized</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">initialize_redis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">redis_handler</span><span class="p">:</span> <span class="n">RedisHandlerProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_country</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
 </span></code></pre></div>
-<h2 id="configure-security-settings">Configure Security Settings<a class="headerlink" href="#configure-security-settings" title="Permanent link">&para;</a></h2>
-<p>Create a <code>SecurityConfig</code> instance with your desired settings:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">geo_ip_handler</span><span class="o">=</span><span class="n">IPInfoManager</span><span class="p">(</span><span class="s2">&quot;your_ipinfo_token_here&quot;</span><span class="p">),</span>  <span class="c1"># NOTE: Required for geolocation</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">db_path</span><span class="o">=</span><span class="s2">&quot;data/ipinfo/country_asn.mmdb&quot;</span><span class="p">,</span>  <span class="c1"># Optional, default: ./data/ipinfo/country_asn.mmdb</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">enable_redis</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Enable Redis integration</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">redis_url</span><span class="o">=</span><span class="s2">&quot;redis://localhost:6379&quot;</span><span class="p">,</span>  <span class="c1"># Redis URL</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">rate_limit</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>  <span class="c1"># Max requests per minute</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">auto_ban_threshold</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>  <span class="c1"># Ban after 5 suspicious requests</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">custom_log_file</span><span class="o">=</span><span class="s2">&quot;security.log&quot;</span>  <span class="c1"># Custom log file</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="p">)</span>
+<h4 id="method-details">Method Details:<a class="headerlink" href="#method-details" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>is_initialized</code>: Should return whether the handler is ready to use</li>
+<li><code>initialize()</code>: Should set up the handler (load databases, connect to APIs, etc.)</li>
+<li><code>initialize_redis()</code>: Should store the redis handler for optional caching</li>
+<li><code>get_country()</code>: Should return the ISO 3166-1 alpha-2 country code for the IP</li>
+</ul>
+<h3 id="redishandlerprotocol">RedisHandlerProtocol<a class="headerlink" href="#redishandlerprotocol" title="Permanent link">&para;</a></h3>
+<p><strong>IMPORTANT</strong>: Users do NOT need to implement this protocol. It exists purely for internal use to break dependency cycles and define what the Redis handler must support for the custom GeoIP handlers.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@runtime_checkable</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">RedisHandlerProtocol</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Protocol for Redis handlers.&quot;&quot;&quot;</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">set_key</span><span class="p">(</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncContextManager</span><span class="p">[</span><span class="n">Redis</span><span class="p">]:</span> <span class="o">...</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
 </span></code></pre></div>
-<p>Note: FastAPI Guard only loads resources as needed. The IPInfo database is only downloaded when country filtering and/or cloud blocking is configured, and cloud IP ranges are only fetched when cloud provider blocking is enabled.</p>
-<h2 id="add-the-middleware">Add the Middleware<a class="headerlink" href="#add-the-middleware" title="Permanent link">&para;</a></h2>
-<p>Add the security middleware to your application:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">SecurityMiddleware</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+<h2 id="how-protocols-are-used">How Protocols Are Used<a class="headerlink" href="#how-protocols-are-used" title="Permanent link">&para;</a></h2>
+<p>The FastAPI Guard initialization flow works like this:</p>
+<ol>
+<li>You create a <code>SecurityConfig</code> with your custom <code>geo_ip_handler</code></li>
+<li>You add the <code>SecurityMiddleware</code> with this config</li>
+<li>When the middleware initializes, it:</li>
+<li>Checks if you provided a <code>geo_ip_handler</code> that implements the protocol</li>
+<li>If Redis is enabled, it passes its internal <code>RedisManager</code> to your handler</li>
+<li>Your handler can use this Redis connection for caching or whatever you need</li>
+</ol>
+<p>This makes your custom geo IP handler fully integrated with the middleware's Redis infrastructure.</p>
+<h2 id="implementation-examples">Implementation Examples<a class="headerlink" href="#implementation-examples" title="Permanent link">&para;</a></h2>
+<h3 id="example-custom-geo-ip-service">Example: Custom Geo IP Service<a class="headerlink" href="#example-custom-geo-ip-service" title="Permanent link">&para;</a></h3>
+<p>Here's a complete example of a custom GeoIPHandler implementation that uses a different service:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.protocols.geo_ip_protocol</span><span class="w"> </span><span class="kn">import</span> <span class="n">GeoIPHandler</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.protocols.redis_protocol</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisHandlerProtocol</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">CustomGeoIPHandler</span><span class="p">:</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom handler using Custom GeoIP database&quot;&quot;&quot;</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">license_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;CustomGeoIP.mmdb&quot;</span><span class="p">):</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">license_key</span> <span class="o">=</span> <span class="n">license_key</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">db_path</span> <span class="o">=</span> <span class="n">db_path</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">redis</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Will store the FastAPI Guard&#39;s Redis handler</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="nd">@property</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">is_initialized</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize by downloading or loading the Custom GeoIP database&quot;&quot;&quot;</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">somelibrary</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>        <span class="c1"># Check if we have a cached copy in Redis</span>
+</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="p">:</span>
+</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>            <span class="n">cached_db</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">get_key</span><span class="p">(</span><span class="s2">&quot;custom&quot;</span><span class="p">,</span> <span class="s2">&quot;database&quot;</span><span class="p">)</span>
+</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>            <span class="k">if</span> <span class="n">cached_db</span><span class="p">:</span>
+</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">db_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cached_db</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cached_db</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span>
+</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>                            <span class="k">else</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;latin-1&quot;</span><span class="p">))</span>
+</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="o">=</span> <span class="n">somelibrary</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">db_path</span><span class="p">)</span>
+</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>                <span class="k">return</span>
+</span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>
+</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>        <span class="c1"># Download if needed (simplified - in a real app, use your API)</span>
+</span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">db_path</span><span class="p">):</span>
+</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>            <span class="c1"># Custom code to download database using license_key</span>
+</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>            <span class="k">pass</span>
+</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>
+</span><span id="__span-2-39"><a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>        <span class="c1"># Open the database</span>
+</span><span id="__span-2-40"><a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a>        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">db_path</span><span class="p">):</span>
+</span><span id="__span-2-41"><a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="o">=</span> <span class="n">somelibrary</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">db_path</span><span class="p">)</span>
+</span><span id="__span-2-42"><a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="__span-2-43"><a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a>
+</span><span id="__span-2-44"><a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">initialize_redis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">redis_handler</span><span class="p">:</span> <span class="n">RedisHandlerProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-2-45"><a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Store Redis handler and initialize&quot;&quot;&quot;</span>
+</span><span id="__span-2-46"><a id="__codelineno-2-46" name="__codelineno-2-46" href="#__codelineno-2-46"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">redis</span> <span class="o">=</span> <span class="n">redis_handler</span>  <span class="c1"># Store the Redis handler provided by FastAPI Guard</span>
+</span><span id="__span-2-47"><a id="__codelineno-2-47" name="__codelineno-2-47" href="#__codelineno-2-47"></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+</span><span id="__span-2-48"><a id="__codelineno-2-48" name="__codelineno-2-48" href="#__codelineno-2-48"></a>
+</span><span id="__span-2-49"><a id="__codelineno-2-49" name="__codelineno-2-49" href="#__codelineno-2-49"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_country</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-2-50"><a id="__codelineno-2-50" name="__codelineno-2-50" href="#__codelineno-2-50"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Get country code from IP using Custom GeoIP database&quot;&quot;&quot;</span>
+</span><span id="__span-2-51"><a id="__codelineno-2-51" name="__codelineno-2-51" href="#__codelineno-2-51"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="p">:</span>
+</span><span id="__span-2-52"><a id="__codelineno-2-52" name="__codelineno-2-52" href="#__codelineno-2-52"></a>            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Database not initialized&quot;</span><span class="p">)</span>
+</span><span id="__span-2-53"><a id="__codelineno-2-53" name="__codelineno-2-53" href="#__codelineno-2-53"></a>
+</span><span id="__span-2-54"><a id="__codelineno-2-54" name="__codelineno-2-54" href="#__codelineno-2-54"></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-2-55"><a id="__codelineno-2-55" name="__codelineno-2-55" href="#__codelineno-2-55"></a>            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">country</span><span class="p">(</span><span class="n">ip</span><span class="p">)</span>
+</span><span id="__span-2-56"><a id="__codelineno-2-56" name="__codelineno-2-56" href="#__codelineno-2-56"></a>            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">country</span><span class="o">.</span><span class="n">iso_code</span>
+</span><span id="__span-2-57"><a id="__codelineno-2-57" name="__codelineno-2-57" href="#__codelineno-2-57"></a>        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+</span><span id="__span-2-58"><a id="__codelineno-2-58" name="__codelineno-2-58" href="#__codelineno-2-58"></a>            <span class="k">return</span> <span class="kc">None</span>
 </span></code></pre></div>
-<h2 id="complete-example">Complete Example<a class="headerlink" href="#complete-example" title="Permanent link">&para;</a></h2>
-<p>Here's a complete example showing basic usage:</p>
+<h3 id="usage-in-application">Usage in Application<a class="headerlink" href="#usage-in-application" title="Permanent link">&para;</a></h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityMiddleware</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityConfig</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.handlers.ipinfo_handler</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPInfoManager</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">your_custom_module</span><span class="w"> </span><span class="kn">import</span> <span class="n">CustomGeoIPHandler</span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="n">geo_ip_handler</span><span class="o">=</span><span class="n">IPInfoManager</span><span class="p">(</span><span class="s2">&quot;your_ipinfo_token_here&quot;</span><span class="p">),</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="n">enable_redis</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Redis enabled</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="n">redis_url</span><span class="o">=</span><span class="s2">&quot;redis://localhost:6379&quot;</span><span class="p">,</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="n">whitelist</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;192.168.1.1&quot;</span><span class="p">],</span>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    <span class="n">blacklist</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;10.0.0.1&quot;</span><span class="p">],</span>
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="n">blocked_countries</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;AR&quot;</span><span class="p">,</span> <span class="s2">&quot;IT&quot;</span><span class="p">],</span>
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    <span class="n">rate_limit</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    <span class="n">custom_log_file</span><span class="o">=</span><span class="s2">&quot;security.log&quot;</span>
-</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="p">)</span>
-</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>
-</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">SecurityMiddleware</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
-</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>
-</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
-</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">root</span><span class="p">():</span>
-</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Hello World&quot;</span><span class="p">}</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="c1"># Use custom handler instead of default IPInfoManager</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="n">geo_ip_handler</span><span class="o">=</span><span class="n">CustomGeoIPHandler</span><span class="p">(</span><span class="n">args</span><span class="p">),</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="n">blocked_countries</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;CN&quot;</span><span class="p">,</span> <span class="s2">&quot;RU&quot;</span><span class="p">],</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="c1"># Other configuration...</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="p">)</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">SecurityMiddleware</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
 </span></code></pre></div>
-<h2 id="run-the-application">Run the Application<a class="headerlink" href="#run-the-application" title="Permanent link">&para;</a></h2>
-<p>Run your application using uvicorn:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uvicorn<span class="w"> </span>main:app<span class="w"> </span>--reload
+<h2 id="technical-details-how-redis-integration-works">Technical Details: How Redis Integration Works<a class="headerlink" href="#technical-details-how-redis-integration-works" title="Permanent link">&para;</a></h2>
+<p>When you create a custom GeoIPHandler:</p>
+<ol>
+<li>FastAPI Guard's middleware will call your handler's <code>initialize_redis()</code> method</li>
+<li>It passes its internal <code>RedisManager</code> to your handler</li>
+<li>Your handler can store this manager and use it for caching</li>
+</ol>
+<p>You don't need to:
+- Create your own Redis connection
+- Implement RedisHandlerProtocol
+- Manage Redis connection pools</p>
+<p>The built-in RedisManager handles all of this for you.</p>
+<p>When a GeoIPHandler implementation receives a Redis handler in <code>initialize_redis()</code>, it can use it to:</p>
+<ol>
+<li>Cache lookup results to improve performance</li>
+<li>Store database files across application restarts</li>
+<li>Share state across multiple application instances</li>
+</ol>
+<p>The Redis handler provides these key methods:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Store a value with optional TTL</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">await</span> <span class="n">redis_handler</span><span class="o">.</span><span class="n">set_key</span><span class="p">(</span><span class="s2">&quot;namespace&quot;</span><span class="p">,</span> <span class="s2">&quot;key&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Retrieve a value</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">value</span> <span class="o">=</span> <span class="k">await</span> <span class="n">redis_handler</span><span class="o">.</span><span class="n">get_key</span><span class="p">(</span><span class="s2">&quot;namespace&quot;</span><span class="p">,</span> <span class="s2">&quot;key&quot;</span><span class="p">)</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># Use the connection directly (advanced)</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="k">async</span> <span class="k">with</span> <span class="n">redis_handler</span><span class="o">.</span><span class="n">get_connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="c1"># Direct Redis operations</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="k">pass</span>
 </span></code></pre></div>
-<p>Your API is now protected by FastAPI Guard! 🛡️</p>
-<h2 id="whats-next">What's Next<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Learn about <a href="../ip-management/banning/">IP Management</a></li>
-<li>Configure <a href="../ip-management/rate-limiter/">Rate Limiting</a></li>
-<li>Set up <a href="../security/penetration-detection/">Penetration Detection</a></li>
-<li>Learn about <a href="../redis-integration/caching/">Redis Integration</a></li>
-</ul>
+<p>Remember: You don't implement the RedisHandlerProtocol yourself - FastAPI Guard provides its built-in RedisManager which meets this protocol and is automatically passed to your custom GeoIPHandler.</p>
 
 
 

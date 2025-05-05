@@ -679,6 +679,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-1-using-the-built-in-ipinfohandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option 1: Using the built-in IPInfoHandler
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-2-providing-a-custom-geographical-ip-handler" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option 2: Providing a custom geographical IP handler
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1470,6 +1494,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-1-using-the-built-in-ipinfohandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option 1: Using the built-in IPInfoHandler
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-2-providing-a-custom-geographical-ip-handler" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option 2: Providing a custom geographical IP handler
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1519,55 +1567,106 @@
 
 
 <h1 id="ip-geolocation">IP Geolocation<a class="headerlink" href="#ip-geolocation" title="Permanent link">&para;</a></h1>
-<p>FastAPI Guard uses IPInfo's database for IP geolocation and country-based filtering. The database is only downloaded and loaded when country filtering and/or cloud blocking features are configured, improving performance for applications that don't need these features.</p>
+<p>FastAPI Guard accepts an arbitrary class that implements geolocation and country-based filtering. All it needs is to implement the following protocol:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">GeoIPHandler</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="sd">    Protocol for geographical IP handler.</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="nd">@property</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">is_initialized</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">initialize_redis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">redis_handler</span><span class="p">:</span> <span class="s2">&quot;RedisManager&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_country</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</span></code></pre></div>
+<p>It provides an implementation that uses the <a href="https://ipinfo.io/signup">ipinfo.io</a> service:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.handlers.ipinfo_handler</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPInfoManager</span>
+</span></code></pre></div>
+<p>The geolocation handler is only initialized and used when country filtering is configured, improving performance for applications that don't need these features.</p>
 <h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h2>
+<h3 id="option-1-using-the-built-in-ipinfohandler">Option 1: Using the built-in IPInfoHandler<a class="headerlink" href="#option-1-using-the-built-in-ipinfohandler" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Get your IPInfo token from <a href="https://ipinfo.io/signup">ipinfo.io</a></li>
 <li>Configure geolocation in your app:</li>
 </ol>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">ipinfo_token</span><span class="o">=</span><span class="s2">&quot;your_ipinfo_token_here&quot;</span><span class="p">,</span>  <span class="c1"># NOTE: Required when using country filtering</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">blocked_countries</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;CN&quot;</span><span class="p">,</span> <span class="s2">&quot;RU&quot;</span><span class="p">],</span>  <span class="c1"># Block specific countries</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">whitelist_countries</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;US&quot;</span><span class="p">,</span> <span class="s2">&quot;CA&quot;</span><span class="p">],</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">db_path</span><span class="o">=</span><span class="s2">&quot;custom/ipinfo.db&quot;</span><span class="p">,</span>  <span class="c1"># Optional custom database path</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">block_cloud_providers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;AWS&quot;</span><span class="p">,</span> <span class="s2">&quot;GCP&quot;</span><span class="p">}</span>  <span class="c1"># Case-sensitive provider names</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">geo_ip_handler</span><span class="o">=</span><span class="n">IPInfoManager</span><span class="p">(</span><span class="s2">&quot;your_ipinfo_token_here&quot;</span><span class="p">),</span>  <span class="c1"># NOTE: Required when using country filtering</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">blocked_countries</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;CN&quot;</span><span class="p">,</span> <span class="s2">&quot;RU&quot;</span><span class="p">],</span>  <span class="c1"># Block specific countries</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">whitelist_countries</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;US&quot;</span><span class="p">,</span> <span class="s2">&quot;CA&quot;</span><span class="p">],</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">db_path</span><span class="o">=</span><span class="s2">&quot;custom/ipinfo.db&quot;</span><span class="p">,</span>  <span class="c1"># Optional custom database path</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">block_cloud_providers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;AWS&quot;</span><span class="p">,</span> <span class="s2">&quot;GCP&quot;</span><span class="p">}</span>  <span class="c1"># Case-sensitive provider names</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="option-2-providing-a-custom-geographical-ip-handler">Option 2: Providing a custom geographical IP handler<a class="headerlink" href="#option-2-providing-a-custom-geographical-ip-handler" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">CustomGeoIPHandler</span><span class="p">:</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="sd">    Your custom class.</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="nd">@property</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">is_initialized</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>        <span class="c1"># your implementation</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="o">...</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>        <span class="c1"># your implementation</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>        <span class="o">...</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">initialize_redis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">redis_handler</span><span class="p">:</span> <span class="s2">&quot;RedisManager&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>        <span class="c1"># your implementation</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>        <span class="o">...</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_country</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>        <span class="c1"># your implementation</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>        <span class="o">...</span>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>    <span class="n">geo_ip_handler</span><span class="o">=</span><span class="n">CustomGeoIPHandler</span><span class="p">(),</span>
+</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>    <span class="n">blocked_countries</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;CN&quot;</span><span class="p">,</span> <span class="s2">&quot;RU&quot;</span><span class="p">],</span>  <span class="c1"># Block specific countries</span>
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>    <span class="n">whitelist_countries</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;US&quot;</span><span class="p">,</span> <span class="s2">&quot;CA&quot;</span><span class="p">],</span>
+</span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>    <span class="n">db_path</span><span class="o">=</span><span class="s2">&quot;custom/ipinfo.db&quot;</span><span class="p">,</span>  <span class="c1"># Optional custom database path</span>
+</span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>    <span class="n">block_cloud_providers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;AWS&quot;</span><span class="p">,</span> <span class="s2">&quot;GCP&quot;</span><span class="p">}</span>  <span class="c1"># Case-sensitive provider names</span>
+</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="country-blocking">Country Blocking<a class="headerlink" href="#country-blocking" title="Permanent link">&para;</a></h2>
 <p>Block requests from specific countries using ISO 3166-1 alpha-2 country codes:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">ipinfo_token</span><span class="o">=</span><span class="s2">&quot;your_ipinfo_token_here&quot;</span><span class="p">,</span>  <span class="c1"># NOTE: Required when using country filtering</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">blocked_countries</span><span class="o">=</span><span class="p">[</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="s2">&quot;CN&quot;</span><span class="p">,</span>  <span class="c1"># China</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="s2">&quot;RU&quot;</span><span class="p">,</span>  <span class="c1"># Russia</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        <span class="s2">&quot;IR&quot;</span><span class="p">,</span>  <span class="c1"># Iran</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="s2">&quot;KP&quot;</span>   <span class="c1"># North Korea</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="p">]</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">geo_ip_handler</span><span class="o">=</span><span class="n">IPInfoManager</span><span class="p">(</span><span class="s2">&quot;your_ipinfo_token_here&quot;</span><span class="p">),</span>  <span class="c1"># NOTE: Required when using country filtering</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">blocked_countries</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        <span class="s2">&quot;CN&quot;</span><span class="p">,</span>  <span class="c1"># China</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        <span class="s2">&quot;RU&quot;</span><span class="p">,</span>  <span class="c1"># Russia</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>        <span class="s2">&quot;IR&quot;</span><span class="p">,</span>  <span class="c1"># Iran</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>        <span class="s2">&quot;KP&quot;</span>   <span class="c1"># North Korea</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="p">]</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="country-whitelisting">Country Whitelisting<a class="headerlink" href="#country-whitelisting" title="Permanent link">&para;</a></h2>
 <p>Only allow requests from specific countries:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">ipinfo_token</span><span class="o">=</span><span class="s2">&quot;your_ipinfo_token_here&quot;</span><span class="p">,</span>  <span class="c1"># NOTE: Required when using country filtering</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">whitelist_countries</span><span class="o">=</span><span class="p">[</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="s2">&quot;US&quot;</span><span class="p">,</span>  <span class="c1"># United States</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="s2">&quot;CA&quot;</span><span class="p">,</span>  <span class="c1"># Canada</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="s2">&quot;GB&quot;</span><span class="p">,</span>  <span class="c1"># United Kingdom</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="s2">&quot;AU&quot;</span>   <span class="c1"># Australia</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="p">]</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">geo_ip_handler</span><span class="o">=</span><span class="n">IPInfoManager</span><span class="p">(</span><span class="s2">&quot;your_ipinfo_token_here&quot;</span><span class="p">),</span>  <span class="c1"># NOTE: Required when using country filtering</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">whitelist_countries</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="s2">&quot;US&quot;</span><span class="p">,</span>  <span class="c1"># United States</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>        <span class="s2">&quot;CA&quot;</span><span class="p">,</span>  <span class="c1"># Canada</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>        <span class="s2">&quot;GB&quot;</span><span class="p">,</span>  <span class="c1"># United Kingdom</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>        <span class="s2">&quot;AU&quot;</span>   <span class="c1"># Australia</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="p">]</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="custom-geolocation-logic">Custom Geolocation Logic<a class="headerlink" href="#custom-geolocation-logic" title="Permanent link">&para;</a></h2>
 <p>You can also use the <code>IPInfoManager</code> directly for custom geolocation logic:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.handlers.ipinfo_handler</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPInfoManager</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">ipinfo_db</span> <span class="o">=</span> <span class="n">IPInfoManager</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="s2">&quot;your_ipinfo_token_here&quot;</span><span class="p">)</span>  <span class="c1"># NOTE: Required when using custom geolocation</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="k">await</span> <span class="n">ipinfo_db</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/country/</span><span class="si">{ip}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_ip_country</span><span class="p">(</span><span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">country</span> <span class="o">=</span> <span class="n">ipinfo_db</span><span class="o">.</span><span class="n">get_country</span><span class="p">(</span><span class="n">ip</span><span class="p">)</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;ip&quot;</span><span class="p">:</span> <span class="n">ip</span><span class="p">,</span> <span class="s2">&quot;country&quot;</span><span class="p">:</span> <span class="n">country</span><span class="p">}</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.handlers.ipinfo_handler</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPInfoManager</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">ipinfo_db</span> <span class="o">=</span> <span class="n">IPInfoManager</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="s2">&quot;your_ipinfo_token_here&quot;</span><span class="p">)</span>  <span class="c1"># NOTE: Required when using custom geolocation</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">await</span> <span class="n">ipinfo_db</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/country/</span><span class="si">{ip}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_ip_country</span><span class="p">(</span><span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="n">country</span> <span class="o">=</span> <span class="n">ipinfo_db</span><span class="o">.</span><span class="n">get_country</span><span class="p">(</span><span class="n">ip</span><span class="p">)</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;ip&quot;</span><span class="p">:</span> <span class="n">ip</span><span class="p">,</span> <span class="s2">&quot;country&quot;</span><span class="p">:</span> <span class="n">country</span><span class="p">}</span>
 </span></code></pre></div>
 
 
