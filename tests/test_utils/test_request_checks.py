@@ -550,10 +550,12 @@ async def test_cloud_provider_blocking(
 
 
 @pytest.mark.asyncio
-async def test_check_ip_country_no_reader(security_config: SecurityConfig) -> None:
+async def test_check_ip_country_not_initialized(
+    security_config: SecurityConfig,
+) -> None:
     """Test check_ip_country when IPInfo reader is not initialized."""
     mock_ipinfo = Mock()
-    mock_ipinfo.reader = None
+    mock_ipinfo.is_initialized = False
     mock_ipinfo.initialize = AsyncMock()
     mock_ipinfo.get_country.return_value = "US"
 

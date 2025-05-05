@@ -21,7 +21,6 @@ Enable cloud provider IP blocking:
 
 ```python
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",  # NOTE: Required when using cloud blocking
     block_cloud_providers={"AWS", "GCP", "Azure"}
 )
 ```
@@ -32,7 +31,6 @@ Block specific providers:
 
 ```python
 config = SecurityConfig(
-    ipinfo_token="your_ipinfo_token_here",  # NOTE: Required when using cloud blocking
     block_cloud_providers={"AWS"}  # Only block AWS IPs
 )
 ```

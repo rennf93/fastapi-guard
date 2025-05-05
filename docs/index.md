@@ -26,11 +26,12 @@ keywords: fastapi, security, middleware, python, ip control, penetration detecti
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
+from guard.handlers.ipinfo_handler import IPInfoManager
 
 app = FastAPI()
 
 config = SecurityConfig(
-    ipinfo_token="your_token_here",
+    geo_ip_handler=IPInfoManager("your_token_here"),
     enable_redis=False,
     rate_limit=100,
     auto_ban_threshold=5

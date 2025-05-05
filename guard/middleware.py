@@ -10,7 +10,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
-from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.handlers.ratelimit_handler import RateLimitManager
 from guard.handlers.suspatterns_handler import sus_patterns_handler
 from guard.models import SecurityConfig
@@ -50,13 +49,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self.last_cloud_ip_refresh = 0
         self.suspicious_request_counts: dict[str, int] = {}
         self.last_cleanup = time.time()
-        self.ipinfo_db = None
-        if self.config.blocked_countries or self.config.whitelist_countries:
-            assert config.ipinfo_token is not None, "should be validated by config"
-            self.ipinfo_db = IPInfoManager(
-                token=config.ipinfo_token, db_path=config.ipinfo_db_path
-            )
         self.rate_limit_handler = RateLimitManager(config)
+
+        self.geo_ip_handler = None
+        if config.whitelist_countries or config.blocked_countries:
+            self.geo_ip_handler = config.geo_ip_handler
 
         # Initialize Redis handler if enabled
         self.redis_handler = None
@@ -134,7 +131,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             )
 
         # Whitelist/blacklist
-        if not await is_ip_allowed(client_ip, self.config, self.ipinfo_db):
+        if not await is_ip_allowed(client_ip, self.config, self.geo_ip_handler):
             await log_activity(
                 request,
                 self.logger,
@@ -300,7 +297,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     self.redis_handler, self.config.block_cloud_providers
                 )
             await ip_ban_manager.initialize_redis(self.redis_handler)
-            if self.ipinfo_db is not None:
-                await self.ipinfo_db.initialize_redis(self.redis_handler)
+            if self.geo_ip_handler is not None:
+                await self.geo_ip_handler.initialize_redis(self.redis_handler)
             await self.rate_limit_handler.initialize_redis(self.redis_handler)
             await sus_patterns_handler.initialize_redis(self.redis_handler)

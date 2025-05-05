@@ -4,6 +4,7 @@ import os
 from fastapi import FastAPI, Query, Request
 from pydantic import BaseModel
 
+from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
 
@@ -98,7 +99,7 @@ config = SecurityConfig(
     # User Agent settings
     blocked_user_agents=["badbot", "malicious-crawler"],
     # IPInfo integration
-    ipinfo_token=str(IPINFO_TOKEN),
+    geo_ip_handler=IPInfoManager(str(IPINFO_TOKEN)),
     blocked_countries=["CN", "RU"],
     # Redis integration
     # NOTE: enable_redis=True by default

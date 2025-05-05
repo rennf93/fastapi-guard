@@ -83,11 +83,12 @@ The middleware automatically initializes:
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
+from guard.handlers.ipinfo_handler import IPInfoManager
 
 app = FastAPI()
 
 config = SecurityConfig(
-    ipinfo_token="your_token",  # NOTE: Required when using country/cloud blocking
+    geographical_ip_manager=IPInfoManager("your_token"),  # NOTE: Required when using country blocking
     rate_limit=100
 )
 
