@@ -110,3 +110,30 @@ async def test_geo_ip_handler_async_methods() -> None:
     # Test get_country method
     result = handler.get_country("192.168.1.1")
     assert result is None
+
+
+def test_validate_trusted_proxies() -> None:
+    """Test validation of trusted proxies."""
+    # Valid IPs
+    config = SecurityConfig(trusted_proxies=["127.0.0.1", "192.168.1.0/24"])
+    assert "127.0.0.1" in config.trusted_proxies
+    assert "192.168.1.0/24" in config.trusted_proxies
+
+    # Invalid IP
+    with pytest.raises(ValueError, match="Invalid proxy IP or CIDR range"):
+        SecurityConfig(trusted_proxies=["invalid-ip"])
+
+    # Empty list is allowed
+    config = SecurityConfig(trusted_proxies=[])
+    assert config.trusted_proxies == []
+
+
+def test_validate_proxy_depth() -> None:
+    """Test validation of trusted proxy depth."""
+    # Valid depth
+    config = SecurityConfig(trusted_proxy_depth=2)
+    assert config.trusted_proxy_depth == 2
+
+    # Invalid depth
+    with pytest.raises(ValueError, match="trusted_proxy_depth must be at least 1"):
+        SecurityConfig(trusted_proxy_depth=0)

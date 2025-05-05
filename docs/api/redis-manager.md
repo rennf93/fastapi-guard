@@ -48,13 +48,13 @@ async def get_key(self, namespace: str, key: str) -> Any:
 
 ### set_key
 ```python
-async def set_key(self, namespace: str, key: str, value: Any, ttl: Optional[int]) -> bool:
+async def set_key(self, namespace: str, key: str, value: Any, ttl: int | None = None) -> bool:
     """Set namespaced key with optional TTL"""
 ```
 
 ### incr
 ```python
-async def incr(self, namespace: str, key: str, ttl: Optional[int]) -> int:
+async def incr(self, namespace: str, key: str, ttl: int | None = None) -> int:
     """Atomic increment with expiration"""
 ```
 

@@ -55,20 +55,6 @@
 
 🎮 **[Live Playground](https://playground.fastapi-guard.com)** - Testing playground for FastAPI Guard's features in action.
 
-## Prerequisites
-
-If you want to use `fastapi-guard`'s country filtering features with the handler provided by this library, you'll need to obtain an IPInfo token:
-
-1. Visit [IPInfo's website](https://ipinfo.io/signup) to create a free account
-2. After signing up, you'll receive an API token
-3. The free tier includes:
-   - Up to 50,000 requests per month
-   - Access to IP to Country database
-   - Daily database updates
-   - IPv4 & IPv6 support
-
-Note: This is only required if you use country filtering (`blocked_countries`, `whitelist_countries`). You can also provide your own handler that uses any other service.
-
 ## Features
 
 - **IP Whitelisting and Blacklisting**: Control access based on IP addresses.
@@ -107,8 +93,8 @@ app = FastAPI()
 
 # Define your security configuration
 config = SecurityConfig(
-    geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # Required for IP geolocation
-    db_path="custom/ipinfo.db",  # Optional custom database path
+    ipinfo_token="your_ipinfo_token_here",  # Optional: IPInfo token required for IP geolocation
+    ipinfo_db_path="custom/ipinfo.db",  # Optional custom database path
     whitelist=["192.168.1.1"],
     blacklist=["10.0.0.1"],
     blocked_countries=["AR", "IT"],
@@ -252,8 +238,40 @@ config = SecurityConfig(
     block_cloud_providers={"AWS", "GCP", "Azure"},
 )
 ```
-
 ### IP Geolocation and Country Blocking
+
+If you want to use `fastapi-guard`'s built-in country filtering features, you'll need to obtain an IPInfo token:
+
+1. Visit [IPInfo's website](https://ipinfo.io/signup) to create a free account
+2. After signing up, you'll receive an API token
+3. The free tier includes:
+   - Up to 50,000 requests per month
+   - Access to IP to Country database
+   - Daily database updates
+   - IPv4 & IPv6 support
+
+Note: This is only required if you use country filtering (`blocked_countries`, `whitelist_countries`). You can also provide your own handler that uses any other service.
+
+## Advanced Usage
+
+### Secure Proxy Configuration
+
+Configure trusted proxies to securely handle X-Forwarded-For headers:
+
+```python
+config = SecurityConfig(
+    trusted_proxies=["10.0.0.1", "192.168.1.0/24"],  # List of trusted proxy IPs or CIDR ranges
+    trusted_proxy_depth=1,  # How many proxies to expect in chain
+    trust_x_forwarded_proto=True,  # Whether to trust X-Forwarded-Proto for HTTPS detection
+)
+```
+
+When `trusted_proxies` is configured, FastAPI Guard will:
+1. Only trust X-Forwarded-For headers from these IPs
+2. Extract the appropriate client IP based on proxy depth
+3. Prevent IP spoofing attacks through header manipulation
+
+### Custom Geolocation Handler
 
 The library implements a handler that uses IPInfo's [IP to Country database](https://ipinfo.io/products/free-ip-database), which provides:
 
@@ -266,13 +284,10 @@ The library implements a handler that uses IPInfo's [IP to Country database](htt
 To use the geolocation feature with this handler:
 
 ```python
-from guard.handlers.ipinfo_handler import IPInfoManager
+from guard.protocols.geoip_handler import GeoIPHandler
 
 config = SecurityConfig(
-    geo_ip_handler=IPInfoManager(
-        "your_ipinfo_token_here",
-        db_path="custom/ipinfo.db",  # Optional custom database path)
-    ),
+    geo_ip_handler=GeoIPHandler,
     blocked_countries=["AR", "IT"],  # Block specific countries using ISO 3166-1 alpha-2 codes
     whitelist_countries=["US", "CA"]  # Optional: Only allow specific countries
 )
@@ -283,9 +298,9 @@ The database is automatically downloaded and cached locally when the middleware 
 You can also use a service other than IPInfo, as long as you implement the same protocol:
 
 ```python
-# implement the required methods of guard.models.GeoIPHandler class
+# implement the required methods of guard.protocols.geoip_handler.GeoIPHandler protocol
 
-class CustomGeoIPHandler:
+class GeoIPHandler:
     """
     Your custom class.
     """
@@ -309,13 +324,11 @@ class CustomGeoIPHandler:
 
 
 config = SecurityConfig(
-    geo_ip_handler=CustomGeoIPHandler(),
+    geo_ip_handler=GeoIPHandler,
     blocked_countries=["AR", "IT"],  # Block specific countries using ISO 3166-1 alpha-2 codes
     whitelist_countries=["US", "CA"]  # Optional: Only allow specific countries
 )
 ```
-
-## Advanced Usage
 
 ### Custom Request Check
 
@@ -376,32 +389,36 @@ The `SecurityConfig` class defines the structure for security configuration, inc
 
 #### Attributes
 
-- `geo_ip_handler`: GeoIPHandler - Protocol that allows for IP geolocation functionality
-- `enable_redis`: bool - Enable Redis for distributed state (default: True). When disabled, uses in-memory storage
-- `redis_url`: Optional[str] - Redis connection URL (default: "redis://localhost:6379")
-- `redis_prefix`: str - Prefix for Redis keys (default: "fastapi_guard:")
-- `whitelist`: Optional[List[str]] - A list of IP addresses or ranges that are always allowed. If set to None, no whitelist is applied.
-- `blacklist`: List[str] - A list of IP addresses or ranges that are always blocked.
-- `blocked_countries`: List[str] - A list of country codes whose IP addresses should be blocked.
-- `blocked_user_agents`: List[str] - A list of user agent strings or patterns that should be blocked.
-- `auto_ban_threshold`: int - The threshold for auto-banning an IP address after a certain number of requests.
-- `auto_ban_duration`: int - The duration in seconds for which an IP address should be banned after reaching the auto-ban threshold.
-- `custom_log_file`: Optional[str] - The path to a custom log file for logging security events.
-- `custom_error_responses`: Dict[int, str] - A dictionary of custom error responses for specific HTTP status codes.
-- `rate_limit`: int - The maximum number of requests allowed per minute from a single IP.
-- `enforce_https`: bool - Whether to enforce HTTPS connections. If True, all HTTP requests will be redirected to HTTPS.
-- `custom_request_check`: Optional[Callable[[Request], Awaitable[Optional[Response]]]] - A custom function to perform additional checks on the request. If it returns a Response, that response will be sent instead of continuing the middleware chain.
-- `custom_response_modifier`: Optional[Callable[[Response], Awaitable[Response]]] - A custom function to modify the response before it's sent.
-- `enable_cors`: bool - Whether to enable CORS.
-- `cors_allow_origins`: List[str] - A list of origins that are allowed to access the API.
-- `cors_allow_methods`: List[str] - A list of methods that are allowed to access the API.
-- `cors_allow_headers`: List[str] - A list of headers that are allowed in CORS requests.
-- `cors_allow_credentials`: bool - Whether to allow credentials in CORS requests.
-- `cors_expose_headers`: List[str] - A list of headers that are exposed in CORS responses.
-- `cors_max_age`: int - The maximum age in seconds that the results of a preflight request can be cached.
-- `block_cloud_providers`: Optional[Set[str]] - Case-sensitive cloud provider names to block. Valid values: 'AWS', 'GCP', 'Azure'. Invalid entries are silently ignored.
-- `ipinfo_token`: str (DEPRECATED) - The IPInfo API token required for IP geolocation functionality.
-- `ipinfo_db_path`: Optional[str] (DEPRECATED) - Custom path for IPInfo database storage (default: ./data/ipinfo/country_asn.mmdb)
+- **geo_ip_handler**: ```GeoIPHandler``` - Protocol that allows for IP geolocation functionality.
+- **enable_redis**: ```bool``` - Enable Redis for distributed state (default: True). When disabled, uses in-memory storage.
+- **redis_url**: ```str | None``` - Redis connection URL (default: "redis://localhost:6379").
+- **redis_prefix**: ```str``` - Prefix for Redis keys (default: "fastapi_guard:").
+- **trusted_proxies**: ```list[str] | None``` - List of trusted proxy IPs or CIDR ranges.
+- **trusted_proxy_depth**: ```int``` - How many proxies to expect in chain.
+- **trust_x_forwarded_proto**: ```bool``` - Whether to trust X-Forwarded-Proto for HTTPS detection.
+- **whitelist**: ```list[str] | None``` - A list of IP addresses or ranges that are always allowed. If set to None, no whitelist is applied.
+- **blacklist**: ```list[str]``` - A list of IP addresses or ranges that are always blocked.
+- **blocked_countries**: ```list[str]``` - A list of country codes whose IP addresses should be blocked.
+- **blocked_user_agents**: ```list[str]``` - A list of user agent strings or patterns that should be blocked.
+- **auto_ban_threshold**: ```int``` - The threshold for auto-banning an IP address after a certain number of requests.
+- **auto_ban_duration**: ```int``` - The duration in seconds for which an IP address should be banned after reaching the auto-ban threshold.
+- **custom_log_file**: ```str | None``` - The path to a custom log file for logging security events.
+- **custom_error_responses**: ```dict[int, str]``` - A dictionary of custom error responses for specific HTTP status codes.
+- **rate_limit**: ```int``` - The maximum number of requests allowed per minute from a single IP.
+- **enforce_https**: ```bool``` - Whether to enforce HTTPS connections. If True, all HTTP requests will be redirected to HTTPS.
+- **custom_request_check**: ```Callable[[Request], Awaitable[Response | None]] | None``` - A custom function to perform additional checks on the request. If it returns a Response, that response will be sent instead of continuing the middleware chain.
+- **custom_response_modifier**: ```Callable[[Response], Awaitable[Response]] | None``` - A custom function to modify the response before it's sent.
+- **enable_cors**: ```bool``` - Whether to enable CORS.
+- **cors_allow_origins**: ```list[str]``` - A list of origins that are allowed to access the API.
+- **cors_allow_methods**: ```list[str]``` - A list of methods that are allowed to access the API.
+- **cors_allow_headers**: ```list[str]``` - A list of headers that are allowed in CORS requests.
+- **cors_allow_credentials**: ```bool``` - Whether to allow credentials in CORS requests.
+- **cors_expose_headers**: ```list[str]``` - A list of headers that are exposed in CORS responses.
+- **cors_max_age**: ```int``` - The maximum age in seconds that the results of a preflight request can be cached.
+- **block_cloud_providers**: ```set[str]``` - Case-sensitive cloud provider names to block. Valid values: 'AWS', 'GCP', 'Azure'. Invalid entries are silently ignored.
+- **ipinfo_token**: ```str``` (DEPRECATED) - The IPInfo API token required for IP geolocation functionality.
+- **ipinfo_db_path**: ```str``` (DEPRECATED) - Custom path for IPInfo database storage (default: ./data/ipinfo/country_asn.mmdb)
+
 
 ## Contributing
 

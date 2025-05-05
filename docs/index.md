@@ -61,7 +61,7 @@ You can also download the example app as a Docker container from [GitHub Contain
 docker pull ghcr.io/rennf93/fastapi-guard-example:latest
 
 # Or pull a specific version (matches library releases)
-docker pull ghcr.io/rennf93/fastapi-guard-example:v1.5.0
+docker pull ghcr.io/rennf93/fastapi-guard-example:v2.0.0
 ```
 
 ### Running the Example App
@@ -113,6 +113,7 @@ The example app includes endpoints to test various security features of FastAPI 
 - **Optimized Performance**: Selective loading of external resources based on configuration.
 - **Flexible Storage**: Choose between Redis-backed distributed state or in-memory storage.
 - **Automatic Fallback**: Seamless operation with/without Redis connection.
+- **Secure Proxy Handling**: Protection against X-Forwarded-For header injection attacks
 
 ## Documentation
 

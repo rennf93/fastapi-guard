@@ -1,6 +1,6 @@
 ---
 title: IPInfoManager API - FastAPI Guard
-description: API documentation for IP geolocation and country-based filtering and/or cloud blocking using IPInfo's database
+description: API documentation for IP geolocation and country-based filtering using IPInfo's database
 keywords: ip geolocation, country filtering, ipinfo integration, location detection, cloud provider blocking
 ---
 
@@ -8,7 +8,7 @@ keywords: ip geolocation, country filtering, ipinfo integration, location detect
 
 The `IPInfoManager` class handles IP geolocation using IPInfo's database. It uses a singleton pattern to ensure only one instance exists throughout the application.
 
-**Performance Note**: The IPInfo database is only downloaded and initialized when country-based filtering and/or cloud blocking is configured in your application, improving startup time and reducing resource usage when these features aren't needed.
+**Performance Note**: The IPInfo database is only downloaded and initialized when country-based filtering is configured in your application, improving startup time and reducing resource usage when these features aren't needed.
 
 ## Class Definition
 

@@ -37,7 +37,7 @@ config = SecurityConfig(
 )
 ```
 
-Note: FastAPI Guard only loads resources as needed. The IPInfo database is only downloaded when country filtering and/or cloud blocking is configured, and cloud IP ranges are only fetched when cloud provider blocking is enabled.
+Note: FastAPI Guard only loads resources as needed. The IPInfo database is only downloaded when country filtering is configured, and cloud IP ranges are only fetched when cloud provider blocking is enabled.
 
 ## Add the Middleware
 

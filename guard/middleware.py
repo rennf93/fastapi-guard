@@ -2,6 +2,7 @@
 import logging
 import time
 from collections.abc import Awaitable, Callable
+from ipaddress import IPv4Address, ip_network
 
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,6 +16,7 @@ from guard.handlers.suspatterns_handler import sus_patterns_handler
 from guard.models import SecurityConfig
 from guard.utils import (
     detect_penetration_attempt,
+    extract_client_ip,
     is_ip_allowed,
     is_user_agent_allowed,
     log_activity,
@@ -87,20 +89,38 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             Response: The response object, either
             from the next handler or a security-related response.
         """
-        if self.config.enforce_https and request.url.scheme == "http":
-            https_url = request.url.replace(scheme="https")
-            return RedirectResponse(
-                https_url, status_code=status.HTTP_301_MOVED_PERMANENTLY
-            )
+        # Check HTTPS enforcement
+        if self.config.enforce_https:
+            is_https = request.url.scheme == "https"
+
+            # Check X-Forwarded-Proto
+            if self.config.trust_x_forwarded_proto and self.config.trusted_proxies:
+                if request.client:
+                    connecting_ip = request.client.host
+                    is_trusted_proxy = any(
+                        # Check trusted proxy
+                        connecting_ip == proxy
+                        if "/" not in proxy
+                        else IPv4Address(connecting_ip)
+                        in ip_network(proxy, strict=False)
+                        for proxy in self.config.trusted_proxies
+                    )
+                    if is_trusted_proxy:
+                        # Trust X-Forwarded-Proto header
+                        forwarded_proto = request.headers.get("X-Forwarded-Proto", "")
+                        is_https = is_https or forwarded_proto.lower() == "https"
+
+            if not is_https:
+                https_url = request.url.replace(scheme="https")
+                return RedirectResponse(
+                    https_url, status_code=status.HTTP_301_MOVED_PERMANENTLY
+                )
 
         if not request.client:
             return await call_next(request)
 
-        client_ip = (
-            request.headers.get("X-Forwarded-For", request.client.host)
-            .split(",")[0]
-            .strip()
-        )
+        # Extract client IP
+        client_ip = extract_client_ip(request, self.config)
 
         # Excluded paths
         if any(request.url.path.startswith(path) for path in self.config.exclude_paths):

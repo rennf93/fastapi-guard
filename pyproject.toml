@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastapi-guard"
-version = "1.5.0"
+version = "2.0.0"
 description = "A security library for FastAPI to control IPs, log requests, and detect penetration attempts."
 authors = ["Renzo Franceschini <rennf93@gmail.com>"]
 readme = "README.md"

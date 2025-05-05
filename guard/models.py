@@ -27,6 +27,38 @@ class SecurityConfig(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    trusted_proxies: list[str] = Field(
+        default=[],
+        description="List of trusted proxy IPs or CIDR ranges for X-Forwarded-For",
+    )
+    """
+    list[str]:
+        List of trusted proxy IPs or CIDR ranges.
+        Only accept X-Forwarded-For headers from these IPs.
+        If empty, X-Forwarded-For headers will not be trusted.
+    """
+
+    trusted_proxy_depth: int = Field(
+        default=1,
+        description="How many proxies to expect in the X-Forwarded-For chain",
+    )
+    """
+    int:
+        How many proxies to expect in the proxy chain.
+        Determines which IP to extract from X-Forwarded-For header.
+        Default is 1 (extract the first IP in the chain).
+    """
+
+    trust_x_forwarded_proto: bool = Field(
+        default=False,
+        description="Trust X-Forwarded-Proto header for HTTPS detection",
+    )
+    """
+    bool:
+        Whether to trust X-Forwarded-Proto header for HTTPS detection.
+        Only applies when trusted_proxies is not empty.
+    """
+
     passive_mode: bool = Field(
         default=False,
         description="Enable Log-Only mode. Won't block requests, only log.",
@@ -206,10 +238,12 @@ class SecurityConfig(BaseModel):
         Field(default=None, description="Perform additional checks on the request")
     )
     """
-    Callable[[Request],
-    Awaitable[
-        Response | None
-    ]] | None:
+    Callable[
+        [Request],
+        Awaitable[
+            Response | None
+        ]
+    ] | None:
         A custom function to perform
         additional checks on the request.
         If it returns a Response, that response
@@ -221,8 +255,9 @@ class SecurityConfig(BaseModel):
         description="A custom function to modify the response before it's sent",
     )
     """
-    Callable[[Response],
-    Awaitable[Response]
+    Callable[
+        [Response],
+        Awaitable[Response]
     ] | None:
         A custom function to modify
         the response before it's sent.
@@ -383,6 +418,32 @@ class SecurityConfig(BaseModel):
             except ValueError:
                 raise ValueError(f"Invalid IP or CIDR range: {entry}") from None
         return validated
+
+    @field_validator("trusted_proxies")
+    def validate_trusted_proxies(cls, v: list[str]) -> list[str]:
+        """Validate trusted proxy IPs and CIDR ranges."""
+        if not v:
+            return []
+
+        validated = []
+        for entry in v:
+            try:
+                if "/" in entry:
+                    network = ip_network(entry, strict=False)
+                    validated.append(str(network))
+                else:
+                    addr = IPv4Address(entry)
+                    validated.append(str(addr))
+            except ValueError:
+                raise ValueError(f"Invalid proxy IP or CIDR range: {entry}") from None
+        return validated
+
+    @field_validator("trusted_proxy_depth")
+    def validate_proxy_depth(cls, v: int) -> int:
+        """Validate trusted proxy depth."""
+        if v < 1:
+            raise ValueError("trusted_proxy_depth must be at least 1")
+        return v
 
     @field_validator("block_cloud_providers", mode="before")
     def validate_cloud_providers(cls, v: Any) -> set[str]:

@@ -1,7 +1,7 @@
 # fastapi_guard/utils.py
 import logging
 import re
-from ipaddress import IPv4Address, ip_network
+from ipaddress import IPv4Address, IPv4Network, ip_network
 from typing import Literal
 
 from fastapi import Request
@@ -24,6 +24,95 @@ async def setup_custom_logging(log_file: str) -> logging.Logger:
     logger.addHandler(file_handler)
     logger.setLevel(logging.INFO)
     return logger
+
+
+def extract_client_ip(request: Request, config: SecurityConfig) -> str:
+    """
+    Securely extract the client IP address from the request,
+    considering trusted proxies.
+
+    This function implements a secure approach to IP extraction that protects against
+    X-Forwarded-For header injection attacks:
+
+    1. If no trusted proxies are defined, the connecting IP (request.client.host) is
+       always used
+    2. If trusted proxies are defined, X-Forwarded-For is only processed when
+       the request originates from a trusted proxy IP
+    3. When processing X-Forwarded-For from trusted proxies, the client's true IP
+       is extracted based on the proxy depth configuration
+
+    About proxy depth:
+    - X-Forwarded-For format: client, proxy1, proxy2, ... (leftmost is the real client)
+    - With depth=1 (default): Assumes one proxy in chain, uses leftmost IP as client
+    - With depth=2: Assumes two proxies in chain, still uses leftmost IP
+    - Higher depth values handle more complex proxy chains
+
+    Args:
+        request (Request):
+            The FastAPI request object
+        config (SecurityConfig):
+            The security configuration containing trusted proxy settings
+
+    Returns:
+        str: The extracted client IP address
+    """
+    if not request.client:
+        return "unknown"
+
+    connecting_ip = request.client.host
+
+    # Check if there's an X-Forwarded-For header from an untrusted source
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for and not config.trusted_proxies:
+        logging.warning(
+            f"Potential IP spoofing attempt: X-Forwarded-For header "
+            f"({forwarded_for}) received from untrusted IP {connecting_ip}"
+        )
+        return connecting_ip
+
+    # Don't trust X-Forwarded-For
+    if not config.trusted_proxies:
+        return connecting_ip
+
+    # Check trusted proxy
+    try:
+        connecting_ip_obj = IPv4Address(connecting_ip)
+        is_trusted = False
+
+        for proxy in config.trusted_proxies:
+            if "/" in proxy:  # CIDR notation
+                if connecting_ip_obj in IPv4Network(proxy, strict=False):
+                    is_trusted = True
+                    break
+            elif connecting_ip == proxy:  # Direct IP match
+                is_trusted = True
+                break
+
+        if not is_trusted and forwarded_for:
+            logging.warning(
+                f"Potential IP spoofing attempt: X-Forwarded-For header "
+                f"({forwarded_for}) received from untrusted IP {connecting_ip}"
+            )
+            return connecting_ip
+
+        if not is_trusted:
+            return connecting_ip
+
+        # Process X-Forwarded-For
+        if forwarded_for:
+            # Parse the header
+            ips = [ip.strip() for ip in forwarded_for.split(",")]
+
+            if len(ips) >= config.trusted_proxy_depth:
+                client_ip_index = 0
+                return ips[client_ip_index]
+
+        # Fall back to connecting IP
+        return connecting_ip
+
+    except (ValueError, IndexError) as e:
+        logging.warning(f"Error processing client IP: {str(e)}")
+        return connecting_ip
 
 
 async def log_activity(
@@ -135,7 +224,7 @@ async def check_ip_country(
     or in the whitelist.
 
     Args:
-        request (Union[str, Request]):
+        request (str | Request):
             The FastAPI request object or IP string.
         config (SecurityConfig):
             The security configuration object.
@@ -212,7 +301,7 @@ async def is_ip_allowed(
             The IP address to check.
         config (SecurityConfig):
             The security configuration object.
-        geo_ip_handler (Optional[GeoIPHandler]):
+        geo_ip_handler (GeoIPHandler | None):
             The IPInfo database handler.
 
     Returns:
