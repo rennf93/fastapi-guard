@@ -6,6 +6,8 @@ from guard.handlers.ratelimit_handler import RateLimitManager, rate_limit_handle
 from guard.handlers.redis_handler import RedisManager, redis_handler
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
+from guard.protocols.geo_ip_protocol import GeoIPHandler
+from guard.protocols.redis_protocol import RedisHandlerProtocol
 
 __all__ = [
     "SecurityMiddleware",
@@ -20,4 +22,6 @@ __all__ = [
     "redis_handler",
     "RedisManager",
     "sus_patterns_handler",
+    "GeoIPHandler",
+    "RedisHandlerProtocol",
 ]
