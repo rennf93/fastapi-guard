@@ -378,7 +378,7 @@ class SecurityConfig(BaseModel):
         default=None,
         description="IPInfo API token for IP geolocation. Deprecated. "
         "Create a custom `geo_ip_handler` instead.",
-        # deprecated=True,
+        # TODO: deprecated=True,
     )
     """
     str | None:
@@ -392,7 +392,7 @@ class SecurityConfig(BaseModel):
         default=Path("data/ipinfo/country_asn.mmdb"),
         description="Path to the IPInfo database file. Deprecated. "
         "Create a custom `geo_ip_handler` instead.",
-        # deprecated=True,
+        # TODO: deprecated=True,
     )
     """
     Path | None:
@@ -400,7 +400,8 @@ class SecurityConfig(BaseModel):
         The path to the IPInfo database file.
     """
 
-    @field_validator("whitelist", "blacklist")
+    # TODO: Add type hints to the decorator
+    @field_validator("whitelist", "blacklist")  # type: ignore
     def validate_ip_lists(cls, v: list[str] | None) -> list[str] | None:
         """Validate IP addresses and CIDR ranges in whitelist/blacklist."""
         if v is None:
@@ -419,7 +420,8 @@ class SecurityConfig(BaseModel):
                 raise ValueError(f"Invalid IP or CIDR range: {entry}") from None
         return validated
 
-    @field_validator("trusted_proxies")
+    # TODO: Add type hints to the decorator
+    @field_validator("trusted_proxies")  # type: ignore
     def validate_trusted_proxies(cls, v: list[str]) -> list[str]:
         """Validate trusted proxy IPs and CIDR ranges."""
         if not v:
@@ -438,21 +440,24 @@ class SecurityConfig(BaseModel):
                 raise ValueError(f"Invalid proxy IP or CIDR range: {entry}") from None
         return validated
 
-    @field_validator("trusted_proxy_depth")
+    # TODO: Add type hints to the decorator
+    @field_validator("trusted_proxy_depth")  # type: ignore
     def validate_proxy_depth(cls, v: int) -> int:
         """Validate trusted proxy depth."""
         if v < 1:
             raise ValueError("trusted_proxy_depth must be at least 1")
         return v
 
-    @field_validator("block_cloud_providers", mode="before")
+    # TODO: Add type hints to the decorator
+    @field_validator("block_cloud_providers", mode="before")  # type: ignore
     def validate_cloud_providers(cls, v: Any) -> set[str]:
         valid_providers = {"AWS", "GCP", "Azure"}
         if v is None:
             return set()
         return {p for p in v if p in valid_providers}
 
-    @model_validator(mode="after")
+    # TODO: Add type hints to the decorator
+    @model_validator(mode="after")  # type: ignore
     def validate_geo_ip_handler_exists(self) -> Self:
         if self.geo_ip_handler is None and (
             self.blocked_countries or self.whitelist_countries
