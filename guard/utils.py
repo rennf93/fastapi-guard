@@ -163,7 +163,7 @@ async def log_activity(
         reason_message = f"Headers: {headers}"
     elif log_type == "suspicious":
         if passive_mode:
-            message = "[PASSIVE MODE] Penetration attempt detected from "
+            message = "[PASSIVE MODE] Penetration attempt detected from"
             details = f"{message} {client_ip}: {method} {url}"
 
             trigger_message = f"Trigger: {trigger_info}" if trigger_info else ""
@@ -171,7 +171,7 @@ async def log_activity(
             if trigger_message:
                 reason_message = f"{trigger_message} - {reason_message}"
         else:
-            message = "Suspicious activity detected from "
+            message = "Suspicious activity detected from"
             details = f"{message} {client_ip}: {method} {url}"
             reason_message = f"Reason: {reason} - Headers: {headers}"
     else:

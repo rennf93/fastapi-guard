@@ -107,20 +107,20 @@ local-test:
 # Stress Test
 .PHONY: stress-test
 stress-test:
-	@docker compose up --build fastapi-guard-example
+	@COMPOSE_BAKE=true docker compose up --build -d fastapi-guard-example redis
 	@echo "Waiting for services to start up..."
 	@sleep 5
-	@poetry run python examples/testing/stress_test.py --url http://localhost:8000 --duration 120 --concurrency 50 --ramp-up 10 --delay 0.02 --test-type standard -v
+	@docker compose run --rm fastapi-guard-example poetry run python examples/testing/stress_test.py --url http://fastapi-guard-example:8000 --duration 120 --concurrency 50 --ramp-up 10 --delay 0.02 --test-type standard -v
 	@docker compose down --rmi all --remove-orphans -v
 	@docker system prune -f
 
 # High-load stress test
 .PHONY: high-load-stress-test
 high-load-stress-test:
-	@docker compose up --build fastapi-guard-example
+	@COMPOSE_BAKE=true docker compose up --build -d fastapi-guard-example redis
 	@echo "Waiting for services to start up..."
 	@sleep 5
-	@poetry run python examples/testing/stress_test.py --url http://localhost:8000 --duration 180 --concurrency 100 --ramp-up 15 --delay 0.01 --test-type high_load -v
+	@docker compose run --rm fastapi-guard-example poetry run python examples/testing/stress_test.py --url http://fastapi-guard-example:8000 --duration 180 --concurrency 100 --ramp-up 15 --delay 0.01 --test-type high_load -v
 	@docker compose down --rmi all --remove-orphans -v
 	@docker system prune -f
 

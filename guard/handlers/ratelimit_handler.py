@@ -111,13 +111,14 @@ class RateLimitManager:
 
                 # Check exceeded limit
                 if count and count > self.config.rate_limit:
-                    message = "Rate limit exceeded for IP: "
+                    message = "Rate limit exceeded for IP:"
                     detail = f"requests in {self.config.rate_limit_window}s window)"
                     await log_activity(
                         request,
                         self.logger,
                         log_type="suspicious",
                         reason=f"{message} {client_ip} ({count} {detail})",
+                        level=self.config.log_suspicious_level,
                     )
                     return await create_error_response(
                         status.HTTP_429_TOO_MANY_REQUESTS,
@@ -149,13 +150,14 @@ class RateLimitManager:
 
         # Check exceeded limit
         if request_count >= self.config.rate_limit:
-            message = "Rate limit exceeded for IP: "
+            message = "Rate limit exceeded for IP:"
             detail = f"requests in {self.config.rate_limit_window}s window)"
             await log_activity(
                 request,
                 self.logger,
                 log_type="suspicious",
                 reason=f"{message} {client_ip} ({request_count + 1} {detail})",
+                level=self.config.log_suspicious_level,
             )
             return await create_error_response(
                 status.HTTP_429_TOO_MANY_REQUESTS,
