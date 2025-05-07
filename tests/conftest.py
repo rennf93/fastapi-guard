@@ -149,5 +149,4 @@ async def reset_rate_limiter() -> None:
     """Reset rate limiter between tests to avoid interference"""
     config = SecurityConfig(geo_ip_handler=IPInfoManager(IPINFO_TOKEN, None))
     rate_limit = rate_limit_handler(config)
-    rate_limit.request_times.clear()
     await rate_limit.reset()

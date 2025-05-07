@@ -104,6 +104,26 @@ local-test:
 	@poetry run pytest -v --cov=.
 	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
+# Stress Test
+.PHONY: stress-test
+stress-test:
+	@COMPOSE_BAKE=true docker compose up --build -d fastapi-guard-example redis
+	@echo "Waiting for services to start up..."
+	@sleep 5
+	@docker compose run --rm fastapi-guard-example poetry run python examples/testing/stress_test.py --url http://fastapi-guard-example:8000 --duration 120 --concurrency 50 --ramp-up 10 --delay 0.02 --test-type standard -v
+	@docker compose down --rmi all --remove-orphans -v
+	@docker system prune -f
+
+# High-load stress test
+.PHONY: high-load-stress-test
+high-load-stress-test:
+	@COMPOSE_BAKE=true docker compose up --build -d fastapi-guard-example redis
+	@echo "Waiting for services to start up..."
+	@sleep 5
+	@docker compose run --rm fastapi-guard-example poetry run python examples/testing/stress_test.py --url http://fastapi-guard-example:8000 --duration 180 --concurrency 100 --ramp-up 15 --delay 0.01 --test-type high_load -v
+	@docker compose down --rmi all --remove-orphans -v
+	@docker system prune -f
+
 # Serve docs
 .PHONY: serve-docs
 serve-docs:

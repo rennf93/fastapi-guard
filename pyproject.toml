@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastapi-guard"
-version = "2.0.1"
+version = "2.1.0"
 description = "A security library for FastAPI to control IPs, log requests, and detect penetration attempts."
 authors = ["Renzo Franceschini <rennf93@gmail.com>"]
 readme = "README.md"
@@ -20,7 +20,9 @@ uvicorn = "*"
 [tool.poetry.group.dev.dependencies]
 black = "*"
 httpx = "*"
+matplotlib = "*"
 mypy = "*"
+numpy = "*"
 pre-commit = "*"
 pytest = "*"
 pytest-asyncio = "*"
@@ -71,3 +73,19 @@ check_untyped_defs = true
 disallow_untyped_decorators = true
 no_implicit_optional = true
 strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = "pydantic.*"
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "aiohttp.*"
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "redis.*"
+follow_imports = "skip"

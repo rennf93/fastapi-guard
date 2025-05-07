@@ -31,12 +31,19 @@ app.add_middleware(SecurityMiddleware, config=config)
 
 ## How It Works
 
-The rate limiter tracks requests by client IP address:
+FastAPI Guard implements a sliding window rate limiting algorithm:
 
-1. When a request arrives, the rate limiter checks if the client has exceeded their limit
-2. If within limits, the request counter is incremented and the request proceeds
-3. If the limit is exceeded, a 429 Too Many Requests response is returned
-4. Counters automatically expire after the configured time window
+1. Each client request is tracked using a timestamp
+2. Only requests within the current time window (last `rate_limit_window` seconds) are counted
+3. When a new request arrives, timestamps older than the window are automatically discarded
+4. If the count of valid timestamps exceeds `rate_limit`, the request is rejected with a 429 status
+5. This ensures precise rate limiting without artificial time boundaries
+
+The sliding window approach offers several advantages over fixed windows:
+- No traffic spikes at window boundaries
+- More consistent load on your API
+- Fair treatment of users across time periods
+- More accurate request counting
 
 ## In-Memory vs. Redis Rate Limiting
 
@@ -44,11 +51,11 @@ FastAPI Guard supports two rate limiting storage backends:
 
 ### In-Memory Rate Limiting
 
-By default, rate limiting uses an in-memory TTLCache for tracking request counts:
+By default, rate limiting uses an in-memory deque for tracking request timestamps:
 
 ```python
 config = SecurityConfig(
-    # Rate limit is enabled by default
+    # Rate limit is enabled by default
     rate_limit=100,
     rate_limit_window=60,
     enable_redis=False,
@@ -58,7 +65,8 @@ config = SecurityConfig(
 **Pros:**
 - Simple setup (no external dependencies)
 - Fast performance
-- Automatic expiration of old counters
+- Automatic cleanup of old timestamps
+- True sliding window algorithm
 
 **Cons:**
 - Doesn't work across multiple application instances
@@ -82,7 +90,8 @@ config = SecurityConfig(
 **Pros:**
 - Works across multiple application instances
 - Persists through application restarts
-- Centralized rate limit tracking
+- Uses atomic Lua scripts for reliable concurrency handling
+- Consistent rate limiting across distributed systems
 
 **Cons:**
 - Requires a Redis server

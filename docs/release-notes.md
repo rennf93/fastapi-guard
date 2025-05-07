@@ -6,6 +6,14 @@ keywords: release notes, fastapi guard, security middleware, api security
 
 # Release Notes
 
+## v2.1.0 (2025-05-08)
+
+### Improvements
+- **Rate Limiting**: Replaced fixed window rate limiting with true sliding window algorithm
+- Added atomic Redis Lua script for distributed rate limiting
+- Improved timestamp tracking for more accurate request counting
+- Fixed edge cases in rate limiting that could cause unexpected 429 errors
+
 ## v2.0.0 (2025-05-05)
 
 ### Security Fixes
