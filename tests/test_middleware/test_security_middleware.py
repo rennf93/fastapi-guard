@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi import FastAPI, Request, Response, status
+from fastapi.responses import JSONResponse
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 from redis.exceptions import RedisError
@@ -275,6 +276,211 @@ async def test_custom_error_responses() -> None:
         response = await client.get("/", headers={"X-Forwarded-For": "192.168.1.4"})
         assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
         assert response.text == "Custom Too Many Requests"
+
+
+@pytest.mark.parametrize(
+    "test_scenario, expected_status_code, extra_config, request_path, request_headers, use_custom_check",
+    [
+        # NOTE: Normal case
+        (
+            "normal",
+            status.HTTP_200_OK,
+            {},
+            "/",
+            {},
+            False,
+        ),
+        # NOTE: Blacklisted IP
+        (
+            "blacklisted",
+            status.HTTP_403_FORBIDDEN,
+            {},
+            "/",
+            {"X-Forwarded-For": "192.168.1.5"},
+            False,
+        ),
+        # NOTE: HTTPS enforcement
+        (
+            "https_enforcement",
+            status.HTTP_301_MOVED_PERMANENTLY,
+            {"enforce_https": True},
+            "/",
+            {},
+            False,
+        ),
+        # NOTE: Excluded path
+        (
+            "excluded_path",
+            status.HTTP_200_OK,
+            {"exclude_paths": ["/excluded"]},
+            "/excluded",
+            {},
+            False,
+        ),
+        # NOTE: Custom request check
+        (
+            "custom_request_check",
+            status.HTTP_418_IM_A_TEAPOT,
+            {},
+            "/",
+            {"X-Custom-Check": "true"},
+            True,
+        ),
+        # NOTE: Request without client
+        (
+            "no_client_info",
+            status.HTTP_200_OK,
+            {},
+            "/",
+            {},
+            False,
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_custom_response_modifier_parameterized(
+    test_scenario: str,
+    expected_status_code: int,
+    extra_config: dict[str, Any],
+    request_path: str,
+    request_headers: dict[str, str],
+    use_custom_check: bool,
+) -> None:
+    """
+    Parameterized test for the custom response modifier covering all scenarios.
+    """
+    app = FastAPI()
+
+    async def custom_modifier(response: Response) -> Response:
+        response.headers["X-Modified"] = "True"
+
+        if response.status_code >= 400 and not isinstance(response, JSONResponse):
+            if hasattr(response.body, "decode"):
+                content = response.body.decode()
+
+            return JSONResponse(
+                status_code=response.status_code,
+                content={"detail": content},
+                headers={"X-Modified": "True"},
+            )
+
+        return response
+
+    async def custom_check(request: Request) -> Response | None:
+        if "X-Custom-Check" in request.headers:
+            return Response("I'm a teapot", status_code=status.HTTP_418_IM_A_TEAPOT)
+
+    config_args = {
+        "ipinfo_token": IPINFO_TOKEN,
+        "blacklist": ["192.168.1.5"],
+        "custom_response_modifier": custom_modifier,
+        "trusted_proxies": ["127.0.0.1"],
+    }
+
+    if use_custom_check:
+        config_args["custom_request_check"] = custom_check
+
+    config_args.update(extra_config)
+    config = SecurityConfig(**config_args)
+    app.add_middleware(SecurityMiddleware, config=config)
+
+    @app.get("/")
+    async def read_root() -> dict[str, str]:
+        return {"message": "Hello World"}
+
+    @app.get("/excluded")
+    async def excluded_path() -> dict[str, str]:
+        return {"message": "Excluded Path"}
+
+    if test_scenario == "no_client_info":
+        async def receive() -> dict[str, str | bytes]:
+            return {"type": "http.request", "body": b""}
+
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [(k.encode(), v.encode()) for k, v in request_headers.items()],
+            "query_string": b"",
+            "server": ("testserver", 80),
+            "scheme": "http",
+        }
+
+        request = Request(scope=scope, receive=receive)
+
+        body = await request.body()
+        assert body == b""
+
+        middleware = SecurityMiddleware(app, config)
+
+        async def call_next(request: Request) -> Response:
+            return Response("Test response with no client", status_code=200)
+
+        response = await middleware.dispatch(request, call_next)
+
+        assert response.headers.get("X-Modified") == "True"
+        assert response.status_code == expected_status_code
+
+    else:
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get(request_path, headers=request_headers)
+
+            assert response.headers.get("X-Modified") == "True"
+
+            assert response.status_code == expected_status_code
+
+            if expected_status_code >= 400:
+                response_json = response.json()
+                assert "detail" in response_json
+
+
+@pytest.mark.asyncio
+async def test_memoryview_response_handling() -> None:
+    """Special test for memoryview response handling to cover line 298"""
+
+    test_body_memoryview = memoryview(b"Test Content")
+
+    test_response_memoryview = Response(test_body_memoryview, status_code=400)
+    test_response_normal = Response("Normal", status_code=200)
+    test_response_bytes = Response(b"Bytes Content", status_code=400)
+
+    assert isinstance(test_response_memoryview.body, memoryview)
+
+    async def custom_modifier(response: Response) -> Response:
+        response.headers["X-Modified"] = "True"
+
+        if response.status_code >= 400 and not isinstance(response, JSONResponse):
+            if hasattr(response.body, "decode"):
+                content = response.body.decode()
+            else:
+                content = bytes(response.body).decode()
+
+            return JSONResponse(
+                status_code=response.status_code,
+                content={"detail": content},
+                headers={"X-Modified": "True"},
+            )
+
+        return response
+
+    result_memoryview = await custom_modifier(test_response_memoryview)
+    assert isinstance(result_memoryview, JSONResponse)
+    assert result_memoryview.status_code == 400
+    assert result_memoryview.headers.get("X-Modified") == "True"
+    result_json = result_memoryview.body.decode()
+    assert "Test Content" in result_json
+
+    result_bytes = await custom_modifier(test_response_bytes)
+    assert isinstance(result_bytes, JSONResponse)
+    assert result_bytes.status_code == 400
+    assert "Bytes Content" in result_bytes.body.decode()
+
+    result_normal = await custom_modifier(test_response_normal)
+    assert result_normal.status_code == 200
+    assert not isinstance(result_normal, JSONResponse)
+    assert result_normal.headers.get("X-Modified") == "True"
 
 
 @pytest.mark.asyncio

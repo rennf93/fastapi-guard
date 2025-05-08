@@ -112,19 +112,28 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
             if not is_https:
                 https_url = request.url.replace(scheme="https")
-                return RedirectResponse(
+                redirect_response = RedirectResponse(
                     https_url, status_code=status.HTTP_301_MOVED_PERMANENTLY
                 )
+                if self.config.custom_response_modifier:
+                    return await self.config.custom_response_modifier(redirect_response)
+                return redirect_response
 
         if not request.client:
-            return await call_next(request)
+            response = await call_next(request)
+            if self.config.custom_response_modifier:
+                return await self.config.custom_response_modifier(response)
+            return response
 
         # Extract client IP
         client_ip = extract_client_ip(request, self.config)
 
         # Excluded paths
         if any(request.url.path.startswith(path) for path in self.config.exclude_paths):
-            return await call_next(request)
+            response = await call_next(request)
+            if self.config.custom_response_modifier:
+                return await self.config.custom_response_modifier(response)
+            return response
 
         # Log request
         await log_activity(request, self.logger, level=self.config.log_request_level)
@@ -260,9 +269,17 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if self.config.custom_request_check:
             custom_response = await self.config.custom_request_check(request)
             if custom_response:
+                if self.config.custom_response_modifier:
+                    return await self.config.custom_response_modifier(custom_response)
                 return custom_response
 
-        return await call_next(request)
+        # Call next
+        response = await call_next(request)
+
+        if self.config.custom_response_modifier:
+            return await self.config.custom_response_modifier(response)
+
+        return response
 
     async def refresh_cloud_ip_ranges(self) -> None:
         """Refresh cloud IP ranges asynchronously."""
@@ -281,7 +298,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         custom_message = self.config.custom_error_responses.get(
             status_code, default_message
         )
-        return Response(custom_message, status_code=status_code)
+        response = Response(custom_message, status_code=status_code)
+
+        if self.config.custom_response_modifier:
+            response = await self.config.custom_response_modifier(response)
+
+        return response
 
     async def reset(self) -> None:
         await self.rate_limit_handler.reset()

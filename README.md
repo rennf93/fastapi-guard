@@ -353,15 +353,33 @@ You can define a custom function to modify the response before it's sent using t
 
 ```python
 from fastapi import Response
+from fastapi.responses import JSONResponse
 
 async def custom_modifier(response: Response) -> Response:
+    # Add custom headers
     response.headers["X-Custom-Header"] = "CustomValue"
+
+    # Convert text responses to FastAPI-style JSON responses
+    if response.status_code >= 400 and not isinstance(response, JSONResponse):
+        try:
+            content = response.body.decode()
+            return JSONResponse(
+                status_code=response.status_code,
+                content={"detail": content}
+            )
+        except:
+            pass
+
     return response
 
 config = SecurityConfig(
     custom_response_modifier=custom_modifier,
 )
 ```
+
+The example above shows how to:
+1. Add custom headers to all responses
+2. Convert plain text error responses to JSON format with a "detail" field, matching FastAPI's HTTPException format
 
 ### Redis Configuration
 

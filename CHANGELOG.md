@@ -1,5 +1,10 @@
 # Release Notes
 
+## v2.1.1 (2025-05-08)
+
+### Bug Fixes
+- Fixed `custom_response_modifier` implementation.
+
 ## v2.1.0 (2025-05-08)
 
 ### Improvements

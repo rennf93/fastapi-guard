@@ -22,7 +22,7 @@ A clear and concise description of what you expected to happen.
 What actually happened, including error messages, stack traces, or logs.
 
 ## Environment
-- FastAPI Guard version: [e.g. 2.1.0]
+- FastAPI Guard version: [e.g. 2.1.1]
 - Python version: [e.g. 3.11.10]
 - FastAPI version: [e.g. 0.115.0]
 - OS: [e.g. Ubuntu 22.04, Windows 11, MacOS 15.4]
