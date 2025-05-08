@@ -279,7 +279,10 @@ async def test_custom_error_responses() -> None:
 
 
 @pytest.mark.parametrize(
-    "test_scenario, expected_status_code, extra_config, request_path, request_headers, use_custom_check",
+    (
+        "test_scenario, expected_status_code, extra_config, "
+        "request_path, request_headers, use_custom_check"
+    ),
     [
         # NOTE: Normal case
         (
@@ -393,6 +396,7 @@ async def test_custom_response_modifier_parameterized(
         return {"message": "Excluded Path"}
 
     if test_scenario == "no_client_info":
+
         async def receive() -> dict[str, str | bytes]:
             return {"type": "http.request", "body": b""}
 
