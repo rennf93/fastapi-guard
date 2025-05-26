@@ -5,13 +5,19 @@ DEFAULT_PYTHON = 3.10
 # Install dependencies
 .PHONY: install
 install:
-	@poetry install
+	@uv sync
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
+
+# Install dev dependencies
+.PHONY: install-dev
+install-dev:
+	@uv sync --extra dev
 	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Update dependencies
 .PHONY: lock
 lock:
-	@poetry lock
+	@uv lock
 	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Start example-app
@@ -48,7 +54,7 @@ lint:
 # Fix code
 .PHONY: fix
 fix:
-	@poetry run ruff check --fix .
+	@uv run ruff check --fix .
 	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Run tests (default Python version)
@@ -101,7 +107,7 @@ test-3.13:
 # Local testing
 .PHONY: local-test
 local-test:
-	@poetry run pytest -v --cov=.
+	@uv run pytest -v --cov=.
 	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Stress Test
@@ -110,7 +116,7 @@ stress-test:
 	@COMPOSE_BAKE=true docker compose up --build -d fastapi-guard-example redis
 	@echo "Waiting for services to start up..."
 	@sleep 5
-	@docker compose run --rm fastapi-guard-example poetry run python examples/testing/stress_test.py --url http://fastapi-guard-example:8000 --duration 120 --concurrency 50 --ramp-up 10 --delay 0.02 --test-type standard -v
+	@docker compose run --rm fastapi-guard-example uv run python examples/testing/stress_test.py --url http://fastapi-guard-example:8000 --duration 120 --concurrency 50 --ramp-up 10 --delay 0.02 --test-type standard -v
 	@docker compose down --rmi all --remove-orphans -v
 	@docker system prune -f
 
@@ -120,14 +126,14 @@ high-load-stress-test:
 	@COMPOSE_BAKE=true docker compose up --build -d fastapi-guard-example redis
 	@echo "Waiting for services to start up..."
 	@sleep 5
-	@docker compose run --rm fastapi-guard-example poetry run python examples/testing/stress_test.py --url http://fastapi-guard-example:8000 --duration 180 --concurrency 100 --ramp-up 15 --delay 0.01 --test-type high_load -v
+	@docker compose run --rm fastapi-guard-example uv run python examples/testing/stress_test.py --url http://fastapi-guard-example:8000 --duration 180 --concurrency 100 --ramp-up 15 --delay 0.01 --test-type high_load -v
 	@docker compose down --rmi all --remove-orphans -v
 	@docker system prune -f
 
 # Serve docs
 .PHONY: serve-docs
 serve-docs:
-	@poetry run mkdocs serve
+	@uv run mkdocs serve
 	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Prune

@@ -16,8 +16,7 @@ ENV PIP_NO_CACHE_DIR=false \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-ENV VENV_PATH="/app/.venv"
-ENV PATH="${POETRY_HOME}/bin:${VENV_PATH}/bin:${PATH}"
+ENV PATH="/app/.venv/bin:$PATH"
 
 COPY requirements.txt /app/
 

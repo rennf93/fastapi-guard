@@ -47,7 +47,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 3. You can use the provided Makefile commands to set up your development environment:
 
 ```bash
-# Install dependencies using Poetry
+# Install dependencies using 'uv'
 make install
 
 # For development, you can run the example app
@@ -71,7 +71,7 @@ make test-all
 # Run tests with a specific Python version
 make test-3.11
 
-# Run tests locally (if you have Poetry installed)
+# Run tests locally (if you have 'uv' installed)
 make local-test
 ```
 

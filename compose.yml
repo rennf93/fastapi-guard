@@ -34,7 +34,7 @@ services:
         - ./guard:/app/guard:z
         - ./tests:/app/tests:z
         - ./pyproject.toml:/app/pyproject.toml:z
-        - ./poetry.lock:/app/poetry.lock:z
+        - ./uv.lock:/app/uv.lock:z
       depends_on:
         redis:
           condition: service_started
