@@ -6,6 +6,9 @@ keywords: release notes, fastapi guard, security middleware, api security
 
 # Release Notes
 
+## v2.1.2 (2025-05-26)
+- Switched from Poetry to uv for package management
+
 ## v2.1.1 (2025-05-08)
 
 ### Bug Fixes

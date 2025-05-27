@@ -1,6 +1,6 @@
 [project]
 name = "fastapi-guard"
-version = "2.1.1"
+version = "2.1.2"
 description = "A security library for FastAPI to control IPs, log requests, and detect penetration attempts."
 authors = [
     {name = "Renzo Franceschini", email = "rennf93@gmail.com"}
