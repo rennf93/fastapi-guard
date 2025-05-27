@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - chore/switch-to-uv
     paths:
       - 'compose.yml'
       - 'data/**'
