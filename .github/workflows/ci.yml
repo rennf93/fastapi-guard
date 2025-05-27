@@ -44,7 +44,7 @@ jobs:
         with:
           python-version: '3.10'
       - run: pip install uv
-      - run: uv sync
+      - run: uv sync --extra dev
       - run: uv run pre-commit run --all-files
 
   test:
@@ -111,7 +111,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync
+          uv sync --extra dev
 
       - name: Run tests
         run: |
