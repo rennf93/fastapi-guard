@@ -13,20 +13,17 @@ WORKDIR /app
 ENV PIP_NO_CACHE_DIR=false \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     PIP_DEFAULT_TIMEOUT=10 \
-    POETRY_VERSION=2.1.1 \
-    POETRY_HOME="/home/user/poetry" \
-    POETRY_VIRTUALENVS_IN_PROJECT=true \
-    POETRY_NO_INTERACTION=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-ENV VENV_PATH="/app/.venv"
-ENV PATH="${POETRY_HOME}/bin:${VENV_PATH}/bin:${PATH}"
+# Install uv
+RUN pip install uv
 
-RUN curl -sSL https://install.python-poetry.org | python3 -
-COPY pyproject.toml poetry.lock* /app/
+COPY pyproject.toml uv.lock* README.md /app/
 
-RUN poetry install --no-root
+RUN uv sync --extra dev --frozen
+
+ENV PATH="/app/.venv/bin:$PATH"
 
 COPY guard/ /app/guard/
 COPY tests/ /app/tests/

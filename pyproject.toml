@@ -1,40 +1,46 @@
-[tool.poetry]
+[project]
 name = "fastapi-guard"
 version = "2.1.1"
 description = "A security library for FastAPI to control IPs, log requests, and detect penetration attempts."
-authors = ["Renzo Franceschini <rennf93@gmail.com>"]
+authors = [
+    {name = "Renzo Franceschini", email = "rennf93@gmail.com"}
+]
 readme = "README.md"
-packages = [{include = "guard"}]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "aiohttp",
+    "cachetools",
+    "fastapi",
+    "ipaddress",
+    "maxminddb",
+    "redis",
+    "requests",
+    "uvicorn",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10,<3.14"
-aiohttp = "*"
-cachetools = "*"
-fastapi = "*"
-ipaddress = "*"
-maxminddb = "*"
-redis = "*"
-requests = "*"
-uvicorn = "*"
-
-[tool.poetry.group.dev.dependencies]
-black = "*"
-httpx = "*"
-matplotlib = "*"
-mypy = "*"
-numpy = "*"
-pre-commit = "*"
-pytest = "*"
-pytest-asyncio = "*"
-pytest-cov = "*"
-pytest-mock = "*"
-ruff = "*"
-types-cachetools = "*"
-types-requests = "*"
+[project.optional-dependencies]
+dev = [
+    "black",
+    "httpx",
+    "matplotlib",
+    "mypy",
+    "numpy",
+    "pre-commit",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-mock",
+    "ruff",
+    "types-cachetools",
+    "types-requests",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["guard"]
 
 [tool.ruff]
 target-version = "py310"

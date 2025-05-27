@@ -26,8 +26,8 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Poetry
-poetry.lock
+# Uv
+uv.lock
 .venv/
 
 # Unit test / coverage reports
