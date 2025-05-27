@@ -95,3 +95,4 @@ follow_imports = "skip"
 [[tool.mypy.overrides]]
 module = "redis.*"
 follow_imports = "skip"
+
