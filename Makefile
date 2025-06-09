@@ -47,15 +47,24 @@ restart: stop start-example
 # Lint code
 .PHONY: lint
 lint:
-	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "ruff format . ; ruff check . ; mypy ."
-	@docker compose down --rmi all --remove-orphans -v
-	@docker system prune -f
+	@uv run ruff format .
+	@uv run ruff check .
+	@uv run mypy .
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
+# lint:
+# 	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "ruff format . ; ruff check . ; mypy ."
+# 	@docker compose down --rmi all --remove-orphans -v
+# 	@docker system prune -f
 
 # Fix code
 .PHONY: fix
 fix:
 	@uv run ruff check --fix .
 	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
+# fix:
+# 	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "ruff check --fix ."
+# 	@docker compose down --rmi all --remove-orphans -v
+# 	@docker system prune -f
 
 # Run tests (default Python version)
 .PHONY: test
