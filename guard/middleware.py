@@ -1,5 +1,6 @@
 # fastapi_guard/middleware.py
 import logging
+import re
 import time
 from collections.abc import Awaitable, Callable
 from ipaddress import IPv4Address, ip_network
@@ -9,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from guard.decorators.base import BaseSecurityDecorator, RouteConfig
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
 from guard.handlers.ratelimit_handler import RateLimitManager
@@ -52,7 +54,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self.suspicious_request_counts: dict[str, int] = {}
         self.last_cleanup = time.time()
         self.rate_limit_handler = RateLimitManager(config)
-        self.guard_decorator = None
+        self.guard_decorator: BaseSecurityDecorator | None = None
 
         self.geo_ip_handler = None
         if config.whitelist_countries or config.blocked_countries:
@@ -68,7 +70,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     async def setup_logger(self) -> None:
         self.logger = await setup_custom_logging("security.log")
 
-    def set_decorator_handler(self, decorator_handler):
+    def set_decorator_handler(
+        self, decorator_handler: BaseSecurityDecorator | None
+    ) -> None:
         """Set the SecurityDecorator instance for decorator support."""
         self.guard_decorator = decorator_handler
 
@@ -127,13 +131,17 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     https_url, status_code=status.HTTP_301_MOVED_PERMANENTLY
                 )
                 if self.config.custom_response_modifier:
-                    return await self.config.custom_response_modifier(redirect_response)
+                    modified_response = await self.config.custom_response_modifier(
+                        redirect_response
+                    )
+                    return modified_response
                 return redirect_response
 
         if not request.client:
             response = await call_next(request)
             if self.config.custom_response_modifier:
-                return await self.config.custom_response_modifier(response)
+                modified_response = await self.config.custom_response_modifier(response)
+                return modified_response
             return response
 
         # Extract client IP
@@ -143,14 +151,16 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if any(request.url.path.startswith(path) for path in self.config.exclude_paths):
             response = await call_next(request)
             if self.config.custom_response_modifier:
-                return await self.config.custom_response_modifier(response)
+                modified_response = await self.config.custom_response_modifier(response)
+                return modified_response
             return response
 
         # Check if security checks should be bypassed
         if route_config and self._should_bypass_check("all", route_config):
             response = await call_next(request)
             if self.config.custom_response_modifier:
-                return await self.config.custom_response_modifier(response)
+                modified_response = await self.config.custom_response_modifier(response)
+                return modified_response
             return response
 
         # Log request
@@ -188,7 +198,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             for validator in route_config.custom_validators:
                 validation_response = await validator(request)
                 if validation_response:
-                    return validation_response
+                    if isinstance(validation_response, Response):
+                        return validation_response
 
         # Refresh cloud IP ranges
         if (
@@ -377,7 +388,10 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             custom_response = await self.config.custom_request_check(request)
             if custom_response:
                 if self.config.custom_response_modifier:
-                    return await self.config.custom_response_modifier(custom_response)
+                    modified_response = await self.config.custom_response_modifier(
+                        custom_response
+                    )
+                    return modified_response
                 return custom_response
 
         # Process behavioral rules before calling next
@@ -394,11 +408,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             )
 
         if self.config.custom_response_modifier:
-            return await self.config.custom_response_modifier(response)
+            modified_response = await self.config.custom_response_modifier(response)
+            return modified_response
 
         return response
 
-    def _get_route_decorator_config(self, request: Request):
+    def _get_route_decorator_config(self, request: Request) -> RouteConfig | None:
         """Get route-specific security configuration from decorators."""
         if not self.guard_decorator:
             return None
@@ -412,7 +427,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 return self.guard_decorator.get_route_config(route_id)
         return None
 
-    def _should_bypass_check(self, check_name: str, route_config) -> bool:
+    def _should_bypass_check(
+        self, check_name: str, route_config: RouteConfig | None
+    ) -> bool:
         """Check if a security check should be bypassed."""
         if not route_config:
             return False
@@ -421,12 +438,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             or "all" in route_config.bypassed_checks
         )
 
-    async def _check_route_ip_access(self, client_ip: str, route_config):
+    async def _check_route_ip_access(
+        self, client_ip: str, route_config: RouteConfig
+    ) -> bool | None:
         """
         Check route-specific IP access rules. Returns None if no route rules apply.
         """
-        from ipaddress import IPv4Address, ip_network
-
         try:
             ip_addr = IPv4Address(client_ip)
 
@@ -459,16 +476,17 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 country = self.geo_ip_handler.get_country(client_ip)
                 if country:
                     return country in route_config.allowed_countries
-                return False
+                else:
+                    return False
 
             return None  # No route-specific rules, fall back to global
         except ValueError:
             return False
 
-    async def _check_user_agent_allowed(self, user_agent: str, route_config) -> bool:
+    async def _check_user_agent_allowed(
+        self, user_agent: str, route_config: RouteConfig | None
+    ) -> bool:
         """Check user agent against both route and global rules."""
-        import re
-
         # Check route-specific blocked user agents first
         if route_config and route_config.blocked_user_agents:
             for pattern in route_config.blocked_user_agents:
@@ -478,13 +496,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # Fall back to global check
         return await is_user_agent_allowed(user_agent, self.config)
 
-    async def _check_rate_limit(self, request: Request, client_ip: str, route_config):
+    async def _check_rate_limit(
+        self, request: Request, client_ip: str, route_config: RouteConfig | None
+    ) -> Response | None:
         """Check rate limiting with route overrides."""
         # Use route-specific rate limit if available
         if route_config and route_config.rate_limit is not None:
-            from guard.handlers.ratelimit_handler import RateLimitManager
-            from guard.models import SecurityConfig
-
             # Create temporary config for route-specific rate limiting
             route_rate_config = SecurityConfig(
                 rate_limit=route_config.rate_limit,
@@ -507,8 +524,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         )
 
     async def _process_decorator_usage_rules(
-        self, request: Request, client_ip: str, route_config
-    ):
+        self, request: Request, client_ip: str, route_config: RouteConfig
+    ) -> None:
         """Process behavioral usage rules from decorators before request processing."""
         if not self.guard_decorator:
             return
@@ -531,8 +548,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     )
 
     async def _process_decorator_return_rules(
-        self, request: Request, response: Response, client_ip: str, route_config
-    ):
+        self,
+        request: Request,
+        response: Response,
+        client_ip: str,
+        route_config: RouteConfig,
+    ) -> None:
         """Process behavioral return pattern rules from decorators after response."""
         if not self.guard_decorator:
             return
@@ -576,6 +597,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     async def create_error_response(
         self, status_code: int, default_message: str
     ) -> Response:
+        """
+        Create an error response with a custom message.
+        """
         custom_message = self.config.custom_error_responses.get(
             status_code, default_message
         )
@@ -587,6 +611,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         return response
 
     async def reset(self) -> None:
+        """Reset rate limiting state."""
         await self.rate_limit_handler.reset()
 
     @staticmethod

@@ -360,6 +360,9 @@ async def test_custom_response_modifier_parameterized(
         if response.status_code >= 400 and not isinstance(response, JSONResponse):
             if hasattr(response.body, "decode"):
                 content = response.body.decode()
+            else:
+                if isinstance(response.body, memoryview):
+                    content = bytes(response.body).decode()
 
             return JSONResponse(
                 status_code=response.status_code,
@@ -370,8 +373,7 @@ async def test_custom_response_modifier_parameterized(
         return response
 
     async def custom_check(request: Request) -> Response | None:
-        if "X-Custom-Check" in request.headers:
-            return Response("I'm a teapot", status_code=status.HTTP_418_IM_A_TEAPOT)
+        return Response("I'm a teapot", status_code=status.HTTP_418_IM_A_TEAPOT)
 
     config_args = {
         "ipinfo_token": IPINFO_TOKEN,
@@ -420,23 +422,23 @@ async def test_custom_response_modifier_parameterized(
         async def call_next(request: Request) -> Response:
             return Response("Test response with no client", status_code=200)
 
-        response = await middleware.dispatch(request, call_next)
+        starlette_response = await middleware.dispatch(request, call_next)
 
-        assert response.headers.get("X-Modified") == "True"
-        assert response.status_code == expected_status_code
+        assert starlette_response.headers.get("X-Modified") == "True"
+        assert starlette_response.status_code == expected_status_code
 
     else:
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
-            response = await client.get(request_path, headers=request_headers)
+            httpx_response = await client.get(request_path, headers=request_headers)
 
-            assert response.headers.get("X-Modified") == "True"
+            assert httpx_response.headers.get("X-Modified") == "True"
 
-            assert response.status_code == expected_status_code
+            assert httpx_response.status_code == expected_status_code
 
             if expected_status_code >= 400:
-                response_json = response.json()
+                response_json = httpx_response.json()
                 assert "detail" in response_json
 
 
@@ -459,7 +461,8 @@ async def test_memoryview_response_handling() -> None:
             if hasattr(response.body, "decode"):
                 content = response.body.decode()
             else:
-                content = bytes(response.body).decode()
+                if isinstance(response.body, memoryview):
+                    content = bytes(response.body).decode()
 
             return JSONResponse(
                 status_code=response.status_code,
@@ -473,13 +476,16 @@ async def test_memoryview_response_handling() -> None:
     assert isinstance(result_memoryview, JSONResponse)
     assert result_memoryview.status_code == 400
     assert result_memoryview.headers.get("X-Modified") == "True"
-    result_json = result_memoryview.body.decode()
-    assert "Test Content" in result_json
+    if isinstance(result_memoryview.body, bytes | memoryview):
+        result_json_str = bytes(result_memoryview.body).decode()
+    assert "Test Content" in result_json_str
 
     result_bytes = await custom_modifier(test_response_bytes)
     assert isinstance(result_bytes, JSONResponse)
     assert result_bytes.status_code == 400
-    assert "Bytes Content" in result_bytes.body.decode()
+    if isinstance(result_bytes.body, bytes | memoryview):
+        result_bytes_str = bytes(result_bytes.body).decode()
+    assert "Bytes Content" in result_bytes_str
 
     result_normal = await custom_modifier(test_response_normal)
     assert result_normal.status_code == 200
