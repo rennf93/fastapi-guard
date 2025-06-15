@@ -1,5 +1,5 @@
 from collections.abc import Awaitable, Callable
-from ipaddress import IPv4Address, ip_network
+from ipaddress import ip_address, ip_network
 from pathlib import Path
 from typing import Any, Literal
 
@@ -399,7 +399,6 @@ class SecurityConfig(BaseModel):
         Deprecated. Create a custom `geo_ip_handler` instead.
         The path to the IPInfo database file.
     """
-
     # TODO: Add type hints to the decorator
     @field_validator("whitelist", "blacklist")  # type: ignore
     def validate_ip_lists(cls, v: list[str] | None) -> list[str] | None:
@@ -414,7 +413,7 @@ class SecurityConfig(BaseModel):
                     network = ip_network(entry, strict=False)
                     validated.append(str(network))
                 else:
-                    addr = IPv4Address(entry)
+                    addr = ip_address(entry)
                     validated.append(str(addr))
             except ValueError:
                 raise ValueError(f"Invalid IP or CIDR range: {entry}") from None
@@ -430,11 +429,12 @@ class SecurityConfig(BaseModel):
         validated = []
         for entry in v:
             try:
+                from ipaddress import ip_address, ip_network
                 if "/" in entry:
                     network = ip_network(entry, strict=False)
                     validated.append(str(network))
                 else:
-                    addr = IPv4Address(entry)
+                    addr = ip_address(entry)
                     validated.append(str(addr))
             except ValueError:
                 raise ValueError(f"Invalid proxy IP or CIDR range: {entry}") from None
