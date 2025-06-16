@@ -399,6 +399,7 @@ class SecurityConfig(BaseModel):
         Deprecated. Create a custom `geo_ip_handler` instead.
         The path to the IPInfo database file.
     """
+
     # TODO: Add type hints to the decorator
     @field_validator("whitelist", "blacklist")  # type: ignore
     def validate_ip_lists(cls, v: list[str] | None) -> list[str] | None:
@@ -430,6 +431,7 @@ class SecurityConfig(BaseModel):
         for entry in v:
             try:
                 from ipaddress import ip_address, ip_network
+
                 if "/" in entry:
                     network = ip_network(entry, strict=False)
                     validated.append(str(network))

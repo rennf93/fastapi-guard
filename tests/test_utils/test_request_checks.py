@@ -692,7 +692,7 @@ async def test_is_ip_allowed_general_exception(
     config = SecurityConfig(ipinfo_token="test")
 
     mock_error = Exception("Unexpected error")
-    mocker.patch("guard.utils.IPv4Address", side_effect=mock_error)
+    mocker.patch("guard.utils.ip_address", side_effect=mock_error)
 
     with caplog.at_level(logging.ERROR):
         result = await is_ip_allowed("192.168.1.1", config)

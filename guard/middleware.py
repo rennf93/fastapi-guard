@@ -2,7 +2,7 @@
 import logging
 import time
 from collections.abc import Awaitable, Callable
-from ipaddress import IPv4Address, ip_network
+from ipaddress import ip_address, ip_network
 
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -101,7 +101,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                         # Check trusted proxy
                         connecting_ip == proxy
                         if "/" not in proxy
-                        else IPv4Address(connecting_ip)
+                        else ip_address(connecting_ip)
                         in ip_network(proxy, strict=False)
                         for proxy in self.config.trusted_proxies
                     )
@@ -315,18 +315,15 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         based on SecurityConfig.
         """
         if config.enable_cors:
-            cors_params = {
-                "allow_origins": config.cors_allow_origins,
-                "allow_methods": config.cors_allow_methods,
-                "allow_headers": config.cors_allow_headers,
-                "allow_credentials": config.cors_allow_credentials,
-                "max_age": config.cors_max_age,
-            }
-
-            if config.cors_expose_headers:
-                cors_params["expose_headers"] = config.cors_expose_headers
-
-            app.add_middleware(CORSMiddleware, **cors_params)
+            app.add_middleware(
+                CORSMiddleware,
+                allow_origins=config.cors_allow_origins,
+                allow_methods=config.cors_allow_methods,
+                allow_headers=config.cors_allow_headers,
+                allow_credentials=config.cors_allow_credentials,
+                max_age=config.cors_max_age,
+                expose_headers=config.cors_expose_headers or [],
+            )
             return True
         return False
 

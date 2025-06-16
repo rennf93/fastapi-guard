@@ -1,7 +1,7 @@
 # fastapi_guard/utils.py
 import logging
 import re
-from ipaddress import IPv4Address, IPv4Network, ip_network
+from ipaddress import IPv4Network, ip_address, ip_network
 from typing import Literal
 
 from fastapi import Request
@@ -76,7 +76,7 @@ def extract_client_ip(request: Request, config: SecurityConfig) -> str:
 
     # Check trusted proxy
     try:
-        connecting_ip_obj = IPv4Address(connecting_ip)
+        connecting_ip_obj = ip_address(connecting_ip)
         is_trusted = False
 
         for proxy in config.trusted_proxies:
@@ -309,7 +309,7 @@ async def is_ip_allowed(
             True if the IP is allowed, False otherwise.
     """
     try:
-        ip_addr = IPv4Address(ip)
+        ip_addr = ip_address(ip)
 
         # Blacklist
         if config.blacklist:
