@@ -2,6 +2,7 @@
 import logging
 import time
 from collections.abc import Awaitable, Callable
+from functools import partial
 from ipaddress import ip_address, ip_network
 
 from fastapi import FastAPI, Request, Response, status
@@ -318,7 +319,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         based on SecurityConfig.
         """
         if config.enable_cors:
-            app.add_middleware(
+            cors_middleware = partial(
                 CORSMiddleware,
                 allow_origins=config.cors_allow_origins,
                 allow_methods=config.cors_allow_methods,
@@ -327,6 +328,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 max_age=config.cors_max_age,
                 expose_headers=config.cors_expose_headers,
             )
+            app.add_middleware(cors_middleware)
             return True
         return False
 

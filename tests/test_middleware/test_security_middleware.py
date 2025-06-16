@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import time
+from functools import partial
 from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -37,7 +38,8 @@ async def test_rate_limiting() -> None:
         rate_limit_window=1,
         enable_rate_limiting=True,
     )
-    app.add_middleware(SecurityMiddleware, config=config)
+    security_middleware = partial(SecurityMiddleware, config=config)
+    app.add_middleware(security_middleware)
 
     @app.get("/")
     async def read_root() -> dict[str, str]:
@@ -76,7 +78,8 @@ async def test_ip_whitelist_blacklist() -> None:
         enable_penetration_detection=False,
         trusted_proxies=["127.0.0.1"],
     )
-    app.add_middleware(SecurityMiddleware, config=config)
+    security_middleware = partial(SecurityMiddleware, config=config)
+    app.add_middleware(security_middleware)
 
     @app.get("/")
     async def read_root() -> dict[str, str]:
@@ -103,7 +106,8 @@ async def test_user_agent_filtering() -> None:
     """
     app = FastAPI()
     config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, blocked_user_agents=[r"badbot"])
-    app.add_middleware(SecurityMiddleware, config=config)
+    security_middleware = partial(SecurityMiddleware, config=config)
+    app.add_middleware(security_middleware, config=config)
 
     @app.get("/")
     async def read_root() -> dict[str, str]:
@@ -136,7 +140,8 @@ async def test_rate_limiting_multiple_ips(reset_state: None) -> None:
         enable_penetration_detection=False,
         trusted_proxies=["127.0.0.1"],
     )
-    app.add_middleware(SecurityMiddleware, config=config)
+    security_middleware = partial(SecurityMiddleware, config=config)
+    app.add_middleware(security_middleware)
 
     @app.get("/")
     async def read_root() -> dict[str, str]:
@@ -177,6 +182,7 @@ async def test_middleware_multiple_configs() -> None:
         enable_penetration_detection=False,
         trusted_proxies=["127.0.0.1"],
     )
+
     config2 = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
         whitelist=["127.0.0.1"],
@@ -185,8 +191,8 @@ async def test_middleware_multiple_configs() -> None:
         trusted_proxies=["127.0.0.1"],
     )
 
-    app.add_middleware(SecurityMiddleware, config=config1)
-    app.add_middleware(SecurityMiddleware, config=config2)
+    app.add_middleware(partial(SecurityMiddleware, config=config1))
+    app.add_middleware(partial(SecurityMiddleware, config=config2))
 
     @app.get("/")
     async def read_root() -> dict[str, str]:
@@ -220,7 +226,8 @@ async def test_custom_request_check() -> None:
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN, custom_request_check=custom_check
     )
-    app.add_middleware(SecurityMiddleware, config=config)
+    security_middleware = partial(SecurityMiddleware, config=config)
+    app.add_middleware(security_middleware)
 
     @app.get("/")
     async def read_root() -> dict[str, str]:
@@ -256,7 +263,8 @@ async def test_custom_error_responses() -> None:
         enable_penetration_detection=False,
         trusted_proxies=["127.0.0.1"],
     )
-    app.add_middleware(SecurityMiddleware, config=config)
+    security_middleware = partial(SecurityMiddleware, config=config)
+    app.add_middleware(security_middleware)
 
     @app.get("/")
     async def read_root() -> dict[str, str]:
@@ -386,7 +394,8 @@ async def test_custom_response_modifier_parameterized(
 
     config_args.update(extra_config)
     config = SecurityConfig(**config_args)
-    app.add_middleware(SecurityMiddleware, config=config)
+    security_middleware = partial(SecurityMiddleware, config=config)
+    app.add_middleware(security_middleware)
 
     @app.get("/")
     async def read_root() -> dict[str, str]:
@@ -557,7 +566,8 @@ async def test_cloud_ip_blocking() -> None:
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN, block_cloud_providers={"AWS", "GCP", "Azure"}
     )
-    app.add_middleware(SecurityMiddleware, config=config)
+    security_middleware = partial(SecurityMiddleware, config=config)
+    app.add_middleware(security_middleware)
 
     @app.get("/")
     async def read_root() -> dict[str, str]:
@@ -635,7 +645,8 @@ async def test_cleanup_rate_limits(security_middleware: SecurityMiddleware) -> N
 async def test_excluded_paths() -> None:
     app = FastAPI()
     config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, exclude_paths=["/health"])
-    app.add_middleware(SecurityMiddleware, config=config)
+    security_middleware = partial(SecurityMiddleware, config=config)
+    app.add_middleware(security_middleware)
 
     @app.get("/health")
     async def health() -> dict[str, str]:
@@ -746,7 +757,8 @@ async def test_https_enforcement_with_xforwarded_proto() -> None:
         trusted_proxies=["127.0.0.1"],
         trust_x_forwarded_proto=True,
     )
-    app.add_middleware(SecurityMiddleware, config=config)
+    security_middleware = partial(SecurityMiddleware, config=config)
+    app.add_middleware(security_middleware)
 
     @app.get("/")
     async def read_root() -> dict[str, str]:
@@ -809,7 +821,8 @@ async def test_penetration_detection_disabled() -> None:
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN, enable_penetration_detection=False
     )
-    app.add_middleware(SecurityMiddleware, config=config)
+    security_middleware = partial(SecurityMiddleware, config=config)
+    app.add_middleware(security_middleware)
 
     @app.get("/")
     async def read_root() -> dict[str, str]:
@@ -1043,7 +1056,8 @@ async def test_rate_limiting_disabled() -> None:
     """Test when rate limiting is disabled"""
     app = FastAPI()
     config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, enable_rate_limiting=False)
-    app.add_middleware(SecurityMiddleware, config=config)
+    security_middleware = partial(SecurityMiddleware, config=config)
+    app.add_middleware(security_middleware)
 
     @app.get("/")
     async def read_root() -> dict[str, str]:
@@ -1067,8 +1081,8 @@ async def test_rate_limiting_with_redis(security_config_redis: SecurityConfig) -
 
     rate_handler = rate_limit_handler(security_config_redis)
     await rate_handler.reset()
-
-    app.add_middleware(SecurityMiddleware, config=security_config_redis)
+    security_middleware = partial(SecurityMiddleware, config=security_config_redis)
+    app.add_middleware(security_middleware)
 
     @app.get("/")
     async def read_root() -> dict[str, str]:
@@ -1201,7 +1215,8 @@ async def test_sliding_window_rate_limiting() -> None:
         rate_limit_window=1,
         enable_rate_limiting=True,
     )
-    app.add_middleware(SecurityMiddleware, config=config)
+    security_middleware = partial(SecurityMiddleware, config=config)
+    app.add_middleware(security_middleware)
 
     @app.get("/")
     async def read_root() -> dict[str, str]:
