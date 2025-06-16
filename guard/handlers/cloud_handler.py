@@ -2,18 +2,19 @@ import html
 import ipaddress
 import logging
 import re
-from typing import Any
+from ipaddress import _BaseNetwork
+from typing import Any, cast
 
 import requests
 
 
-def fetch_aws_ip_ranges() -> set[ipaddress.IPv4Network]:
+def fetch_aws_ip_ranges() -> set[ipaddress._BaseNetwork]:
     try:
         response = requests.get("https://ip-ranges.amazonaws.com/ip-ranges.json")
         response.raise_for_status()
         data = response.json()
         return {
-            ipaddress.IPv4Network(ip_range["ip_prefix"])
+            ipaddress.ip_network(ip_range["ip_prefix"])
             for ip_range in data["prefixes"]
             if ip_range["service"] == "AMAZON"
         }
@@ -22,22 +23,28 @@ def fetch_aws_ip_ranges() -> set[ipaddress.IPv4Network]:
         return set()
 
 
-def fetch_gcp_ip_ranges() -> set[ipaddress.IPv4Network]:
+def fetch_gcp_ip_ranges() -> set[_BaseNetwork]:
     try:
         response = requests.get("https://www.gstatic.com/ipranges/cloud.json")
         response.raise_for_status()
         data = response.json()
-        return {
-            ipaddress.IPv4Network(ip_range["ipv4Prefix"])
-            for ip_range in data["prefixes"]
-            if "ipv4Prefix" in ip_range
-        }
+        networks: set[_BaseNetwork] = set()
+        for ip_range in data["prefixes"]:
+            if "ipv4Prefix" in ip_range:
+                networks.add(
+                    cast(_BaseNetwork, ipaddress.ip_network(ip_range["ipv4Prefix"]))
+                )
+            elif "ipv6Prefix" in ip_range:
+                networks.add(
+                    cast(_BaseNetwork, ipaddress.ip_network(ip_range["ipv6Prefix"]))
+                )
+        return networks
     except Exception as e:
         logging.error(f"Failed to fetch GCP IP ranges: {str(e)}")
         return set()
 
 
-def fetch_azure_ip_ranges() -> set[ipaddress.IPv4Network]:
+def fetch_azure_ip_ranges() -> set[ipaddress._BaseNetwork]:
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -66,9 +73,8 @@ def fetch_azure_ip_ranges() -> set[ipaddress.IPv4Network]:
         data = response.json()
 
         return {
-            ipaddress.IPv4Network(ip_range)
+            ipaddress.ip_network(ip_range)
             for ip_range in data["values"][0]["properties"]["addressPrefixes"]
-            if ":" not in ip_range
         }
     except Exception as e:
         logging.error(f"Failed to fetch Azure IP ranges: {str(e)}")
@@ -82,7 +88,7 @@ class CloudManager:
     """Manages cloud provider IP ranges with optional Redis caching."""
 
     _instance = None
-    ip_ranges: dict[str, set[ipaddress.IPv4Network]]
+    ip_ranges: dict[str, set[ipaddress._BaseNetwork]]
     redis_handler: Any = None
     logger: logging.Logger
 
@@ -140,7 +146,7 @@ class CloudManager:
                 )
                 if cached_ranges:
                     self.ip_ranges[provider] = {
-                        ipaddress.IPv4Network(ip) for ip in cached_ranges.split(",")
+                        ipaddress.ip_network(ip) for ip in cached_ranges.split(",")
                     }
                     continue
 

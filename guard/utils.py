@@ -1,7 +1,7 @@
 # fastapi_guard/utils.py
 import logging
 import re
-from ipaddress import IPv4Network, ip_address, ip_network
+from ipaddress import ip_address, ip_network
 from typing import Literal
 
 from fastapi import Request
@@ -81,7 +81,7 @@ def extract_client_ip(request: Request, config: SecurityConfig) -> str:
 
         for proxy in config.trusted_proxies:
             if "/" in proxy:  # CIDR notation
-                if connecting_ip_obj in IPv4Network(proxy, strict=False):
+                if connecting_ip_obj in ip_network(proxy, strict=False):
                     is_trusted = True
                     break
             elif connecting_ip == proxy:  # Direct IP match
