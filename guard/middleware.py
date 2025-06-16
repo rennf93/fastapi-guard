@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
@@ -35,7 +36,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     penetration attempts.
     """
 
-    def __init__(self, app: FastAPI, config: SecurityConfig):
+    def __init__(self, app: ASGIApp, *, config: SecurityConfig) -> None:
         """
         Initialize the SecurityMiddleware.
 
@@ -99,10 +100,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     connecting_ip = request.client.host
                     is_trusted_proxy = any(
                         # Check trusted proxy
-                        connecting_ip == proxy
-                        if "/" not in proxy
-                        else ip_address(connecting_ip)
-                        in ip_network(proxy, strict=False)
+                        (
+                            connecting_ip == proxy
+                            if "/" not in proxy
+                            else ip_address(connecting_ip)
+                            in ip_network(proxy, strict=False)
+                        )
                         for proxy in self.config.trusted_proxies
                     )
                     if is_trusted_proxy:
@@ -322,7 +325,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 allow_headers=config.cors_allow_headers,
                 allow_credentials=config.cors_allow_credentials,
                 max_age=config.cors_max_age,
-                expose_headers=config.cors_expose_headers or [],
+                expose_headers=config.cors_expose_headers,
             )
             return True
         return False

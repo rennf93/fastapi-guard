@@ -58,10 +58,7 @@ def fetch_azure_ip_ranges() -> set[ipaddress._BaseNetwork]:
         response.raise_for_status()
 
         decoded_html = html.unescape(response.text)
-        pattern = (
-            r'href=["\'](https://download\.microsoft\.com/'
-            r'.*?\.json)["\']'
-        )
+        pattern = r'href=["\'](https://download\.microsoft\.com/' r'.*?\.json)["\']'
         match = re.search(pattern, decoded_html)
 
         if not match:

@@ -372,6 +372,7 @@ async def test_custom_response_modifier_parameterized(
     async def custom_check(request: Request) -> Response | None:
         if "X-Custom-Check" in request.headers:
             return Response("I'm a teapot", status_code=status.HTTP_418_IM_A_TEAPOT)
+        return None
 
     config_args = {
         "ipinfo_token": IPINFO_TOKEN,
@@ -415,15 +416,15 @@ async def test_custom_response_modifier_parameterized(
         body = await request.body()
         assert body == b""
 
-        middleware = SecurityMiddleware(app, config)
+        middleware = SecurityMiddleware(app, config=config)
 
         async def call_next(request: Request) -> Response:
             return Response("Test response with no client", status_code=200)
 
-        response = await middleware.dispatch(request, call_next)
+        middleware_response = await middleware.dispatch(request, call_next)
 
-        assert response.headers.get("X-Modified") == "True"
-        assert response.status_code == expected_status_code
+        assert middleware_response.headers.get("X-Modified") == "True"
+        assert middleware_response.status_code == expected_status_code
 
     else:
         async with AsyncClient(
@@ -436,6 +437,7 @@ async def test_custom_response_modifier_parameterized(
             assert response.status_code == expected_status_code
 
             if expected_status_code >= 400:
+                response = await client.get(request_path, headers=request_headers)
                 response_json = response.json()
                 assert "detail" in response_json
 
@@ -456,10 +458,7 @@ async def test_memoryview_response_handling() -> None:
         response.headers["X-Modified"] = "True"
 
         if response.status_code >= 400 and not isinstance(response, JSONResponse):
-            if hasattr(response.body, "decode"):
-                content = response.body.decode()
-            else:
-                content = bytes(response.body).decode()
+            content = bytes(response.body).decode()
 
             return JSONResponse(
                 status_code=response.status_code,
@@ -473,13 +472,13 @@ async def test_memoryview_response_handling() -> None:
     assert isinstance(result_memoryview, JSONResponse)
     assert result_memoryview.status_code == 400
     assert result_memoryview.headers.get("X-Modified") == "True"
-    result_json = result_memoryview.body.decode()
+    result_json = bytes(result_memoryview.body).decode()
     assert "Test Content" in result_json
 
     result_bytes = await custom_modifier(test_response_bytes)
     assert isinstance(result_bytes, JSONResponse)
     assert result_bytes.status_code == 400
-    assert "Bytes Content" in result_bytes.body.decode()
+    assert "Bytes Content" in bytes(result_bytes.body).decode()
 
     result_normal = await custom_modifier(test_response_normal)
     assert result_normal.status_code == 200
@@ -589,7 +588,7 @@ async def test_cloud_ip_refresh() -> None:
         block_cloud_providers={"AWS", "GCP", "Azure"},
         enable_penetration_detection=False,
     )
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
 
     with patch(
         "guard.handlers.cloud_handler.cloud_handler.is_cloud_ip", return_value=False
@@ -660,7 +659,7 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
         enable_penetration_detection=False,
     )
 
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     middleware.last_cloud_ip_refresh = int(time.time() - 3700)
 
     mock_refresh = Mock()
@@ -701,7 +700,7 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
 
     # Redis enabled
     config.enable_redis = True
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     middleware.last_cloud_ip_refresh = int(time.time() - 3700)
 
     mock_refresh_async = AsyncMock()
@@ -717,7 +716,7 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
 async def test_refresh_cloud_ips_without_any_cloud() -> None:
     app = FastAPI()
     config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, block_cloud_providers=None)
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     with (
         patch.object(cloud_handler, "refresh_async") as mock_refresh_async,
         patch.object(cloud_handler, "refresh") as mock_refresh,
@@ -781,7 +780,7 @@ async def test_cleanup_expired_request_times() -> None:
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN, rate_limit=2, rate_limit_window=1
     )
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
 
     handler = middleware.rate_limit_handler
     await handler.reset()
@@ -840,7 +839,7 @@ async def test_cloud_ip_blocking_with_logging() -> None:
         whitelist=[],
         enable_penetration_detection=False,
     )
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     await middleware.setup_logger()
 
     call_next_executed = False
@@ -887,9 +886,9 @@ async def test_cloud_ip_blocking_with_logging() -> None:
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert not call_next_executed, (
-            "call_next should not be executed when IP is blocked"
-        )
+        assert (
+            not call_next_executed
+        ), "call_next should not be executed when IP is blocked"
 
     with (
         patch.object(cloud_handler, "is_cloud_ip", return_value=False),
@@ -929,7 +928,7 @@ async def test_redis_initialization(security_config_redis: SecurityConfig) -> No
 
     security_config_redis.block_cloud_providers = {"AWS"}
 
-    middleware = SecurityMiddleware(app, security_config_redis)
+    middleware = SecurityMiddleware(app, config=security_config_redis)
 
     # Mock external handlers
     with (
@@ -962,7 +961,7 @@ async def test_redis_initialization_without_ipinfo_and_cloud(
 
     security_config_redis.blocked_countries = []
 
-    middleware = SecurityMiddleware(app, security_config_redis)
+    middleware = SecurityMiddleware(app, config=security_config_redis)
 
     # Mock external handlers
     with (
@@ -991,7 +990,7 @@ async def test_redis_disabled(security_config: SecurityConfig) -> None:
     """Test middleware behavior when Redis is disabled"""
     app = FastAPI()
     security_config.enable_redis = False
-    middleware = SecurityMiddleware(app, security_config)
+    middleware = SecurityMiddleware(app, config=security_config)
 
     assert middleware.redis_handler is None
     await middleware.initialize()
@@ -1004,7 +1003,7 @@ async def test_redis_disabled(security_config: SecurityConfig) -> None:
 async def test_request_without_client(security_config: SecurityConfig) -> None:
     """Test handling of request without client info"""
     app = FastAPI()
-    middleware = SecurityMiddleware(app, security_config)
+    middleware = SecurityMiddleware(app, config=security_config)
 
     call_next_called = False
 
@@ -1136,7 +1135,7 @@ async def test_passive_mode_penetration_detection() -> None:
         passive_mode=True,
         whitelist=[],
     )
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     await middleware.setup_logger()
 
     call_next_called = False
@@ -1304,7 +1303,7 @@ async def test_lua_script_execution(security_config_redis: SecurityConfig) -> No
     config.rate_limit_window = 1
     config.enable_rate_limiting = True
 
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     handler = middleware.rate_limit_handler
 
     with patch.object(handler.redis_handler, "get_connection") as mock_get_connection:
@@ -1367,7 +1366,7 @@ async def test_fallback_to_pipeline(security_config_redis: SecurityConfig) -> No
     config.rate_limit_window = 1
     config.enable_rate_limiting = True
 
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     handler = middleware.rate_limit_handler
 
     with patch.object(handler.redis_handler, "get_connection") as mock_get_connection:
@@ -1461,7 +1460,7 @@ async def test_rate_limiter_redis_errors(security_config_redis: SecurityConfig) 
     config.rate_limit_window = 1
     config.enable_rate_limiting = True
 
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     handler = middleware.rate_limit_handler
 
     async def receive() -> dict[str, str | bytes]:
