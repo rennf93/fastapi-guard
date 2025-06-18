@@ -190,7 +190,7 @@ async def test_extract_client_ip_error_handling(
     assert body == b""
 
     with caplog.at_level(logging.WARNING):
-        with patch("guard.utils.IPv4Address", side_effect=ValueError("Invalid IP")):
+        with patch("guard.utils.ip_address", side_effect=ValueError("Invalid IP")):
             ip = extract_client_ip(request, config)
             assert ip == "127.0.0.1"
             assert "Error processing client IP" in caplog.text

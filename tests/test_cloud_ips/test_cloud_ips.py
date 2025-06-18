@@ -45,7 +45,8 @@ def test_fetch_gcp_ip_ranges(mock_requests_get: Mock) -> None:
 
     result = fetch_gcp_ip_ranges()
     assert ipaddress.IPv4Network("172.16.0.0/12") in result
-    assert len(result) == 1
+    assert ipaddress.IPv6Network("2001:db8::/32") in result
+    assert len(result) == 2
 
 
 def test_fetch_azure_ip_ranges(mock_requests_get: Mock) -> None:
@@ -65,7 +66,8 @@ def test_fetch_azure_ip_ranges(mock_requests_get: Mock) -> None:
 
     result = fetch_azure_ip_ranges()
     assert ipaddress.IPv4Network("192.168.1.0/24") in result
-    assert len(result) == 1
+    assert ipaddress.IPv6Network("2001:db8::/32") in result
+    assert len(result) == 2
 
 
 def test_cloud_ip_ranges() -> None:

@@ -2,12 +2,14 @@
 import logging
 import time
 from collections.abc import Awaitable, Callable
-from ipaddress import IPv4Address, ip_network
+from ipaddress import ip_address, ip_network
+from typing import Any
 
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
@@ -35,7 +37,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     penetration attempts.
     """
 
-    def __init__(self, app: FastAPI, config: SecurityConfig):
+    def __init__(self, app: ASGIApp, *, config: SecurityConfig) -> None:
         """
         Initialize the SecurityMiddleware.
 
@@ -99,10 +101,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     connecting_ip = request.client.host
                     is_trusted_proxy = any(
                         # Check trusted proxy
-                        connecting_ip == proxy
-                        if "/" not in proxy
-                        else IPv4Address(connecting_ip)
-                        in ip_network(proxy, strict=False)
+                        (
+                            connecting_ip == proxy
+                            if "/" not in proxy
+                            else ip_address(connecting_ip)
+                            in ip_network(proxy, strict=False)
+                        )
                         for proxy in self.config.trusted_proxies
                     )
                     if is_trusted_proxy:
@@ -315,7 +319,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         based on SecurityConfig.
         """
         if config.enable_cors:
-            cors_params = {
+            cors_params: dict[str, Any] = {
                 "allow_origins": config.cors_allow_origins,
                 "allow_methods": config.cors_allow_methods,
                 "allow_headers": config.cors_allow_headers,
