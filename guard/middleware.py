@@ -449,7 +449,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         Check route-specific IP access rules. Returns None if no route rules apply.
         """
         try:
-            ip_addr = IPv4Address(client_ip)
+            ip_addr = ip_address(client_ip)
 
             # Route blacklist
             if route_config.ip_blacklist:
