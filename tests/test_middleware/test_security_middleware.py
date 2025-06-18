@@ -1582,8 +1582,7 @@ async def test_rate_limiter_init_redis_exception(
 
 @pytest.mark.asyncio
 async def test_ipv6_rate_limiting(
-    security_config_redis: SecurityConfig,
-    clean_rate_limiter: None
+    security_config_redis: SecurityConfig, clean_rate_limiter: None
 ) -> None:
     """
     Test the rate limiting functionality
@@ -1751,8 +1750,7 @@ async def test_mixed_ipv4_ipv6_handling(security_config_redis: SecurityConfig) -
 
 @pytest.mark.asyncio
 async def test_real_ipv6_connection(
-    security_config_redis: SecurityConfig,
-    clean_rate_limiter: None
+    security_config_redis: SecurityConfig, clean_rate_limiter: None
 ) -> None:
     """
     Test with a real IPv6 client connection using direct Request objects.
