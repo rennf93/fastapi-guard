@@ -1,5 +1,5 @@
 from collections.abc import Awaitable, Callable
-from ipaddress import IPv4Address, ip_network
+from ipaddress import ip_address, ip_network
 from pathlib import Path
 from typing import Any, Literal
 
@@ -28,7 +28,7 @@ class SecurityConfig(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     trusted_proxies: list[str] = Field(
-        default=[],
+        default_factory=list,
         description="List of trusted proxy IPs or CIDR ranges for X-Forwarded-For",
     )
     """
@@ -120,7 +120,7 @@ class SecurityConfig(BaseModel):
     """
 
     blacklist: list[str] = Field(
-        default=[], description="Blocked IP addresses or CIDR ranges"
+        default_factory=list, description="Blocked IP addresses or CIDR ranges"
     )
     """
     list[str]:
@@ -129,7 +129,8 @@ class SecurityConfig(BaseModel):
     """
 
     whitelist_countries: list[str] = Field(
-        default=[], description="A list of country codes that are always allowed"
+        default_factory=list,
+        description="A list of country codes that are always allowed",
     )
     """
     list[str]:
@@ -138,7 +139,8 @@ class SecurityConfig(BaseModel):
     """
 
     blocked_countries: list[str] = Field(
-        default=[], description="A list of country codes that are always blocked"
+        default_factory=list,
+        description="A list of country codes that are always blocked",
     )
     """
     list[str]:
@@ -146,7 +148,7 @@ class SecurityConfig(BaseModel):
     """
 
     blocked_user_agents: list[str] = Field(
-        default=[], description="Blocked user agents"
+        default_factory=list, description="Blocked user agents"
     )
     """
     list[str]:
@@ -200,7 +202,7 @@ class SecurityConfig(BaseModel):
     """
 
     custom_error_responses: dict[int, str] = Field(
-        default={}, description="Custom error for specific HTTP status codes"
+        default_factory=dict, description="Custom error for specific HTTP status codes"
     )
     """
     dict[int, str]:
@@ -270,7 +272,7 @@ class SecurityConfig(BaseModel):
     """
 
     cors_allow_origins: list[str] = Field(
-        default=["*"], description="Origins allowed in CORS requests"
+        default_factory=lambda: ["*"], description="Origins allowed in CORS requests"
     )
     """
     list[str]:
@@ -279,7 +281,7 @@ class SecurityConfig(BaseModel):
     """
 
     cors_allow_methods: list[str] = Field(
-        default=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        default_factory=lambda: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         description="Methods allowed in CORS requests",
     )
     """
@@ -289,7 +291,7 @@ class SecurityConfig(BaseModel):
     """
 
     cors_allow_headers: list[str] = Field(
-        default=["*"], description="Headers allowed in CORS requests"
+        default_factory=lambda: ["*"], description="Headers allowed in CORS requests"
     )
     """
     list[str]:
@@ -307,7 +309,7 @@ class SecurityConfig(BaseModel):
     """
 
     cors_expose_headers: list[str] = Field(
-        default=[], description="Headers exposed in CORS responses"
+        default_factory=list, description="Headers exposed in CORS responses"
     )
     """
     list[str]:
@@ -335,7 +337,7 @@ class SecurityConfig(BaseModel):
     """
 
     exclude_paths: list[str] = Field(
-        default=[
+        default_factory=lambda: [
             "/docs",
             "/redoc",
             "/openapi.json",
@@ -414,7 +416,7 @@ class SecurityConfig(BaseModel):
                     network = ip_network(entry, strict=False)
                     validated.append(str(network))
                 else:
-                    addr = IPv4Address(entry)
+                    addr = ip_address(entry)
                     validated.append(str(addr))
             except ValueError:
                 raise ValueError(f"Invalid IP or CIDR range: {entry}") from None
@@ -434,7 +436,7 @@ class SecurityConfig(BaseModel):
                     network = ip_network(entry, strict=False)
                     validated.append(str(network))
                 else:
-                    addr = IPv4Address(entry)
+                    addr = ip_address(entry)
                     validated.append(str(addr))
             except ValueError:
                 raise ValueError(f"Invalid proxy IP or CIDR range: {entry}") from None

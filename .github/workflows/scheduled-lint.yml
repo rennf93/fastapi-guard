@@ -1,0 +1,223 @@
+name: Scheduled Lint Check
+
+on:
+  schedule:
+    # NOTE: Mondays @ 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  scheduled-pre-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Send Initial Slack Message
+        id: send_initial_slack_lint
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Started'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - Scheduled Lint Check'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':hammer_and_wrench:'
+          TITLE: 'MyPy and Ruff Checks Started'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
+          MESSAGE: |
+            .
+            *VALIDATING MYPY AND RUFF...*
+
+            .
+            Running:
+            - Ruff formatting
+            - Ruff linting
+            - MyPy type checking
+            .
+          COLOR: warning
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run pre-commit checks
+        id: precommit
+        run: |
+          uv run pre-commit run --all-files > precommit_output.txt 2>&1
+          EXIT_CODE=$?
+
+          OUTPUT=$(cat precommit_output.txt)
+          echo "output<<EOF" >> $GITHUB_OUTPUT
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Notify Success on Slack Channel
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Success'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - Scheduled Lint Check'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':gem:'
+          TITLE: 'Up-to-date MyPy and Ruff!'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
+          MESSAGE: |
+            .
+            **All checks passed!**
+
+            ```
+            ${{ steps.precommit.outputs.output }}
+            ```
+            .
+          COLOR: good
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack_lint.outputs.SLACK_THREAD_TS }}
+
+      - name: Send Failure Notification to Slack
+        if: failure()
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Failed'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - Scheduled Lint Check'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':skull:'
+          TITLE: 'Outdated MyPy and/or Ruff!'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
+          MESSAGE: |
+            .
+            **MYPY AND RUFF ARE OUTDATED!**
+
+            ```
+            ${{ steps.precommit.outputs.output }}
+            ```
+
+            Run `make fix` | `make lint` to try, check and resolve.
+            .
+          COLOR: danger
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack_lint.outputs.SLACK_THREAD_TS }}
+
+  scheduled-docs-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Send Initial Slack Message
+        id: send_initial_slack_docs_lint
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Started'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - Scheduled Docs Lint Check'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':memo:'
+          TITLE: 'Documentation Lint Check Started'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
+          MESSAGE: |
+            .
+            *VALIDATING DOCUMENTATION...*
+            .
+            Running:
+            - Pymarkdownlnt formatting
+            - Pymarkdownlnt linting
+            .
+          COLOR: good
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install pymarkdownlnt
+        run: pip install pymarkdownlnt
+
+      - name: Run markdown checks
+        id: markdown
+        run: |
+          pymarkdownlnt scan docs > markdown_output.txt 2>&1
+          EXIT_CODE=$?
+
+          OUTPUT=$(cat markdown_output.txt)
+          echo "output<<EOF" >> $GITHUB_OUTPUT
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Notify Markdown Success on Slack Channel
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Success'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - Docs Lint Check'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':gem:'
+          TITLE: 'Documentation is Up-to-date!'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
+          MESSAGE: |
+            .
+            **All markdown checks passed!**
+
+            ```
+            ${{ steps.markdown.outputs.output }}
+            ```
+            .
+          COLOR: good
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack_docs_lint.outputs.SLACK_THREAD_TS }}
+
+      - name: Send Markdown Failure Notification to Slack
+        if: failure()
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Failed'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - Docs Lint Check'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':skull:'
+          TITLE: 'Documentation Issues Detected!'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
+          MESSAGE: |
+            .
+            **DOCUMENTATION NEEDS FIXING!**
+
+            ```
+            ${{ steps.markdown.outputs.output }}
+            ```
+
+            Run `make fix-docs` | `make lint-docs` to resolve.
+            .
+          COLOR: danger
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack_docs_lint.outputs.SLACK_THREAD_TS }}

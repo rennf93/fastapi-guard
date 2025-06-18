@@ -39,7 +39,7 @@ jobs:
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
-            *DEPLOYMENT TRIGGERED DOCS UPDATE!*
+            *DOCS UPDATE TRIGGERED!*
             .
             Current Docs version:
               ${{ secrets.DOCS_VERSION }}
@@ -58,7 +58,12 @@ jobs:
           pip install mkdocs-material
           pip install "mkdocstrings[python]"
           pip install mike
+          pip install pymarkdownlnt
           pip install yq
+
+      - name: Lint documentation
+        run: |
+          pymarkdownlnt scan -r -e ./.venv -e ./.git -e ./data -e ./guard -e ./tests .
 
       - name: Configure Git user
         run: |

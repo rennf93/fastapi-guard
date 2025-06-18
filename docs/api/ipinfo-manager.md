@@ -1,16 +1,21 @@
 ---
+
 title: IPInfoManager API - FastAPI Guard
 description: API documentation for IP geolocation and country-based filtering using IPInfo's database
 keywords: ip geolocation, country filtering, ipinfo integration, location detection, cloud provider blocking
 ---
 
-# IPInfoManager
+IPInfoManager
+=============
 
 The `IPInfoManager` class handles IP geolocation using IPInfo's database. It uses a singleton pattern to ensure only one instance exists throughout the application.
 
 **Performance Note**: The IPInfo database is only downloaded and initialized when country-based filtering is configured in your application, improving startup time and reducing resource usage when these features aren't needed.
 
-## Class Definition
+___
+
+Class Definition
+----------------
 
 ```python
 class IPInfoManager:
@@ -39,9 +44,13 @@ class IPInfoManager:
         return cls._instance
 ```
 
-## Methods
+___
 
-### initialize
+Methods
+-------
+
+initialize
+----------
 
 ```python
 async def initialize(self):
@@ -50,7 +59,8 @@ async def initialize(self):
     """
 ```
 
-### get_country
+get_country
+-----------
 
 ```python
 def get_country(self, ip: str) -> str | None:
@@ -59,7 +69,8 @@ def get_country(self, ip: str) -> str | None:
     """
 ```
 
-### close
+close
+-----
 
 ```python
 def close(self):
@@ -68,7 +79,11 @@ def close(self):
     """
 ```
 
-## Redis Caching
+___
+
+Redis Caching
+--------------
+
 The database is cached in Redis with 24-hour TTL when enabled:
 
 ```python
@@ -79,7 +94,10 @@ db_content = await redis.get_key("ipinfo", "database")
 await ipinfo_db.initialize()  # Will update Redis cache
 ```
 
-## Usage Example
+___
+
+Usage Example
+-------------
 
 ```python
 from guard.handlers.ipinfo_handler import IPInfoManager

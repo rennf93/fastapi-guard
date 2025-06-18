@@ -1,23 +1,32 @@
 ---
+
 title: Proxy Security - FastAPI Guard
 description: Secure handling of X-Forwarded-For headers and proxy configurations in FastAPI Guard
 keywords: proxy security, X-Forwarded-For, header security, IP spoofing prevention
 ---
 
-# Proxy Security
+Proxy Security
+==============
 
 When your application is behind a proxy, load balancer, or CDN, properly handling the `X-Forwarded-For` header is critical for security. FastAPI Guard implements a secure approach to prevent IP spoofing attacks.
 
-## The Problem
+___
+
+The Problem
+-----------
 
 The `X-Forwarded-For` header is sent by proxies to identify the original client IP, but since it can be manipulated by clients, it poses a security risk if trusted blindly.
 
 Common security issues include:
+
 - IP spoofing to bypass IP-based access controls
 - False attribution in security logs
 - Bypassing rate limiting and IP bans
 
-## Secure Configuration
+___
+
+Secure Configuration
+--------------------
 
 FastAPI Guard implements a secure-by-default approach where X-Forwarded-For headers are only trusted from explicitly configured trusted proxies:
 
@@ -29,16 +38,23 @@ config = SecurityConfig(
 )
 ```
 
-### How It Works
+___
+
+How It Works
+------------
 
 1. When a request arrives, FastAPI Guard checks if it's from a trusted proxy
 2. If not from a trusted proxy, the direct connecting IP is always used
 3. If from a trusted proxy, the X-Forwarded-For header is parsed to extract the original client IP
 4. The extracted IP is then used for all security checks
 
-## Configuration Options
+___
 
-### trusted_proxies
+Configuration Options
+---------------------
+
+trusted_proxies
+---------------
 
 List of IP addresses or CIDR ranges that are allowed to set X-Forwarded-For headers:
 
@@ -54,7 +70,8 @@ config = SecurityConfig(
 
 If empty (default), X-Forwarded-For headers will not be trusted at all.
 
-### trusted_proxy_depth
+trusted_proxy_depth
+-------------------
 
 Controls how the client IP is extracted from the X-Forwarded-For header:
 
@@ -70,7 +87,8 @@ The X-Forwarded-For format is: `client, proxy1, proxy2, ...` (leftmost is the or
 - With depth=2: Assumes two proxies in chain, still uses leftmost IP
 - Higher values handle more complex proxy chains
 
-### trust_x_forwarded_proto
+trust_x_forwarded_proto
+-----------------------
 
 Whether to trust the X-Forwarded-Proto header for HTTPS detection:
 
@@ -83,9 +101,13 @@ config = SecurityConfig(
 
 This only applies when the request comes from a trusted proxy.
 
-## Real-World Examples
+___
 
-### Single Reverse Proxy
+Real-World Examples
+-------------------
+
+Single Reverse Proxy
+---------------------
 
 ```python
 config = SecurityConfig(
@@ -95,7 +117,8 @@ config = SecurityConfig(
 )
 ```
 
-### Load Balancer + Proxy
+Load Balancer + Proxy
+---------------------
 
 ```python
 config = SecurityConfig(
@@ -108,7 +131,8 @@ config = SecurityConfig(
 )
 ```
 
-### Cloud Provider Load Balancer
+Cloud Provider Load Balancer
+-----------------------------
 
 ```python
 config = SecurityConfig(
@@ -120,7 +144,10 @@ config = SecurityConfig(
 )
 ```
 
-## Best Practices
+___
+
+Best Practices
+--------------
 
 1. **Be specific**: Only include the exact IPs or ranges of your known proxies
 2. **Use correct depth**: Configure based on your actual proxy chain

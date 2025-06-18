@@ -66,7 +66,7 @@ jobs:
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
-            *DEPLOYMENT TRIGGERED CODEQL!*
+            *CODEQL TRIGGERED!*
 
             Commit:
               ${{ github.event.head_commit.message }}

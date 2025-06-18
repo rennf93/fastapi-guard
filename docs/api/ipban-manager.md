@@ -1,14 +1,19 @@
 ---
+
 title: IPBanManager API - FastAPI Guard
 description: API reference for FastAPI Guard's IP banning system, including automatic and manual IP management
 keywords: ip ban api, ban management, ip blocking api, security api
 ---
 
-# IPBanManager
+IPBanManager
+============
 
 The `IPBanManager` class handles temporary IP bans in your FastAPI application.
 
-## Overview
+___
+
+Overview
+--------
 
 ```python
 from guard.handlers.ipban_handler import IPBanManager
@@ -18,8 +23,13 @@ ip_ban_manager = IPBanManager()
 
 The `IPBanManager` uses an in-memory cache to track banned IPs and their ban durations.
 
-## Distributed Banning
+___
+
+Distributed Banning
+-------------------
+
 When Redis is enabled:
+
 - Bans are shared across instances
 - Ban expiration is handled automatically
 - Supports atomic ban operations
@@ -32,9 +42,13 @@ await ip_ban_manager.ban_ip("192.168.1.1", 3600, distributed=True)
 is_banned = await ip_ban_manager.is_ip_banned("192.168.1.1", check_redis=True)
 ```
 
-## Methods
+___
 
-### ban_ip
+Methods
+-------
+
+ban_ip
+------
 
 Ban an IP address for a specified duration.
 
@@ -47,11 +61,13 @@ async def ban_ip(ip: str, duration: int) -> None
 - `duration`: Ban duration in seconds
 
 **Example**:
+
 ```python
 await ip_ban_manager.ban_ip("192.168.1.1", 3600)  # Ban for 1 hour
 ```
 
-### is_ip_banned
+is_ip_banned
+------------
 
 Check if an IP address is currently banned.
 
@@ -66,11 +82,13 @@ async def is_ip_banned(ip: str) -> bool
 - `bool`: True if the IP is banned, False otherwise
 
 **Example**:
+
 ```python
 is_banned = await ip_ban_manager.is_ip_banned("192.168.1.1")
 ```
 
-### reset
+reset
+-----
 
 Reset all banned IPs.
 
@@ -79,11 +97,15 @@ async def reset() -> None
 ```
 
 **Example**:
+
 ```python
 await ip_ban_manager.reset()
 ```
 
-## Usage with SecurityMiddleware
+___
+
+Usage with SecurityMiddleware
+-----------------------------
 
 The `IPBanManager` is automatically integrated when you use the `SecurityMiddleware`:
 

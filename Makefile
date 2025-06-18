@@ -6,19 +6,19 @@ DEFAULT_PYTHON = 3.10
 .PHONY: install
 install:
 	@uv sync
-	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Install dev dependencies
 .PHONY: install-dev
 install-dev:
 	@uv sync --extra dev
-	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Update dependencies
 .PHONY: lock
 lock:
 	@uv lock
-	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Start example-app
 .PHONY: start-example
@@ -47,24 +47,17 @@ restart: stop start-example
 # Lint code
 .PHONY: lint
 lint:
-	@uv run ruff format .
-	@uv run ruff check .
-	@uv run mypy .
-	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
-# lint:
-# 	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "ruff format . ; ruff check . ; mypy ."
-# 	@docker compose down --rmi all --remove-orphans -v
-# 	@docker system prune -f
+	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "echo 'Formatting w/ Ruff...' ; echo '' ; ruff format . ; echo '' ; echo '' ; echo 'Linting w/ Ruff...' ; echo '' ; ruff check . ; echo '' ; echo '' ; echo 'Type checking w/ Mypy...' ; echo '' ; mypy ."
+	@docker compose down --rmi all --remove-orphans -v
+	@docker system prune -f
 
 # Fix code
 .PHONY: fix
 fix:
+	@echo "Fixing formatting w/ Ruff..."
+	@echo ''
 	@uv run ruff check --fix .
-	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
-# fix:
-# 	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "ruff check --fix ."
-# 	@docker compose down --rmi all --remove-orphans -v
-# 	@docker system prune -f
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Run tests (default Python version)
 .PHONY: test
@@ -117,7 +110,7 @@ test-3.13:
 .PHONY: local-test
 local-test:
 	@uv run pytest -v --cov=.
-	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Stress Test
 .PHONY: stress-test
@@ -143,7 +136,20 @@ high-load-stress-test:
 .PHONY: serve-docs
 serve-docs:
 	@uv run mkdocs serve
-	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
+
+# Lint documentation
+.PHONY: lint-docs
+lint-docs:
+	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "pymarkdownlnt scan -r -e ./.venv -e ./data -e ./guard -e ./tests ."
+	@docker compose down --rmi all --remove-orphans -v
+	@docker system prune -f
+
+# Fix documentation
+.PHONY: fix-docs
+fix-docs:
+	@uv run pymarkdownlnt fix -r -e ./.venv -e ./data -e ./guard -e ./tests .
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Prune
 .PHONY: prune
@@ -153,25 +159,34 @@ prune:
 # Clean Cache Files
 .PHONY: clean
 clean:
-	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo$|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Help
 .PHONY: help
 help:
 	@echo "Available commands:"
-	@echo "  make install-deps     - Install dependencies"
-	@echo "  make update-deps      - Update dependencies"
-	@echo "  make start-example    - Start example application with docker compose"
-	@echo "  make run-example      - Build and run example container directly"
-	@echo "  make stop             - Stop all containers and clean up resources"
-	@echo "  make restart          - Restart example application"
-	@echo "  make lint             - Run linting checks"
-	@echo "  make test             - Run tests with Python $(DEFAULT_PYTHON)"
-	@echo "  make test-all         - Run tests with all Python versions ($(PYTHON_VERSIONS))"
-	@echo "  make test-<version>   - Run tests with specific Python version (e.g., make test-3.10)"
-	@echo "  make local-test       - Run tests locally"
-	@echo "  make show-python-versions - Show supported Python versions"
-	@echo "  make help             - Show this help message"
+	@echo "  make install            	   - Install dependencies"
+	@echo "  make install-dev        	   - Install dev dependencies"
+	@echo "  make lock               	   - Update dependencies"
+	@echo "  make start-example      	   - Start example application with docker compose"
+	@echo "  make run-example        	   - Build and run example container directly"
+	@echo "  make stop               	   - Stop all containers and clean up resources"
+	@echo "  make restart            	   - Restart example application"
+	@echo "  make lint               	   - Run linting checks"
+	@echo "  make fix                	   - Auto-fix linting issues"
+	@echo "  make test               	   - Run tests with Python $(DEFAULT_PYTHON)"
+	@echo "  make test-all           	   - Run tests with all Python versions ($(PYTHON_VERSIONS))"
+	@echo "  make test-<version>     	   - Run tests with specific Python version (e.g., make test-3.10)"
+	@echo "  make local-test         	   - Run tests locally"
+	@echo "  make stress-test        	   - Run stress test"
+	@echo "  make high-load-stress-test    - Run high-load stress test"
+	@echo "  make serve-docs       		   - Serve documentation"
+	@echo "  make lint-docs        		   - Run markdownlint on documentation"
+	@echo "  make fix-docs         		   - Auto-fix markdownlint issues"
+	@echo "  make prune            		   - Prune docker resources"
+	@echo "  make clean                    - Clean cache files"
+	@echo "  make help             		   - Show this help message"
+	@echo "  make show-python-versions     - Show supported Python versions"
 
 # Python versions list
 .PHONY: show-python-versions

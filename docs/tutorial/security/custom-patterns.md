@@ -1,14 +1,19 @@
 ---
+
 title: Custom Security Patterns - FastAPI Guard
 description: Create and manage custom security patterns for detecting specific threats in your FastAPI application
 keywords: security patterns, custom detection, threat patterns, security rules
 ---
 
-# Custom Patterns
+Custom Patterns
+===============
 
 FastAPI Guard allows you to add custom patterns for detecting suspicious activity.
 
-## Adding Custom Patterns
+___
+
+Adding Custom Patterns
+-----------------------
 
 Add your own patterns to the detection system:
 
@@ -23,7 +28,10 @@ async def setup_patterns():
     )
 ```
 
-## Pattern Types
+___
+
+Pattern Types
+-------------
 
 You can add patterns for different types of attacks:
 
@@ -47,7 +55,10 @@ await SusPatternsManager.add_pattern(
 )
 ```
 
-## Managing Patterns
+___
+
+Managing Patterns
+-----------------
 
 Remove or modify existing patterns:
 
@@ -81,7 +92,10 @@ default_compiled = await SusPatternsManager.get_default_compiled_patterns()
 custom_compiled = await SusPatternsManager.get_custom_compiled_patterns()
 ```
 
-## Pattern Testing
+___
+
+Pattern Testing
+---------------
 
 Test your patterns against requests:
 

@@ -1,4 +1,5 @@
 ---
+
 name: Bug report
 about: Create a report to help us improve FastAPI Guard
 title: '[BUG] '
@@ -6,29 +7,46 @@ labels: bug
 assignees: ''
 ---
 
-## Bug Description
+Bug Description
+================
 A clear and concise description of what the bug is.
 
-## Steps To Reproduce
+___
+
+Steps To Reproduce
+===================
 Steps to reproduce the behavior:
 1. Configure FastAPI Guard with '...'
 2. Make request to endpoint '....'
 3. See error
 
-## Expected Behavior
+___
+
+Expected Behavior
+=================
 A clear and concise description of what you expected to happen.
 
-## Actual Behavior
+___
+
+Actual Behavior
+================
 What actually happened, including error messages, stack traces, or logs.
 
-## Environment
-- FastAPI Guard version: [e.g. 2.1.2]
+___
+
+Environment
+===========
+- FastAPI Guard version: [e.g. 2.1.3]
 - Python version: [e.g. 3.11.10]
 - FastAPI version: [e.g. 0.115.0]
 - OS: [e.g. Ubuntu 22.04, Windows 11, MacOS 15.4]
 - Other relevant dependencies:
 
-## Configuration
+___
+
+Configuration
+=============
+
 ```python
 # Include your FastAPI Guard configuration here
 from fastapi import FastAPI
@@ -45,7 +63,10 @@ security_config = SecurityConfig(
 app.add_middleware(SecurityMiddleware, config=security_config)
 ```
 
-## Additional Context
+___
+
+Additional Context
+==================
 Add any other context about the problem here. For example:
 - Is this happening in production or development?
 - Does it happen consistently or intermittently?

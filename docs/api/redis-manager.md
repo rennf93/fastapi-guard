@@ -1,14 +1,19 @@
 ---
+
 title: RedisManager API - FastAPI Guard
 description: API reference for Redis-based distributed state management
 keywords: redis integration, distributed state, connection pooling, atomic operations
 ---
 
-# RedisManager
+RedisManager
+============
 
 The `RedisManager` class handles Redis connections and atomic operations with automatic retries.
 
-## Class Definition
+___
+
+Class Definition
+----------------
 
 ```python
 class RedisManager:
@@ -17,48 +22,69 @@ class RedisManager:
     """
 ```
 
-## Key Methods
+___
 
-### initialize
+Key Methods
+-----------
+
+initialize
+----------
+
 ```python
 async def initialize(self):
     """Initialize Redis connection with retry logic"""
 ```
 
-### get_connection
+get_connection
+--------------
+
 ```python
 @asynccontextmanager
 async def get_connection(self):
     """Context manager for safe Redis operations"""
 ```
 
-### safe_operation
+safe_operation
+--------------
+
 ```python
 async def safe_operation(self, func, *args, **kwargs):
     """Execute Redis operation with error handling"""
 ```
 
-## Atomic Operations
+___
 
-### get_key
+Atomic Operations
+-----------------
+
+get_key
+-------
+
 ```python
 async def get_key(self, namespace: str, key: str) -> Any:
     """Get namespaced key with prefix"""
 ```
 
-### set_key
+set_key
+-------
+
 ```python
 async def set_key(self, namespace: str, key: str, value: Any, ttl: int | None = None) -> bool:
     """Set namespaced key with optional TTL"""
 ```
 
-### incr
+incr
+----
+
 ```python
 async def incr(self, namespace: str, key: str, ttl: int | None = None) -> int:
     """Atomic increment with expiration"""
 ```
 
-## Usage Example
+___
+
+Usage Example
+-------------
 
 ```python
 from guard.handlers.redis_handler import RedisManager

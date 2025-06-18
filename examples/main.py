@@ -154,9 +154,15 @@ async def get_ip(request: Request) -> IPResponse:
     This can be useful to see which IP the security middleware is evaluating.
     If you're using proxies, you might want to check X-Forwarded-For headers.
     """
+    from ipaddress import ip_address
+
     client_ip = "unknown"
     if request.client:
-        client_ip = request.client.host
+        try:
+            client_ip = str(ip_address(request.client.host))
+        except ValueError:
+            client_ip = "invalid"
+
     return IPResponse(ip=client_ip)
 
 
