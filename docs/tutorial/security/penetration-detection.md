@@ -1,14 +1,19 @@
 ---
+
 title: Penetration Detection - FastAPI Guard
 description: Detect and prevent common attack patterns including SQL injection, XSS, and other security threats
 keywords: penetration detection, attack prevention, security patterns, threat detection
 ---
 
-# Penetration Detection
+Penetration Detection
+=====================
 
 FastAPI Guard includes sophisticated penetration attempt detection to identify and block malicious requests.
 
-## Basic Configuration
+___
+
+Basic Configuration
+-------------------
 
 Enable penetration detection:
 
@@ -20,7 +25,10 @@ config = SecurityConfig(
 )
 ```
 
-## Detection Patterns
+___
+
+Detection Patterns
+------------------
 
 The system checks for various attack patterns including:
 
@@ -35,7 +43,10 @@ The system checks for various attack patterns including:
 - NoSQL Injection
 - File Upload attacks
 
-## Custom Detection Logic
+___
+
+Custom Detection Logic
+----------------------
 
 You can use the penetration detection directly in your routes:
 
@@ -54,7 +65,10 @@ async def submit_data(request: Request):
     return {"status": "success"}
 ```
 
-## Logging Suspicious Activity
+___
+
+Logging Suspicious Activity
+----------------------------
 
 Configure logging for suspicious activities:
 
@@ -66,11 +80,15 @@ config = SecurityConfig(
 ```
 
 Example log output:
-```
+
+```text
 2024-01-20 10:15:23 - WARNING - Suspicious activity detected from 192.168.1.1: POST /api/data - Reason: SQL injection attempt
 ```
 
-## Passive Mode
+___
+
+Passive Mode
+------------
 
 When `passive_mode` is enabled, FastAPI Guard will:
 
@@ -80,7 +98,10 @@ When `passive_mode` is enabled, FastAPI Guard will:
 
 This helps you understand your traffic patterns and fine-tune your security settings before enforcing blocks that might affect legitimate users.
 
-### How to Use Passive Mode
+___
+
+How to Use Passive Mode
+-----------------------
 
 ```python
 from fastapi import FastAPI
@@ -98,7 +119,10 @@ config = SecurityConfig(
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
-### Checking Logs
+___
+
+Checking Logs
+-------------
 
 When using passive mode, watch your logs for entries starting with "[PASSIVE MODE]". These entries provide detailed information about what triggered the detection, including:
 

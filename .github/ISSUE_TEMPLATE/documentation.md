@@ -1,4 +1,5 @@
 ---
+
 name: Documentation
 about: Report issues with the FastAPI Guard documentation or suggest improvements
 title: '[DOCS] '
@@ -6,14 +7,21 @@ labels: documentation
 assignees: ''
 ---
 
-## Documentation Issue
+Documentation Issue
+===================
 Describe the issue or improvement needed for the documentation.
 
-## Current Documentation
+___
+
+Current Documentation
+=====================
 Link to the current documentation page or section that needs improvement:
 [Link it here]()
 
-## Suggested Changes
+___
+
+Suggested Changes
+=================
 Describe what changes you suggest:
 
 - [ ] Clarify existing content
@@ -23,12 +31,18 @@ Describe what changes you suggest:
 - [ ] Fix typos/grammar
 - [ ] Other (please specify)
 
-## Proposed Text
+___
+
+Proposed Text
+=============
 If you have a specific suggestion for new text, please provide it here:
 
 ```markdown
 # Your proposed documentation text here
 ```
 
-## Additional Context
+___
+
+Additional Context
+==================
 Any other information or screenshots about the documentation issue.

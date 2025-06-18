@@ -1,14 +1,19 @@
 ---
+
 title: Logging Configuration - FastAPI Guard
 description: Configure security event logging and monitoring in FastAPI Guard with custom log formats and levels
 keywords: fastapi logging, security logging, event monitoring, log configuration
 ---
 
-# Logging Configuration
+Logging Configuration
+=====================
 
 FastAPI Guard includes powerful logging capabilities to help you monitor and track security-related events in your application.
 
-## Basic Logging Setup
+___
+
+Basic Logging Setup
+-------------------
 
 Configure basic logging:
 
@@ -18,7 +23,10 @@ config = SecurityConfig(
 )
 ```
 
-## Configurable Log Levels
+___
+
+Configurable Log Levels
+------------------------
 
 FastAPI Guard supports different log levels for normal and suspicious requests:
 
@@ -32,6 +40,7 @@ config = SecurityConfig(
 ```
 
 Available log levels:
+
 - `"INFO"`: Informational messages
 - `"DEBUG"`: Detailed debug information
 - `"WARNING"`: Warning messages (default for suspicious activity)
@@ -39,7 +48,10 @@ Available log levels:
 - `"CRITICAL"`: Critical errors
 - `None`: Disable logging completely
 
-### Performance Optimization
+___
+
+Performance Optimization
+-------------------------
 
 For high-traffic production environments, consider disabling normal request logging:
 
@@ -52,7 +64,10 @@ config = SecurityConfig(
 )
 ```
 
-## Custom Logger
+___
+
+Custom Logger
+-------------
 
 ```python
 from guard.utils import setup_custom_logging
@@ -61,7 +76,10 @@ from guard.utils import setup_custom_logging
 logger = await setup_custom_logging("security.log")
 ```
 
-## Logging
+___
+
+Logging
+-------
 
 FastAPI Guard uses a unified logging approach with the `log_activity` function that handles different types of log events:
 
@@ -98,7 +116,10 @@ await log_activity(
 )
 ```
 
-## Logging Parameters
+___
+
+Logging Parameters
+------------------
 
 The `log_activity` function accepts the following parameters:
 
@@ -110,7 +131,10 @@ The `log_activity` function accepts the following parameters:
 - `trigger_info`: Details about what triggered detection
 - `level`: The logging level to use. If `None`, logging is disabled. Defaults to "WARNING".
 
-## Log Format
+___
+
+Log Format
+----------
 
 By default, logs include the following information:
 

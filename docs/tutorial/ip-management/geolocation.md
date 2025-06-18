@@ -1,10 +1,12 @@
 ---
+
 title: IP Geolocation - FastAPI Guard
 description: Configure country-based IP filtering and geolocation features using IPInfo's database in FastAPI Guard
 keywords: ip geolocation, country blocking, ipinfo integration, location filtering
 ---
 
-# IP Geolocation
+IP Geolocation
+==============
 
 FastAPI Guard accepts an arbitrary class that implements geolocation and country-based filtering. All it needs is to implement the following protocol:
 
@@ -32,9 +34,13 @@ from guard.handlers.ipinfo_handler import IPInfoManager
 
 The geolocation handler is only initialized and used when country filtering is configured, improving performance for applications that don't need these features.
 
-## Setup
+___
 
-### Option 1: Using the built-in IPInfoHandler
+Setup
+-----
+
+Option 1: Using the built-in IPInfoHandler
+-------------------------------------------
 
 1. Get your IPInfo token from [ipinfo.io](https://ipinfo.io/signup)
 2. Configure geolocation in your app:
@@ -49,7 +55,8 @@ config = SecurityConfig(
 )
 ```
 
-### Option 2: Providing a custom geographical IP handler
+Option 2: Providing a custom geographical IP handler
+----------------------------------------------------
 
 ```python
 
@@ -85,7 +92,10 @@ config = SecurityConfig(
 )
 ```
 
-## Country Blocking
+___
+
+Country Blocking
+----------------
 
 Block requests from specific countries using ISO 3166-1 alpha-2 country codes:
 
@@ -101,7 +111,10 @@ config = SecurityConfig(
 )
 ```
 
-## Country Whitelisting
+___
+
+Country Whitelisting
+--------------------
 
 Only allow requests from specific countries:
 
@@ -117,7 +130,10 @@ config = SecurityConfig(
 )
 ```
 
-## Custom Geolocation Logic
+___
+
+Custom Geolocation Logic
+------------------------
 
 You can also use the `IPInfoManager` directly for custom geolocation logic:
 

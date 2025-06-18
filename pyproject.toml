@@ -1,6 +1,6 @@
 [project]
-name = "fastapi-guard"
-version = "2.1.2"
+name = "fastapi_guard"
+version = "2.1.3"
 description = "A security library for FastAPI to control IPs, log requests, and detect penetration attempts."
 authors = [
     {name = "Renzo Franceschini", email = "rennf93@gmail.com"}
@@ -23,9 +23,14 @@ dev = [
     "black",
     "httpx",
     "matplotlib",
+    "mkdocs",
+    "mkdocstrings",
+    "mkdocstrings-python",
+    "mkdocs-material",
     "mypy",
     "numpy",
     "pre-commit",
+    "pymarkdownlnt",
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
@@ -95,3 +100,38 @@ follow_imports = "skip"
 [[tool.mypy.overrides]]
 module = "redis.*"
 follow_imports = "skip"
+
+[tool.pymarkdown.plugins.md007]
+# MD007 - Unordered list indentation (set to 2 spaces)
+enabled = true
+indent = 2
+
+[tool.pymarkdown.plugins.md012]
+# MD012 - Multiple consecutive blank lines (allow up to 2)
+enabled = true
+maximum = 2
+
+[tool.pymarkdown.plugins.md013]
+# MD013 - Line length (disabled)
+enabled = false
+
+[tool.pymarkdown.plugins.md024]
+# MD024 - Multiple headings with same content (allow siblings only)
+enabled = true
+siblings_only = true
+
+[tool.pymarkdown.plugins.md033]
+# MD033 - Inline HTML
+enabled = false
+
+[tool.pymarkdown.plugins.md035]
+# MD035 - Horizontal rule style (disabled - allow any style)
+enabled = false
+
+[tool.pymarkdown.plugins.md041]
+# MD041 - First line in file should be top-level heading (disabled)
+enabled = false
+
+[tool.pymarkdown.plugins.md046]
+# MD046 - Code block style (disabled - allow any style)
+enabled = false

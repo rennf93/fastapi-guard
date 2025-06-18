@@ -1,14 +1,19 @@
 ---
+
 title: SecurityMiddleware API - FastAPI Guard
 description: Complete API reference for FastAPI Guard's SecurityMiddleware class and its configuration options
 keywords: security middleware, fastapi middleware, api security, middleware configuration
 ---
 
-# SecurityMiddleware
+SecurityMiddleware
+==================
 
 The `SecurityMiddleware` class is the core component of FastAPI Guard that handles all security features.
 
-## Class Definition
+___
+
+Class Definition
+----------------
 
 ```python
 class SecurityMiddleware(BaseHTTPMiddleware):
@@ -20,9 +25,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # ... initialization
 ```
 
-## Methods
+___
 
-### dispatch
+Methods
+-------
+
+dispatch
+--------
 
 ```python
 async def dispatch(
@@ -36,7 +45,8 @@ async def dispatch(
     """
 ```
 
-### create_error_response
+create_error_response
+---------------------
 
 ```python
 async def create_error_response(
@@ -49,7 +59,11 @@ async def create_error_response(
     """
 ```
 
-## Handler Integration
+___
+
+Handler Integration
+-------------------
+
 The middleware works with singleton handler instances:
 
 - All handler classes (IPBanManager, CloudManager, etc.) use the singleton pattern
@@ -58,7 +72,11 @@ The middleware works with singleton handler instances:
 - CloudManager is only loaded when cloud provider blocking is configured
 - This selective loading improves performance when not all features are used
 
-## Redis Configuration
+___
+
+Redis Configuration
+-------------------
+
 Enable Redis in SecurityConfig:
 
 ```python
@@ -77,7 +95,10 @@ The middleware automatically initializes:
 - RedisManager Redis caching
 - SusPatternsManager suspicious patterns
 
-## Proxy Security Configuration
+___
+
+Proxy Security Configuration
+----------------------------
 
 The middleware supports secure handling of proxy headers:
 
@@ -91,7 +112,10 @@ config = SecurityConfig(
 
 This prevents IP spoofing attacks through header manipulation.
 
-## Usage Example
+___
+
+Usage Example
+-------------
 
 ```python
 from fastapi import FastAPI

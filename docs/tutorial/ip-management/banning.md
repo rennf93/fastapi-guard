@@ -1,14 +1,19 @@
 ---
+
 title: IP Banning - FastAPI Guard
 description: Implement automatic and manual IP banning in FastAPI applications using FastAPI Guard's IPBanManager
 keywords: ip banning, ip blocking, security middleware, fastapi security
 ---
 
-# IP Banning
+IP Banning
+==========
 
 FastAPI Guard provides powerful IP banning capabilities through the `IPBanManager`.
 
-## Automatic IP Banning
+___
+
+Automatic IP Banning
+---------------------
 
 Configure automatic IP banning based on suspicious activity:
 
@@ -19,7 +24,10 @@ config = SecurityConfig(
 )
 ```
 
-## Manual IP Banning
+___
+
+Manual IP Banning
+------------------
 
 You can also manually ban IPs using the `IPBanManager`:
 
@@ -32,7 +40,10 @@ async def ban_ip(ip: str, duration: int = 3600):
     return {"message": f"IP {ip} banned for {duration} seconds"}
 ```
 
-## Checking Ban Status
+___
+
+Checking Ban Status
+-------------------
 
 Check if an IP is currently banned:
 
@@ -43,7 +54,10 @@ async def check_ban(ip: str):
     return {"ip": ip, "banned": is_banned}
 ```
 
-## Reset All Bans
+___
+
+Reset All Bans
+--------------
 
 Clear all active IP bans:
 

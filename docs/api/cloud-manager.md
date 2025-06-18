@@ -1,14 +1,19 @@
 ---
+
 title: CloudManager API - FastAPI Guard
 description: API reference for managing and detecting IP addresses from major cloud providers
 keywords: cloud ip detection, aws ip ranges, gcp ip ranges, azure ip ranges
 ---
 
-# CloudManager
+CloudManager
+============
 
 The `CloudManager` class manages detection of IP addresses from major cloud providers. It uses a singleton pattern to ensure only one instance exists throughout the application.
 
-## Class Definition
+___
+
+Class Definition
+----------------
 
 ```python
 class CloudManager:
@@ -31,15 +36,24 @@ class CloudManager:
         return cls._instance
 ```
 
-## Redis Integration
+___
+
+Redis Integration
+-----------------
+
 When Redis is enabled, CloudManager automatically:
+
 - Caches cloud IP ranges in Redis with 1-hour TTL
 - Uses cached ranges if available
 - Synchronizes ranges across instances
 
-## Methods
+___
 
-### refresh
+Methods
+-------
+
+refresh
+-------
 
 ```python
 def refresh(self):
@@ -48,7 +62,8 @@ def refresh(self):
     """
 ```
 
-### is_cloud_ip
+is_cloud_ip
+-----------
 
 ```python
 def is_cloud_ip(
@@ -65,7 +80,10 @@ def is_cloud_ip(
     """
 ```
 
-## Usage Example
+___
+
+Usage Example
+-------------
 
 ```python
 from guard.handlers.cloud_handler import cloud_handler

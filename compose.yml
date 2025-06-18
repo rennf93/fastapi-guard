@@ -15,6 +15,7 @@ services:
       volumes:
         - ./examples:/app/examples:z
         - ./guard:/app/guard:z
+        - ./docs:/app/docs:z
       depends_on:
         redis:
           condition: service_started

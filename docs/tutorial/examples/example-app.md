@@ -1,14 +1,19 @@
 ---
+
 title: Example Application - FastAPI Guard Demo
 description: Learn how to use FastAPI Guard with a complete example application
 keywords: fastapi-guard example, example application, security middleware demo, docker compose
 ---
 
-# Example Application
+Example Application
+===================
 
 FastAPI Guard comes with a fully functional example application that demonstrates its key security features. This example serves both as a reference implementation and a testing ground for your security settings.
 
-## Features Demonstrated
+___
+
+Features Demonstrated
+---------------------
 
 The example app demonstrates:
 
@@ -20,7 +25,10 @@ The example app demonstrates:
 - User agent filtering
 - Redis integration
 
-## Code Overview
+___
+
+Code Overview
+-------------
 
 The example app is built using FastAPI and shows how to integrate FastAPI Guard as middleware:
 
@@ -44,9 +52,13 @@ config = SecurityConfig(
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
-## Running the Example App
+___
 
-### Using Docker Compose (Recommended)
+Running the Example App
+------------------------
+
+Using Docker Compose (Recommended)
+-----------------------------------
 
 The easiest way to run the example is with Docker Compose, which automatically sets up Redis:
 
@@ -65,7 +77,10 @@ The Docker Compose file does the following:
 - Connects the application to Redis
 - Exposes the app on port 8000
 
-### Docker Compose File
+___
+
+Docker Compose File
+-------------------
 
 [Docker Compose File](https://github.com/rennf93/fastapi-guard/blob/master/examples/docker-compose.yml)
 
@@ -88,7 +103,10 @@ services:
   ...
 ```
 
-## Test Endpoints
+___
+
+Test Endpoints
+--------------
 
 Once running, you can access the following endpoints:
 
@@ -97,7 +115,10 @@ Once running, you can access the following endpoints:
 - **`/test?input=<script>alert(1)</script>`**: Test with various inputs to trigger penetration detection
 - **`/docs`**: Swagger UI documentation for interactive testing
 
-## Testing Security Features
+___
+
+Testing Security Features
+--------------------------
 
 You can use the included test battery to verify security features:
 
@@ -122,7 +143,10 @@ curl "http://0.0.0.0:8000/test?cmd=;ls;pwd;"
 ...
 ```
 
-## Environment Variables
+___
+
+Environment Variables
+---------------------
 
 The example app supports the following environment variables:
 
@@ -130,11 +154,17 @@ The example app supports the following environment variables:
 - `REDIS_URL`: Redis connection URL (default: redis://redis:6379)
 - `REDIS_PREFIX`: Prefix for Redis keys (default: fastapi_guard:)
 
-## Source Code
+___
+
+Source Code
+-----------
 
 You can find the complete example code in the [examples directory](https://github.com/rennf93/fastapi-guard/tree/master/examples) of the GitHub repository.
 
-## Example with Passive Mode
+___
+
+Example with Passive Mode
+--------------------------
 
 For production deployments where you want to assess potential false positives before fully enabling penetration detection, use the passive mode:
 

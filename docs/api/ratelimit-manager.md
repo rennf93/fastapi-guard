@@ -1,14 +1,19 @@
 ---
+
 title: RateLimitManager - FastAPI Guard
 description: API reference for the RateLimitManager class in FastAPI Guard, handling rate limiting functionality
 keywords: rate limiting, api security, fastapi, rate limit handler
 ---
 
-# RateLimitManager
+RateLimitManager
+================
 
 The `RateLimitManager` is responsible for managing rate limiting functionality in FastAPI Guard. It supports both in-memory rate limiting using timestamp tracking and distributed rate limiting using Redis.
 
-## Overview
+___
+
+Overview
+--------
 
 Rate limiting is an essential security feature that protects your API from abuse by limiting the number of requests a client can make within a specific time window. The `RateLimitManager` implements this functionality with the following features:
 
@@ -20,7 +25,10 @@ Rate limiting is an essential security feature that protects your API from abuse
 - **Singleton pattern**: Ensures consistent state across requests
 - **Automatic cleanup**: Expired timestamps are automatically removed
 
-## Example Usage
+___
+
+Example Usage
+-------------
 
 ```python
 from fastapi import FastAPI
@@ -42,19 +50,24 @@ config = SecurityConfig(
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
-## Advanced Configuration
+___
 
-### Redis Integration
+Advanced Configuration
+----------------------
+
+Redis Integration
+-----------------
 
 When using Redis for distributed rate limiting, the handler creates sorted sets with the following pattern:
 
-```
+```text
 {redis_prefix}rate_limit:rate:{client_ip}
 ```
 
 Each entry in the sorted set represents a request timestamp. The keys automatically expire after twice the configured window duration.
 
-#### Redis Lua Script
+Redis Lua Script
+-----------------
 
 The rate limiter uses a Redis Lua script for atomic operations in distributed environments:
 
@@ -65,7 +78,10 @@ The rate limiter uses a Redis Lua script for atomic operations in distributed en
 
 This ensures that rate limiting is consistent even in high-concurrency environments.
 
-### Direct Access
+___
+
+Direct Access
+-------------
 
 You can also access the handler directly if needed:
 
@@ -79,14 +95,20 @@ handler = rate_limit_handler(config)
 await handler.reset()
 ```
 
-## Performance Considerations
+___
+
+Performance Considerations
+--------------------------
 
 - **In-memory rate limiting** has lower latency but doesn't work in distributed environments
 - **Redis-based rate limiting** works across multiple instances but adds network overhead
 - The sliding window algorithm ensures accurate rate limiting without traffic spikes at window boundaries
 - Automatic cleanup of old timestamps prevents memory leaks
 
-## See Also
+___
+
+See Also
+--------
 
 - [Rate Limiting Tutorial](../tutorial/ip-management/rate-limiter.md)
 - [Redis Integration](../tutorial/redis-integration/caching.md)

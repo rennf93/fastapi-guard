@@ -1,4 +1,5 @@
 ---
+
 name: Feature request
 about: Suggest an idea for FastAPI Guard
 title: '[FEATURE] '
@@ -6,16 +7,26 @@ labels: enhancement
 assignees: ''
 ---
 
-## Is your feature request related to a problem? Please describe.
+Is your feature request related to a problem? Please describe.
+==============================================================
 A clear and concise description of what the problem is. Ex. I'm always facing issues when [...]
 
-## Describe the solution you'd like
+___
+
+Describe the solution you'd like
+================================
 A clear and concise description of what you want to happen. Include any API design ideas or examples of how you'd like to use this feature.
 
-## Describe alternatives you've considered
+___
+
+Describe alternatives you've considered
+=======================================
 A clear and concise description of any alternative solutions or features you've considered.
 
-## Example Implementation
+___
+
+Example Implementation
+======================
 If possible, provide a pseudocode example of how this feature might be implemented or used:
 
 ```python
@@ -34,7 +45,10 @@ security_config = SecurityConfig(
 app.add_middleware(SecurityMiddleware, config=security_config)
 ```
 
-## Additional context
+___
+
+Additional context
+==================
 Add any other context or screenshots about the feature request here:
 - How would this benefit the community?
 - Are there similar implementations in other libraries that could be referenced?

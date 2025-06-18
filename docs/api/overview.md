@@ -1,14 +1,15 @@
 ---
+
 title: API Reference - FastAPI Guard
 description: Complete API documentation for FastAPI Guard security middleware and its components
 keywords: fastapi guard api, security middleware api, python api reference
 ---
 
-# API Reference Overview
+API Reference Overview
+======================
 
-FastAPI Guard consists of several core components:
-
-## Core Components
+Core Components
+---------------
 
 - **SecurityMiddleware**: The main middleware that handles all security features
 - **IPBanManager**: Manages IP banning functionality
@@ -19,7 +20,10 @@ FastAPI Guard consists of several core components:
 - **RateLimitManager**: Handles rate limiting functionality
 - **RedisManager**: Handles Redis connections and atomic operations
 
-## Key Classes and Instances
+___
+
+Key Classes and Instances
+-------------------------
 
 ```python
 # Core middleware
@@ -37,7 +41,11 @@ from guard.handlers.suspatterns_handler import SusPatternsManager, sus_patterns_
 from guard.handlers.ipinfo_handler import IPInfoManager
 ```
 
-## Singleton Pattern
+___
+
+Singleton Pattern
+-----------------
+
 Most handler classes use a singleton pattern with `__new__` to ensure only one instance:
 
 ```python
@@ -51,7 +59,10 @@ class ExampleHandler:
         return cls._instance
 ```
 
-## Configuration Model
+___
+
+Configuration Model
+-------------------
 
 The `SecurityConfig` class is the central configuration point:
 
@@ -75,7 +86,10 @@ class SecurityConfig:
         # ... initialization
 ```
 
-## Optimized Loading
+___
+
+Optimized Loading
+-----------------
 
 FastAPI Guard uses a smart loading strategy to improve performance:
 

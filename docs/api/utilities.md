@@ -1,16 +1,22 @@
 ---
+
 title: Utilities API - FastAPI Guard
 description: Helper functions and utilities for logging, security checks, and request handling in FastAPI Guard
 keywords: security utilities, logging functions, security checks, request handling
 ---
 
-# Utilities
+Utilities
+=========
 
 The `utils` module provides various helper functions for security operations.
 
-## Logging Functions
+___
 
-### setup_custom_logging
+Logging Functions
+-----------------
+
+setup_custom_logging
+---------------------
 
 ```python
 async def setup_custom_logging(
@@ -21,7 +27,8 @@ async def setup_custom_logging(
     """
 ```
 
-### log_activity
+log_activity
+------------
 
 ```python
 async def log_activity(
@@ -39,6 +46,7 @@ async def log_activity(
 ```
 
 Parameters:
+
 - `request`: The FastAPI request object
 - `logger`: The logger instance
 - `log_type`: Type of log entry (default: "request", can also be "suspicious")
@@ -49,9 +57,13 @@ Parameters:
 
 This is a unified logging function that handles regular requests, suspicious activities, and passive mode logging.
 
-## Security Check Functions
+___
 
-### is_user_agent_allowed
+Security Check Functions
+------------------------
+
+is_user_agent_allowed
+---------------------
 
 ```python
 async def is_user_agent_allowed(
@@ -63,7 +75,8 @@ async def is_user_agent_allowed(
     """
 ```
 
-### check_ip_country
+check_ip_country
+----------------
 
 ```python
 async def check_ip_country(
@@ -76,7 +89,8 @@ async def check_ip_country(
     """
 ```
 
-### is_ip_allowed
+is_ip_allowed
+-------------
 
 ```python
 async def is_ip_allowed(
@@ -92,13 +106,15 @@ async def is_ip_allowed(
 The `ipinfo_db` parameter is now properly optional - it's only needed when country filtering is configured. If it's not provided when country filtering is configured, the function will work correctly but won't apply country filtering rules rules.
 
 This function intelligently handles:
+
 - Whitelist/blacklist checking
 - Country filtering (only when IPInfoManager is provided)
 - Cloud provider detection (only when cloud blocking is configured)
 
 This selective processing aligns with FastAPI Guard's smart resource loading to optimize performance.
 
-### detect_penetration_attempt
+detect_penetration_attempt
+--------------------------
 
 ```python
 async def detect_penetration_attempt(
@@ -111,6 +127,7 @@ Detect potential penetration attempts in the request.
 This function checks various parts of the request (query params, body, path, headers) against a list of suspicious patterns to identify potential security threats.
 
 Returns a tuple where:
+
 - First element is a boolean: `True` if a potential attack is detected, `False` otherwise
 - Second element is a string with details about what triggered the detection, or empty string if no attack detected
 
@@ -130,7 +147,8 @@ async def submit_data(request: Request):
     return {"success": True}
 ```
 
-### extract_client_ip
+extract_client_ip
+-----------------
 
 ```python
 def extract_client_ip(request: Request, config: SecurityConfig) -> str:
@@ -143,11 +161,15 @@ def extract_client_ip(request: Request, config: SecurityConfig) -> str:
 ```
 
 This function provides a secure way to extract client IPs by:
+
 1. Only trusting X-Forwarded-For headers from configured trusted proxies
 2. Using the connecting IP when not from a trusted proxy
 3. Properly handling proxy chains based on configured depth
 
-## Usage Examples
+___
+
+Usage Examples
+--------------
 
 ```python
 from guard.utils import (
