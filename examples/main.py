@@ -159,9 +159,7 @@ async def get_ip(request: Request) -> IPResponse:
     client_ip = "unknown"
     if request.client:
         try:
-            client_ip = str(
-                ip_address(request.client.host)
-            )  # normaliza para IPv4 ou IPv6
+            client_ip = str(ip_address(request.client.host))
         except ValueError:
             client_ip = "invalid"
 

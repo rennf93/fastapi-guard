@@ -3,6 +3,7 @@ import logging
 import time
 from collections.abc import Awaitable, Callable
 from ipaddress import ip_address, ip_network
+from typing import Any
 
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -318,20 +319,18 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         based on SecurityConfig.
         """
         if config.enable_cors:
+            cors_params: dict[str, Any] = {
+                "allow_origins": config.cors_allow_origins,
+                "allow_methods": config.cors_allow_methods,
+                "allow_headers": config.cors_allow_headers,
+                "allow_credentials": config.cors_allow_credentials,
+                "max_age": config.cors_max_age,
+            }
 
-            class CustomCORSMiddleware(CORSMiddleware):
-                def __init__(self, app: ASGIApp) -> None:
-                    super().__init__(
-                        app,
-                        allow_origins=config.cors_allow_origins,
-                        allow_methods=config.cors_allow_methods,
-                        allow_headers=config.cors_allow_headers,
-                        allow_credentials=config.cors_allow_credentials,
-                        max_age=config.cors_max_age,
-                        expose_headers=config.cors_expose_headers,
-                    )
+            if config.cors_expose_headers:
+                cors_params["expose_headers"] = config.cors_expose_headers
 
-            app.add_middleware(CustomCORSMiddleware)
+            app.add_middleware(CORSMiddleware, **cors_params)
             return True
         return False
 

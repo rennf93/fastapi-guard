@@ -2,13 +2,12 @@ import html
 import ipaddress
 import logging
 import re
-from ipaddress import _BaseNetwork
-from typing import Any, cast
+from typing import Any
 
 import requests
 
 
-def fetch_aws_ip_ranges() -> set[ipaddress._BaseNetwork]:
+def fetch_aws_ip_ranges() -> set[ipaddress.IPv4Network | ipaddress.IPv6Network]:
     try:
         response = requests.get("https://ip-ranges.amazonaws.com/ip-ranges.json")
         response.raise_for_status()
@@ -23,28 +22,24 @@ def fetch_aws_ip_ranges() -> set[ipaddress._BaseNetwork]:
         return set()
 
 
-def fetch_gcp_ip_ranges() -> set[_BaseNetwork]:
+def fetch_gcp_ip_ranges() -> set[ipaddress.IPv4Network | ipaddress.IPv6Network]:
     try:
         response = requests.get("https://www.gstatic.com/ipranges/cloud.json")
         response.raise_for_status()
         data = response.json()
-        networks: set[_BaseNetwork] = set()
+        networks: set[ipaddress.IPv4Network | ipaddress.IPv6Network] = set()
         for ip_range in data["prefixes"]:
             if "ipv4Prefix" in ip_range:
-                networks.add(
-                    cast(_BaseNetwork, ipaddress.ip_network(ip_range["ipv4Prefix"]))
-                )
+                networks.add(ipaddress.ip_network(ip_range["ipv4Prefix"]))
             elif "ipv6Prefix" in ip_range:
-                networks.add(
-                    cast(_BaseNetwork, ipaddress.ip_network(ip_range["ipv6Prefix"]))
-                )
+                networks.add(ipaddress.ip_network(ip_range["ipv6Prefix"]))
         return networks
     except Exception as e:
         logging.error(f"Failed to fetch GCP IP ranges: {str(e)}")
         return set()
 
 
-def fetch_azure_ip_ranges() -> set[ipaddress._BaseNetwork]:
+def fetch_azure_ip_ranges() -> set[ipaddress.IPv4Network | ipaddress.IPv6Network]:
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -85,7 +80,7 @@ class CloudManager:
     """Manages cloud provider IP ranges with optional Redis caching."""
 
     _instance = None
-    ip_ranges: dict[str, set[ipaddress._BaseNetwork]]
+    ip_ranges: dict[str, set[ipaddress.IPv4Network | ipaddress.IPv6Network]]
     redis_handler: Any = None
     logger: logging.Logger
 

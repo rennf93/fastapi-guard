@@ -432,8 +432,6 @@ class SecurityConfig(BaseModel):
         validated = []
         for entry in v:
             try:
-                from ipaddress import ip_address, ip_network
-
                 if "/" in entry:
                     network = ip_network(entry, strict=False)
                     validated.append(str(network))

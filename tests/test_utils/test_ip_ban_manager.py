@@ -1,7 +1,6 @@
 import asyncio
 import os
 import time
-from functools import partial
 
 import pytest
 from fastapi import FastAPI, status
@@ -45,8 +44,7 @@ async def test_automatic_ip_ban(reset_state: None) -> None:
         auto_ban_threshold=3,
         auto_ban_duration=300,
     )
-    security_middleware = partial(SecurityMiddleware, config=config)
-    app.add_middleware(security_middleware)
+    app.add_middleware(SecurityMiddleware, config=config)
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
