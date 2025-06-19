@@ -1,12 +1,17 @@
 from collections.abc import Callable
+from typing import Any
 
 from fastapi import Request, Response
 
+from guard.decorators.base import BaseSecurityMixin
 
-class AdvancedMixin:
+
+class AdvancedMixin(BaseSecurityMixin):
     """Mixin for advanced detection decorators."""
 
-    def time_window(self, start_time: str, end_time: str, timezone: str = "UTC"):
+    def time_window(
+        self, start_time: str, end_time: str, timezone: str = "UTC"
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """
         Restrict access to specific time windows.
 
@@ -22,7 +27,7 @@ class AdvancedMixin:
                 return {"message": "business hours only"}
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             route_config = self._ensure_route_config(func)
             route_config.time_restrictions = {
                 "start": start_time,
@@ -33,7 +38,9 @@ class AdvancedMixin:
 
         return decorator
 
-    def suspicious_detection(self, enabled: bool = True):
+    def suspicious_detection(
+        self, enabled: bool = True
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """
         Enable/disable suspicious pattern detection (leverages sus_patterns_handler).
 
@@ -47,14 +54,16 @@ class AdvancedMixin:
                 return {"status": "upload safe"}
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             route_config = self._ensure_route_config(func)
             route_config.enable_suspicious_detection = enabled
             return self._apply_route_config(func)
 
         return decorator
 
-    def honeypot_detection(self, trap_fields: list[str]):
+    def honeypot_detection(
+        self, trap_fields: list[str]
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """
         Detect bots using honeypot fields that humans shouldn't fill.
 
@@ -67,7 +76,7 @@ class AdvancedMixin:
                 return {"message": "human verified"}
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             async def honeypot_validator(request: Request) -> Response | None:
                 try:
                     if request.method in ["POST", "PUT", "PATCH"]:

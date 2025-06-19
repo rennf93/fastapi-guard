@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import Any
 
 from fastapi import Request
 
@@ -9,7 +10,7 @@ from guard.models import SecurityConfig
 class RouteConfig:
     """Per-route security configuration that can override global settings."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.rate_limit: int | None = None
         self.rate_limit_window: int | None = None
         self.ip_whitelist: list[str] | None = None
@@ -35,10 +36,22 @@ class RouteConfig:
         self.session_limits: dict[str, int] | None = None
 
 
+class BaseSecurityMixin:
+    """Base mixin class that provides common methods for all security mixins."""
+
+    def _ensure_route_config(self, func: Callable[..., Any]) -> RouteConfig:
+        """Must be implemented by BaseSecurityDecorator."""
+        raise NotImplementedError("This mixin must be used with BaseSecurityDecorator")
+
+    def _apply_route_config(self, func: Callable[..., Any]) -> Callable[..., Any]:
+        """Must be implemented by BaseSecurityDecorator."""
+        raise NotImplementedError("This mixin must be used with BaseSecurityDecorator")
+
+
 class BaseSecurityDecorator:
     """Base class for all security decorators with common functionality."""
 
-    def __init__(self, config: SecurityConfig):
+    def __init__(self, config: SecurityConfig) -> None:
         self.config = config
         self._route_configs: dict[str, RouteConfig] = {}
         self.behavior_tracker = BehaviorTracker(config)
@@ -47,23 +60,29 @@ class BaseSecurityDecorator:
         """Get security config for a specific route."""
         return self._route_configs.get(route_id)
 
-    def _get_route_id(self, func: Callable) -> str:
+    def _get_route_id(self, func: Callable[..., Any]) -> str:
         """Generate a unique route identifier."""
         return f"{func.__module__}.{func.__qualname__}"
 
-    def _ensure_route_config(self, func: Callable) -> RouteConfig:
+    def _ensure_route_config(self, func: Callable[..., Any]) -> RouteConfig:
         """Ensure a route config exists for the function."""
         route_id = self._get_route_id(func)
         if route_id not in self._route_configs:
-            self._route_configs[route_id] = RouteConfig()
+            config = RouteConfig()
+            config.enable_suspicious_detection = (
+                self.config.enable_penetration_detection
+            )
+            self._route_configs[route_id] = config
         return self._route_configs[route_id]
 
-    def _apply_route_config(self, func: Callable) -> Callable:
+    def _apply_route_config(self, func: Callable[..., Any]) -> Callable[..., Any]:
         """Apply route configuration to a function."""
-        func._guard_route_id = self._get_route_id(func)
+        route_id = self._get_route_id(func)
+        # TODO: Find a proper way to define the type of the function
+        func._guard_route_id = route_id  # type: ignore[attr-defined]
         return func
 
-    async def initialize_behavior_tracking(self, redis_handler=None):
+    async def initialize_behavior_tracking(self, redis_handler: Any = None) -> None:
         """Initialize behavioral tracking with optional Redis backend."""
         if redis_handler:
             await self.behavior_tracker.initialize_redis(redis_handler)

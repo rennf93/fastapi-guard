@@ -1,13 +1,18 @@
 from collections.abc import Callable
+from typing import Any
+
+from guard.decorators.base import BaseSecurityMixin
 
 
-class RateLimitingMixin:
+class RateLimitingMixin(BaseSecurityMixin):
     """Mixin for rate limiting decorators."""
 
-    def rate_limit(self, requests: int, window: int = 60):
+    def rate_limit(
+        self, requests: int, window: int = 60
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Apply custom rate limiting to a specific route."""
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             route_config = self._ensure_route_config(func)
             route_config.rate_limit = requests
             route_config.rate_limit_window = window
@@ -15,7 +20,9 @@ class RateLimitingMixin:
 
         return decorator
 
-    def geo_rate_limit(self, limits: dict[str, tuple[int, int]]):
+    def geo_rate_limit(
+        self, limits: dict[str, tuple[int, int]]
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """
         Apply different rate limits based on country.
 
@@ -32,7 +39,7 @@ class RateLimitingMixin:
                 return {"data": "geo-limited"}
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             # TODO: This would need integration with existing geo IP handler
             # For now, store the configuration
             route_config = self._ensure_route_config(func)

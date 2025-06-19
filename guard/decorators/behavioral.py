@@ -1,17 +1,19 @@
 from collections.abc import Callable
+from typing import Any, Literal
 
+from guard.decorators.base import BaseSecurityMixin
 from guard.handlers.behavior_handler import BehaviorRule
 
 
-class BehavioralMixin:
+class BehavioralMixin(BaseSecurityMixin):
     """Mixin for behavioral analysis decorators."""
 
     def usage_monitor(
         self,
         max_calls: int,
         window: int = 3600,  # 1 hour default
-        action: str = "ban",
-    ):
+        action: Literal["ban", "log", "throttle", "alert"] = "ban",
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """
         Monitor endpoint usage per IP and take action if threshold exceeded.
 
@@ -30,7 +32,7 @@ class BehavioralMixin:
                 return {"data": "sensitive"}
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             route_config = self._ensure_route_config(func)
 
             rule = BehaviorRule(
@@ -46,8 +48,8 @@ class BehavioralMixin:
         pattern: str,
         max_occurrences: int,
         window: int = 86400,  # 24 hours default
-        action: str = "ban",
-    ):
+        action: Literal["ban", "log", "throttle", "alert"] = "ban",
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """
         Monitor return values and detect if same IP gets specific results too often.
 
@@ -74,7 +76,7 @@ class BehavioralMixin:
                 return {"result": {"status": "win", "item": "rare_sword"}}
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             route_config = self._ensure_route_config(func)
 
             rule = BehaviorRule(
@@ -89,7 +91,9 @@ class BehavioralMixin:
 
         return decorator
 
-    def behavior_analysis(self, rules: list[BehaviorRule]):
+    def behavior_analysis(
+        self, rules: list[BehaviorRule]
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """
         Apply multiple behavioral analysis rules to an endpoint.
 
@@ -111,7 +115,7 @@ class BehavioralMixin:
                 return {"result": "data"}
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             route_config = self._ensure_route_config(func)
             route_config.behavior_rules.extend(rules)
             return self._apply_route_config(func)
@@ -122,8 +126,8 @@ class BehavioralMixin:
         self,
         max_frequency: float,  # requests per second
         window: int = 300,  # 5 minutes
-        action: str = "ban",
-    ):
+        action: Literal["ban", "log", "throttle", "alert"] = "ban",
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """
         Detect suspiciously high frequency of requests to specific endpoint.
 
@@ -141,7 +145,7 @@ class BehavioralMixin:
                 return {"result": "computed"}
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             route_config = self._ensure_route_config(func)
             max_calls = int(max_frequency * window)
 

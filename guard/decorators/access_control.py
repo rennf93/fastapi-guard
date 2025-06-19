@@ -1,17 +1,20 @@
 from collections.abc import Callable
+from typing import Any
+
+from guard.decorators.base import BaseSecurityMixin
 
 
-class AccessControlMixin:
+class AccessControlMixin(BaseSecurityMixin):
     """Mixin for access control decorators."""
 
     def require_ip(
         self,
         whitelist: list[str] | None = None,
         blacklist: list[str] | None = None,
-    ):
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Require specific IP addresses or ranges."""
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             route_config = self._ensure_route_config(func)
             if whitelist:
                 route_config.ip_whitelist = whitelist
@@ -21,27 +24,33 @@ class AccessControlMixin:
 
         return decorator
 
-    def block_countries(self, countries: list[str]):
+    def block_countries(
+        self, countries: list[str]
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Block access from specific countries."""
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             route_config = self._ensure_route_config(func)
             route_config.blocked_countries = countries
             return self._apply_route_config(func)
 
         return decorator
 
-    def allow_countries(self, countries: list[str]):
+    def allow_countries(
+        self, countries: list[str]
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Only allow access from specific countries."""
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             route_config = self._ensure_route_config(func)
             route_config.allowed_countries = countries
             return self._apply_route_config(func)
 
         return decorator
 
-    def block_clouds(self, providers: list[str] | None = None):
+    def block_clouds(
+        self, providers: list[str] | None = None
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """
         Block requests from cloud providers (leverages existing cloud_handler).
 
@@ -55,7 +64,7 @@ class AccessControlMixin:
                 return {"data": "no clouds allowed"}
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             route_config = self._ensure_route_config(func)
             if providers is None:
                 route_config.block_cloud_providers = {"AWS", "GCP", "Azure"}
@@ -65,10 +74,12 @@ class AccessControlMixin:
 
         return decorator
 
-    def bypass(self, checks: list[str]):
+    def bypass(
+        self, checks: list[str]
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Bypass specific security checks for this route."""
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             route_config = self._ensure_route_config(func)
             route_config.bypassed_checks.update(checks)
             return self._apply_route_config(func)

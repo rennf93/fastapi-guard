@@ -5,9 +5,16 @@ This example demonstrates how to use the new decorator system
 alongside the existing SecurityMiddleware for enhanced route-specific security.
 """
 
+from typing import Any
+
 from fastapi import FastAPI
 
-from guard import BehaviorRule, SecurityConfig, SecurityDecorator, SecurityMiddleware
+from guard import (
+    BehaviorRule,
+    SecurityConfig,
+    SecurityDecorator,
+    SecurityMiddleware,
+)
 
 # Initialize FastAPI app
 app = FastAPI(title="FastAPI Guard Decorator Integration Example")
@@ -25,7 +32,7 @@ config = SecurityConfig(
 guard_decorator = SecurityDecorator(config)
 
 # Initialize and add middleware
-middleware = SecurityMiddleware(app, config)
+middleware = SecurityMiddleware(app, config=config)
 app.add_middleware(SecurityMiddleware, config=config)
 
 # IMPORTANT: Connect the decorator handler to middleware for integration
@@ -36,7 +43,7 @@ middleware.set_decorator_handler(guard_decorator)
 @app.get("/api/limited")
 # NOTE: Override: 10 requests per minute vs global 100/hour
 @guard_decorator.rate_limit(requests=10, window=60)
-def limited_endpoint():
+def limited_endpoint() -> dict[str, str]:
     return {"message": "This endpoint has strict rate limiting"}
 
 
@@ -48,7 +55,7 @@ def limited_endpoint():
     window=3600,
     action="ban",
 )
-def sensitive_endpoint():
+def sensitive_endpoint() -> dict[str, str]:
     return {"data": "sensitive operation"}
 
 
@@ -61,7 +68,7 @@ def sensitive_endpoint():
     window=86400,
     action="ban",
 )
-def lootbox_endpoint():
+def lootbox_endpoint() -> dict[str, Any]:
     # Simulate lootbox logic
     import random
 
@@ -83,7 +90,7 @@ def lootbox_endpoint():
 @guard_decorator.require_https()
 # NOTE: Require API key
 @guard_decorator.api_key_auth("X-Admin-Key")
-def admin_endpoint():
+def admin_endpoint() -> dict[str, str]:
     return {"message": "Admin area accessed"}
 
 
@@ -91,7 +98,7 @@ def admin_endpoint():
 @app.get("/api/no-clouds")
 # NOTE: Block AWS and GCP IPs
 @guard_decorator.block_clouds(["AWS", "GCP"])
-def no_clouds_endpoint():
+def no_clouds_endpoint() -> dict[str, str]:
     return {"message": "No cloud provider IPs allowed"}
 
 
@@ -121,7 +128,7 @@ complex_rules = [
 
 @app.post("/api/complex")
 @guard_decorator.behavior_analysis(complex_rules)
-def complex_endpoint():
+def complex_endpoint() -> dict[str, Any]:
     return {"success": True, "data": "complex operation"}
 
 
@@ -129,7 +136,7 @@ def complex_endpoint():
 @app.get("/api/public")
 # NOTE: Skip rate limiting and penetration detection
 @guard_decorator.bypass(["rate_limit", "penetration"])
-def public_endpoint():
+def public_endpoint() -> dict[str, str]:
     return {"message": "Public endpoint with relaxed security"}
 
 
@@ -137,7 +144,7 @@ if __name__ == "__main__":
     import uvicorn
 
     # Initialize behavioral tracking if Redis is available
-    async def startup():
+    async def startup() -> None:
         if config.enable_redis:
             await guard_decorator.initialize_behavior_tracking(middleware.redis_handler)
 

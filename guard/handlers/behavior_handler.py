@@ -44,9 +44,13 @@ class BehaviorTracker:
     def __init__(self, config: SecurityConfig):
         self.config = config
         self.logger = logging.getLogger(__name__)
-        self.usage_counts = defaultdict(lambda: defaultdict(list))
-        self.return_patterns = defaultdict(lambda: defaultdict(list))
-        self.redis_handler = None
+        self.usage_counts: dict[str, dict[str, list[float]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
+        self.return_patterns: dict[str, dict[str, list[float]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
+        self.redis_handler: Any | None = None
 
     async def initialize_redis(self, redis_handler: Any) -> None:
         """Initialize Redis connection for distributed tracking."""

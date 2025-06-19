@@ -50,6 +50,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 Configuration object for security settings.
         """
         super().__init__(app)
+        self.app = app
         self.config = config
         self.logger = logging.getLogger(__name__)
         self.last_cloud_ip_refresh = 0
@@ -247,22 +248,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                         status_code=status.HTTP_403_FORBIDDEN,
                         default_message="Forbidden",
                     )
-                elif route_allowed is None:
-                    # Fall back to global IP check
-                    if not await is_ip_allowed(
-                        client_ip, self.config, self.geo_ip_handler
-                    ):
-                        await log_activity(
-                            request,
-                            self.logger,
-                            log_type="suspicious",
-                            reason=f"IP not allowed: {client_ip}",
-                            level=self.config.log_suspicious_level,
-                        )
-                        return await self.create_error_response(
-                            status_code=status.HTTP_403_FORBIDDEN,
-                            default_message="Forbidden",
-                        )
+                # RouteConfig exists but == None, route doesn't specify IP rules
+                # Skip global IP checks
             else:
                 # Global IP check
                 if not await is_ip_allowed(client_ip, self.config, self.geo_ip_handler):
@@ -325,11 +312,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 return rate_limit_response
 
         # Sus Activity
-        penetration_enabled = True
+        penetration_enabled = self.config.enable_penetration_detection
         if route_config and hasattr(route_config, "enable_suspicious_detection"):
             penetration_enabled = route_config.enable_suspicious_detection
-        elif not self.config.enable_penetration_detection:
-            penetration_enabled = False
 
         if penetration_enabled and not self._should_bypass_check(
             "penetration", route_config
@@ -419,16 +404,35 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
     def _get_route_decorator_config(self, request: Request) -> RouteConfig | None:
         """Get route-specific security configuration from decorators."""
-        if not self.guard_decorator:
+        app = request.scope.get("app")
+
+        guard_decorator: BaseSecurityDecorator | None = None
+        if app and hasattr(app, "state") and hasattr(app.state, "guard_decorator"):
+            app_guard_decorator = app.state.guard_decorator
+            if isinstance(app_guard_decorator, BaseSecurityDecorator):
+                guard_decorator = app_guard_decorator
+        elif self.guard_decorator:
+            guard_decorator = self.guard_decorator
+
+        if not guard_decorator:
             return None
 
-        if hasattr(request, "scope") and "route" in request.scope:
-            route = request.scope["route"]
-            if hasattr(route, "endpoint") and hasattr(
-                route.endpoint, "_guard_route_id"
-            ):
-                route_id = route.endpoint._guard_route_id
-                return self.guard_decorator.get_route_config(route_id)
+        path = request.url.path
+        method = request.method
+
+        if app:
+            for route in app.routes:
+                if (
+                    hasattr(route, "path")
+                    and hasattr(route, "methods")
+                    and route.path == path
+                    and method in route.methods
+                    and hasattr(route, "endpoint")
+                    and hasattr(route.endpoint, "_guard_route_id")
+                ):
+                    route_id = route.endpoint._guard_route_id
+                    return guard_decorator.get_route_config(route_id)
+
         return None
 
     def _should_bypass_check(

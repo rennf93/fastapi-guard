@@ -3,6 +3,7 @@ from guard.decorators.advanced import AdvancedMixin
 from guard.decorators.authentication import AuthenticationMixin
 from guard.decorators.base import (
     BaseSecurityDecorator,
+    BaseSecurityMixin,
     RouteConfig,
     get_route_decorator_config,
 )
@@ -48,8 +49,10 @@ __all__ = [
     "SecurityDecorator",
     "RouteConfig",
     "get_route_decorator_config",
-    # Mixins (to create custom decorator classes)
+    # Base classes for extending
     "BaseSecurityDecorator",
+    "BaseSecurityMixin",
+    # Mixins (to create custom decorator classes)
     "AccessControlMixin",
     "RateLimitingMixin",
     "BehavioralMixin",

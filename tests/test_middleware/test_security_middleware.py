@@ -373,11 +373,7 @@ async def test_custom_response_modifier_parameterized(
         response.headers["X-Modified"] = "True"
 
         if response.status_code >= 400 and not isinstance(response, JSONResponse):
-            if hasattr(response.body, "decode"):
-                content = response.body.decode()
-            else:
-                if isinstance(response.body, memoryview):
-                    content = bytes(response.body).decode()
+            content = bytes(response.body).decode()
 
             return JSONResponse(
                 status_code=response.status_code,
@@ -463,7 +459,7 @@ async def test_custom_response_modifier_parameterized(
 
 @pytest.mark.asyncio
 async def test_memoryview_response_handling() -> None:
-    """Special test for memoryview response handling to cover line 298"""
+    """Special test for memoryview response handling"""
 
     test_body_memoryview = memoryview(b"Test Content")
 
@@ -1769,7 +1765,7 @@ async def test_real_ipv6_connection(
     async def mock_call_next(request: Request) -> Response:
         return Response("OK", status_code=200)
 
-    async def receive() -> dict[str, str | bytes]:
+    async def receive() -> dict[str, str | bytes | bool]:
         return {"type": "http.request", "body": b"", "more_body": False}
 
     # IPv6 client (whitelisted)

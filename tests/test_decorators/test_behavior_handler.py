@@ -1,6 +1,6 @@
 import time
-from typing import Any
-from unittest.mock import AsyncMock, Mock, patch
+from typing import Any, Literal
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi import Response
@@ -51,7 +51,11 @@ def test_behavior_rule_creation() -> None:
     ],
 )
 def test_behavior_rule_parameterized(
-    rule_type: str, threshold: int, window: int, pattern: str | None, action: str
+    rule_type: Literal["usage", "return_pattern", "frequency"],
+    threshold: int,
+    window: int,
+    pattern: str | None,
+    action: Literal["ban", "log", "throttle", "alert"],
 ) -> None:
     """Test BehaviorRule creation with various parameter combinations."""
     rule = BehaviorRule(
@@ -149,31 +153,34 @@ async def test_track_endpoint_usage_with_redis(
     rule = BehaviorRule(rule_type="usage", threshold=2, window=60)
     endpoint_id = "/api/test"
     client_ip = "192.168.1.1"
+    current_time = time.time()
 
     # Mock Redis operations
     with (
         patch.object(redis_mgr, "keys") as mock_keys,
+        patch.object(redis_mgr, "set_key") as mock_set_key,
     ):
-        # First request - should not exceed threshold
+        # First request - should not exceed threshold (1 key)
         mock_keys.return_value = [
-            "behavior_usage:behavior:usage:/api/test:192.168.1.1:123456789"
+            f"behavior_usage:behavior:usage:/api/test:192.168.1.1:{current_time}"
+        ]
+        mock_set_key.return_value = None
+        result = await tracker.track_endpoint_usage(endpoint_id, client_ip, rule)
+        assert not result
+
+        # Second request - should not exceed threshold (2 keys)
+        mock_keys.return_value = [
+            f"behavior_usage:behavior:usage:/api/test:192.168.1.1:{current_time}",
+            f"behavior_usage:behavior:usage:/api/test:192.168.1.1:{current_time + 1}",
         ]
         result = await tracker.track_endpoint_usage(endpoint_id, client_ip, rule)
         assert not result
 
-        # Second request - should not exceed threshold
+        # Third request - should exceed threshold (3 keys > threshold 2)
         mock_keys.return_value = [
-            "behavior_usage:behavior:usage:/api/test:192.168.1.1:123456789",
-            "behavior_usage:behavior:usage:/api/test:192.168.1.1:123456790",
-        ]
-        result = await tracker.track_endpoint_usage(endpoint_id, client_ip, rule)
-        assert not result
-
-        # Third request - should exceed threshold
-        mock_keys.return_value = [
-            "behavior_usage:behavior:usage:/api/test:192.168.1.1:123456789",
-            "behavior_usage:behavior:usage:/api/test:192.168.1.1:123456790",
-            "behavior_usage:behavior:usage:/api/test:192.168.1.1:123456791",
+            f"behavior_usage:behavior:usage:/api/test:192.168.1.1:{current_time}",
+            f"behavior_usage:behavior:usage:/api/test:192.168.1.1:{current_time + 1}",
+            f"behavior_usage:behavior:usage:/api/test:192.168.1.1:{current_time + 2}",
         ]
         result = await tracker.track_endpoint_usage(endpoint_id, client_ip, rule)
         assert result
@@ -228,15 +235,18 @@ async def test_track_return_pattern_with_redis(
 
     rule = BehaviorRule(rule_type="return_pattern", threshold=1, pattern="status:200")
     response = Response("success", status_code=200)
+    current_time = time.time()
 
     with (
         patch.object(redis_mgr, "keys") as mock_keys,
+        patch.object(redis_mgr, "set_key") as mock_set_key,
     ):
-        # Mock exceeding threshold
+        key = "behavior_returns:behavior:return:/api/test:192.168.1.1:status:200"
         mock_keys.return_value = [
-            "behavior_returns:behavior:return:/api/test:192.168.1.1:status:200:123456789",
-            "behavior_returns:behavior:return:/api/test:192.168.1.1:status:200:123456790",
+            f"{key}:{current_time}",
+            f"{key}:{current_time + 1}",
         ]
+        mock_set_key.return_value = None
 
         result = await tracker.track_return_pattern(
             "/api/test", "192.168.1.1", response, rule
@@ -320,7 +330,7 @@ async def test_check_response_pattern_no_body(security_config: SecurityConfig) -
     """Test response pattern checking with no response body."""
     tracker = BehaviorTracker(security_config)
     response = Response(status_code=200)
-    response.body = None
+    response.body = b""
 
     result = await tracker._check_response_pattern(response, "test pattern")
     assert not result
@@ -348,17 +358,47 @@ async def test_check_response_pattern_exception(
 
     with patch.object(tracker.logger, "error") as mock_logger:
         # Create a response that will cause an exception in pattern checking
-        response = Mock()
-        response.status_code = 200
-        response.body = "test"
+        response = Response("test", status_code=200)
 
-        # Mock hasattr to return True to get into the body processing path
-        with patch("builtins.hasattr", return_value=True):
-            # Mock the string conversion to raise an exception
-            with patch("builtins.str", side_effect=Exception("Test error")):
-                result = await tracker._check_response_pattern(response, "test")
-                assert not result
-                mock_logger.assert_called_once()
+        # Patch json.loads to raise an exception for JSON pattern testing
+        with patch("json.loads", side_effect=Exception("Test error")):
+            result = await tracker._check_response_pattern(response, "json:test==value")
+            assert not result
+            mock_logger.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_check_response_pattern_non_bytes_body(
+    security_config: SecurityConfig,
+) -> None:
+    """Test response pattern checking with non-bytes body."""
+    tracker = BehaviorTracker(security_config)
+    response = Response(status_code=200)
+
+    response.body = b"12345"
+
+    result = await tracker._check_response_pattern(response, "12345")
+    assert result
+
+    response.body = "12345"  # type: ignore
+
+    result2 = await tracker._check_response_pattern(response, "12345")
+    assert result2
+
+
+@pytest.mark.asyncio
+async def test_match_json_pattern_exception(security_config: SecurityConfig) -> None:
+    """Test JSON pattern matching with exception"""
+    tracker = BehaviorTracker(security_config)
+
+    class ProblematicData:
+        def __str__(self) -> str:
+            raise Exception("Test exception in str conversion")
+
+    problematic_data = {"nested": {"value": ProblematicData()}}
+
+    result = tracker._match_json_pattern(problematic_data, "nested.value==test")
+    assert not result
 
 
 @pytest.mark.parametrize(
@@ -481,7 +521,10 @@ async def test_redis_key_timestamp_filtering(
     rule = BehaviorRule(rule_type="usage", threshold=2, window=60)
     current_time = time.time()
 
-    with patch.object(redis_mgr, "keys") as mock_keys:
+    with (
+        patch.object(redis_mgr, "keys") as mock_keys,
+        patch.object(redis_mgr, "set_key") as mock_set_key,
+    ):
         # Mix of valid and invalid timestamps
         mock_keys.return_value = [
             f"behavior_usage:test:key:{current_time}",  # Valid - current
@@ -490,6 +533,7 @@ async def test_redis_key_timestamp_filtering(
             "behavior_usage:test:key:invalid_timestamp",  # Invalid - bad format
             "behavior_usage:test:key:",  # Invalid - empty timestamp
         ]
+        mock_set_key.return_value = None
 
         result = await tracker.track_endpoint_usage("/api/test", "192.168.1.1", rule)
         # Should count 2 valid timestamps, which equals threshold, so not exceeded
@@ -554,13 +598,17 @@ async def test_redis_return_pattern_timestamp_filtering(
     current_time = time.time()
     response = Response("success", status_code=200)
 
-    with patch.object(redis_mgr, "keys") as mock_keys:
+    with (
+        patch.object(redis_mgr, "keys") as mock_keys,
+        patch.object(redis_mgr, "set_key") as mock_set_key,
+    ):
         # Mix of valid and invalid timestamps
         mock_keys.return_value = [
             f"behavior_returns:test:key:{current_time}",  # Valid
             f"behavior_returns:test:key:{current_time - 120}",  # Outside window
             "behavior_returns:test:key:invalid",  # Invalid format
         ]
+        mock_set_key.return_value = None
 
         result = await tracker.track_return_pattern(
             "/api/test", "192.168.1.1", response, rule
