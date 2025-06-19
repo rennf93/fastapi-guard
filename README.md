@@ -49,13 +49,17 @@
 
 ---
 
-## Documentation
+Documentation
+=============
 
 📚 **[Documentation](https://rennf93.github.io/fastapi-guard)** - Full technical documentation and deep dive into its inner workings.
 
 🎮 **[Live Playground](https://playground.fastapi-guard.com)** - Testing playground for FastAPI Guard's features in action.
 
-## Features
+___
+
+Features
+--------
 
 - **IP Whitelisting and Blacklisting**: Control access based on IP addresses.
 - **User Agent Filtering**: Block requests from specific user agents.
@@ -69,17 +73,24 @@
 - **Distributed State Management**: (Optional) Redis integration for shared security state across instances
 - **Flexible Storage**: Redis-enabled distributed storage or in-memory storage for single instance deployments
 
-## Installation
+___
+
+Installation
+------------
 
 To install `fastapi-guard`, use pip:
 
-```
+```bash
 pip install fastapi-guard
 ```
 
-## Usage
+___
 
-### Basic Setup
+Usage
+-----------
+
+Basic Setup
+-----------
 
 To use `fastapi-guard`, you need to configure the middleware in your FastAPI application. Here's a basic example:
 
@@ -95,8 +106,8 @@ app = FastAPI()
 config = SecurityConfig(
     ipinfo_token="your_ipinfo_token_here",  # Optional: IPInfo token required for IP geolocation
     ipinfo_db_path="custom/ipinfo.db",  # Optional custom database path
-    whitelist=["192.168.1.1"],
-    blacklist=["10.0.0.1"],
+    whitelist=["192.168.1.1", "2001:db8::1"],
+    blacklist=["10.0.0.1", "2001:db8::2"],
     blocked_countries=["AR", "IT"],
     blocked_user_agents=["curl", "wget"],
     auto_ban_threshold=5,
@@ -122,18 +133,20 @@ async def read_root():
     return {"message": "Hello, World!"}
 ```
 
-### IP Whitelisting and Blacklisting
+IP Whitelisting and Blacklisting
+---------------------------------
 
 You can control access based on IP addresses using the `whitelist` and `blacklist` options in the `SecurityConfig`.
 
 ```python
 config = SecurityConfig(
-    whitelist=["192.168.1.1"],
-    blacklist=["10.0.0.1"],
+    whitelist=["192.168.1.1", "2001:db8::1"],
+    blacklist=["10.0.0.1", "2001:db8::2"],
 )
 ```
 
-### User Agent Filtering
+User Agent Filtering
+--------------------
 
 Block requests from specific user agents by adding patterns to the `blocked_user_agents` list.
 
@@ -143,7 +156,8 @@ config = SecurityConfig(
 )
 ```
 
-### Rate Limiting
+Rate Limiting
+-------------
 
 Limit the number of requests from a single IP using the `rate_limit` option.
 
@@ -153,7 +167,8 @@ config = SecurityConfig(
 )
 ```
 
-### Automatic IP Banning
+Automatic IP Banning
+--------------------
 
 Automatically ban IPs after a certain number of suspicious requests using the `auto_ban_threshold` and `auto_ban_duration` options.
 
@@ -164,7 +179,8 @@ config = SecurityConfig(
 )
 ```
 
-### Penetration Attempt Detection
+Penetration Attempt Detection
+-----------------------------
 
 Enable penetration attempt detection using the `enable_penetration_detection` option.
 
@@ -182,7 +198,8 @@ config = SecurityConfig(
 )
 ```
 
-### Custom Penetration Detection
+Custom Penetration Detection
+----------------------------
 
 Detect and log potential penetration attempts using the `detect_penetration_attempt` function.
 
@@ -203,7 +220,8 @@ async def submit_data(request: Request):
 
 ```
 
-### Custom Logging
+Custom Logging
+--------------
 
 Log security events to a custom file using the `custom_log_file` option.
 
@@ -213,7 +231,8 @@ config = SecurityConfig(
 )
 ```
 
-### CORS Configuration
+CORS Configuration
+------------------
 
 Configure CORS settings for your FastAPI application using the `enable_cors` and related options.
 
@@ -229,7 +248,8 @@ config = SecurityConfig(
 )
 ```
 
-### Cloud Provider IP Blocking
+Cloud Provider IP Blocking
+---------------------------
 
 Block requests from cloud provider IPs (AWS, GCP, Azure) using the `block_cloud_providers` option.
 
@@ -238,7 +258,9 @@ config = SecurityConfig(
     block_cloud_providers={"AWS", "GCP", "Azure"},
 )
 ```
-### IP Geolocation and Country Blocking
+
+IP Geolocation and Country Blocking
+------------------------------------
 
 If you want to use `fastapi-guard`'s built-in country filtering features, you'll need to obtain an IPInfo token:
 
@@ -252,9 +274,13 @@ If you want to use `fastapi-guard`'s built-in country filtering features, you'll
 
 Note: This is only required if you use country filtering (`blocked_countries`, `whitelist_countries`). You can also provide your own handler that uses any other service.
 
-## Advanced Usage
+___
 
-### Secure Proxy Configuration
+Advanced Usage
+--------------
+
+Secure Proxy Configuration
+---------------------------
 
 Configure trusted proxies to securely handle X-Forwarded-For headers:
 
@@ -271,7 +297,8 @@ When `trusted_proxies` is configured, FastAPI Guard will:
 2. Extract the appropriate client IP based on proxy depth
 3. Prevent IP spoofing attacks through header manipulation
 
-### Custom Geolocation Handler
+Custom Geolocation Handler
+---------------------------
 
 The library implements a handler that uses IPInfo's [IP to Country database](https://ipinfo.io/products/free-ip-database), which provides:
 
@@ -330,7 +357,8 @@ config = SecurityConfig(
 )
 ```
 
-### Custom Request Check
+Custom Request Check
+--------------------
 
 You can define a custom function to perform additional checks on the request using the `custom_request_check` option.
 
@@ -347,7 +375,8 @@ config = SecurityConfig(
 )
 ```
 
-### Custom Response Modifier
+Custom Response Modifier
+------------------------
 
 You can define a custom function to modify the response before it's sent using the `custom_response_modifier` option.
 
@@ -381,7 +410,10 @@ The example above shows how to:
 1. Add custom headers to all responses
 2. Convert plain text error responses to JSON format with a "detail" field, matching FastAPI's HTTPException format
 
-### Redis Configuration
+___
+
+Redis Configuration
+-------------------
 
 Enable distributed state management across multiple instances:
 
@@ -399,13 +431,18 @@ The Redis integration provides:
 - Cloud provider IP range caching
 - Pattern storage for penetration detection
 
-## Detailed Configuration Options
+___
 
-### SecurityConfig
+Detailed Configuration Options
+------------------------------
+
+SecurityConfig
+--------------
 
 The `SecurityConfig` class defines the structure for security configuration, including IP whitelists and blacklists, blocked countries, blocked user agents, rate limiting, automatic IP banning, HTTPS enforcement, custom hooks, CORS settings, and blocking of cloud provider IPs.
 
-#### Attributes
+Attributes
+----------
 
 - **geo_ip_handler**: ```GeoIPHandler``` - Protocol that allows for IP geolocation functionality.
 - **enable_redis**: ```bool``` - Enable Redis for distributed state (default: True). When disabled, uses in-memory storage.
@@ -437,20 +474,31 @@ The `SecurityConfig` class defines the structure for security configuration, inc
 - **ipinfo_token**: ```str``` (DEPRECATED) - The IPInfo API token required for IP geolocation functionality.
 - **ipinfo_db_path**: ```str``` (DEPRECATED) - Custom path for IPInfo database storage (default: ./data/ipinfo/country_asn.mmdb)
 
+___
 
-## Contributing
+Contributing
+------------
 
 Contributions are welcome! Please open an issue or submit a pull request on GitHub.
 
-## License
+___
+
+License
+-------
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## Author
+___
+
+Author
+------
 
 Renzo Franceschini - [rennf93@gmail.com](mailto:rennf93@gmail.com)
 
-## Acknowledgements
+___
+
+Acknowledgements
+----------------
 
 - [FastAPI](https://fastapi.tiangolo.com/)
 - [IPInfo](https://ipinfo.io/)

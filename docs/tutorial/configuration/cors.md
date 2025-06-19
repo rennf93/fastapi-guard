@@ -1,14 +1,19 @@
 ---
+
 title: CORS Configuration - FastAPI Guard
 description: Learn how to configure Cross-Origin Resource Sharing (CORS) settings in FastAPI Guard for secure API access
 keywords: fastapi cors, cors configuration, api security, cross origin resource sharing
 ---
 
-# CORS Configuration
+CORS Configuration
+==================
 
 FastAPI Guard provides comprehensive CORS (Cross-Origin Resource Sharing) configuration options.
 
-## Basic CORS Setup
+___
+
+Basic CORS Setup
+-----------------
 
 Enable CORS with default settings:
 
@@ -20,7 +25,10 @@ config = SecurityConfig(
 SecurityMiddleware.configure_cors(app, security_config)
 ```
 
-## Advanced Configuration
+___
+
+Advanced Configuration
+----------------------
 
 Configure specific CORS settings:
 
@@ -40,7 +48,10 @@ config = SecurityConfig(
 SecurityMiddleware.configure_cors(app, security_config)
 ```
 
-## Origin Patterns
+___
+
+Origin Patterns
+---------------
 
 Use patterns to match multiple origins:
 
@@ -55,7 +66,10 @@ config = SecurityConfig(
 SecurityMiddleware.configure_cors(app, security_config)
 ```
 
-## Credentials Support
+___
+
+Credentials Support
+-------------------
 
 Enable credentials support for authenticated requests:
 
@@ -70,7 +84,10 @@ config = SecurityConfig(
 SecurityMiddleware.configure_cors(app, security_config)
 ```
 
-## Custom Headers
+___
+
+Custom Headers
+--------------
 
 Configure custom headers for CORS:
 

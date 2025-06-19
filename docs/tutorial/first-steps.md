@@ -1,14 +1,17 @@
 ---
+
 title: Getting Started with FastAPI Guard
 description: First steps guide for implementing FastAPI Guard security features in your FastAPI application
 keywords: fastapi security tutorial, fastapi guard setup, python security middleware
 ---
 
-# First Steps
+First Steps
+===========
 
 Let's start with a simple example that shows how to add FastAPI Guard to your application.
 
-## Create a FastAPI application
+Create a FastAPI application
+----------------------------
 
 First, create a new FastAPI application:
 
@@ -21,7 +24,10 @@ from guard.handlers.ipinfo_handler import IPInfoManager
 app = FastAPI()
 ```
 
-## Configure Security Settings
+___
+
+Configure Security Settings
+----------------------------
 
 Create a `SecurityConfig` instance with your desired settings:
 
@@ -39,7 +45,10 @@ config = SecurityConfig(
 
 Note: FastAPI Guard only loads resources as needed. The IPInfo database is only downloaded when country filtering is configured, and cloud IP ranges are only fetched when cloud provider blocking is enabled.
 
-## Add the Middleware
+___
+
+Add the Middleware
+------------------
 
 Add the security middleware to your application:
 
@@ -47,7 +56,10 @@ Add the security middleware to your application:
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
-## Complete Example
+___
+
+Complete Example
+----------------
 
 Here's a complete example showing basic usage:
 
@@ -63,8 +75,8 @@ config = SecurityConfig(
     geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),
     enable_redis=True,  # Redis enabled
     redis_url="redis://localhost:6379",
-    whitelist=["192.168.1.1"],
-    blacklist=["10.0.0.1"],
+    whitelist=["192.168.1.1", "2001:db8::1"],
+    blacklist=["10.0.0.1", "2001:db8::2"],
     blocked_countries=["AR", "IT"],
     rate_limit=100,
     custom_log_file="security.log"
@@ -77,7 +89,10 @@ async def root():
     return {"message": "Hello World"}
 ```
 
-## Run the Application
+___
+
+Run the Application
+-------------------
 
 Run your application using uvicorn:
 
@@ -87,7 +102,10 @@ uvicorn main:app --reload
 
 Your API is now protected by FastAPI Guard! 🛡️
 
-## What's Next
+___
+
+What's Next
+-----------
 
 - Learn about [IP Management](ip-management/banning.md)
 - Configure [Rate Limiting](ip-management/rate-limiter.md)

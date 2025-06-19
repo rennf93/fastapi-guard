@@ -58,6 +58,7 @@ nav:
       - CORS: tutorial/configuration/cors.md
       - Logging: tutorial/configuration/logging.md
     - Redis Integration: tutorial/redis-integration/caching.md
+    - Advanced Customizations: tutorial/advanced-customizations.md
     - Example App: tutorial/examples/example-app.md
   - API Reference:
     - Overview: api/overview.md

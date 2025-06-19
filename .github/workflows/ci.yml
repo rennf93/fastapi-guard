@@ -86,13 +86,14 @@ jobs:
           TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
           MESSAGE: |
             .
+            *CI & TESTS TRIGGERED!*
+
+            .
             Matrix:
               Python: ${{ matrix.python-version }}
 
             Docs version:
               ${{ secrets.DOCS_VERSION }}
-
-            *DEPLOYMENT TRIGGERED CI & TESTS!*
 
             Commit:
               ${{ github.event.head_commit.message }}

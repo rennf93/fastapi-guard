@@ -1,10 +1,12 @@
 ---
+
 title: FastAPI Guard - Security Middleware for FastAPI
 description: Comprehensive security library for FastAPI applications providing IP control, request logging, and penetration detection
 keywords: fastapi, security, middleware, python, ip control, penetration detection, cybersecurity
 ---
 
-# FastAPI Guard
+FastAPI Guard
+=============
 
 ![FastAPI Guard Logo](assets/big_logo.svg)
 
@@ -20,7 +22,10 @@ keywords: fastapi, security, middleware, python, ip control, penetration detecti
 
 `fastapi-guard` is a comprehensive security library for FastAPI applications, providing middleware to control IPs, log requests, and detect penetration attempts. It integrates seamlessly with FastAPI to offer robust protection against various security threats, ensuring your application remains secure and reliable.
 
-## Quick Start
+___
+
+Quick Start
+-----------
 
 ```python
 from fastapi import FastAPI
@@ -40,19 +45,28 @@ config = SecurityConfig(
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
-## Example App
+___
+
+Example App
+-----------
 
 Inside [examples](https://github.com/rennf93/fastapi-guard/tree/master/examples), you can find a simple example app that demonstrates how to use FastAPI Guard.
 
-### Live Playground
+___
+
+Live Playground
+---------------
 
 Try FastAPI Guard features directly in your browser:
 
-**[https://playground.fastapi-guard.com](https://playground.fastapi-guard.com)**
+**<https://playground.fastapi-guard.com>**
 
 This interactive demo allows you to explore FastAPI Guard's capabilities without any setup.
 
-### Docker Container
+___
+
+Docker Container
+----------------
 
 You can also download the example app as a Docker container from [GitHub Container Registry](https://github.com/orgs/rennf93/packages/container/fastapi-guard-example).
 
@@ -61,12 +75,16 @@ You can also download the example app as a Docker container from [GitHub Contain
 docker pull ghcr.io/rennf93/fastapi-guard-example:latest
 
 # Or pull a specific version (matches library releases)
-docker pull ghcr.io/rennf93/fastapi-guard-example:v2.1.2
+docker pull ghcr.io/rennf93/fastapi-guard-example:v2.1.3
 ```
 
-### Running the Example App
+___
 
-#### Using Docker Compose (Recommended)
+Running the Example App
+-----------------------
+
+Using Docker Compose (Recommended)
+-----------------------------------
 
 The easiest way to run the example app is with Docker Compose, which automatically sets up Redis:
 
@@ -79,9 +97,10 @@ cd fastapi-guard/examples
 docker compose up
 ```
 
-This will start both the FastAPI Guard example app and Redis service. The app will be available at http://0.0.0.0:8000.
+This will start both the FastAPI Guard example app and Redis service. The app will be available at <http://0.0.0.0:8000>.
 
-#### Using Docker Container Only
+Using Docker Container Only
+----------------------------
 
 Alternatively, you can run just the container:
 
@@ -97,9 +116,12 @@ docker run -host 0.0.0.0 -p 8000:8000 \
  ghcr.io/rennf93/fastapi-guard-example:latest
 ```
 
-The example app includes endpoints to test various security features of FastAPI Guard. Access the Swagger documentation at http://0.0.0.0:8000/docs after running the container.
+The example app includes endpoints to test various security features of FastAPI Guard. Access the Swagger documentation at <http://0.0.0.0:8000/docs> after running the container.
 
-## Features
+___
+
+Features
+--------
 
 - **IP Whitelisting and Blacklisting**: Control access based on IP addresses.
 - **User Agent Filtering**: Block requests from specific user agents.
@@ -115,7 +137,10 @@ The example app includes endpoints to test various security features of FastAPI 
 - **Automatic Fallback**: Seamless operation with/without Redis connection.
 - **Secure Proxy Handling**: Protection against X-Forwarded-For header injection attacks
 
-## Documentation
+___
+
+Documentation
+-------------
 
 - [Installation](installation.md)
 - [First Steps](tutorial/first-steps.md)

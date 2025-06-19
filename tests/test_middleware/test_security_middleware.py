@@ -76,6 +76,7 @@ async def test_ip_whitelist_blacklist() -> None:
         enable_penetration_detection=False,
         trusted_proxies=["127.0.0.1"],
     )
+
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -103,6 +104,7 @@ async def test_user_agent_filtering() -> None:
     """
     app = FastAPI()
     config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, blocked_user_agents=[r"badbot"])
+
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -136,6 +138,7 @@ async def test_rate_limiting_multiple_ips(reset_state: None) -> None:
         enable_penetration_detection=False,
         trusted_proxies=["127.0.0.1"],
     )
+
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -177,6 +180,7 @@ async def test_middleware_multiple_configs() -> None:
         enable_penetration_detection=False,
         trusted_proxies=["127.0.0.1"],
     )
+
     config2 = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
         whitelist=["127.0.0.1"],
@@ -220,6 +224,7 @@ async def test_custom_request_check() -> None:
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN, custom_request_check=custom_check
     )
+
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -256,6 +261,7 @@ async def test_custom_error_responses() -> None:
         enable_penetration_detection=False,
         trusted_proxies=["127.0.0.1"],
     )
+
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -329,6 +335,15 @@ async def test_custom_error_responses() -> None:
             {"X-Custom-Check": "true"},
             True,
         ),
+        # NOTE: Custom request check - no trigger
+        (
+            "custom_request_check_no_trigger",
+            status.HTTP_200_OK,
+            {},
+            "/",
+            {},
+            True,
+        ),
         # NOTE: Request without client
         (
             "no_client_info",
@@ -358,8 +373,7 @@ async def test_custom_response_modifier_parameterized(
         response.headers["X-Modified"] = "True"
 
         if response.status_code >= 400 and not isinstance(response, JSONResponse):
-            if hasattr(response.body, "decode"):
-                content = response.body.decode()
+            content = bytes(response.body).decode()
 
             return JSONResponse(
                 status_code=response.status_code,
@@ -372,6 +386,7 @@ async def test_custom_response_modifier_parameterized(
     async def custom_check(request: Request) -> Response | None:
         if "X-Custom-Check" in request.headers:
             return Response("I'm a teapot", status_code=status.HTTP_418_IM_A_TEAPOT)
+        return None
 
     config_args = {
         "ipinfo_token": IPINFO_TOKEN,
@@ -385,6 +400,7 @@ async def test_custom_response_modifier_parameterized(
 
     config_args.update(extra_config)
     config = SecurityConfig(**config_args)
+
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -415,34 +431,35 @@ async def test_custom_response_modifier_parameterized(
         body = await request.body()
         assert body == b""
 
-        middleware = SecurityMiddleware(app, config)
+        middleware = SecurityMiddleware(app, config=config)
 
         async def call_next(request: Request) -> Response:
             return Response("Test response with no client", status_code=200)
 
-        response = await middleware.dispatch(request, call_next)
+        middleware_response = await middleware.dispatch(request, call_next)
 
-        assert response.headers.get("X-Modified") == "True"
-        assert response.status_code == expected_status_code
+        assert middleware_response.headers.get("X-Modified") == "True"
+        assert middleware_response.status_code == expected_status_code
 
     else:
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
-            response = await client.get(request_path, headers=request_headers)
+            httpx_response = await client.get(request_path, headers=request_headers)
 
-            assert response.headers.get("X-Modified") == "True"
+            assert httpx_response.headers.get("X-Modified") == "True"
 
-            assert response.status_code == expected_status_code
+            assert httpx_response.status_code == expected_status_code
 
             if expected_status_code >= 400:
+                response = await client.get(request_path, headers=request_headers)
                 response_json = response.json()
                 assert "detail" in response_json
 
 
 @pytest.mark.asyncio
 async def test_memoryview_response_handling() -> None:
-    """Special test for memoryview response handling to cover line 298"""
+    """Special test for memoryview response handling"""
 
     test_body_memoryview = memoryview(b"Test Content")
 
@@ -456,10 +473,7 @@ async def test_memoryview_response_handling() -> None:
         response.headers["X-Modified"] = "True"
 
         if response.status_code >= 400 and not isinstance(response, JSONResponse):
-            if hasattr(response.body, "decode"):
-                content = response.body.decode()
-            else:
-                content = bytes(response.body).decode()
+            content = bytes(response.body).decode()
 
             return JSONResponse(
                 status_code=response.status_code,
@@ -473,13 +487,13 @@ async def test_memoryview_response_handling() -> None:
     assert isinstance(result_memoryview, JSONResponse)
     assert result_memoryview.status_code == 400
     assert result_memoryview.headers.get("X-Modified") == "True"
-    result_json = result_memoryview.body.decode()
+    result_json = bytes(result_memoryview.body).decode()
     assert "Test Content" in result_json
 
     result_bytes = await custom_modifier(test_response_bytes)
     assert isinstance(result_bytes, JSONResponse)
     assert result_bytes.status_code == 400
-    assert "Bytes Content" in result_bytes.body.decode()
+    assert "Bytes Content" in bytes(result_bytes.body).decode()
 
     result_normal = await custom_modifier(test_response_normal)
     assert result_normal.status_code == 200
@@ -558,6 +572,7 @@ async def test_cloud_ip_blocking() -> None:
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN, block_cloud_providers={"AWS", "GCP", "Azure"}
     )
+
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -589,7 +604,7 @@ async def test_cloud_ip_refresh() -> None:
         block_cloud_providers={"AWS", "GCP", "Azure"},
         enable_penetration_detection=False,
     )
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
 
     with patch(
         "guard.handlers.cloud_handler.cloud_handler.is_cloud_ip", return_value=False
@@ -636,6 +651,7 @@ async def test_cleanup_rate_limits(security_middleware: SecurityMiddleware) -> N
 async def test_excluded_paths() -> None:
     app = FastAPI()
     config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, exclude_paths=["/health"])
+
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/health")
@@ -660,7 +676,7 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
         enable_penetration_detection=False,
     )
 
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     middleware.last_cloud_ip_refresh = int(time.time() - 3700)
 
     mock_refresh = Mock()
@@ -701,7 +717,7 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
 
     # Redis enabled
     config.enable_redis = True
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     middleware.last_cloud_ip_refresh = int(time.time() - 3700)
 
     mock_refresh_async = AsyncMock()
@@ -717,7 +733,7 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
 async def test_refresh_cloud_ips_without_any_cloud() -> None:
     app = FastAPI()
     config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, block_cloud_providers=None)
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     with (
         patch.object(cloud_handler, "refresh_async") as mock_refresh_async,
         patch.object(cloud_handler, "refresh") as mock_refresh,
@@ -747,6 +763,7 @@ async def test_https_enforcement_with_xforwarded_proto() -> None:
         trusted_proxies=["127.0.0.1"],
         trust_x_forwarded_proto=True,
     )
+
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -781,7 +798,7 @@ async def test_cleanup_expired_request_times() -> None:
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN, rate_limit=2, rate_limit_window=1
     )
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
 
     handler = middleware.rate_limit_handler
     await handler.reset()
@@ -810,6 +827,7 @@ async def test_penetration_detection_disabled() -> None:
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN, enable_penetration_detection=False
     )
+
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -840,7 +858,7 @@ async def test_cloud_ip_blocking_with_logging() -> None:
         whitelist=[],
         enable_penetration_detection=False,
     )
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     await middleware.setup_logger()
 
     call_next_executed = False
@@ -929,7 +947,7 @@ async def test_redis_initialization(security_config_redis: SecurityConfig) -> No
 
     security_config_redis.block_cloud_providers = {"AWS"}
 
-    middleware = SecurityMiddleware(app, security_config_redis)
+    middleware = SecurityMiddleware(app, config=security_config_redis)
 
     # Mock external handlers
     with (
@@ -962,7 +980,7 @@ async def test_redis_initialization_without_ipinfo_and_cloud(
 
     security_config_redis.blocked_countries = []
 
-    middleware = SecurityMiddleware(app, security_config_redis)
+    middleware = SecurityMiddleware(app, config=security_config_redis)
 
     # Mock external handlers
     with (
@@ -991,7 +1009,7 @@ async def test_redis_disabled(security_config: SecurityConfig) -> None:
     """Test middleware behavior when Redis is disabled"""
     app = FastAPI()
     security_config.enable_redis = False
-    middleware = SecurityMiddleware(app, security_config)
+    middleware = SecurityMiddleware(app, config=security_config)
 
     assert middleware.redis_handler is None
     await middleware.initialize()
@@ -1004,7 +1022,7 @@ async def test_redis_disabled(security_config: SecurityConfig) -> None:
 async def test_request_without_client(security_config: SecurityConfig) -> None:
     """Test handling of request without client info"""
     app = FastAPI()
-    middleware = SecurityMiddleware(app, security_config)
+    middleware = SecurityMiddleware(app, config=security_config)
 
     call_next_called = False
 
@@ -1044,6 +1062,7 @@ async def test_rate_limiting_disabled() -> None:
     """Test when rate limiting is disabled"""
     app = FastAPI()
     config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, enable_rate_limiting=False)
+
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -1136,7 +1155,7 @@ async def test_passive_mode_penetration_detection() -> None:
         passive_mode=True,
         whitelist=[],
     )
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     await middleware.setup_logger()
 
     call_next_called = False
@@ -1202,6 +1221,7 @@ async def test_sliding_window_rate_limiting() -> None:
         rate_limit_window=1,
         enable_rate_limiting=True,
     )
+
     app.add_middleware(SecurityMiddleware, config=config)
 
     @app.get("/")
@@ -1304,7 +1324,7 @@ async def test_lua_script_execution(security_config_redis: SecurityConfig) -> No
     config.rate_limit_window = 1
     config.enable_rate_limiting = True
 
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     handler = middleware.rate_limit_handler
 
     with patch.object(handler.redis_handler, "get_connection") as mock_get_connection:
@@ -1367,7 +1387,7 @@ async def test_fallback_to_pipeline(security_config_redis: SecurityConfig) -> No
     config.rate_limit_window = 1
     config.enable_rate_limiting = True
 
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     handler = middleware.rate_limit_handler
 
     with patch.object(handler.redis_handler, "get_connection") as mock_get_connection:
@@ -1461,7 +1481,7 @@ async def test_rate_limiter_redis_errors(security_config_redis: SecurityConfig) 
     config.rate_limit_window = 1
     config.enable_rate_limiting = True
 
-    middleware = SecurityMiddleware(app, config)
+    middleware = SecurityMiddleware(app, config=config)
     handler = middleware.rate_limit_handler
 
     async def receive() -> dict[str, str | bytes]:
@@ -1554,3 +1574,244 @@ async def test_rate_limiter_init_redis_exception(
     mock_logger.error.assert_called_once()
     error_msg = mock_logger.error.call_args[0][0]
     assert "Failed to load rate limiting Lua script: Script load failed" == error_msg
+
+
+@pytest.mark.asyncio
+async def test_ipv6_rate_limiting(
+    security_config_redis: SecurityConfig, clean_rate_limiter: None
+) -> None:
+    """
+    Test the rate limiting functionality
+    of the SecurityMiddleware with IPv6 addresses.
+    """
+    app = FastAPI()
+    config = security_config_redis
+    config.rate_limit = 2
+    config.rate_limit_window = 1
+    config.enable_rate_limiting = True
+    config.trusted_proxies = ["127.0.0.1"]
+    config.whitelist = []
+    config.enable_penetration_detection = False
+
+    app.add_middleware(SecurityMiddleware, config=config)
+
+    @app.get("/")
+    async def read_root() -> dict[str, str]:
+        return {"message": "Hello World"}
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/", headers={"X-Forwarded-For": "2001:db8::1"})
+        assert response.status_code == status.HTTP_200_OK
+
+        response = await client.get("/", headers={"X-Forwarded-For": "2001:db8::1"})
+        assert response.status_code == status.HTTP_200_OK
+
+        response = await client.get("/", headers={"X-Forwarded-For": "2001:db8::1"})
+        assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+
+        handler = rate_limit_handler(config)
+        await handler.reset()
+
+        response = await client.get("/", headers={"X-Forwarded-For": "2001:db8::1"})
+        assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.asyncio
+async def test_ipv6_whitelist_blacklist(security_config_redis: SecurityConfig) -> None:
+    """
+    Test the IPv6 whitelist/blacklist
+    functionality of the SecurityMiddleware.
+    """
+    app = FastAPI()
+    config = security_config_redis
+    config.whitelist = ["::1", "2001:db8::1"]
+    config.blacklist = ["2001:db8::dead:beef"]
+    config.enable_penetration_detection = False
+    config.trusted_proxies = ["127.0.0.1", "::1"]
+
+    app.add_middleware(SecurityMiddleware, config=config)
+
+    @app.get("/")
+    async def read_root() -> dict[str, str]:
+        return {"message": "Hello World"}
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        # IPv6 loopback
+        response = await client.get("/", headers={"X-Forwarded-For": "::1"})
+        assert response.status_code == status.HTTP_200_OK
+
+        # Whitelisted IPv6 address
+        response = await client.get("/", headers={"X-Forwarded-For": "2001:db8::1"})
+        assert response.status_code == status.HTTP_200_OK
+
+        # Blacklisted IPv6 address
+        response = await client.get(
+            "/", headers={"X-Forwarded-For": "2001:db8::dead:beef"}
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+        # Non-whitelisted IPv6 address (block)
+        response = await client.get("/", headers={"X-Forwarded-For": "2001:db8::2"})
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.asyncio
+async def test_ipv6_cidr_whitelist_blacklist(
+    security_config_redis: SecurityConfig,
+) -> None:
+    """
+    Test IPv6 CIDR notation in whitelist/blacklist.
+    """
+    app = FastAPI()
+    config = security_config_redis
+    config.whitelist = ["2001:db8::/32"]
+    config.blacklist = ["2001:db8:dead::/48"]
+    config.enable_penetration_detection = False
+    config.trusted_proxies = ["127.0.0.1", "::1"]
+
+    app.add_middleware(SecurityMiddleware, config=config)
+
+    @app.get("/")
+    async def read_root() -> dict[str, str]:
+        return {"message": "Hello World"}
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        # IPv6 address in whitelisted CIDR
+        response = await client.get("/", headers={"X-Forwarded-For": "2001:db8::1"})
+        assert response.status_code == status.HTTP_200_OK
+
+        response = await client.get("/", headers={"X-Forwarded-For": "2001:db8:1::1"})
+        assert response.status_code == status.HTTP_200_OK
+
+        # IPv6 address in blacklisted CIDR (blacklist overrides whitelist)
+        response = await client.get(
+            "/", headers={"X-Forwarded-For": "2001:db8:dead::beef"}
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+        # IPv6 address outside whitelisted CIDR
+        response = await client.get("/", headers={"X-Forwarded-For": "2001:db9::1"})
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.asyncio
+async def test_mixed_ipv4_ipv6_handling(security_config_redis: SecurityConfig) -> None:
+    """
+    Test handling of mixed IPv4 and IPv6 addresses in configuration.
+    """
+    app = FastAPI()
+    config = security_config_redis
+    config.whitelist = ["127.0.0.1", "::1", "192.168.1.0/24", "2001:db8::/32"]
+    config.blacklist = ["192.168.1.100", "2001:db8:dead::beef"]
+    config.enable_penetration_detection = False
+    config.trusted_proxies = ["127.0.0.1", "::1"]
+
+    app.add_middleware(SecurityMiddleware, config=config)
+
+    @app.get("/")
+    async def read_root() -> dict[str, str]:
+        return {"message": "Hello World"}
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        # IPv4 addresses
+        response = await client.get("/", headers={"X-Forwarded-For": "127.0.0.1"})
+        assert response.status_code == status.HTTP_200_OK
+
+        response = await client.get("/", headers={"X-Forwarded-For": "192.168.1.50"})
+        assert response.status_code == status.HTTP_200_OK
+
+        response = await client.get("/", headers={"X-Forwarded-For": "192.168.1.100"})
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+        # IPv6 addresses
+        response = await client.get("/", headers={"X-Forwarded-For": "::1"})
+        assert response.status_code == status.HTTP_200_OK
+
+        response = await client.get("/", headers={"X-Forwarded-For": "2001:db8::1"})
+        assert response.status_code == status.HTTP_200_OK
+
+        response = await client.get(
+            "/", headers={"X-Forwarded-For": "2001:db8:dead::beef"}
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.asyncio
+async def test_real_ipv6_connection(
+    security_config_redis: SecurityConfig, clean_rate_limiter: None
+) -> None:
+    """
+    Test with a real IPv6 client connection using direct Request objects.
+    This validates that the middleware can handle actual IPv6 client IPs,
+    not just IPv6 addresses in proxy headers.
+    """
+    config = security_config_redis
+    config.rate_limit = 3
+    config.rate_limit_window = 2
+    config.enable_rate_limiting = True
+    config.whitelist = ["2001:db8::1"]
+    config.enable_penetration_detection = False
+
+    middleware = SecurityMiddleware(app=Mock(), config=config)
+
+    async def mock_call_next(request: Request) -> Response:
+        return Response("OK", status_code=200)
+
+    async def receive() -> dict[str, str | bytes | bool]:
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    # IPv6 client (whitelisted)
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [],
+            "query_string": b"",
+            "client": ("2001:db8::1", 12345),
+            "server": ("testserver", 80),
+            "scheme": "http",
+        },
+        receive=receive,
+    )
+
+    response = await middleware.dispatch(request, mock_call_next)
+    assert response.status_code == 200
+
+    response = await middleware.dispatch(request, mock_call_next)
+    assert response.status_code == 200
+
+    response = await middleware.dispatch(request, mock_call_next)
+    assert response.status_code == 200
+
+    response = await middleware.dispatch(request, mock_call_next)
+    assert response.status_code == 429
+
+    # Blocked IPv6 client
+    request_blocked = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [],
+            "query_string": b"",
+            "client": ("2001:db8::2", 12345),  # NOTE: Different IPv6 client
+            "server": ("testserver", 80),
+            "scheme": "http",
+        },
+        receive=receive,
+    )
+
+    body = await request.body()
+    assert body == b""
+
+    response = await middleware.dispatch(request_blocked, mock_call_next)
+    assert response.status_code == 403

@@ -1,14 +1,19 @@
 ---
+
 title: Advanced Customization - FastAPI Guard
 description: Learn how to extend FastAPI Guard with custom protocols and handlers
 keywords: custom protocols, extending fastapi guard, advanced customization
 ---
 
-# Advanced Customization
+Advanced Customization
+=======================
 
 FastAPI Guard uses a protocol-based architecture that makes it highly extensible. This guide explains how the protocol system works and how to create custom implementations.
 
-## Protocol-Based Architecture
+___
+
+Protocol-Based Architecture
+----------------------------
 
 FastAPI Guard uses Python's Protocol system to define interfaces that components must implement. This allows you to:
 
@@ -16,7 +21,10 @@ FastAPI Guard uses Python's Protocol system to define interfaces that components
 2. Extend functionality without modifying the core library
 3. Better separate concerns in your codebase
 
-## Why Protocols?
+___
+
+Why Protocols?
+--------------
 
 The protocol system solves several important problems:
 
@@ -24,9 +32,13 @@ The protocol system solves several important problems:
 2. **Preventing circular imports**: The protocols help break dependency cycles in the codebase
 3. **Enabling extension points**: Clear interfaces for adding custom functionality
 
-## Available Protocols
+___
 
-### GeoIPHandler Protocol
+Available Protocols
+-------------------
+
+GeoIPHandler Protocol
+---------------------
 
 The `GeoIPHandler` protocol defines the interface for any geographical IP handler:
 
@@ -45,14 +57,16 @@ class GeoIPHandler(Protocol):
     def get_country(self, ip: str) -> str | None: ...
 ```
 
-#### Method Details:
+Method Details
+--------------
 
 - `is_initialized`: Should return whether the handler is ready to use
 - `initialize()`: Should set up the handler (load databases, connect to APIs, etc.)
 - `initialize_redis()`: Should store the redis handler for optional caching
 - `get_country()`: Should return the ISO 3166-1 alpha-2 country code for the IP
 
-### RedisHandlerProtocol
+RedisHandlerProtocol
+--------------------
 
 **IMPORTANT**: Users do NOT need to implement this protocol. It exists purely for internal use to break dependency cycles and define what the Redis handler must support for the custom GeoIP handlers.
 
@@ -72,7 +86,10 @@ class RedisHandlerProtocol(Protocol):
     async def initialize(self) -> None: ...
 ```
 
-## How Protocols Are Used
+___
+
+How Protocols Are Used
+----------------------
 
 The FastAPI Guard initialization flow works like this:
 
@@ -85,9 +102,13 @@ The FastAPI Guard initialization flow works like this:
 
 This makes your custom geo IP handler fully integrated with the middleware's Redis infrastructure.
 
-## Implementation Examples
+___
 
-### Example: Custom Geo IP Service
+Implementation Examples
+-----------------------
+
+Example: Custom Geo IP Service
+-------------------------------
 
 Here's a complete example of a custom GeoIPHandler implementation that uses a different service:
 
@@ -152,7 +173,10 @@ class CustomGeoIPHandler:
             return None
 ```
 
-### Usage in Application
+___
+
+Usage in Application
+--------------------
 
 ```python
 from fastapi import FastAPI
@@ -172,7 +196,10 @@ config = SecurityConfig(
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
-## Technical Details: How Redis Integration Works
+___
+
+Technical Details: How Redis Integration Works
+----------------------------------------------
 
 When you create a custom GeoIPHandler:
 

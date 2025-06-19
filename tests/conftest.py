@@ -150,3 +150,11 @@ async def reset_rate_limiter() -> None:
     config = SecurityConfig(geo_ip_handler=IPInfoManager(IPINFO_TOKEN, None))
     rate_limit = rate_limit_handler(config)
     await rate_limit.reset()
+
+
+@pytest.fixture
+def clean_rate_limiter() -> None:
+    """Reset rate limiter singleton for tests that need a completely clean state"""
+    from guard.handlers.ratelimit_handler import RateLimitManager
+
+    RateLimitManager._instance = None

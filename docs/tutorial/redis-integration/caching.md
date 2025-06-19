@@ -1,14 +1,19 @@
 ---
+
 title: Redis Integration - FastAPI Guard
 description: Guide to using Redis for distributed state management in FastAPI Guard
 keywords: redis configuration, distributed rate limiting, atomic operations
 ---
 
-# Redis Integration
+Redis Integration
+=================
 
 FastAPI Guard uses Redis for distributed state management across multiple instances.
 
-## Basic Configuration
+___
+
+Basic Configuration
+-------------------
 
 ```python
 config = SecurityConfig(
@@ -18,22 +23,32 @@ config = SecurityConfig(
 )
 ```
 
-## Key Features
+___
 
-1. **Distributed Rate Limiting**
-2. **Shared IP Ban List**
-3. **Cloud IP Range Caching**
-4. **Pattern Storage for Penetration Detection**
+Key Features
+------------
 
-## Fallback Behavior
+- Distributed Rate Limiting
+- Shared IP Ban List
+- Cloud IP Range Caching
+- Pattern Storage for Penetration Detection
+
+___
+
+Fallback Behavior
+-----------------
 
 When Redis is disabled (`enable_redis=False`):
+
 - Uses in-memory storage (TTLCache)
 - Rate limits are instance-local
 - IP bans only affect current instance
 - Cloud IP ranges refresh hourly
 
-## Connection Management
+___
+
+Connection Management
+---------------------
 
 ```python
 # Get RedisManager instance from middleware
@@ -51,14 +66,19 @@ await redis.safe_operation(
 )
 ```
 
-## Key Namespacing
+___
 
-Keys are automatically prefixed using:
-`{redis_prefix}{namespace}:{key}`
+Key Namespacing
+---------------
+
+Keys are automatically prefixed using: `{redis_prefix}{namespace}:{key}`
 
 Example: `fastapi_guard:cloud_ranges:AWS`
 
-## Best Practices
+___
+
+Best Practices
+--------------
 
 1. Use separate Redis databases for different environments
 2. Set appropriate TTLs for transient data

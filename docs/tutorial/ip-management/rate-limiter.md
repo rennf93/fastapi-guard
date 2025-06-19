@@ -1,14 +1,19 @@
 ---
+
 title: Rate Limiting - FastAPI Guard
 description: Learn how to implement rate limiting in your FastAPI application using FastAPI Guard
 keywords: rate limiting, api security, ddos protection, request throttling, fastapi
 ---
 
-# Rate Limiting
+Rate Limiting
+=============
 
 Rate limiting is a crucial security feature that protects your API from abuse, DoS attacks, and excessive usage. FastAPI Guard provides a robust rate limiting system through the dedicated `RateLimitManager` class.
 
-## Basic Configuration
+___
+
+Basic Configuration
+-------------------
 
 To enable rate limiting, configure the following parameters in your `SecurityConfig`:
 
@@ -29,7 +34,10 @@ config = SecurityConfig(
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
-## How It Works
+___
+
+How It Works
+------------
 
 FastAPI Guard implements a sliding window rate limiting algorithm:
 
@@ -45,11 +53,15 @@ The sliding window approach offers several advantages over fixed windows:
 - Fair treatment of users across time periods
 - More accurate request counting
 
-## In-Memory vs. Redis Rate Limiting
+___
+
+In-Memory vs. Redis Rate Limiting
+---------------------------------
 
 FastAPI Guard supports two rate limiting storage backends:
 
-### In-Memory Rate Limiting
+In-Memory Rate Limiting
+-----------------------
 
 By default, rate limiting uses an in-memory deque for tracking request timestamps:
 
@@ -73,7 +85,8 @@ config = SecurityConfig(
 - Lost on application restart
 - Consumes application memory
 
-### Redis-Based Rate Limiting
+Redis-Based Rate Limiting
+-------------------------
 
 For distributed environments, enable Redis-based rate limiting:
 
@@ -98,7 +111,10 @@ config = SecurityConfig(
 - Slightly higher latency due to network calls
 - Additional infrastructure dependency
 
-## Custom Response Messages
+___
+
+Custom Response Messages
+------------------------
 
 You can customize the rate limit exceeded message:
 
@@ -113,9 +129,13 @@ config = SecurityConfig(
 )
 ```
 
-## Advanced Usage
+___
 
-### Accessing the Rate Limiter Directly
+Advanced Usage
+--------------
+
+Accessing the Rate Limiter Directly
+------------------------------------
 
 For advanced use cases, you can access the rate limiter directly:
 
@@ -131,7 +151,8 @@ async def some_route():
     await handler.reset()
 ```
 
-### Resetting Rate Limits
+Resetting Rate Limits
+---------------------
 
 You might want to reset rate limits in certain scenarios:
 
@@ -145,7 +166,8 @@ async def reset_rate_limits_for_user(user_id: str):
     await handler.reset()
 ```
 
-## Implementation Details
+Implementation Details
+----------------------
 
 The `RateLimitManager` is implemented as a singleton to ensure consistent state across requests. It uses:
 
@@ -153,7 +175,10 @@ The `RateLimitManager` is implemented as a singleton to ensure consistent state 
 - Redis increments with TTL for distributed storage
 - Efficient counter storage to minimize memory footprint
 
-## Best Practices
+___
+
+Best Practices
+--------------
 
 1. **Set reasonable limits**: Consider your API's typical usage patterns
 2. **Use Redis in production**: For reliability in distributed environments
@@ -161,7 +186,10 @@ The `RateLimitManager` is implemented as a singleton to ensure consistent state 
 4. **Inform clients**: Return appropriate headers with rate limit information
 5. **Monitor usage patterns**: Keep an eye on rate limit hits to adjust as needed
 
-## See Also
+___
+
+See Also
+--------
 
 - [RateLimitManager API Reference](../../api/ratelimit-manager.md)
 - [Redis Integration](../redis-integration/caching.md)

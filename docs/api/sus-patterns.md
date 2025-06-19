@@ -1,14 +1,19 @@
 ---
+
 title: SusPatternsManager API - FastAPI Guard
 description: API documentation for FastAPI Guard's suspicious pattern detection and management system
 keywords: security patterns, threat detection, pattern management, security rules api
 ---
 
-# SusPatternsManager
+SusPatternsManager
+==================
 
 The `SusPatternsManager` class manages suspicious patterns for security threat detection.
 
-## Class Definition
+___
+
+Class Definition
+----------------
 
 ```python
 class SusPatternsManager:
@@ -18,9 +23,13 @@ class SusPatternsManager:
     """
 ```
 
-## Class Methods
+___
 
-### add_pattern
+Class Methods
+-------------
+
+add_pattern
+-----------
 
 ```python
 @classmethod
@@ -34,7 +43,8 @@ async def add_pattern(
     """
 ```
 
-### remove_pattern
+remove_pattern
+--------------
 
 ```python
 @classmethod
@@ -51,7 +61,8 @@ async def remove_pattern(
     """
 ```
 
-### get_default_patterns
+get_default_patterns
+---------------------
 
 ```python
 @classmethod
@@ -64,7 +75,8 @@ async def get_default_patterns(cls) -> list[str]:
     """
 ```
 
-### get_custom_patterns
+get_custom_patterns
+-------------------
 
 ```python
 @classmethod
@@ -77,7 +89,8 @@ async def get_custom_patterns(cls) -> list[str]:
     """
 ```
 
-### get_all_patterns
+get_all_patterns
+----------------
 
 ```python
 @classmethod
@@ -87,7 +100,8 @@ async def get_all_patterns(cls) -> list[str]:
     """
 ```
 
-### get_default_compiled_patterns
+get_default_compiled_patterns
+------------------------------
 
 ```python
 @classmethod
@@ -100,7 +114,8 @@ async def get_default_compiled_patterns(cls) -> list[re.Pattern]:
     """
 ```
 
-### get_custom_compiled_patterns
+get_custom_compiled_patterns
+-----------------------------
 
 ```python
 @classmethod
@@ -113,7 +128,8 @@ async def get_custom_compiled_patterns(cls) -> list[re.Pattern]:
     """
 ```
 
-### get_all_compiled_patterns
+get_all_compiled_patterns
+--------------------------
 
 ```python
 @classmethod
@@ -123,7 +139,11 @@ async def get_all_compiled_patterns(cls) -> list[re.Pattern]:
     """
 ```
 
-## Pattern Synchronization
+___
+
+Pattern Synchronization
+------------------------
+
 Custom patterns are stored in Redis when enabled:
 
 ```python
@@ -134,7 +154,10 @@ await SusPatternsManager.add_pattern(r"malicious.*", custom=True)
 patterns = await redis.get_key("patterns", "custom")
 ```
 
-## Usage Example
+___
+
+Usage Example
+-------------
 
 ```python
 from guard.handlers.suspatterns_handler import SusPatternsManager

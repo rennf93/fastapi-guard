@@ -1,10 +1,12 @@
 ---
+
 title: Installation - FastAPI Guard
 description: Learn how to install and set up FastAPI Guard, a comprehensive security middleware for FastAPI applications
 keywords: fastapi guard installation, python security middleware, fastapi security setup
 ---
 
-# Installation
+Installation
+============
 
 Install `fastapi-guard` using pip:
 
@@ -12,10 +14,12 @@ Install `fastapi-guard` using pip:
 pip install fastapi-guard
 ```
 
-
 **Note**: Ensure you have Python 3.10 or higher installed.
 
-## Prerequisites
+___
+
+Prerequisites
+-------------
 
 Before using `fastapi-guard`'s country filtering features, obtain an IPInfo token:
 
@@ -43,8 +47,8 @@ config = SecurityConfig(
     enable_redis=True,  # Enabled by default, disable to use in-memory storage
     redis_url="redis://localhost:6379/0",
     redis_prefix="prod:security:",
-    whitelist=["192.168.1.1"],
-    blacklist=["10.0.0.1"],
+    whitelist=["192.168.1.1", "2001:db8::1"],
+    blacklist=["10.0.0.1", "2001:db8::2"],
     blocked_countries=["AR", "IT"],
     blocked_user_agents=["curl", "wget"],
     auto_ban_threshold=5,
@@ -60,7 +64,10 @@ app.add_middleware(SecurityMiddleware, config=config)
 - Cloud provider IP ranges refresh every hour
 - Penetration patterns reset on app restart
 
-### Secure Proxy Configuration
+___
+
+Secure Proxy Configuration
+---------------------------
 
 If your application is behind a proxy or load balancer, configure trusted proxies:
 
