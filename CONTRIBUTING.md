@@ -57,9 +57,6 @@ Development Setup
 # Install dependencies using 'uv'
 make install
 
-# For development, you can run the example app
-make start-example
-
 # To stop all containers
 make stop
 ```
@@ -94,6 +91,14 @@ Before submitting a PR, make sure your code passes all style checks:
 
 ```bash
 make lint
+make fix
+```
+
+and
+
+```bash
+make lint-docs
+make fix-docs
 ```
 
 Documentation

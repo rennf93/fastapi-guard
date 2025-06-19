@@ -8,6 +8,11 @@ on:
       - 'mkdocs.yml'
       - '.mike.yml'
       - 'README.md'
+      - 'CODE_OF_CONDUCT.md'
+      - 'CONTRIBUTING.md'
+      - 'LICENSE'
+      - 'SECURITY.md'
+      - 'CHANGELOG.md'
     tags:
       - 'v*'
 
