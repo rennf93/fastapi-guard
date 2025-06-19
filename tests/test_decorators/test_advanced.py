@@ -1,9 +1,9 @@
 import os
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi import FastAPI
+from fastapi.routing import APIRoute
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 
@@ -78,10 +78,9 @@ async def test_time_window_restrictions(
     description: str,
 ) -> None:
     """Test time window restrictions."""
-    # Create a datetime object for the mock hour
-    mock_datetime = datetime(2025, 1, 15, mock_hour, 30, 0, tzinfo=timezone.utc)
-
-    with patch("guard.middleware.SecurityMiddleware._check_time_window") as mock_time_check:
+    with patch(
+        "guard.middleware.SecurityMiddleware._check_time_window"
+    ) as mock_time_check:
         # Mock the time window check directly
         if expected_status == 200:
             mock_time_check.return_value = True
@@ -102,7 +101,7 @@ async def test_suspicious_detection_enabled(advanced_decorator_app: FastAPI) -> 
     """Test that suspicious detection decorator is applied correctly."""
     # Find the route and verify decorator was applied
     for route in advanced_decorator_app.routes:
-        if route.path == "/suspicious-enabled":
+        if isinstance(route, APIRoute) and route.path == "/suspicious-enabled":
             assert hasattr(route.endpoint, "_guard_route_id")
 
             decorator = advanced_decorator_app.state.guard_decorator
@@ -117,7 +116,7 @@ async def test_suspicious_detection_disabled(advanced_decorator_app: FastAPI) ->
     """Test that suspicious detection disabled decorator is applied correctly."""
     # Find the route and verify decorator was applied
     for route in advanced_decorator_app.routes:
-        if route.path == "/suspicious-disabled":
+        if isinstance(route, APIRoute) and route.path == "/suspicious-disabled":
             assert hasattr(route.endpoint, "_guard_route_id")
 
             decorator = advanced_decorator_app.state.guard_decorator
@@ -134,12 +133,16 @@ async def test_suspicious_endpoints_response(advanced_decorator_app: FastAPI) ->
         transport=ASGITransport(app=advanced_decorator_app), base_url="http://test"
     ) as client:
         # Test suspicious enabled endpoint
-        response = await client.get("/suspicious-enabled", headers={"X-Forwarded-For": "8.8.8.8"})
+        response = await client.get(
+            "/suspicious-enabled", headers={"X-Forwarded-For": "8.8.8.8"}
+        )
         assert response.status_code == 200
         assert response.json()["message"] == "Suspicious detection enabled"
 
         # Test suspicious disabled endpoint
-        response = await client.get("/suspicious-disabled", headers={"X-Forwarded-For": "8.8.8.8"})
+        response = await client.get(
+            "/suspicious-disabled", headers={"X-Forwarded-For": "8.8.8.8"}
+        )
         assert response.status_code == 200
         assert response.json()["message"] == "Suspicious detection disabled"
 
@@ -147,8 +150,16 @@ async def test_suspicious_endpoints_response(advanced_decorator_app: FastAPI) ->
 @pytest.mark.parametrize(
     "endpoint,expected_fields,description",
     [
-        ("/form-honeypot", ["bot_trap", "hidden_field"], "Form honeypot should have trap fields configured"),
-        ("/json-honeypot", ["spam_check", "robot_field"], "JSON honeypot should have trap fields configured"),
+        (
+            "/form-honeypot",
+            ["bot_trap", "hidden_field"],
+            "Form honeypot should have trap fields configured",
+        ),
+        (
+            "/json-honeypot",
+            ["spam_check", "robot_field"],
+            "JSON honeypot should have trap fields configured",
+        ),
     ],
 )
 async def test_honeypot_detection_configuration(
@@ -160,7 +171,7 @@ async def test_honeypot_detection_configuration(
     """Test that honeypot detection decorators are configured correctly."""
     # Find the route and verify decorator was applied
     for route in advanced_decorator_app.routes:
-        if route.path == endpoint:
+        if isinstance(route, APIRoute) and route.path == endpoint:
             assert hasattr(route.endpoint, "_guard_route_id")
 
             decorator = advanced_decorator_app.state.guard_decorator
@@ -168,7 +179,9 @@ async def test_honeypot_detection_configuration(
             route_config = decorator.get_route_config(route_id)
 
             assert route_config is not None
-            assert len(route_config.custom_validators) == 1, "Should have one custom validator"
+            assert len(route_config.custom_validators) == 1, (
+                "Should have one custom validator"
+            )
 
             # Verify the validator is a honeypot validator by checking its closure
             validator = route_config.custom_validators[0]
@@ -176,7 +189,9 @@ async def test_honeypot_detection_configuration(
             assert "trap_fields" in validator.__code__.co_freevars
 
 
-async def test_honeypot_detection_basic_functionality(advanced_decorator_app: FastAPI) -> None:
+async def test_honeypot_detection_basic_functionality(
+    advanced_decorator_app: FastAPI,
+) -> None:
     """Test basic honeypot detection functionality - clean requests should pass."""
     async with AsyncClient(
         transport=ASGITransport(app=advanced_decorator_app), base_url="http://test"
@@ -210,13 +225,18 @@ async def test_honeypot_form_detection(security_config: SecurityConfig) -> None:
     honeypot_decorator = decorator.honeypot_detection(["bot_trap"])
     decorated_func = honeypot_decorator(mock_func)
 
-    route_id = decorated_func._guard_route_id
+    route_id = decorated_func._guard_route_id  # type: ignore[attr-defined]
     route_config = decorator.get_route_config(route_id)
+    assert route_config is not None
     validator = route_config.custom_validators[0]
 
     mock_request = AsyncMock()
     mock_request.method = "POST"
-    mock_request.headers.get = lambda key, default="": "application/x-www-form-urlencoded" if key == "content-type" else default
+    mock_request.headers.get = (
+        lambda key, default="": "application/x-www-form-urlencoded"
+        if key == "content-type"
+        else default
+    )
     mock_request.form.return_value = {"bot_trap": "filled"}
 
     result = await validator(mock_request)
@@ -232,13 +252,16 @@ async def test_honeypot_json_exception(security_config: SecurityConfig) -> None:
     honeypot_decorator = decorator.honeypot_detection(["spam_check"])
     decorated_func = honeypot_decorator(mock_func)
 
-    route_id = decorated_func._guard_route_id
+    route_id = decorated_func._guard_route_id  # type: ignore[attr-defined]
     route_config = decorator.get_route_config(route_id)
+    assert route_config is not None
     validator = route_config.custom_validators[0]
 
     mock_request = AsyncMock()
     mock_request.method = "POST"
-    mock_request.headers.get = lambda key, default="": "application/json" if key == "content-type" else default
+    mock_request.headers.get = (
+        lambda key, default="": "application/json" if key == "content-type" else default
+    )
     mock_request.json.side_effect = Exception("JSON error")
 
     result = await validator(mock_request)
@@ -254,13 +277,16 @@ async def test_honeypot_json_detection(security_config: SecurityConfig) -> None:
     honeypot_decorator = decorator.honeypot_detection(["spam_check"])
     decorated_func = honeypot_decorator(mock_func)
 
-    route_id = decorated_func._guard_route_id
+    route_id = decorated_func._guard_route_id  # type: ignore[attr-defined]
     route_config = decorator.get_route_config(route_id)
+    assert route_config is not None
     validator = route_config.custom_validators[0]
 
     mock_request = AsyncMock()
     mock_request.method = "POST"
-    mock_request.headers.get = lambda key, default="": "application/json" if key == "content-type" else default
+    mock_request.headers.get = (
+        lambda key, default="": "application/json" if key == "content-type" else default
+    )
     mock_request.json.return_value = {"spam_check": "filled"}
 
     result = await validator(mock_request)

@@ -18,9 +18,7 @@ async def decorator_app(security_config: SecurityConfig) -> FastAPI:
     """Create FastAPI app with decorator integration using existing security_config."""
     app = FastAPI()
 
-    security_config.trusted_proxies = [
-        "127.0.0.1"
-    ]
+    security_config.trusted_proxies = ["127.0.0.1"]
     security_config.enable_penetration_detection = False
 
     decorator = SecurityDecorator(security_config)

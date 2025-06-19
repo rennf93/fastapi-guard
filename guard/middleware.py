@@ -3,6 +3,7 @@ import logging
 import re
 import time
 from collections.abc import Awaitable, Callable
+from datetime import datetime, timezone
 from ipaddress import ip_address, ip_network
 from typing import Any
 
@@ -524,20 +525,20 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     async def _check_time_window(self, time_restrictions: dict[str, str]) -> bool:
         """Check if current time is within allowed time window."""
         try:
-            from datetime import datetime, timezone
-
             start_time = time_restrictions["start"]
             end_time = time_restrictions["end"]
-            timezone_str = time_restrictions.get("timezone", "UTC")
 
             # TODO: For simplicity, we'll use UTC for now
             # Production would need proper timezone handling
+            # timezone_str = time_restrictions.get("timezone", "UTC")
             current_time = datetime.now(timezone.utc)
             current_hour_minute = current_time.strftime("%H:%M")
 
             # Handle overnight time windows (e.g., 22:00 to 06:00)
             if start_time > end_time:
-                return current_hour_minute >= start_time or current_hour_minute <= end_time
+                return (
+                    current_hour_minute >= start_time or current_hour_minute <= end_time
+                )
             else:
                 return start_time <= current_hour_minute <= end_time
 
