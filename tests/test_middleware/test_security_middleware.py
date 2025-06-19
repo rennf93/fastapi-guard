@@ -373,8 +373,7 @@ async def test_custom_response_modifier_parameterized(
         response.headers["X-Modified"] = "True"
 
         if response.status_code >= 400 and not isinstance(response, JSONResponse):
-            if hasattr(response.body, "decode"):
-                content = response.body.decode()
+            content = bytes(response.body).decode()
 
             return JSONResponse(
                 status_code=response.status_code,
@@ -446,11 +445,11 @@ async def test_custom_response_modifier_parameterized(
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
-            response = await client.get(request_path, headers=request_headers)
+            httpx_response = await client.get(request_path, headers=request_headers)
 
-            assert response.headers.get("X-Modified") == "True"
+            assert httpx_response.headers.get("X-Modified") == "True"
 
-            assert response.status_code == expected_status_code
+            assert httpx_response.status_code == expected_status_code
 
             if expected_status_code >= 400:
                 response = await client.get(request_path, headers=request_headers)
@@ -460,7 +459,7 @@ async def test_custom_response_modifier_parameterized(
 
 @pytest.mark.asyncio
 async def test_memoryview_response_handling() -> None:
-    """Special test for memoryview response handling to cover line 298"""
+    """Special test for memoryview response handling"""
 
     test_body_memoryview = memoryview(b"Test Content")
 
@@ -1579,8 +1578,7 @@ async def test_rate_limiter_init_redis_exception(
 
 @pytest.mark.asyncio
 async def test_ipv6_rate_limiting(
-    security_config_redis: SecurityConfig,
-    clean_rate_limiter: None
+    security_config_redis: SecurityConfig, clean_rate_limiter: None
 ) -> None:
     """
     Test the rate limiting functionality
@@ -1748,8 +1746,7 @@ async def test_mixed_ipv4_ipv6_handling(security_config_redis: SecurityConfig) -
 
 @pytest.mark.asyncio
 async def test_real_ipv6_connection(
-    security_config_redis: SecurityConfig,
-    clean_rate_limiter: None
+    security_config_redis: SecurityConfig, clean_rate_limiter: None
 ) -> None:
     """
     Test with a real IPv6 client connection using direct Request objects.
@@ -1768,7 +1765,7 @@ async def test_real_ipv6_connection(
     async def mock_call_next(request: Request) -> Response:
         return Response("OK", status_code=200)
 
-    async def receive() -> dict[str, str | bytes]:
+    async def receive() -> dict[str, str | bytes | bool]:
         return {"type": "http.request", "body": b"", "more_body": False}
 
     # IPv6 client (whitelisted)
