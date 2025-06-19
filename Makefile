@@ -141,9 +141,8 @@ serve-docs:
 # Lint documentation
 .PHONY: lint-docs
 lint-docs:
-	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "pymarkdownlnt scan -r -e ./.venv -e ./data -e ./guard -e ./tests ."
-	@docker compose down --rmi all --remove-orphans -v
-	@docker system prune -f
+	@uv run pymarkdownlnt scan -r -e ./.venv -e ./.git -e ./.github -e ./data -e ./guard -e ./tests .
+	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Fix documentation
 .PHONY: fix-docs

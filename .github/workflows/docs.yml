@@ -63,7 +63,7 @@ jobs:
 
       - name: Lint documentation
         run: |
-          pymarkdownlnt scan -r -e ./.venv -e ./.git -e ./data -e ./guard -e ./tests .
+          pymarkdownlnt scan -r -e ./.venv -e ./.git -e ./.github -e ./data -e ./guard -e ./tests .
 
       - name: Configure Git user
         run: |
