@@ -1,4 +1,3 @@
-import os
 from unittest.mock import patch
 
 import pytest
@@ -9,8 +8,6 @@ from httpx._transports.asgi import ASGITransport
 from guard import SecurityConfig, SecurityDecorator
 from guard.handlers.cloud_handler import cloud_handler
 from guard.middleware import SecurityMiddleware
-
-IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 
 
 @pytest.fixture
