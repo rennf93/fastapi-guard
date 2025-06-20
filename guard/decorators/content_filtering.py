@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from fastapi import Request, Response
@@ -89,7 +89,7 @@ class ContentFilteringMixin(BaseSecurityMixin):
 
     def custom_validation(
         self,
-        validator: Callable[[Request], Response | None],
+        validator: Callable[[Request], Awaitable[Response | None]],
     ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Add custom validation logic to this route."""
 
