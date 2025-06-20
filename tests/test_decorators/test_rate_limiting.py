@@ -25,11 +25,7 @@ async def rate_limiting_decorator_app(security_config: SecurityConfig) -> FastAP
     async def rate_limited_endpoint() -> dict[str, str]:
         return {"message": "Rate limited endpoint"}
 
-    @decorator.geo_rate_limit({
-        "US": (100, 3600),
-        "CN": (10, 3600),
-        "*": (50, 3600)
-    })
+    @decorator.geo_rate_limit({"US": (100, 3600), "CN": (10, 3600), "*": (50, 3600)})
     @app.get("/geo-rate-limited")
     async def geo_rate_limited_endpoint() -> dict[str, str]:
         return {"message": "Geo rate limited endpoint"}
@@ -87,13 +83,11 @@ async def test_geo_rate_limit_decorator_applied(
             route_id = route.endpoint._guard_route_id
             route_config = decorator.get_route_config(route_id)
 
-            assert route_config is not None, (
-                "geo_rate_limit should have route config"
-            )
+            assert route_config is not None, "geo_rate_limit should have route config"
             expected_limits = "{'US': (100, 3600), 'CN': (10, 3600), '*': (50, 3600)}"
-            assert route_config.required_headers["geo_rate_limits"] == expected_limits, (
-                "geo_rate_limit should store limits in required_headers"
-            )
+            assert (
+                route_config.required_headers["geo_rate_limits"] == expected_limits
+            ), "geo_rate_limit should store limits in required_headers"
 
 
 @pytest.mark.parametrize(

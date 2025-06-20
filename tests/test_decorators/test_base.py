@@ -47,11 +47,15 @@ async def test_base_security_mixin_not_implemented() -> None:
     mock_func = Mock()
 
     # Test _ensure_route_config raises NotImplementedError
-    with pytest.raises(NotImplementedError, match="This mixin must be used with BaseSecurityDecorator"):
+    with pytest.raises(
+        NotImplementedError, match="This mixin must be used with BaseSecurityDecorator"
+    ):
         mixin._ensure_route_config(mock_func)
 
     # Test _apply_route_config raises NotImplementedError
-    with pytest.raises(NotImplementedError, match="This mixin must be used with BaseSecurityDecorator"):
+    with pytest.raises(
+        NotImplementedError, match="This mixin must be used with BaseSecurityDecorator"
+    ):
         mixin._apply_route_config(mock_func)
 
 
@@ -75,7 +79,10 @@ async def test_base_security_decorator(security_config: SecurityConfig) -> None:
     # Test _ensure_route_config creates new config
     route_config = decorator._ensure_route_config(mock_func)
     assert isinstance(route_config, RouteConfig)
-    assert route_config.enable_suspicious_detection == security_config.enable_penetration_detection
+    assert (
+        route_config.enable_suspicious_detection
+        == security_config.enable_penetration_detection
+    )
 
     # Test _ensure_route_config returns existing config
     route_config2 = decorator._ensure_route_config(mock_func)
@@ -127,7 +134,9 @@ async def test_get_route_decorator_config() -> None:
     mock_endpoint._guard_route_id = route_id
 
     # Create a route config for this route
-    route_config = decorator._ensure_route_config(Mock(__module__="test", __qualname__="route"))
+    route_config = decorator._ensure_route_config(
+        Mock(__module__="test", __qualname__="route")
+    )
     decorator._route_configs[route_id] = route_config
 
     result = get_route_decorator_config(mock_request, decorator)
