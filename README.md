@@ -276,10 +276,128 @@ Note: This is only required if you use country filtering (`blocked_countries`, `
 
 ___
 
+Route-Level Security with Decorators
+------------------------------------
+
+FastAPI Guard provides powerful decorators that allow you to apply security controls to individual routes, giving you fine-grained control over your API endpoints.
+
+. Basic Decorator Usage
+--------------------
+
+```python
+from fastapi import FastAPI
+from guard.middleware import SecurityMiddleware
+from guard.models import SecurityConfig
+from guard.decorators import SecurityDecorator
+
+app = FastAPI()
+config = SecurityConfig()
+
+# Create decorator instance
+guard_deco = SecurityDecorator(config)
+
+# Apply decorators to specific routes
+@app.get("/api/public")
+def public_endpoint():
+    return {"data": "public"}
+
+@app.get("/api/limited")
+@guard_deco.rate_limit(requests=10, window=300)  # 10 requests per 5 minutes
+def limited_endpoint():
+    return {"data": "limited"}
+
+@app.get("/api/restricted")
+@guard_deco.require_ip(whitelist=["192.168.1.0/24"])
+@guard_deco.block_countries(["CN", "RU"])
+def restricted_endpoint():
+    return {"data": "restricted"}
+
+# Add global middleware
+app.add_middleware(SecurityMiddleware, config=config)
+
+# Required: Set decorator handler on app state
+app.state.guard_decorator = guard_deco
+```
+
+. Available Decorators
+-------------------
+
+Access Control
+- `@guard_deco.require_ip(whitelist=[], blacklist=[])` - IP address filtering
+- `@guard_deco.block_countries(["CN", "RU"])` - Block specific countries
+- `@guard_deco.allow_countries(["US", "CA"])` - Allow only specific countries
+- `@guard_deco.block_clouds(["AWS", "GCP"])` - Block cloud provider IPs
+
+Rate Limiting
+- `@guard_deco.rate_limit(requests=10, window=60)` - Basic rate limiting
+- `@guard_deco.geo_rate_limit(limits={"US": 100, "default": 50})` - Geographic rate limiting
+
+Authentication & Headers
+- `@guard_deco.require_https()` - Force HTTPS
+- `@guard_deco.require_auth(type="bearer")` - Require authentication
+- `@guard_deco.api_key_auth(header_name="X-API-Key")` - API key authentication
+- `@guard_deco.require_headers({"X-Custom": "required"})` - Require specific headers
+
+Content Filtering
+- `@guard_deco.block_user_agents(["curl", "wget"])` - Block user agent patterns
+- `@guard_deco.content_type_filter(["application/json"])` - Filter content types
+- `@guard_deco.max_request_size(1048576)` - Limit request size (1MB)
+- `@guard_deco.require_referrer(["myapp.com"])` - Require specific referrers
+
+Behavioral Analysis
+- `@guard_deco.usage_monitor(max_calls=50, window=3600, action="ban")` - Monitor endpoint usage
+- `@guard_deco.return_monitor("rare_item", max_occurrences=3, window=86400, action="alert")` - Monitor return patterns
+- `@guard_deco.suspicious_frequency(max_frequency=0.1, window=300, action="log")` - Detect suspicious frequency
+
+Advanced Controls
+- `@guard_deco.time_window("09:00", "17:00", "UTC")` - Time-based access control
+- `@guard_deco.honeypot_detection(trap_fields=["hidden_field"])` - Detect bots using honeypot fields
+- `@guard_deco.bypass(checks=["rate_limit"])` - Bypass specific security checks
+
+. Complex Route Protection
+-----------------------
+
+Combine multiple decorators for comprehensive protection:
+
+```python
+@app.post("/api/admin/sensitive")
+@guard_deco.require_https()                        # Security requirement
+@guard_deco.require_auth(type="bearer")            # Authentication
+@guard_deco.require_ip(whitelist=["10.0.0.0/8"])   # Access control
+@guard_deco.rate_limit(requests=5, window=3600)    # Rate limiting
+@guard_deco.suspicious_detection(enabled=True)     # Monitoring
+def admin_endpoint():
+    return {"status": "admin action"}
+
+@app.get("/api/rewards")
+@guard_deco.usage_monitor(max_calls=50, window=3600, action="ban")
+@guard_deco.return_monitor("rare_item", max_occurrences=3, window=86400, action="ban")
+@guard_deco.block_countries(["CN", "RU", "KP"])
+def rewards_endpoint():
+    # This endpoint is protected against:
+    # - Excessive usage (>50 calls/hour results in ban)
+    # - Suspicious return patterns (>3 rare items/day results in ban)
+    # - Geographic restrictions
+    return {"reward": "rare_item", "value": 1000}
+```
+
+. Decorator Configuration Priority
+-------------------------------
+
+Security settings are applied in the following priority order:
+
+1. Decorator Settings (highest priority)
+2. Global Middleware Settings
+3. Default Settings (lowest priority)
+
+This allows routes to override global settings while maintaining sensible defaults.
+
+___
+
 Advanced Usage
 --------------
 
-Secure Proxy Configuration
+. Secure Proxy Configuration
 ---------------------------
 
 Configure trusted proxies to securely handle X-Forwarded-For headers:
@@ -297,7 +415,7 @@ When `trusted_proxies` is configured, FastAPI Guard will:
 2. Extract the appropriate client IP based on proxy depth
 3. Prevent IP spoofing attacks through header manipulation
 
-Custom Geolocation Handler
+. Custom Geolocation Handler
 ---------------------------
 
 The library implements a handler that uses IPInfo's [IP to Country database](https://ipinfo.io/products/free-ip-database), which provides:
@@ -357,7 +475,7 @@ config = SecurityConfig(
 )
 ```
 
-Custom Request Check
+. Custom Request Check
 --------------------
 
 You can define a custom function to perform additional checks on the request using the `custom_request_check` option.
@@ -375,7 +493,7 @@ config = SecurityConfig(
 )
 ```
 
-Custom Response Modifier
+. Custom Response Modifier
 ------------------------
 
 You can define a custom function to modify the response before it's sent using the `custom_response_modifier` option.
@@ -436,12 +554,12 @@ ___
 Detailed Configuration Options
 ------------------------------
 
-SecurityConfig
+. SecurityConfig
 --------------
 
 The `SecurityConfig` class defines the structure for security configuration, including IP whitelists and blacklists, blocked countries, blocked user agents, rate limiting, automatic IP banning, HTTPS enforcement, custom hooks, CORS settings, and blocking of cloud provider IPs.
 
-Attributes
+. Attributes
 ----------
 
 - **geo_ip_handler**: ```GeoIPHandler``` - Protocol that allows for IP geolocation functionality.
