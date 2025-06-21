@@ -1,7 +1,8 @@
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Request, Response
 
 from guard import SecurityConfig, SecurityDecorator
 from guard.decorators.base import RouteConfig
@@ -34,10 +35,7 @@ async def test_get_endpoint_id_with_route() -> None:
     mock_request = Mock()
     mock_request.scope = {
         "route": Mock(
-            endpoint=Mock(
-                __module__="test_module",
-                __qualname__="test_function"
-            )
+            endpoint=Mock(__module__="test_module", __qualname__="test_function")
         )
     }
     mock_request.method = "GET"
@@ -190,11 +188,15 @@ async def test_check_user_agent_allowed() -> None:
         result = await middleware._check_user_agent_allowed("badbot", mock_route_config)
         assert result is False
 
-        result = await middleware._check_user_agent_allowed("goodbot", mock_route_config)
+        result = await middleware._check_user_agent_allowed(
+            "goodbot", mock_route_config
+        )
         assert result is True
 
     # Test without route config
-    with patch("guard.middleware.is_user_agent_allowed", return_value=False) as mock_global:
+    with patch(
+        "guard.middleware.is_user_agent_allowed", return_value=False
+    ) as mock_global:
         result = await middleware._check_user_agent_allowed("somebot", None)
         assert result is False
         mock_global.assert_called_once()
@@ -277,8 +279,12 @@ async def test_behavioral_rules_without_guard_decorator() -> None:
     mock_route_config.behavior_rules = [BehaviorRule("usage", threshold=5, window=3600)]
 
     # Should not raise any errors and return without processing
-    await middleware._process_decorator_usage_rules(mock_request, "127.0.0.1", mock_route_config)
-    await middleware._process_decorator_return_rules(mock_request, Mock(), "127.0.0.1", mock_route_config)
+    await middleware._process_decorator_usage_rules(
+        mock_request, "127.0.0.1", mock_route_config
+    )
+    await middleware._process_decorator_return_rules(
+        mock_request, Mock(), "127.0.0.1", mock_route_config
+    )
 
 
 async def test_behavioral_usage_rules_with_decorator() -> None:
@@ -294,7 +300,9 @@ async def test_behavioral_usage_rules_with_decorator() -> None:
     middleware.guard_decorator = mock_guard_decorator
 
     mock_request = Mock()
-    mock_request.scope = {"route": Mock(endpoint=Mock(__module__="test", __qualname__="test_func"))}
+    mock_request.scope = {
+        "route": Mock(endpoint=Mock(__module__="test", __qualname__="test_func"))
+    }
     mock_request.method = "GET"
     mock_request.url.path = "/test"
 
@@ -303,22 +311,29 @@ async def test_behavioral_usage_rules_with_decorator() -> None:
     mock_route_config.behavior_rules = [usage_rule]
 
     # Test when threshold not exceeded
-    async def mock_track_usage(*args, **kwargs):
+    async def mock_track_usage(*args: Any, **kwargs: Any) -> bool:
         return False
+
     mock_behavior_tracker.track_endpoint_usage = mock_track_usage
 
-    await middleware._process_decorator_usage_rules(mock_request, "127.0.0.1", mock_route_config)
+    await middleware._process_decorator_usage_rules(
+        mock_request, "127.0.0.1", mock_route_config
+    )
     mock_behavior_tracker.apply_action.assert_not_called()
 
     # Test when threshold exceeded
-    async def mock_track_usage_exceeded(*args, **kwargs):
+    async def mock_track_usage_exceeded(*args: Any, **kwargs: Any) -> bool:
         return True
-    async def mock_apply_action(*args, **kwargs):
+
+    async def mock_apply_action(*args: Any, **kwargs: Any) -> None:
         return None
+
     mock_behavior_tracker.track_endpoint_usage = mock_track_usage_exceeded
     mock_behavior_tracker.apply_action = mock_apply_action
 
-    await middleware._process_decorator_usage_rules(mock_request, "127.0.0.1", mock_route_config)
+    await middleware._process_decorator_usage_rules(
+        mock_request, "127.0.0.1", mock_route_config
+    )
 
 
 async def test_behavioral_return_rules_with_decorator() -> None:
@@ -334,32 +349,43 @@ async def test_behavioral_return_rules_with_decorator() -> None:
     middleware.guard_decorator = mock_guard_decorator
 
     mock_request = Mock()
-    mock_request.scope = {"route": Mock(endpoint=Mock(__module__="test", __qualname__="test_func"))}
+    mock_request.scope = {
+        "route": Mock(endpoint=Mock(__module__="test", __qualname__="test_func"))
+    }
     mock_request.method = "GET"
     mock_request.url.path = "/test"
 
     mock_response = Mock()
     mock_route_config = Mock()
-    return_rule = BehaviorRule("return_pattern", threshold=3, window=3600, pattern="win")
+    return_rule = BehaviorRule(
+        "return_pattern", threshold=3, window=3600, pattern="win"
+    )
     mock_route_config.behavior_rules = [return_rule]
 
     # Test when pattern not detected
-    async def mock_track_pattern(*args, **kwargs):
+    async def mock_track_pattern(*args: Any, **kwargs: Any) -> bool:
         return False
+
     mock_behavior_tracker.track_return_pattern = mock_track_pattern
 
-    await middleware._process_decorator_return_rules(mock_request, mock_response, "127.0.0.1", mock_route_config)
+    await middleware._process_decorator_return_rules(
+        mock_request, mock_response, "127.0.0.1", mock_route_config
+    )
     mock_behavior_tracker.apply_action.assert_not_called()
 
     # Test when pattern detected
-    async def mock_track_pattern_detected(*args, **kwargs):
+    async def mock_track_pattern_detected(*args: Any, **kwargs: Any) -> bool:
         return True
-    async def mock_apply_action(*args, **kwargs):
+
+    async def mock_apply_action(*args: Any, **kwargs: Any) -> None:
         return None
+
     mock_behavior_tracker.track_return_pattern = mock_track_pattern_detected
     mock_behavior_tracker.apply_action = mock_apply_action
 
-    await middleware._process_decorator_return_rules(mock_request, mock_response, "127.0.0.1", mock_route_config)
+    await middleware._process_decorator_return_rules(
+        mock_request, mock_response, "127.0.0.1", mock_route_config
+    )
 
 
 async def test_get_route_decorator_config_no_app() -> None:
@@ -451,10 +477,12 @@ async def test_bypass_all_security_checks() -> None:
     mock_request.url.path = "/test"
     mock_request.headers = {}
 
-    async def mock_call_next(request):
+    async def mock_call_next(request: Request) -> Response:
         return Response("bypassed", status_code=200)
 
-    with patch.object(middleware, "_get_route_decorator_config", return_value=mock_route_config):
+    with patch.object(
+        middleware, "_get_route_decorator_config", return_value=mock_route_config
+    ):
         response = await middleware.dispatch(mock_request, mock_call_next)
         assert response.status_code == 200
 
@@ -479,10 +507,12 @@ async def test_bypass_all_security_checks_with_custom_modifier() -> None:
     mock_request.url.path = "/test"
     mock_request.headers = {}
 
-    async def mock_call_next(request):
+    async def mock_call_next(request: Request) -> Response:
         return Response("bypassed", status_code=200)
 
-    with patch.object(middleware, "_get_route_decorator_config", return_value=mock_route_config):
+    with patch.object(
+        middleware, "_get_route_decorator_config", return_value=mock_route_config
+    ):
         response = await middleware.dispatch(mock_request, mock_call_next)
         assert response.status_code == 202
         assert response.body == b"custom modified"
@@ -497,12 +527,24 @@ async def test_bypass_all_security_checks_with_custom_modifier() -> None:
             "Test route-specific request size limits",
         ),
         (
-            {"allowed_content_types": ["application/json"], "headers": {"content-type": "text/plain"}},
+            {
+                "allowed_content_types": ["application/json"],
+                "headers": {"content-type": "text/plain"},
+            },
             415,
             "Test route-specific content type filtering",
         ),
         (
-            {"custom_validators": [AsyncMock(return_value=Response("Custom validation failed", status_code=400))], "headers": {}},
+            {
+                "custom_validators": [
+                    AsyncMock(
+                        return_value=Response(
+                            "Custom validation failed", status_code=400
+                        )
+                    )
+                ],
+                "headers": {},
+            },
             400,
             "Test custom validator returning a Response object",
         ),
@@ -513,7 +555,9 @@ async def test_bypass_all_security_checks_with_custom_modifier() -> None:
         ),
     ],
 )
-async def test_route_specific_middleware_validations(test_case: dict, expected_status: int, description: str) -> None:
+async def test_route_specific_middleware_validations(
+    test_case: dict, expected_status: int, description: str
+) -> None:
     """Parametrized test for route-specific middleware validation features."""
     app = FastAPI()
     config = SecurityConfig()
@@ -533,10 +577,12 @@ async def test_route_specific_middleware_validations(test_case: dict, expected_s
     mock_request.headers = test_case["headers"]
     mock_request.query_params = {}
 
-    async def mock_call_next(request):
+    async def mock_call_next(request: Request) -> Response:
         return Response("ok", status_code=200)
 
-    with patch.object(middleware, "_get_route_decorator_config", return_value=mock_route_config):
+    with patch.object(
+        middleware, "_get_route_decorator_config", return_value=mock_route_config
+    ):
         with patch("guard.utils.detect_penetration_attempt", return_value=(False, "")):
             response = await middleware.dispatch(mock_request, mock_call_next)
             assert response.status_code == expected_status
@@ -564,12 +610,16 @@ async def test_route_specific_rate_limit_with_redis() -> None:
     mock_request.headers = {}
     mock_request.query_params = {}
 
-    async def mock_call_next(request):
+    async def mock_call_next(request: Request) -> Response:
         return Response("ok", status_code=200)
 
-    with patch.object(middleware, "_get_route_decorator_config", return_value=mock_route_config):
+    with patch.object(
+        middleware, "_get_route_decorator_config", return_value=mock_route_config
+    ):
         with patch.object(RateLimitManager, "initialize_redis") as mock_init_redis:
             with patch.object(RateLimitManager, "check_rate_limit", return_value=None):
-                with patch("guard.utils.detect_penetration_attempt", return_value=(False, "")):
+                with patch(
+                    "guard.utils.detect_penetration_attempt", return_value=(False, "")
+                ):
                     await middleware.dispatch(mock_request, mock_call_next)
                     mock_init_redis.assert_called_once_with(mock_redis_handler)
