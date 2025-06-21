@@ -49,6 +49,13 @@ nav:
       - Geolocation: tutorial/ip-management/geolocation.md
       - Cloud Providers: tutorial/ip-management/cloud-providers.md
       - Rate Limiting: tutorial/ip-management/rate-limiter.md
+    - Security Decorators:
+      - Overview: tutorial/decorators/overview.md
+      - Access Control: tutorial/decorators/access-control.md
+      - Authentication: tutorial/decorators/authentication.md
+      - Rate Limiting: tutorial/decorators/rate-limiting.md
+      - Behavioral Analysis: tutorial/decorators/behavioral.md
+      - Content Filtering: tutorial/decorators/content-filtering.md
     - Security Features:
       - Penetration Detection: tutorial/security/penetration-detection.md
       - Proxy Security: tutorial/security/proxy-security.md
@@ -63,6 +70,8 @@ nav:
   - API Reference:
     - Overview: api/overview.md
     - SecurityMiddleware: api/security-middleware.md
+    - SecurityDecorators: api/decorators.md
+    - BehaviorManager: api/behavior-manager.md
     - RedisManager: api/redis-manager.md
     - IPBanManager: api/ipban-manager.md
     - IPInfoManager: api/ipinfo-manager.md

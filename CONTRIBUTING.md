@@ -1,14 +1,20 @@
-# Contributing to FastAPI Guard
+Contributing to FastAPI Guard
+=============================
 
 Thank you for considering contributing to FastAPI Guard! This document outlines the process for contributing to this Python library and helps ensure a smooth collaboration experience.
 
-## Code of Conduct
+. Code of Conduct
+----------------
 
 This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to the project maintainers.
 
-## How Can I Contribute?
+___
 
-### Reporting Bugs
+How Can I Contribute?
+---------------------
+
+. Reporting Bugs
+--------------
 
 Before creating bug reports, please check the issue tracker to avoid duplicates. When you create a bug report, include as many details as possible:
 
@@ -19,7 +25,8 @@ Before creating bug reports, please check the issue tracker to avoid duplicates.
 - Include logs, error messages, and Python version
 - Specify your environment: OS, Python version, FastAPI version, etc.
 
-### Suggesting Enhancements
+. Suggesting Enhancements
+-----------------------
 
 Enhancement suggestions are tracked as GitHub issues. When creating an enhancement suggestion:
 
@@ -29,7 +36,8 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 - Include examples of how it would be used if applicable
 - List any relevant references or examples from other libraries
 
-### Pull Requests
+. Pull Requests
+-------------
 
 - Fill in the required template
 - Follow the Python style guides (PEP 8)
@@ -38,7 +46,8 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 - Ensure the test suite passes
 - Make sure your code lints (mypy, flake8, black)
 
-## Development Setup
+. Development Setup
+-----------------
 
 1. Fork and clone the repository
 
@@ -54,7 +63,8 @@ make install
 make stop
 ```
 
-## Testing
+. Testing
+-------
 
 The project supports Python 3.10, 3.11, 3.12, and 3.13. Tests are run using Docker containers:
 
@@ -72,7 +82,8 @@ make test-3.11
 make local-test
 ```
 
-## Style Guidelines
+. Style Guidelines
+----------------
 
 This project uses:
 - [Ruff](https://github.com/astral-sh/ruff) for code formatting and linting
@@ -92,7 +103,8 @@ make lint-docs
 make fix-docs
 ```
 
-## Documentation
+. Documentation
+-------------
 
 The documentation for FastAPI Guard is built with MkDocs. To build and view the documentation locally:
 
@@ -102,18 +114,25 @@ make serve-docs
 
 Please update the documentation when making significant changes.
 
-## Versioning
+___
+
+Versioning
+----------
 
 This project follows [Semantic Versioning](https://semver.org/).
 
-## Release Process
+. Release Process
+---------------
 
 1. Update version in `pyproject.toml` and `setup.py`
 2. Update `docs/release-notes.md`
 3. Create a new GitHub release with release notes
 4. CI will automatically publish to PyPI
 
-## Questions?
+___
+
+Questions?
+----------
 
 If you have questions about the development process or need help, feel free to open an issue for discussion.
 

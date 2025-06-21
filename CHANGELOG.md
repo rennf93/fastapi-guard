@@ -3,6 +3,32 @@ Release Notes
 
 ___
 
+v3.0.0 (2025-06-21)
+-------------------
+
+New Features (v3.0.0)
+------------
+
+- **Security Decorators**: Added comprehensive route-level security decorator system
+  - `SecurityDecorator` class combining all security capabilities
+  - Access control decorators for IP filtering, geographic restrictions, and cloud provider blocking
+  - Authentication decorators for HTTPS enforcement, auth requirements, and API key validation
+  - Rate limiting decorators with custom limits and geographic rate limiting
+  - Behavioral analysis decorators for usage monitoring, return pattern detection, and frequency analysis
+  - Content filtering decorators for content type validation, size limits, and user agent blocking
+  - Advanced decorators for time windows, suspicious detection, and honeypot detection
+  - Route-specific configuration that can override global middleware settings
+  - Seamless integration with existing SecurityMiddleware
+- **Behavior Manager**: Added behavioral analysis and monitoring system
+  - `BehaviorTracker` for tracking and analyzing user behavior patterns
+  - `BehaviorRule` for defining behavioral analysis rules
+  - Support for endpoint usage tracking, return pattern analysis, and frequency detection
+  - Multiple pattern formats including JSON paths, regex, and status codes
+  - Automated actions (ban, alert, log, throttle) based on behavioral thresholds
+  - Redis integration for distributed behavioral tracking
+
+___
+
 v2.1.3 (2025-06-18)
 -------------------
 
