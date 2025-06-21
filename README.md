@@ -405,8 +405,8 @@ Configure trusted proxies to securely handle X-Forwarded-For headers:
 ```python
 config = SecurityConfig(
     trusted_proxies=["10.0.0.1", "192.168.1.0/24"],  # List of trusted proxy IPs or CIDR ranges
-    trusted_proxy_depth=1,  # How many proxies to expect in chain
-    trust_x_forwarded_proto=True,  # Whether to trust X-Forwarded-Proto for HTTPS detection
+    trusted_proxy_depth=1,                           # How many proxies to expect in chain
+    trust_x_forwarded_proto=True,                    # Whether to trust X-Forwarded-Proto for HTTPS detection (default: True)
 )
 ```
 
@@ -433,7 +433,7 @@ from guard.protocols.geoip_handler import GeoIPHandler
 
 config = SecurityConfig(
     geo_ip_handler=GeoIPHandler,
-    blocked_countries=["AR", "IT"],  # Block specific countries using ISO 3166-1 alpha-2 codes
+    blocked_countries=["AR", "IT"],   # Block specific countries using ISO 3166-1 alpha-2 codes
     whitelist_countries=["US", "CA"]  # Optional: Only allow specific countries
 )
 ```

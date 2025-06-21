@@ -65,6 +65,7 @@ jobs:
           pip install mike
           pip install pymarkdownlnt
           pip install yq
+          pip install -e .
 
       - name: Lint documentation
         run: |
