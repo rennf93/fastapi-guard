@@ -6,17 +6,17 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Implement automatic and manual IP banning in FastAPI applications using FastAPI Guard's IPBanManager">
+        <meta name="description" content="Learn how to use advanced security decorators for time-based access, honeypot detection, and suspicious pattern control.">
       
       
       
-        <link rel="canonical" href="https://rennf93.github.io/fastapi-guard/latest/3.0.0/tutorial/ip-management/banning/">
+        <link rel="canonical" href="https://rennf93.github.io/fastapi-guard/latest/3.0.0/tutorial/decorators/advanced/">
       
       
-        <link rel="prev" href="../../first-steps/">
+        <link rel="prev" href="../content-filtering/">
       
       
-        <link rel="next" href="../geolocation/">
+        <link rel="next" href="../../security/penetration-detection/">
       
       
       <link rel="icon" href="../../../assets/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>IP Banning - FastAPI Guard - FastAPI Guard</title>
+        <title>Advanced Security Decorators - FastAPI Guard - FastAPI Guard</title>
       
     
     
@@ -90,7 +90,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#ip-banning" class="md-skip">
+        <a href="#advanced-security-decorators" class="md-skip">
           Skip to content
         </a>
       
@@ -127,7 +127,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              IP Banning - FastAPI Guard
+              Advanced Security Decorators - FastAPI Guard
             
           </span>
         </div>
@@ -543,8 +543,6 @@
                 
   
   
-    
-  
   
   
     
@@ -570,11 +568,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
         
           
           <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="">
@@ -590,7 +588,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_2">
             <span class="md-nav__icon md-icon"></span>
             IP Management
@@ -601,32 +599,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    IP Banning
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../ip-management/banning/" class="md-nav__link">
         
   
   
@@ -637,62 +613,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#automatic-ip-banning" class="md-nav__link">
-    <span class="md-ellipsis">
-      Automatic IP Banning
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#manual-ip-banning" class="md-nav__link">
-    <span class="md-ellipsis">
-      Manual IP Banning
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#checking-ban-status" class="md-nav__link">
-    <span class="md-ellipsis">
-      Checking Ban Status
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#reset-all-bans" class="md-nav__link">
-    <span class="md-ellipsis">
-      Reset All Bans
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -705,7 +625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../geolocation/" class="md-nav__link">
+      <a href="../../ip-management/geolocation/" class="md-nav__link">
         
   
   
@@ -728,7 +648,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cloud-providers/" class="md-nav__link">
+      <a href="../../ip-management/cloud-providers/" class="md-nav__link">
         
   
   
@@ -751,7 +671,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rate-limiter/" class="md-nav__link">
+      <a href="../../ip-management/rate-limiter/" class="md-nav__link">
         
   
   
@@ -779,6 +699,8 @@
                 
   
   
+    
+  
   
   
     
@@ -810,11 +732,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" checked>
         
           
           <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="">
@@ -830,7 +752,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_3">
             <span class="md-nav__icon md-icon"></span>
             Security Decorators
@@ -844,7 +766,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../decorators/overview/" class="md-nav__link">
+      <a href="../overview/" class="md-nav__link">
         
   
   
@@ -867,7 +789,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../decorators/access-control/" class="md-nav__link">
+      <a href="../access-control/" class="md-nav__link">
         
   
   
@@ -890,7 +812,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../decorators/authentication/" class="md-nav__link">
+      <a href="../authentication/" class="md-nav__link">
         
   
   
@@ -913,7 +835,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../decorators/rate-limiting/" class="md-nav__link">
+      <a href="../rate-limiting/" class="md-nav__link">
         
   
   
@@ -936,7 +858,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../decorators/behavioral/" class="md-nav__link">
+      <a href="../behavioral/" class="md-nav__link">
         
   
   
@@ -959,7 +881,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../decorators/content-filtering/" class="md-nav__link">
+      <a href="../content-filtering/" class="md-nav__link">
         
   
   
@@ -979,10 +901,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../decorators/advanced/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Advanced Decorators
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -993,6 +937,197 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#time-based-access-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      Time-Based Access Control
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#restrict-to-business-hours" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Restrict to Business Hours
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#maintenance-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Maintenance Window
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#honeypot-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Honeypot Protection
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-honeypot" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Basic Honeypot
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multiple-honeypot-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Multiple Honeypot Fields
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#json-payload-honeypot" class="md-nav__link">
+    <span class="md-ellipsis">
+      . JSON Payload Honeypot
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#suspicious-pattern-detection-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      Suspicious Pattern Detection Control
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#disable-detection-for-a-specific-route" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Disable Detection for a Specific Route
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#explicitly-enable-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Explicitly Enable Detection
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#combining-advanced-decorators" class="md-nav__link">
+    <span class="md-ellipsis">
+      Combining Advanced Decorators
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#high-security-endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      . High-Security Endpoint
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Error Handling
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-error-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Custom Error Messages
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      Best Practices
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-timezones-explicitly" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Use Timezones Explicitly
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hide-honeypot-fields-effectively" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Hide Honeypot Fields Effectively
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#be-strategic-with-detection-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Be Strategic with Detection Control
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next Steps
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1797,36 +1932,171 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#automatic-ip-banning" class="md-nav__link">
+  <a href="#time-based-access-control" class="md-nav__link">
     <span class="md-ellipsis">
-      Automatic IP Banning
+      Time-Based Access Control
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#manual-ip-banning" class="md-nav__link">
+  <a href="#restrict-to-business-hours" class="md-nav__link">
     <span class="md-ellipsis">
-      Manual IP Banning
+      . Restrict to Business Hours
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#checking-ban-status" class="md-nav__link">
+  <a href="#maintenance-window" class="md-nav__link">
     <span class="md-ellipsis">
-      Checking Ban Status
+      . Maintenance Window
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#reset-all-bans" class="md-nav__link">
+  <a href="#honeypot-protection" class="md-nav__link">
     <span class="md-ellipsis">
-      Reset All Bans
+      Honeypot Protection
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-honeypot" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Basic Honeypot
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multiple-honeypot-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Multiple Honeypot Fields
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#json-payload-honeypot" class="md-nav__link">
+    <span class="md-ellipsis">
+      . JSON Payload Honeypot
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#suspicious-pattern-detection-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      Suspicious Pattern Detection Control
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#disable-detection-for-a-specific-route" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Disable Detection for a Specific Route
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#explicitly-enable-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Explicitly Enable Detection
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#combining-advanced-decorators" class="md-nav__link">
+    <span class="md-ellipsis">
+      Combining Advanced Decorators
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#high-security-endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      . High-Security Endpoint
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Error Handling
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-error-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Custom Error Messages
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      Best Practices
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-timezones-explicitly" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Use Timezones Explicitly
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hide-honeypot-fields-effectively" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Hide Honeypot Fields Effectively
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#be-strategic-with-detection-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      . Be Strategic with Detection Control
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next Steps
     </span>
   </a>
   
@@ -1851,42 +2121,123 @@
   
 
 
-<h1 id="ip-banning">IP Banning<a class="headerlink" href="#ip-banning" title="Permanent link">&para;</a></h1>
-<p>FastAPI Guard provides powerful IP banning capabilities through the <code>IPBanManager</code>.</p>
+<h1 id="advanced-security-decorators">Advanced Security Decorators<a class="headerlink" href="#advanced-security-decorators" title="Permanent link">&para;</a></h1>
+<p>Advanced security decorators offer sophisticated controls for fine-tuning your application's security posture. These decorators allow you to implement time-based access rules, set up honeypots to trap malicious bots, and control suspicious pattern detection on a per-route basis.</p>
 <hr />
-<h2 id="automatic-ip-banning">Automatic IP Banning<a class="headerlink" href="#automatic-ip-banning" title="Permanent link">&para;</a></h2>
-<p>Configure automatic IP banning based on suspicious activity:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">auto_ban_threshold</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>  <span class="c1"># Ban after 5 suspicious requests</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">auto_ban_duration</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>  <span class="c1"># Ban duration in seconds (1 hour)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">)</span>
+<h2 id="time-based-access-control">Time-Based Access Control<a class="headerlink" href="#time-based-access-control" title="Permanent link">&para;</a></h2>
+<p>Restrict access to endpoints based on specific time windows. This is useful for APIs that should only be available during business hours or maintenance periods.</p>
+<h2 id="restrict-to-business-hours">. Restrict to Business Hours<a class="headerlink" href="#restrict-to-business-hours" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityDecorator</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">guard_deco</span> <span class="o">=</span> <span class="n">SecurityDecorator</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/api/reports&quot;</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">time_window</span><span class="p">(</span><span class="s2">&quot;09:00&quot;</span><span class="p">,</span> <span class="s2">&quot;17:00&quot;</span><span class="p">,</span> <span class="s2">&quot;EST&quot;</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">generate_reports</span><span class="p">():</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Reports are only available during business hours (9 AM - 5 PM EST)&quot;</span><span class="p">}</span>
+</span></code></pre></div>
+<h2 id="maintenance-window">. Maintenance Window<a class="headerlink" href="#maintenance-window" title="Permanent link">&para;</a></h2>
+<p>Only allow access during a specific maintenance window.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/api/maintenance&quot;</span><span class="p">)</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">time_window</span><span class="p">(</span><span class="s2">&quot;01:00&quot;</span><span class="p">,</span> <span class="s2">&quot;03:00&quot;</span><span class="p">,</span> <span class="s2">&quot;UTC&quot;</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">perform_maintenance</span><span class="p">():</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;Maintenance operations running&quot;</span><span class="p">}</span>
 </span></code></pre></div>
 <hr />
-<h2 id="manual-ip-banning">Manual IP Banning<a class="headerlink" href="#manual-ip-banning" title="Permanent link">&para;</a></h2>
-<p>You can also manually ban IPs using the <code>IPBanManager</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.handlers.ipban_handler</span><span class="w"> </span><span class="kn">import</span> <span class="n">ip_ban_manager</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/admin/ban/</span><span class="si">{ip}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ban_ip</span><span class="p">(</span><span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3600</span><span class="p">):</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="k">await</span> <span class="n">ip_ban_manager</span><span class="o">.</span><span class="n">ban_ip</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;IP </span><span class="si">{</span><span class="n">ip</span><span class="si">}</span><span class="s2"> banned for </span><span class="si">{</span><span class="n">duration</span><span class="si">}</span><span class="s2"> seconds&quot;</span><span class="p">}</span>
+<h2 id="honeypot-protection">Honeypot Protection<a class="headerlink" href="#honeypot-protection" title="Permanent link">&para;</a></h2>
+<p>Set up "honeypot" fields in your forms or JSON payloads to detect and block bots. These fields are hidden from human users but are often filled out by automated scripts.</p>
+<h2 id="basic-honeypot">. Basic Honeypot<a class="headerlink" href="#basic-honeypot" title="Permanent link">&para;</a></h2>
+<p>Add a honeypot field to a registration form. If a bot fills it, access is denied.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/register&quot;</span><span class="p">)</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">honeypot_detection</span><span class="p">(</span><span class="n">trap_fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;website_url&quot;</span><span class="p">])</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">register_user</span><span class="p">(</span><span class="n">form_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="c1"># This field should be hidden via CSS for real users</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;User registered successfully&quot;</span><span class="p">}</span>
+</span></code></pre></div>
+<p><em>In your frontend, you would hide the <code>website_url</code> field, for example, with <code>style="display:none"</code>.</em></p>
+<h2 id="multiple-honeypot-fields">. Multiple Honeypot Fields<a class="headerlink" href="#multiple-honeypot-fields" title="Permanent link">&para;</a></h2>
+<p>Use multiple fields to increase the chances of trapping a bot.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/contact&quot;</span><span class="p">)</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">honeypot_detection</span><span class="p">(</span><span class="n">trap_fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;comments&quot;</span><span class="p">,</span> <span class="s2">&quot;phone_number_alt&quot;</span><span class="p">])</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">contact_form</span><span class="p">(</span><span class="n">form_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;Message sent&quot;</span><span class="p">}</span>
+</span></code></pre></div>
+<h2 id="json-payload-honeypot">. JSON Payload Honeypot<a class="headerlink" href="#json-payload-honeypot" title="Permanent link">&para;</a></h2>
+<p>Honeypots also work with JSON request bodies.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/api/subscribe&quot;</span><span class="p">)</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">honeypot_detection</span><span class="p">(</span><span class="n">trap_fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;user_nickname&quot;</span><span class="p">])</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">subscribe_newsletter</span><span class="p">(</span><span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Subscribed successfully&quot;</span><span class="p">}</span>
 </span></code></pre></div>
 <hr />
-<h2 id="checking-ban-status">Checking Ban Status<a class="headerlink" href="#checking-ban-status" title="Permanent link">&para;</a></h2>
-<p>Check if an IP is currently banned:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/admin/check/</span><span class="si">{ip}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">check_ban</span><span class="p">(</span><span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">is_banned</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ip_ban_manager</span><span class="o">.</span><span class="n">is_ip_banned</span><span class="p">(</span><span class="n">ip</span><span class="p">)</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;ip&quot;</span><span class="p">:</span> <span class="n">ip</span><span class="p">,</span> <span class="s2">&quot;banned&quot;</span><span class="p">:</span> <span class="n">is_banned</span><span class="p">}</span>
+<h2 id="suspicious-pattern-detection-control">Suspicious Pattern Detection Control<a class="headerlink" href="#suspicious-pattern-detection-control" title="Permanent link">&para;</a></h2>
+<p>Globally, FastAPI Guard may be configured to detect suspicious patterns in requests. This decorator allows you to override that setting for specific endpoints where the global rules may not be appropriate.</p>
+<h2 id="disable-detection-for-a-specific-route">. Disable Detection for a Specific Route<a class="headerlink" href="#disable-detection-for-a-specific-route" title="Permanent link">&para;</a></h2>
+<p>If an endpoint accepts data that might trigger false positives (e.g., code snippets, complex user-generated content), you can disable suspicious pattern detection for it.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/api/code-submission&quot;</span><span class="p">)</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">suspicious_detection</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">submit_code</span><span class="p">(</span><span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="c1"># This endpoint is safe from pattern detection false positives</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;Code submitted for review&quot;</span><span class="p">}</span>
+</span></code></pre></div>
+<h2 id="explicitly-enable-detection">. Explicitly Enable Detection<a class="headerlink" href="#explicitly-enable-detection" title="Permanent link">&para;</a></h2>
+<p>While detection is often enabled by default, you can use this decorator to make it explicit, improving code readability.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/api/search&quot;</span><span class="p">)</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">suspicious_detection</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="s2">&quot;Search results for your query&quot;</span><span class="p">}</span>
 </span></code></pre></div>
 <hr />
-<h2 id="reset-all-bans">Reset All Bans<a class="headerlink" href="#reset-all-bans" title="Permanent link">&para;</a></h2>
-<p>Clear all active IP bans:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/admin/reset&quot;</span><span class="p">)</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reset_bans</span><span class="p">():</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="k">await</span> <span class="n">ip_ban_manager</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;All IP bans cleared&quot;</span><span class="p">}</span>
+<h2 id="combining-advanced-decorators">Combining Advanced Decorators<a class="headerlink" href="#combining-advanced-decorators" title="Permanent link">&para;</a></h2>
+<p>You can stack advanced decorators with each other and with other security decorators for robust, layered security.</p>
+<h2 id="high-security-endpoint">. High-Security Endpoint<a class="headerlink" href="#high-security-endpoint" title="Permanent link">&para;</a></h2>
+<p>This endpoint is only accessible during specific hours and is protected by a honeypot.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/api/admin/config&quot;</span><span class="p">)</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">time_window</span><span class="p">(</span><span class="s2">&quot;10:00&quot;</span><span class="p">,</span> <span class="s2">&quot;16:00&quot;</span><span class="p">,</span> <span class="s2">&quot;UTC&quot;</span><span class="p">)</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">honeypot_detection</span><span class="p">(</span><span class="n">trap_fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;admin_email_confirm&quot;</span><span class="p">])</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">require_auth</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;bearer&quot;</span><span class="p">)</span> <span class="c1"># From authentication decorators</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">update_admin_config</span><span class="p">(</span><span class="n">config_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;Configuration updated&quot;</span><span class="p">}</span>
 </span></code></pre></div>
+<hr />
+<h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
+<p>Advanced decorators integrate with the middleware's error handling:</p>
+<ul>
+<li><strong>403 Forbidden</strong>:</li>
+<li>When a request is outside the allowed <code>time_window</code>.</li>
+<li>When a <code>honeypot_detection</code> field is filled.</li>
+</ul>
+<h2 id="custom-error-messages">. Custom Error Messages<a class="headerlink" href="#custom-error-messages" title="Permanent link">&para;</a></h2>
+<p>You can configure custom error messages in the <code>SecurityConfig</code>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">custom_error_responses</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>        <span class="mi">403</span><span class="p">:</span> <span class="s2">&quot;Access denied. Please check access times and ensure you are not a bot.&quot;</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="p">}</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="p">)</span>
+</span></code></pre></div>
+<hr />
+<h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
+<h2 id="use-timezones-explicitly">. Use Timezones Explicitly<a class="headerlink" href="#use-timezones-explicitly" title="Permanent link">&para;</a></h2>
+<p>Always specify the timezone in <code>time_window</code> to avoid ambiguity, especially for applications serving a global user base.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Good: Explicit timezone</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">time_window</span><span class="p">(</span><span class="s2">&quot;09:00&quot;</span><span class="p">,</span> <span class="s2">&quot;17:00&quot;</span><span class="p">,</span> <span class="s2">&quot;America/New_York&quot;</span><span class="p">)</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># Avoid: Relying on default UTC if your users are in different timezones</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># @guard_deco.time_window(&quot;09:00&quot;, &quot;17:00&quot;)</span>
+</span></code></pre></div>
+<h2 id="hide-honeypot-fields-effectively">. Hide Honeypot Fields Effectively<a class="headerlink" href="#hide-honeypot-fields-effectively" title="Permanent link">&para;</a></h2>
+<p>Ensure honeypot fields are truly hidden from human users using CSS or other frontend techniques. A visible honeypot field can confuse users and defeat its purpose.</p>
+<h2 id="be-strategic-with-detection-control">. Be Strategic with Detection Control<a class="headerlink" href="#be-strategic-with-detection-control" title="Permanent link">&para;</a></h2>
+<p>Only disable <code>suspicious_detection</code> when necessary. Disabling it globally or on many endpoints can weaken your application's defenses against penetration attempts.</p>
+<hr />
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<p>Now that you've learned about advanced decorators, you can explore other decorators to build a comprehensive security strategy:</p>
+<ul>
+<li><strong><a href="../behavioral/">Behavioral Analysis Decorators</a></strong> - Monitor usage patterns and detect anomalies.</li>
+<li><strong><a href="../content-filtering/">Content Filtering</a></strong> - Validate and sanitize request data.</li>
+<li><strong><a href="../rate-limiting/">Rate Limiting Decorators</a></strong> - Protect against brute-force and denial-of-service attacks.</li>
+</ul>
+<p>For complete API reference, see the <a href="../../../api/decorators/#advancedmixin">Advanced Decorators API Documentation</a>.</p>
 
 
 
