@@ -3,10 +3,24 @@ name = "fastapi_guard"
 version = "3.0.0"
 description = "A security library for FastAPI to control IPs, log requests, and detect penetration attempts."
 authors = [
-    {name = "Renzo Franceschini", email = "rennf93@gmail.com"}
+    {name = "Renzo Franceschini", email = "rennf93@users.noreply.github.com"}
 ]
 readme = "README.md"
+license = {text = "MIT"}
+homepage = "https://github.com/rennf93/fastapi-guard"
 requires-python = ">=3.10,<3.14"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
 dependencies = [
     "aiohttp",
     "cachetools",
