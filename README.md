@@ -52,9 +52,11 @@
 Documentation
 =============
 
+🎮 **[Join our Discord Community](https://discord.gg/wdEJxcJV)** - Connect with other developers!
+
 📚 **[Documentation](https://rennf93.github.io/fastapi-guard)** - Full technical documentation and deep dive into its inner workings.
 
-🎮 **[Live Playground](https://playground.fastapi-guard.com)** - Testing playground for FastAPI Guard's features in action.
+🕹️ **[Live Playground](https://playground.fastapi-guard.com)** - Testing playground for FastAPI Guard's features in action.
 
 ___
 
