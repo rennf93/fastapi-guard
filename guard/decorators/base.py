@@ -1,10 +1,14 @@
 from collections.abc import Callable
-from typing import Any
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any
 
 from fastapi import Request
 
 from guard.handlers.behavior_handler import BehaviorRule, BehaviorTracker
 from guard.models import SecurityConfig
+
+if TYPE_CHECKING:
+    from guard_agent import SecurityEvent
 
 
 class RouteConfig:
@@ -16,7 +20,7 @@ class RouteConfig:
         self.ip_whitelist: list[str] | None = None
         self.ip_blacklist: list[str] | None = None
         self.blocked_countries: list[str] | None = None
-        self.allowed_countries: list[str] | None = None
+        self.whitelist_countries: list[str] | None = None
         self.bypassed_checks: set[str] = set()
         self.require_https: bool = False
         self.auth_required: str | None = None
@@ -55,6 +59,7 @@ class BaseSecurityDecorator:
         self.config = config
         self._route_configs: dict[str, RouteConfig] = {}
         self.behavior_tracker = BehaviorTracker(config)
+        self.agent_handler: Any = None
 
     def get_route_config(self, route_id: str) -> RouteConfig | None:
         """Get security config for a specific route."""
@@ -86,6 +91,128 @@ class BaseSecurityDecorator:
         """Initialize behavioral tracking with optional Redis backend."""
         if redis_handler:
             await self.behavior_tracker.initialize_redis(redis_handler)
+
+    async def initialize_agent(self, agent_handler: Any) -> None:
+        """Initialize agent integration for decorator-based security."""
+        self.agent_handler = agent_handler
+        # Initialize behavior tracker with agent
+        await self.behavior_tracker.initialize_agent(agent_handler)
+
+    async def send_decorator_event(
+        self,
+        event_type: str,
+        request: Request,
+        action_taken: str,
+        reason: str,
+        decorator_type: str,
+        **kwargs: Any,
+    ) -> None:
+        """Send decorator-specific security events to agent."""
+        if not self.agent_handler:
+            return
+
+        try:
+            # Extract client IP using existing utility
+            from guard.utils import extract_client_ip
+
+            client_ip = await extract_client_ip(
+                request, self.config, self.agent_handler
+            )
+
+            event = SecurityEvent(
+                timestamp=datetime.now(timezone.utc),
+                event_type=event_type,
+                ip_address=client_ip,
+                country=None,  # Will be enriched by geo handler if available
+                user_agent=request.headers.get("User-Agent"),
+                action_taken=action_taken,
+                reason=reason,
+                endpoint=str(request.url.path),
+                method=request.method,
+                decorator_type=decorator_type,
+                metadata=kwargs,
+            )
+
+            await self.agent_handler.send_event(event)
+
+        except Exception as e:
+            # Don't let agent errors break decorator functionality
+            import logging
+
+            logging.getLogger(__name__).error(
+                f"Failed to send decorator event to agent: {e}"
+            )
+
+    async def send_access_denied_event(
+        self,
+        request: Request,
+        reason: str,
+        decorator_type: str,
+        **metadata: Any,
+    ) -> None:
+        """Helper method for access denied events."""
+        await self.send_decorator_event(
+            event_type="access_denied",
+            request=request,
+            action_taken="blocked",
+            reason=reason,
+            decorator_type=decorator_type,
+            **metadata,
+        )
+
+    async def send_authentication_failed_event(
+        self,
+        request: Request,
+        reason: str,
+        auth_type: str,
+        **metadata: Any,
+    ) -> None:
+        """Helper method for authentication failure events."""
+        await self.send_decorator_event(
+            event_type="authentication_failed",
+            request=request,
+            action_taken="blocked",
+            reason=reason,
+            decorator_type="authentication",
+            auth_type=auth_type,
+            **metadata,
+        )
+
+    async def send_rate_limit_event(
+        self,
+        request: Request,
+        limit: int,
+        window: int,
+        **metadata: Any,
+    ) -> None:
+        """Helper method for rate limit events."""
+        await self.send_decorator_event(
+            event_type="rate_limited",
+            request=request,
+            action_taken="blocked",
+            reason=f"Rate limit exceeded: {limit} requests per {window}s",
+            decorator_type="rate_limiting",
+            limit=limit,
+            window=window,
+            **metadata,
+        )
+
+    async def send_decorator_violation_event(
+        self,
+        request: Request,
+        violation_type: str,
+        reason: str,
+        **metadata: Any,
+    ) -> None:
+        """Helper method for general decorator violations."""
+        await self.send_decorator_event(
+            event_type="decorator_violation",
+            request=request,
+            action_taken="blocked",
+            reason=reason,
+            decorator_type=violation_type,
+            **metadata,
+        )
 
 
 # Extract route config from FastAPI route

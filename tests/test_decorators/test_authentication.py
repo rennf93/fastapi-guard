@@ -260,16 +260,24 @@ async def test_authentication_endpoints_response(auth_decorator_app: FastAPI) ->
             assert response.status_code == 200
             assert response.json()["message"] == "HTTPS required"
 
-        # Test auth default endpoint
+        # Test auth default endpoint with Bearer token
         response = await client.get(
-            "/auth-default", headers={"X-Forwarded-For": "8.8.8.8"}
+            "/auth-default",
+            headers={
+                "X-Forwarded-For": "8.8.8.8",
+                "Authorization": "Bearer test-token",
+            },
         )
         assert response.status_code == 200
         assert response.json()["message"] == "Auth required (default)"
 
-        # Test auth basic endpoint
+        # Test auth basic endpoint with Basic auth
         response = await client.get(
-            "/auth-basic", headers={"X-Forwarded-For": "8.8.8.8"}
+            "/auth-basic",
+            headers={
+                "X-Forwarded-For": "8.8.8.8",
+                "Authorization": "Basic dGVzdDp0ZXN0",  # test:test in base64
+            },
         )
         assert response.status_code == 200
         assert response.json()["message"] == "Basic auth required"
@@ -357,3 +365,45 @@ async def test_authentication_decorators_unit(security_config: SecurityConfig) -
     assert route_config6 is not None
     assert route_config6.required_headers["X-Test"] == "value"
     assert route_config6.required_headers["X-Other"] == "required"
+
+
+async def test_authentication_failures_blocked(auth_decorator_app: FastAPI) -> None:
+    """Test that authentication failures are properly blocked and logged."""
+    async with AsyncClient(
+        transport=ASGITransport(app=auth_decorator_app), base_url="http://test"
+    ) as client:
+        # Test auth default endpoint without Bearer token
+        response = await client.get(
+            "/auth-default", headers={"X-Forwarded-For": "8.8.8.8"}
+        )
+        assert response.status_code == 401
+        assert "Authentication required" in response.text
+
+        # Test auth default endpoint with invalid Bearer token format
+        response = await client.get(
+            "/auth-default",
+            headers={
+                "X-Forwarded-For": "8.8.8.8",
+                "Authorization": "Invalid token-format",
+            },
+        )
+        assert response.status_code == 401
+        assert "Authentication required" in response.text
+
+        # Test auth basic endpoint without Basic auth
+        response = await client.get(
+            "/auth-basic", headers={"X-Forwarded-For": "8.8.8.8"}
+        )
+        assert response.status_code == 401
+        assert "Authentication required" in response.text
+
+        # Test auth basic endpoint with invalid Basic auth format
+        response = await client.get(
+            "/auth-basic",
+            headers={
+                "X-Forwarded-For": "8.8.8.8",
+                "Authorization": "Bearer wrong-type",
+            },
+        )
+        assert response.status_code == 401
+        assert "Authentication required" in response.text

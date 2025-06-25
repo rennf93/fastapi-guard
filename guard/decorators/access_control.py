@@ -43,7 +43,7 @@ class AccessControlMixin(BaseSecurityMixin):
 
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             route_config = self._ensure_route_config(func)
-            route_config.allowed_countries = countries
+            route_config.whitelist_countries = countries
             return self._apply_route_config(func)
 
         return decorator

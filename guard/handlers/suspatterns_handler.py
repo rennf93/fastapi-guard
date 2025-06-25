@@ -1,5 +1,9 @@
 import re
-from typing import Any
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from guard_agent import SecurityEvent
 
 
 class SusPatternsManager:
@@ -115,6 +119,7 @@ class SusPatternsManager:
     compiled_patterns: list[re.Pattern]
     compiled_custom_patterns: set[re.Pattern]
     redis_handler: Any = None
+    agent_handler: Any = None
 
     def __new__(cls: type["SusPatternsManager"]) -> "SusPatternsManager":
         """
@@ -133,6 +138,7 @@ class SusPatternsManager:
             ]
             cls._instance.compiled_custom_patterns = set()
             cls._instance.redis_handler = None
+            cls._instance.agent_handler = None
         return cls._instance
 
     async def initialize_redis(self, redis_handler: Any) -> None:
@@ -145,6 +151,76 @@ class SusPatternsManager:
                 for pattern in patterns:
                     if pattern not in self.custom_patterns:
                         await self.add_pattern(pattern, custom=True)
+
+    async def initialize_agent(self, agent_handler: Any) -> None:
+        """Initialize agent integration."""
+        self.agent_handler = agent_handler
+
+    async def _send_pattern_event(
+        self,
+        event_type: str,
+        ip_address: str,
+        action_taken: str,
+        reason: str,
+        **kwargs: Any,
+    ) -> None:
+        """Send pattern detection events to agent."""
+        if not self.agent_handler:
+            return
+
+        try:
+            event = SecurityEvent(
+                timestamp=datetime.now(timezone.utc),
+                event_type=event_type,
+                ip_address=ip_address,
+                action_taken=action_taken,
+                reason=reason,
+                metadata=kwargs,
+            )
+            await self.agent_handler.send_event(event)
+        except Exception as e:
+            # Don't let agent errors break pattern detection
+            import logging
+
+            logging.getLogger(__name__).error(
+                f"Failed to send pattern event to agent: {e}"
+            )
+
+    async def detect_pattern_match(
+        self, content: str, ip_address: str, context: str = "unknown"
+    ) -> tuple[bool, str | None]:
+        """
+        Detect if content matches any suspicious patterns and send agent events.
+
+        Args:
+            content:
+                Content to check against patterns
+            ip_address:
+                IP address of the request
+            context:
+                Context where the pattern was found
+                (e.g., "query_param", "header", "body")
+
+        Returns:
+            Tuple of (pattern_detected, matched_pattern)
+        """
+        all_patterns = await self.get_all_compiled_patterns()
+
+        for pattern in all_patterns:
+            if pattern.search(content):
+                # Send pattern detection event to agent
+                await self._send_pattern_event(
+                    event_type="pattern_detected",
+                    ip_address=ip_address,
+                    action_taken="pattern_matched",
+                    reason=f"Suspicious pattern detected in {context}",
+                    pattern=pattern.pattern,
+                    context=context,
+                    content_preview=content[:100] if len(content) > 100 else content,
+                )
+                return True, pattern.pattern
+
+        return False, None
 
     @classmethod
     async def add_pattern(cls, pattern: str, custom: bool = False) -> None:
@@ -173,6 +249,21 @@ class SusPatternsManager:
             instance.compiled_patterns.append(compiled_pattern)
             instance.patterns.append(pattern)
 
+        # Send pattern addition event to agent
+        if instance.agent_handler:
+            details = f"{'Custom' if custom else 'Default'} pattern added"
+            await instance._send_pattern_event(
+                event_type="pattern_added",
+                ip_address="system",
+                action_taken="pattern_added",
+                reason=f"{details} to detection system",
+                pattern=pattern,
+                pattern_type="custom" if custom else "default",
+                total_patterns=len(instance.custom_patterns)
+                if custom
+                else len(instance.patterns),
+            )
+
     @classmethod
     async def remove_pattern(cls, pattern: str, custom: bool = False) -> bool:
         """
@@ -190,6 +281,8 @@ class SusPatternsManager:
         """
         instance = cls()
 
+        pattern_removed = False
+
         if custom:
             # Handle custom patterns
             if pattern in instance.custom_patterns:
@@ -206,7 +299,7 @@ class SusPatternsManager:
                     await instance.redis_handler.set_key(
                         "patterns", "custom", ",".join(instance.custom_patterns)
                     )
-                return True
+                pattern_removed = True
         else:
             # Handle default patterns
             if pattern in instance.patterns:
@@ -219,9 +312,24 @@ class SusPatternsManager:
                 # Remove the compiled pattern
                 if 0 <= index < len(instance.compiled_patterns):
                     instance.compiled_patterns.pop(index)
-                    return True
+                    pattern_removed = True
 
-        return False
+        # Send pattern removal event to agent
+        if pattern_removed and instance.agent_handler:
+            details = f"{'Custom' if custom else 'Default'} pattern removed"
+            await instance._send_pattern_event(
+                event_type="pattern_removed",
+                ip_address="system",
+                action_taken="pattern_removed",
+                reason=f"{details} from detection system",
+                pattern=pattern,
+                pattern_type="custom" if custom else "default",
+                total_patterns=len(instance.custom_patterns)
+                if custom
+                else len(instance.patterns),
+            )
+
+        return pattern_removed
 
     @classmethod
     async def get_default_patterns(cls) -> list[str]:

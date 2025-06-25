@@ -124,6 +124,23 @@ jobs:
           COLOR: good
           SLACK_THREAD_TS: ${{ steps.send_initial_slack_release.outputs.SLACK_THREAD_TS }}
 
+      - name: Notify Success on Discord
+        uses: appleboy/discord-action@v1.2.0
+        with:
+          webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          username: "Release Bot"
+          color: "#00ff00"
+          message: |
+            🚀 **FastAPI Guard v${{ github.event.release.tag_name }} - Released to PyPI!** 💎
+
+            **Release Notes:**
+            ${{ github.event.release.body }}
+
+            **Links:**
+            📦 [PyPI Package](https://pypi.org/project/fastapi-guard/)
+            📖 [Documentation](https://rennf93.github.io/fastapi-guard/)
+            🔗 [GitHub Release](https://github.com/rennf93/fastapi-guard/releases/tag/${{ github.event.release.tag_name }})
+
       - name: Send Failure Notification to Slack
         if: failure()
         uses: rennf93/good-comms@master

@@ -1,14 +1,78 @@
 # fastapi_guard/utils.py
 import logging
 import re
+from datetime import datetime, timezone
 from ipaddress import ip_address, ip_network
-from typing import Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from fastapi import Request
 
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.suspatterns_handler import sus_patterns_handler
 from guard.models import GeoIPHandler, SecurityConfig
+from guard.protocols.agent_protocol import AgentHandlerProtocol
+
+if TYPE_CHECKING:
+    from guard_agent import SecurityEvent
+
+
+async def send_agent_event(
+    agent_handler: AgentHandlerProtocol | None,
+    event_type: str,
+    ip_address: str,
+    action_taken: str,
+    reason: str,
+    request: Request | None = None,
+    **kwargs: Any,
+) -> None:
+    """
+    Helper function to send events to agent with proper error handling.
+
+    NOTE: This is a utility helper function. Domain-specific events should be sent
+    by their respective handlers (ipban_handler, cloud_handler, etc.) which have
+    more detailed context about what actually happened.
+
+    Args:
+        agent_handler: The agent handler instance
+        event_type: Type of security event
+        ip_address: Client IP address
+        action_taken: Action that was taken
+        reason: Reason for the action
+        request: Optional FastAPI request object
+        **kwargs: Additional metadata
+    """
+    if not agent_handler:
+        return
+
+    try:
+        # Extract request information if available
+        endpoint = None
+        method = None
+        user_agent = None
+        country = None
+
+        if request:
+            endpoint = str(request.url.path)
+            method = request.method
+            user_agent = request.headers.get("User-Agent")
+
+        event = SecurityEvent(
+            timestamp=datetime.now(timezone.utc),
+            event_type=event_type,
+            ip_address=ip_address,
+            country=country,
+            user_agent=user_agent,
+            action_taken=action_taken,
+            reason=reason,
+            endpoint=endpoint,
+            method=method,
+            **kwargs,
+        )
+
+        await agent_handler.send_event(event)
+    except Exception as e:
+        # Don't let agent errors break the main functionality
+        logging.getLogger(__name__).error(f"Failed to send agent event: {e}")
 
 
 async def setup_custom_logging(log_file: str) -> logging.Logger:
@@ -26,7 +90,11 @@ async def setup_custom_logging(log_file: str) -> logging.Logger:
     return logger
 
 
-def extract_client_ip(request: Request, config: SecurityConfig) -> str:
+async def extract_client_ip(
+    request: Request,
+    config: SecurityConfig,
+    agent_handler: AgentHandlerProtocol | None = None,
+) -> str:
     """
     Securely extract the client IP address from the request,
     considering trusted proxies.
@@ -65,8 +133,17 @@ def extract_client_ip(request: Request, config: SecurityConfig) -> str:
     forwarded_for = request.headers.get("X-Forwarded-For")
     if forwarded_for and not config.trusted_proxies:
         logging.warning(
-            f"Potential IP spoofing attempt: X-Forwarded-For header "
+            f"Potential IP spoof attempt: X-Forwarded-For header "
             f"({forwarded_for}) received from untrusted IP {connecting_ip}"
+        )
+        # Send agent event for IP spoofing attempt
+        await send_agent_event(
+            agent_handler,
+            "suspicious_request",
+            connecting_ip,
+            "spoofing_detected",
+            f"Potential IP spoof attempt: X-Forwarded-For header {forwarded_for}",
+            request,
         )
         return connecting_ip
 
@@ -90,8 +167,17 @@ def extract_client_ip(request: Request, config: SecurityConfig) -> str:
 
         if not is_trusted and forwarded_for:
             logging.warning(
-                f"Potential IP spoofing attempt: X-Forwarded-For header "
+                f"Potential IP spoof attempt: X-Forwarded-For header "
                 f"({forwarded_for}) received from untrusted IP {connecting_ip}"
+            )
+            # Send agent event for IP spoofing attempt from untrusted proxy
+            await send_agent_event(
+                agent_handler,
+                "suspicious_request",
+                connecting_ip,
+                "spoofing_detected",
+                f"Potential IP spoof attempt: X-Forwarded-For header {forwarded_for}",
+                request,
             )
             return connecting_ip
 
@@ -403,6 +489,12 @@ async def detect_penetration_attempt(request: Request) -> tuple[bool, str]:
             details = f"{client_ip}: {value}"
             reason_message = f"Suspicious pattern in query param '{key}'"
             logging.warning(f"{message} {details} - {reason_message}")
+
+            # Send pattern detection event to agent through handler's public method
+            await sus_patterns_handler.detect_pattern_match(
+                content=value, ip_address=client_ip, context=f"query_param:{key}"
+            )
+
             return True, f"Query param '{key}': {trigger}"
 
     # Path
@@ -415,6 +507,12 @@ async def detect_penetration_attempt(request: Request) -> tuple[bool, str]:
         details = f"{client_ip}: {request.url.path}"
         reason_message = "Suspicious pattern: path"
         logging.warning(f"{message} {details} - {reason_message}")
+
+        # Send pattern detection event to agent through handler's public method
+        await sus_patterns_handler.detect_pattern_match(
+            content=request.url.path, ip_address=client_ip, context="url_path"
+        )
+
         return True, f"URL path: {trigger}"
 
     # Headers
@@ -444,6 +542,12 @@ async def detect_penetration_attempt(request: Request) -> tuple[bool, str]:
                 details = f"{client_ip}: {key}={value}"
                 reason_message = "Suspicious pattern: header"
                 logging.warning(f"{message} {details} - {reason_message}")
+
+                # Send pattern detection event to agent through handler's public method
+                await sus_patterns_handler.detect_pattern_match(
+                    content=value, ip_address=client_ip, context=f"header:{key}"
+                )
+
                 return True, f"Header '{key}': {trigger}"
 
     # Body
@@ -458,6 +562,12 @@ async def detect_penetration_attempt(request: Request) -> tuple[bool, str]:
             details = f"{client_ip}: {body}"
             reason_message = "Suspicious pattern: body"
             logging.warning(f"{message} {details} - {reason_message}")
+
+            # Send pattern detection event to agent through handler's public method
+            await sus_patterns_handler.detect_pattern_match(
+                content=body, ip_address=client_ip, context="request_body"
+            )
+
             return True, f"Request body: {trigger}"
     except Exception:
         pass

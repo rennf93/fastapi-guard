@@ -179,3 +179,4 @@ cython_debug/
 .DS_Store
 manual_testing/
 .cursor/
+ZZZ/

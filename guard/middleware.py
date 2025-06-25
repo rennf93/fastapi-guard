@@ -5,7 +5,7 @@ import time
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 from ipaddress import ip_address, ip_network
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,6 +27,13 @@ from guard.utils import (
     log_activity,
     setup_custom_logging,
 )
+
+if TYPE_CHECKING:
+    from guard_agent import (
+        SecurityEvent,
+        SecurityMetric,
+        guard_agent,
+    )
 
 
 class SecurityMiddleware(BaseHTTPMiddleware):
@@ -71,6 +78,28 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
             self.redis_handler = RedisManager(config)
 
+        # Initialize agent handler if enabled
+        self.agent_handler = None
+        if config.enable_agent:
+            agent_config = config.to_agent_config()
+            if agent_config:
+                try:
+                    self.agent_handler = guard_agent(agent_config)
+                    self.logger.info("Guard Agent initialized successfully")
+                except ImportError:
+                    self.logger.warning(
+                        "Agent enabled but guard_agent package not installed. "
+                        "Install with: pip install fastapi-guard-agent"
+                    )
+                except Exception as e:
+                    self.logger.error(f"Failed to initialize Guard Agent: {e}")
+                    self.logger.warning("Continuing without agent functionality")
+            else:
+                self.logger.warning(
+                    "Agent enabled but configuration is invalid. "
+                    "Check agent_api_key and other required fields."
+                )
+
     async def setup_logger(self) -> None:
         self.logger = await setup_custom_logging("security.log")
 
@@ -79,6 +108,105 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     ) -> None:
         """Set the SecurityDecorator instance for decorator support."""
         self.guard_decorator = decorator_handler
+
+    async def _send_middleware_event(
+        self,
+        event_type: str,
+        request: Request,
+        action_taken: str,
+        reason: str,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Send middleware-specific events to agent if enabled.
+
+        This method should only be used for middleware-specific events like
+        decorator violations. Domain-specific events (IP bans, rate limits, etc.)
+        should be sent by their respective handlers.
+        """
+        if not self.agent_handler or not self.config.agent_enable_events:
+            return
+
+        try:
+            client_ip = await extract_client_ip(
+                request, self.config, self.agent_handler
+            )
+
+            # Get country information if available
+            country = None
+            if self.geo_ip_handler:
+                try:
+                    country = self.geo_ip_handler.get_country(client_ip)
+                except Exception:
+                    # Don't let geo IP lookup failures break event sending
+                    pass
+
+            event = SecurityEvent(
+                timestamp=datetime.now(timezone.utc),
+                event_type=event_type,
+                ip_address=client_ip,
+                country=country,
+                user_agent=request.headers.get("User-Agent"),
+                action_taken=action_taken,
+                reason=reason,
+                endpoint=str(request.url.path),
+                method=request.method,
+                metadata=kwargs,
+            )
+
+            await self.agent_handler.send_event(event)
+        except Exception as e:
+            # Don't let agent errors break the middleware
+            self.logger.error(f"Failed to send security event to agent: {e}")
+
+    async def _send_security_metric(
+        self, metric_type: str, value: float, tags: dict[str, str] | None = None
+    ) -> None:
+        """Send performance metric to agent."""
+        if self.agent_handler and self.config.agent_enable_metrics:
+            try:
+                metric = SecurityMetric(
+                    timestamp=datetime.now(timezone.utc),
+                    metric_type=metric_type,
+                    value=value,
+                    tags=tags or {},
+                )
+                await self.agent_handler.send_metric(metric)
+            except Exception as e:
+                # Don't let agent errors break middleware functionality
+                logging.getLogger(__name__).error(
+                    f"Failed to send metric to agent: {e}"
+                )
+
+    async def _collect_request_metrics(
+        self, request: Request, response_time: float, status_code: int
+    ) -> None:
+        """Collect request metrics for agent."""
+        if not self.agent_handler or not self.config.agent_enable_metrics:
+            return
+
+        endpoint = str(request.url.path)
+        method = request.method
+
+        # Response time metric
+        await self._send_security_metric(
+            "response_time",
+            response_time,
+            {"endpoint": endpoint, "method": method, "status": str(status_code)},
+        )
+
+        # Request count metric
+        await self._send_security_metric(
+            "request_count", 1.0, {"endpoint": endpoint, "method": method}
+        )
+
+        # Error rate metric (for non-2xx responses)
+        if status_code >= 400:
+            await self._send_security_metric(
+                "error_rate",
+                1.0,
+                {"endpoint": endpoint, "method": method, "status": str(status_code)},
+            )
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
@@ -132,6 +260,30 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                         is_https = is_https or forwarded_proto.lower() == "https"
 
             if not is_https:
+                # Determine if this is route-specific or global HTTPS enforcement
+                if route_config and route_config.require_https:
+                    # Send decorator violation event for route-specific HTTPS
+                    await self._send_middleware_event(
+                        event_type="decorator_violation",
+                        request=request,
+                        action_taken="https_redirect",
+                        reason="Route requires HTTPS but request was HTTP",
+                        decorator_type="authentication",
+                        violation_type="require_https",
+                        original_scheme=request.url.scheme,
+                        redirect_url=str(request.url.replace(scheme="https")),
+                    )
+                else:
+                    # Send global HTTPS enforcement event
+                    await self._send_middleware_event(
+                        event_type="https_enforced",
+                        request=request,
+                        action_taken="https_redirect",
+                        reason="HTTP request redirected to HTTPS for security",
+                        original_scheme=request.url.scheme,
+                        redirect_url=str(request.url.replace(scheme="https")),
+                    )
+
                 https_url = request.url.replace(scheme="https")
                 redirect_response = RedirectResponse(
                     https_url, status_code=status.HTTP_301_MOVED_PERMANENTLY
@@ -151,10 +303,20 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             return response
 
         # Extract client IP
-        client_ip = extract_client_ip(request, self.config)
+        client_ip = await extract_client_ip(request, self.config, self.agent_handler)
 
         # Excluded paths
         if any(request.url.path.startswith(path) for path in self.config.exclude_paths):
+            # Send path exclusion event for monitoring
+            await self._send_middleware_event(
+                event_type="path_excluded",
+                request=request,
+                action_taken="security_checks_bypassed",
+                reason=f"Path {request.url.path} excluded from security checks",
+                excluded_path=request.url.path,
+                configured_exclusions=self.config.exclude_paths,
+            )
+
             response = await call_next(request)
             if self.config.custom_response_modifier:
                 modified_response = await self.config.custom_response_modifier(response)
@@ -163,6 +325,16 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         # Check if security checks should be bypassed
         if route_config and self._should_bypass_check("all", route_config):
+            # Send security bypass event for monitoring
+            await self._send_middleware_event(
+                event_type="security_bypass",
+                request=request,
+                action_taken="all_checks_bypassed",
+                reason="Route configured to bypass all security checks",
+                bypassed_checks=list(route_config.bypassed_checks),
+                endpoint=str(request.url.path),
+            )
+
             response = await call_next(request)
             if self.config.custom_response_modifier:
                 modified_response = await self.config.custom_response_modifier(response)
@@ -176,6 +348,26 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if route_config and route_config.max_request_size:
             content_length = request.headers.get("content-length")
             if content_length and int(content_length) > route_config.max_request_size:
+                message = f"Request size {content_length} exceeds limit"
+
+                # Log suspicious activity for oversized request
+                await log_activity(
+                    request,
+                    self.logger,
+                    log_type="suspicious",
+                    reason=f"{message}: {route_config.max_request_size}",
+                    level=self.config.log_suspicious_level,
+                )
+
+                # Send decorator violation event to agent
+                await self._send_middleware_event(
+                    event_type="decorator_violation",
+                    request=request,
+                    action_taken="request_blocked",
+                    reason=f"{message}: {route_config.max_request_size}",
+                    decorator_type="content_filtering",
+                    violation_type="max_request_size",
+                )
                 return await self.create_error_response(
                     status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                     default_message="Request too large",
@@ -185,6 +377,26 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if route_config and route_config.allowed_content_types:
             content_type = request.headers.get("content-type", "").split(";")[0]
             if content_type not in route_config.allowed_content_types:
+                # Log suspicious activity for invalid content type
+                await log_activity(
+                    request,
+                    self.logger,
+                    log_type="suspicious",
+                    reason=f"Invalid content type: {content_type}",
+                    level=self.config.log_suspicious_level,
+                )
+
+                message = f"Content type {content_type} not in allowed types"
+
+                # Send decorator violation event to agent
+                await self._send_middleware_event(
+                    event_type="decorator_violation",
+                    request=request,
+                    action_taken="request_blocked",
+                    reason=f"{message}: {route_config.allowed_content_types}",
+                    decorator_type="content_filtering",
+                    violation_type="content_type",
+                )
                 return await self.create_error_response(
                     status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
                     default_message="Unsupported content type",
@@ -194,16 +406,181 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if route_config and route_config.required_headers:
             for header, expected in route_config.required_headers.items():
                 if expected == "required" and not request.headers.get(header):
+                    # Log suspicious activity for missing required header
+                    await log_activity(
+                        request,
+                        self.logger,
+                        log_type="suspicious",
+                        reason=f"Missing required header: {header}",
+                        level=self.config.log_suspicious_level,
+                    )
+
+                    # Determine decorator type based on header name
+                    decorator_type = (
+                        "authentication"
+                        if header.lower() in ["x-api-key", "authorization"]
+                        else "advanced"
+                    )
+                    violation_type = (
+                        "api_key_required"
+                        if header.lower() == "x-api-key"
+                        else "required_header"
+                    )
+
+                    # Send decorator violation event to agent
+                    await self._send_middleware_event(
+                        event_type="decorator_violation",
+                        request=request,
+                        action_taken="request_blocked",
+                        reason=f"Missing required header: {header}",
+                        decorator_type=decorator_type,
+                        violation_type=violation_type,
+                        missing_header=header,
+                    )
                     return await self.create_error_response(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         default_message=f"Missing required header: {header}",
                     )
+
+        # Route-specific authentication requirements
+        if route_config and route_config.auth_required:
+            auth_header = request.headers.get("authorization", "")
+            auth_failed = False
+            auth_reason = ""
+
+            if route_config.auth_required == "bearer":
+                if not auth_header.startswith("Bearer "):
+                    auth_failed = True
+                    auth_reason = "Missing or invalid Bearer token"
+            elif route_config.auth_required == "basic":
+                if not auth_header.startswith("Basic "):
+                    auth_failed = True
+                    auth_reason = "Missing or invalid Basic authentication"
+            else:
+                # Generic auth requirement
+                if not auth_header:
+                    auth_failed = True
+                    auth_reason = f"Missing {route_config.auth_required} authentication"
+
+            if auth_failed:
+                # Log suspicious activity for authentication failure
+                await log_activity(
+                    request,
+                    self.logger,
+                    log_type="suspicious",
+                    reason=f"Authentication failure: {auth_reason}",
+                    level=self.config.log_suspicious_level,
+                )
+
+                # Send decorator violation event for authentication failure
+                await self._send_middleware_event(
+                    event_type="decorator_violation",
+                    request=request,
+                    action_taken="request_blocked",
+                    reason=auth_reason,
+                    decorator_type="authentication",
+                    violation_type="require_auth",
+                    auth_type=route_config.auth_required,
+                )
+                return await self.create_error_response(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    default_message="Authentication required",
+                )
+
+        # Route-specific referrer requirements
+        if route_config and route_config.require_referrer:
+            referrer = request.headers.get("referer", "")
+            if not referrer:
+                # Log suspicious activity for missing referrer
+                await log_activity(
+                    request,
+                    self.logger,
+                    log_type="suspicious",
+                    reason="Missing referrer header",
+                    level=self.config.log_suspicious_level,
+                )
+
+                # Send decorator violation event for missing referrer
+                await self._send_middleware_event(
+                    event_type="decorator_violation",
+                    request=request,
+                    action_taken="request_blocked",
+                    reason="Missing referrer header",
+                    decorator_type="content_filtering",
+                    violation_type="require_referrer",
+                    allowed_domains=route_config.require_referrer,
+                )
+                return await self.create_error_response(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    default_message="Referrer required",
+                )
+
+            # Check if referrer domain is allowed
+            referrer_allowed = False
+            try:
+                from urllib.parse import urlparse
+
+                referrer_domain = urlparse(referrer).netloc.lower()
+                for allowed_domain in route_config.require_referrer:
+                    if (
+                        referrer_domain == allowed_domain.lower()
+                        or referrer_domain.endswith(f".{allowed_domain.lower()}")
+                    ):
+                        referrer_allowed = True
+                        break
+            except Exception:
+                referrer_allowed = False
+
+            if not referrer_allowed:
+                # Log suspicious activity for invalid referrer
+                await log_activity(
+                    request,
+                    self.logger,
+                    log_type="suspicious",
+                    reason=f"Invalid referrer: {referrer}",
+                    level=self.config.log_suspicious_level,
+                )
+
+                # Send decorator violation event for invalid referrer
+                await self._send_middleware_event(
+                    event_type="decorator_violation",
+                    request=request,
+                    action_taken="request_blocked",
+                    reason=f"Referrer '{referrer}' not in allowed domains",
+                    decorator_type="content_filtering",
+                    violation_type="require_referrer",
+                    referrer=referrer,
+                    allowed_domains=route_config.require_referrer,
+                )
+                return await self.create_error_response(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    default_message="Invalid referrer",
+                )
 
         # Route-specific custom validators
         if route_config and route_config.custom_validators:
             for validator in route_config.custom_validators:
                 validation_response = await validator(request)
                 if validation_response:
+                    # Log suspicious activity for custom validation failure
+                    await log_activity(
+                        request,
+                        self.logger,
+                        log_type="suspicious",
+                        reason="Custom validation failed",
+                        level=self.config.log_suspicious_level,
+                    )
+
+                    # Send decorator violation event for custom validation failure
+                    await self._send_middleware_event(
+                        event_type="decorator_violation",
+                        request=request,
+                        action_taken="request_blocked",
+                        reason="Custom validation failed",
+                        decorator_type="content_filtering",
+                        violation_type="custom_validation",
+                        validator_name=getattr(validator, "__name__", "anonymous"),
+                    )
                     if isinstance(validation_response, Response):
                         return validation_response
 
@@ -217,6 +594,15 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     log_type="suspicious",
                     reason="Access outside allowed time window",
                     level=self.config.log_suspicious_level,
+                )
+                # Send decorator violation event to agent
+                await self._send_middleware_event(
+                    event_type="decorator_violation",
+                    request=request,
+                    action_taken="request_blocked",
+                    reason="Access outside allowed time window",
+                    decorator_type="advanced",
+                    violation_type="time_restriction",
                 )
                 return await self.create_error_response(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -261,6 +647,15 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                         reason=f"IP not allowed by route config: {client_ip}",
                         level=self.config.log_suspicious_level,
                     )
+                    # Send decorator violation event to agent
+                    await self._send_middleware_event(
+                        event_type="decorator_violation",
+                        request=request,
+                        action_taken="request_blocked",
+                        reason=f"IP {client_ip} blocked",
+                        decorator_type="access_control",
+                        violation_type="ip_restriction",
+                    )
                     return await self.create_error_response(
                         status_code=status.HTTP_403_FORBIDDEN,
                         default_message="Forbidden",
@@ -301,6 +696,28 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     reason=f"Blocked cloud provider IP: {client_ip}",
                     level=self.config.log_suspicious_level,
                 )
+                cloud_details = cloud_handler.get_cloud_provider_details(
+                    client_ip, cloud_providers_to_check
+                )
+                if cloud_details and cloud_handler.agent_handler:
+                    provider, network = cloud_details
+                    await cloud_handler.send_cloud_detection_event(
+                        client_ip, provider, network, "request_blocked"
+                    )
+
+                # Send decorator violation event only for route-specific blocks
+                if route_config and route_config.block_cloud_providers:
+                    # Route-specific cloud provider block
+                    await self._send_middleware_event(
+                        event_type="decorator_violation",
+                        request=request,
+                        action_taken="request_blocked",
+                        reason=f"Cloud provider IP {client_ip} blocked",
+                        decorator_type="access_control",
+                        violation_type="cloud_provider",
+                        blocked_providers=list(cloud_providers_to_check),
+                    )
+
                 return await self.create_error_response(
                     status_code=status.HTTP_403_FORBIDDEN,
                     default_message="Cloud provider IP not allowed",
@@ -316,6 +733,19 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 reason=f"Blocked user agent: {user_agent}",
                 level=self.config.log_suspicious_level,
             )
+            # Send decorator violation event only for route-specific blocks
+            if route_config and route_config.blocked_user_agents:
+                # Route-specific user agent block
+                await self._send_middleware_event(
+                    event_type="decorator_violation",
+                    request=request,
+                    action_taken="request_blocked",
+                    reason=f"User agent '{user_agent}' blocked",
+                    decorator_type="access_control",
+                    violation_type="user_agent",
+                    blocked_user_agent=user_agent,
+                )
+
             return await self.create_error_response(
                 status_code=status.HTTP_403_FORBIDDEN,
                 default_message="User-Agent not allowed",
@@ -331,69 +761,121 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         # Sus Activity
         penetration_enabled = self.config.enable_penetration_detection
+        route_specific_detection = None
         if route_config and hasattr(route_config, "enable_suspicious_detection"):
-            penetration_enabled = route_config.enable_suspicious_detection
+            route_specific_detection = route_config.enable_suspicious_detection
+            penetration_enabled = route_specific_detection
 
         if penetration_enabled and not self._should_bypass_check(
             "penetration", route_config
         ):
             detection_result, trigger_info = await detect_penetration_attempt(request)
+        elif (
+            route_specific_detection is False
+            and self.config.enable_penetration_detection
+        ):
+            # Suspicious detection was disabled by decorator
+            await self._send_middleware_event(
+                event_type="decorator_violation",
+                request=request,
+                action_taken="detection_disabled",
+                reason="Suspicious pattern detection disabled by route decorator",
+                decorator_type="advanced",
+                violation_type="suspicious_detection_disabled",
+            )
+            detection_result = False
+            trigger_info = "disabled_by_decorator"
+        else:
+            detection_result = False
+            trigger_info = "not_enabled"
+
+        if detection_result:
             sus_specs = f"{client_ip} - {trigger_info}"
-            if detection_result:
-                self.suspicious_request_counts[client_ip] = (
-                    self.suspicious_request_counts.get(client_ip, 0) + 1
+            self.suspicious_request_counts[client_ip] = (
+                self.suspicious_request_counts.get(client_ip, 0) + 1
+            )
+
+            # Block and Ban
+            if not self.config.passive_mode:
+                # Check banning
+                if (
+                    self.config.enable_ip_banning
+                    and self.suspicious_request_counts[client_ip]
+                    >= self.config.auto_ban_threshold
+                ):
+                    await ip_ban_manager.ban_ip(
+                        client_ip,
+                        self.config.auto_ban_duration,
+                        "penetration_attempt",
+                    )
+                    await log_activity(
+                        request,
+                        self.logger,
+                        log_type="suspicious",
+                        reason=f"IP banned due to suspicious activity: {sus_specs}",
+                        level=self.config.log_suspicious_level,
+                    )
+
+                    return await self.create_error_response(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        default_message="IP has been banned",
+                    )
+
+                await log_activity(
+                    request,
+                    self.logger,
+                    log_type="suspicious",
+                    reason=f"Suspicious activity detected for IP: {sus_specs}",
+                    level=self.config.log_suspicious_level,
                 )
 
-                # Block and Ban
-                if not self.config.passive_mode:
-                    # Check banning
-                    if (
-                        self.config.enable_ip_banning
-                        and self.suspicious_request_counts[client_ip]
-                        >= self.config.auto_ban_threshold
-                    ):
-                        await ip_ban_manager.ban_ip(
-                            client_ip, self.config.auto_ban_duration
-                        )
-                        await log_activity(
-                            request,
-                            self.logger,
-                            log_type="suspicious",
-                            reason=f"IP banned due to suspicious activity: {sus_specs}",
-                            level=self.config.log_suspicious_level,
-                        )
-                        return await self.create_error_response(
-                            status_code=status.HTTP_403_FORBIDDEN,
-                            default_message="IP has been banned",
-                        )
+                return await self.create_error_response(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    default_message="Suspicious activity detected",
+                )
+            # Passive mode: just log, no blocking
+            else:
+                await log_activity(
+                    request,
+                    self.logger,
+                    log_type="suspicious",
+                    reason=f"Suspicious activity detected: {client_ip}",
+                    passive_mode=True,
+                    trigger_info=trigger_info,
+                    level=self.config.log_suspicious_level,
+                )
 
-                    await log_activity(
-                        request,
-                        self.logger,
-                        log_type="suspicious",
-                        reason=f"Suspicious activity detected for IP: {sus_specs}",
-                        level=self.config.log_suspicious_level,
-                    )
-                    return await self.create_error_response(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        default_message="Suspicious activity detected",
-                    )
-                # Passive mode: just log, no blocking
-                else:
-                    await log_activity(
-                        request,
-                        self.logger,
-                        log_type="suspicious",
-                        reason=f"Suspicious activity detected: {client_ip}",
-                        passive_mode=True,
-                        trigger_info=trigger_info,
-                        level=self.config.log_suspicious_level,
-                    )
+                message = "Suspicious pattern detected (passive mode)"
+
+                # Send passive mode detection event
+                await self._send_middleware_event(
+                    event_type="suspicious_request",
+                    request=request,
+                    action_taken="logged_only",
+                    reason=f"{message}: {trigger_info}",
+                    request_count=self.suspicious_request_counts[client_ip],
+                    passive_mode=True,
+                    trigger_info=trigger_info,
+                )
 
         # Custom request
         if self.config.custom_request_check:
             custom_response = await self.config.custom_request_check(request)
             if custom_response:
+                # Send custom request check event
+                await self._send_middleware_event(
+                    event_type="custom_request_check",
+                    request=request,
+                    action_taken="request_blocked",
+                    reason="Custom request check returned blocking response",
+                    response_status=custom_response.status_code
+                    if hasattr(custom_response, "status_code")
+                    else "unknown",
+                    check_function=self.config.custom_request_check.__name__
+                    if hasattr(self.config.custom_request_check, "__name__")
+                    else "anonymous",
+                )
+
                 if self.config.custom_response_modifier:
                     modified_response = await self.config.custom_response_modifier(
                         custom_response
@@ -406,13 +888,20 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             await self._process_decorator_usage_rules(request, client_ip, route_config)
 
         # Call next
+        start_time = time.time()
         response = await call_next(request)
+        end_time = time.time()
+        response_time = end_time - start_time
 
         # Process behavioral rules after response
         if route_config and route_config.behavior_rules:
             await self._process_decorator_return_rules(
                 request, response, client_ip, route_config
             )
+
+        await self._collect_request_metrics(
+            request, response_time, response.status_code
+        )
 
         if self.config.custom_response_modifier:
             modified_response = await self.config.custom_response_modifier(response)
@@ -498,10 +987,10 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 if country and country in route_config.blocked_countries:
                     return False
 
-            if route_config.allowed_countries and self.geo_ip_handler:
+            if route_config.whitelist_countries and self.geo_ip_handler:
                 country = self.geo_ip_handler.get_country(client_ip)
                 if country:
-                    return country in route_config.allowed_countries
+                    return country in route_config.whitelist_countries
                 else:
                     return False
 
@@ -564,9 +1053,30 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             if self.redis_handler:
                 await route_rate_handler.initialize_redis(self.redis_handler)
 
-            return await route_rate_handler.check_rate_limit(
+            # Check rate limit
+            response = await route_rate_handler.check_rate_limit(
                 request, client_ip, self.create_error_response
             )
+
+            # If rate limit exceeded, send decorator-specific event
+            if response is not None:
+                message = "Route-specific rate limit exceeded"
+                details = (
+                    f"{route_config.rate_limit} requests per "
+                    f"{self.config.rate_limit_window or 60}s"
+                )
+                await self._send_middleware_event(
+                    event_type="decorator_violation",
+                    request=request,
+                    action_taken="request_blocked",
+                    reason=f"{message}: {details}",
+                    decorator_type="rate_limiting",
+                    violation_type="rate_limit",
+                    rate_limit=route_config.rate_limit,
+                    window=route_config.rate_limit_window or 60,
+                )
+
+            return response
 
         # Fall back to global rate limiting
         return await self.rate_limit_handler.check_rate_limit(
@@ -582,7 +1092,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         endpoint_id = self._get_endpoint_id(request)
         for rule in route_config.behavior_rules:
-            if rule.rule_type == "usage":
+            if rule.rule_type in ["usage", "frequency"]:
                 threshold_exceeded = (
                     await self.guard_decorator.behavior_tracker.track_endpoint_usage(
                         endpoint_id, client_ip, rule
@@ -590,6 +1100,23 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 )
                 if threshold_exceeded:
                     details = f"{rule.threshold} calls in {rule.window}s"
+                    message = f"Behavioral {rule.rule_type}"
+                    reason = "threshold exceeded"
+
+                    # Send decorator violation event for behavioral rule violation
+                    await self._send_middleware_event(
+                        event_type="decorator_violation",
+                        request=request,
+                        action_taken="behavioral_action_triggered",
+                        reason=f"{message} {reason}: {details}",
+                        decorator_type="behavioral",
+                        violation_type=rule.rule_type,
+                        threshold=rule.threshold,
+                        window=rule.window,
+                        action=rule.action,
+                        endpoint_id=endpoint_id,
+                    )
+
                     await self.guard_decorator.behavior_tracker.apply_action(
                         rule,
                         client_ip,
@@ -618,6 +1145,22 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 )
                 if pattern_detected:
                     details = f"{rule.threshold} for '{rule.pattern}' in {rule.window}s"
+
+                    # Send decorator violation event for return pattern violation
+                    await self._send_middleware_event(
+                        event_type="decorator_violation",
+                        request=request,
+                        action_taken="behavioral_action_triggered",
+                        reason=f"Return pattern threshold exceeded: {details}",
+                        decorator_type="behavioral",
+                        violation_type="return_pattern",
+                        threshold=rule.threshold,
+                        window=rule.window,
+                        pattern=rule.pattern,
+                        action=rule.action,
+                        endpoint_id=endpoint_id,
+                    )
+
                     await self.guard_decorator.behavior_tracker.apply_action(
                         rule,
                         client_ip,
@@ -699,3 +1242,36 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 await self.geo_ip_handler.initialize_redis(self.redis_handler)
             await self.rate_limit_handler.initialize_redis(self.redis_handler)
             await sus_patterns_handler.initialize_redis(self.redis_handler)
+
+        # Initialize agent handler
+        if self.agent_handler:
+            await self.agent_handler.start()
+            # Connect agent to Redis if available
+            if self.redis_handler:
+                await self.agent_handler.initialize_redis(self.redis_handler)
+                # Initialize agent in Redis handler
+                await self.redis_handler.initialize_agent(self.agent_handler)
+
+            # Initialize agent in all handlers
+            await ip_ban_manager.initialize_agent(self.agent_handler)
+            await self.rate_limit_handler.initialize_agent(self.agent_handler)
+            await sus_patterns_handler.initialize_agent(self.agent_handler)
+            if self.config.block_cloud_providers:
+                await cloud_handler.initialize_agent(self.agent_handler)
+            if self.geo_ip_handler and hasattr(self.geo_ip_handler, "initialize_agent"):
+                await self.geo_ip_handler.initialize_agent(self.agent_handler)
+
+            # Initialize agent in decorator handler if it exists
+            if self.guard_decorator and hasattr(
+                self.guard_decorator, "initialize_agent"
+            ):
+                await self.guard_decorator.initialize_agent(self.agent_handler)
+
+            # Initialize dynamic rule manager if enabled
+            if self.config.enable_dynamic_rules:
+                from guard.handlers.dynamic_rule_handler import DynamicRuleManager
+
+                dynamic_rule_manager = DynamicRuleManager(self.config)
+                await dynamic_rule_manager.initialize_agent(self.agent_handler)
+                if self.redis_handler:
+                    await dynamic_rule_manager.initialize_redis(self.redis_handler)

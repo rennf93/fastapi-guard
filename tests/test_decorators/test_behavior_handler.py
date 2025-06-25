@@ -467,7 +467,9 @@ async def test_apply_action_ban(security_config: SecurityConfig) -> None:
 
         await tracker.apply_action(rule, "192.168.1.1", "/api/test", "Test violation")
 
-        mock_ban_manager.ban_ip.assert_awaited_once_with("192.168.1.1", 3600)
+        mock_ban_manager.ban_ip.assert_awaited_once_with(
+            "192.168.1.1", 3600, "behavioral_violation"
+        )
         mock_logger.assert_called_once()
 
 
