@@ -305,6 +305,43 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # Extract client IP
         client_ip = await extract_client_ip(request, self.config, self.agent_handler)
 
+        # Emergency mode check (agent feature)
+        if self.config.emergency_mode:
+            # Allow only emergency whitelist IPs
+            if client_ip not in self.config.emergency_whitelist:
+                await log_activity(
+                    request,
+                    self.logger,
+                    log_type="suspicious",
+                    reason=f"[EMERGENCY MODE] Access denied for IP {client_ip}",
+                    level=self.config.log_suspicious_level,
+                )
+
+                # Send emergency mode blocking event
+                await self._send_middleware_event(
+                    event_type="emergency_mode_block",
+                    request=request,
+                    action_taken="request_blocked",
+                    reason=f"[EMERGENCY MODE] IP {client_ip} not in whitelist",
+                    emergency_whitelist_count=len(self.config.emergency_whitelist),
+                    emergency_active=True,
+                )
+
+                return await self.create_error_response(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    default_message="Service temporarily unavailable",
+                )
+            else:
+                message = "[EMERGENCY MODE] Allowed access for whitelisted IP"
+                # Log allowed emergency access
+                await log_activity(
+                    request,
+                    self.logger,
+                    log_type="info",
+                    reason=f"{message}: {client_ip}",
+                    level="INFO",
+                )
+
         # Excluded paths
         if any(request.url.path.startswith(path) for path in self.config.exclude_paths):
             # Send path exclusion event for monitoring
@@ -660,7 +697,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                         status_code=status.HTTP_403_FORBIDDEN,
                         default_message="Forbidden",
                     )
-                # TODO: Review this.
                 # RouteConfig exists but == None, route doesn't specify IP rules
                 # Skip global IP checks
             else:
@@ -1038,10 +1074,50 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     async def _check_rate_limit(
         self, request: Request, client_ip: str, route_config: RouteConfig | None
     ) -> Response | None:
-        """Check rate limiting with route overrides."""
+        """
+        Check rate limiting with route overrides and dynamic endpoint-specific config.
+        """
+
+        # Dynamic Rules Rate Limit (agent feature)
+        endpoint_path = request.url.path
+        if endpoint_path in self.config.endpoint_rate_limits:
+            rate_limit, window = self.config.endpoint_rate_limits[endpoint_path]
+            endpoint_rate_config = SecurityConfig(
+                rate_limit=rate_limit,
+                rate_limit_window=window,
+                enable_redis=self.config.enable_redis,
+                redis_url=self.config.redis_url,
+                redis_prefix=self.config.redis_prefix,
+            )
+            endpoint_rate_handler = RateLimitManager(endpoint_rate_config)
+            if self.redis_handler:
+                await endpoint_rate_handler.initialize_redis(self.redis_handler)
+
+            # Check
+            response = await endpoint_rate_handler.check_rate_limit(
+                request, client_ip, self.create_error_response
+            )
+
+            # If rate limit exceeded, send endpoint-specific event
+            if response is not None:
+                message = "Endpoint-specific rate limit exceeded"
+                details = f"{rate_limit} requests per {window}s for {endpoint_path}"
+
+                await self._send_middleware_event(
+                    event_type="dynamic_rule_violation",
+                    request=request,
+                    action_taken="request_blocked",
+                    reason=f"{message}: {details}",
+                    rule_type="endpoint_rate_limit",
+                    endpoint=endpoint_path,
+                    rate_limit=rate_limit,
+                    window=window,
+                )
+
+            return response
+
         # Use route-specific rate limit if available
         if route_config and route_config.rate_limit is not None:
-            # Create temporary config for route-specific rate limiting
             route_rate_config = SecurityConfig(
                 rate_limit=route_config.rate_limit,
                 rate_limit_window=route_config.rate_limit_window or 60,

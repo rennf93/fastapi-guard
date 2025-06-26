@@ -533,6 +533,18 @@ class SecurityConfig(BaseModel):
         These IPs are allowed even in emergency mode.
     """
 
+    # Endpoint-specific rate limiting (used by dynamic rules)
+    endpoint_rate_limits: dict[str, tuple[int, int]] = Field(
+        default_factory=dict,
+        description="Per-endpoint rate limits set by dynamic rules",
+    )
+    """
+    dict[str, tuple[int, int]]:
+        Per-endpoint rate limits set by dynamic rules.
+        Maps endpoint paths to (requests, window) tuples.
+        Example: {"/api/sensitive": (5, 60)} allows 5 requests per 60 seconds.
+    """
+
     # TODO: Add type hints to the decorator
     @field_validator("whitelist", "blacklist")  # type: ignore
     def validate_ip_lists(cls, v: list[str] | None) -> list[str] | None:

@@ -187,13 +187,14 @@ class DynamicRuleManager:
             details = f"per {rules.global_rate_window}s"
             self.logger.info(f"Dynamic rule: {message} {details}")
 
-        # TODO:
-        # Note: Endpoint-specific rate limits require decorator-level integration
-        # which is not supported in this version. Global rate limits work fine.
+        # Endpoint-specific rate limits (agent feature)
         if rules.endpoint_rate_limits:
-            message = "Endpoint-specific rate limits not supported"
-            details = f"{rules.endpoint_rate_limits}"
-            self.logger.warning(f"Dynamic rule: {message}: {details}")
+            self.config.endpoint_rate_limits = rules.endpoint_rate_limits.copy()
+            self.logger.info(
+                f"Dynamic rule: Applied endpoint-specific rate limits for "
+                f"{len(rules.endpoint_rate_limits)} endpoints: "
+                f"{list(rules.endpoint_rate_limits.keys())}"
+            )
 
     async def _apply_cloud_provider_rules(self, providers: set[str]) -> None:
         """Apply dynamic cloud provider blocking rules."""
@@ -236,13 +237,9 @@ class DynamicRuleManager:
     async def _activate_emergency_mode(self, emergency_whitelist: list[str]) -> None:
         """Activate emergency lockdown mode."""
         self.logger.critical(
-            "EMERGENCY MODE ACTIVATED - Enhanced security posture enabled"
+            "[EMERGENCY MODE] ACTIVATED - Enhanced security posture enabled"
         )
 
-        # TODO:
-        # Update config to enable emergency mode
-        # Note: Emergency mode implementation requires middleware-level integration
-        # for complete request blocking. This sets the flags for other handlers to use.
         self.config.emergency_mode = True
         self.config.emergency_whitelist = emergency_whitelist
 
@@ -251,7 +248,7 @@ class DynamicRuleManager:
         self.config.auto_ban_threshold = max(1, original_threshold // 2)
         message = "Reduced auto-ban threshold"
         details = f"from {original_threshold} to {self.config.auto_ban_threshold}"
-        self.logger.warning(f"Emergency mode: {message} {details}")
+        self.logger.warning(f"[EMERGENCY MODE] {message} {details}")
 
         # Send critical alert
         if self.agent_handler:
@@ -287,13 +284,12 @@ class DynamicRuleManager:
             return
 
         try:
-
             event = SecurityEvent(
                 timestamp=datetime.now(timezone.utc),
                 event_type="emergency_mode_activated",
                 ip_address="system",
                 action_taken="emergency_lockdown",
-                reason="Emergency mode activated via dynamic rules",
+                reason="[EMERGENCY MODE] activated via dynamic rules",
                 metadata={
                     "whitelist_count": len(whitelist),
                     "whitelist": whitelist[:10],  # Limit for logging
