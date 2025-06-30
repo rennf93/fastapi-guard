@@ -132,3 +132,4 @@ jobs:
             .
           COLOR: danger
           SLACK_THREAD_TS: ${{ steps.send_initial_slack_codeql.outputs.SLACK_THREAD_TS }}
+          
