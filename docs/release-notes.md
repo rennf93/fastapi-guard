@@ -17,7 +17,7 @@ Security Fixes (v3.0.1)
 ------------
 
 - **IMPORTANT**: Prevented ReDoS (Regular Expression Denial of Service - CWE-1333) attacks by replacing unbounded regex quantifiers with bounded ones. (GHSA-j47q-rc62-w448)
-- **CVE ID**: (TBD)
+- **CVE ID**: CVE-2025-53539
 
 ___
 
