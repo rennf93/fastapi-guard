@@ -709,6 +709,15 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                         reason=f"IP not allowed: {client_ip}",
                         level=self.config.log_suspicious_level,
                     )
+                    # Send global IP filtering event to agent
+                    await self._send_middleware_event(
+                        event_type="ip_blocked",
+                        request=request,
+                        action_taken="request_blocked",
+                        reason=f"IP {client_ip} not in global allowlist/blocklist",
+                        ip_address=client_ip,
+                        filter_type="global",
+                    )
                     return await self.create_error_response(
                         status_code=status.HTTP_403_FORBIDDEN,
                         default_message="Forbidden",
@@ -780,6 +789,16 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     decorator_type="access_control",
                     violation_type="user_agent",
                     blocked_user_agent=user_agent,
+                )
+            else:
+                # Global user agent block
+                await self._send_middleware_event(
+                    event_type="user_agent_blocked",
+                    request=request,
+                    action_taken="request_blocked",
+                    reason=f"User agent '{user_agent}' in global blocklist",
+                    user_agent=user_agent,
+                    filter_type="global",
                 )
 
             return await self.create_error_response(

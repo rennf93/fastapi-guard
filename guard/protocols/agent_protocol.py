@@ -66,7 +66,7 @@ class AgentHandlerProtocol(Protocol):
         """
         ...
 
-    async def health_check(self) -> bool:  # TODO: Missing in fastapi-guard-agent
+    async def health_check(self) -> bool:
         """
         Check if the agent is healthy and connected.
 
