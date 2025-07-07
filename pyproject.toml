@@ -7,7 +7,6 @@ authors = [
 ]
 readme = "README.md"
 license = {text = "MIT"}
-homepage = "https://github.com/rennf93/fastapi-guard"
 requires-python = ">=3.10,<3.14"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -31,6 +30,9 @@ dependencies = [
     "requests",
     "uvicorn",
 ]
+
+[project.urls]
+Homepage = "https://github.com/rennf93/fastapi-guard"
 
 [project.optional-dependencies]
 dev = [
