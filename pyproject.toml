@@ -1,6 +1,6 @@
 [project]
 name = "fastapi_guard"
-version = "3.0.0"
+version = "3.0.1"
 description = "A security library for FastAPI to control IPs, log requests, and detect penetration attempts."
 authors = [
     {name = "Renzo Franceschini", email = "rennf93@users.noreply.github.com"}
@@ -22,9 +22,9 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "aiohttp",
     "cachetools",
     "fastapi",
+    "httpx",
     "ipaddress",
     "maxminddb",
     "redis",
@@ -35,7 +35,6 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "black",
-    "httpx",
     "matplotlib",
     "mkdocs",
     "mkdocstrings",
@@ -105,10 +104,6 @@ warn_unreachable = true
 
 [[tool.mypy.overrides]]
 module = "pydantic.*"
-follow_imports = "skip"
-
-[[tool.mypy.overrides]]
-module = "aiohttp.*"
 follow_imports = "skip"
 
 [[tool.mypy.overrides]]

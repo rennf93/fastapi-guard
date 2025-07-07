@@ -16,12 +16,10 @@ async def test_ipinfo_db(tmp_path: Path) -> None:
 
     mock_response = Mock()
     mock_response.raise_for_status = Mock()
-    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-    mock_response.__aexit__ = AsyncMock()
-    mock_response.read = AsyncMock()
+    mock_response.content = b"test data"
 
     with (
-        patch("aiohttp.ClientSession.get", return_value=mock_response),
+        patch("httpx.AsyncClient.get", return_value=mock_response),
         patch("maxminddb.open_database"),
         patch("builtins.open", Mock()),
         patch("os.makedirs"),
@@ -41,7 +39,7 @@ def test_ipinfo_missing_token() -> None:
 async def test_ipinfo_download_failure(tmp_path: Path) -> None:
     db = IPInfoManager(token="test", db_path=tmp_path / "test.mmdb")
     with (
-        patch("aiohttp.ClientSession.get", side_effect=Exception("Download failed")),
+        patch("httpx.AsyncClient.get", side_effect=Exception("Download failed")),
         patch.object(IPInfoManager, "_is_db_outdated", return_value=True),
     ):
         await db.initialize()
@@ -53,7 +51,7 @@ async def test_ipinfo_download_failure(tmp_path: Path) -> None:
 async def test_db_initialization_retry(tmp_path: Path) -> None:
     db = IPInfoManager(token="test", db_path=tmp_path / "test.mmdb")
     with (
-        patch("aiohttp.ClientSession.get", side_effect=Exception("First fail")),
+        patch("httpx.AsyncClient.get", side_effect=Exception("First fail")),
         patch("asyncio.sleep") as mock_sleep,
         patch("builtins.open", Mock()),
     ):
@@ -68,14 +66,12 @@ async def test_database_retry_success(tmp_path: Path) -> None:
     db = IPInfoManager(token="test", db_path=tmp_path / "test.mmdb")
     mock_response = Mock()
     mock_response.raise_for_status = Mock()
-    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-    mock_response.__aexit__ = AsyncMock()
-    mock_response.read = AsyncMock(return_value=b"test data")
+    mock_response.content = b"test data"
 
     # Use a closure to track the number of calls
     call_count = 0
 
-    def side_effect_function(*args: Any, **kwargs: Any) -> AsyncMock:
+    async def side_effect_function(*args: Any, **kwargs: Any) -> Mock:
         nonlocal call_count
         call_count += 1
         if call_count == 1:
@@ -89,7 +85,7 @@ async def test_database_retry_success(tmp_path: Path) -> None:
     mock_open = Mock(return_value=mock_file_context)
 
     with (
-        patch("aiohttp.ClientSession.get", side_effect=side_effect_function),
+        patch("httpx.AsyncClient.get", side_effect=side_effect_function),
         patch("builtins.open", mock_open),
         patch("os.makedirs"),
         patch("asyncio.sleep") as mock_sleep,
@@ -194,7 +190,7 @@ async def test_corrupted_db_removal(tmp_path: Path) -> None:
     db.db_path.touch()
 
     with (
-        patch("aiohttp.ClientSession.get", side_effect=Exception("Download failed")),
+        patch("httpx.AsyncClient.get", side_effect=Exception("Download failed")),
         patch.object(IPInfoManager, "_is_db_outdated", return_value=True),
     ):
         await db.initialize()
@@ -207,7 +203,7 @@ async def test_download_exhausts_retries(tmp_path: Path) -> None:
     db = IPInfoManager(token="test", db_path=tmp_path / "test.mmdb")
 
     with (
-        patch("aiohttp.ClientSession.get", side_effect=Exception("Download failed")),
+        patch("httpx.AsyncClient.get", side_effect=Exception("Download failed")),
         patch("asyncio.sleep"),
     ):
         with pytest.raises(Exception, match="Download failed"):
@@ -256,13 +252,12 @@ async def test_redis_cache_update(tmp_path: Path) -> None:
     db = IPInfoManager(token="test", db_path=tmp_path / "test.mmdb")
     db.redis_handler = AsyncMock()
 
-    mock_response = AsyncMock()
-    mock_response.__aenter__.return_value = mock_response
+    mock_response = Mock()
     mock_response.raise_for_status = Mock()
-    mock_response.read.return_value = b"new_db_data"
+    mock_response.content = b"new_db_data"
 
     with (
-        patch("aiohttp.ClientSession.get", return_value=mock_response),
+        patch("httpx.AsyncClient.get", return_value=mock_response),
         patch("maxminddb.open_database"),
     ):
         await db._download_database()

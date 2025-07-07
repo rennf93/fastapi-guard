@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-import aiohttp
+import httpx
 import maxminddb
 from maxminddb import Reader
 
@@ -76,24 +76,24 @@ class IPInfoManager:
         retries = 3
         backoff = 1
 
-        async with aiohttp.ClientSession() as session:
+        async with httpx.AsyncClient() as session:
             for attempt in range(retries):
                 try:
-                    async with session.get(url) as response:
-                        response.raise_for_status()
-                        with open(self.db_path, "wb") as f:
-                            f.write(await response.read())
+                    response = await session.get(url)
+                    response.raise_for_status()
+                    with open(self.db_path, "wb") as f:
+                        f.write(response.content)
 
-                        if self.redis_handler is not None:
-                            with open(self.db_path, "rb") as f:
-                                db_content = f.read().decode("latin-1")
-                            await self.redis_handler.set_key(
-                                "ipinfo",
-                                "database",
-                                db_content,
-                                ttl=86400,  # 24 hours
-                            )
-                        return
+                    if self.redis_handler is not None:
+                        with open(self.db_path, "rb") as f:
+                            db_content = f.read().decode("latin-1")
+                        await self.redis_handler.set_key(
+                            "ipinfo",
+                            "database",
+                            db_content,
+                            ttl=86400,  # 24 hours
+                        )
+                    return
                 except Exception:
                     if attempt == retries - 1:
                         raise

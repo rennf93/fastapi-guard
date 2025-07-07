@@ -622,7 +622,6 @@ Acknowledgements
 
 - [FastAPI](https://fastapi.tiangolo.com/)
 - [IPInfo](https://ipinfo.io/)
-- [aiohttp](https://docs.aiohttp.org/)
 - [cachetools](https://cachetools.readthedocs.io/)
 - [requests](https://docs.python-requests.org/)
 - [Redis](https://redis.io/)
