@@ -11,7 +11,7 @@ import maxminddb
 from maxminddb import Reader
 
 if TYPE_CHECKING:
-    from guard_agent import SecurityEvent
+    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 class IPInfoManager:

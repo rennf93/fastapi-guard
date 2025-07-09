@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 import requests
 
 if TYPE_CHECKING:
-    from guard_agent import SecurityEvent
+    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 def fetch_aws_ip_ranges() -> set[ipaddress.IPv4Network | ipaddress.IPv6Network]:

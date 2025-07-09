@@ -13,7 +13,7 @@ from guard.scripts.rate_lua import RATE_LIMIT_SCRIPT
 from guard.utils import log_activity
 
 if TYPE_CHECKING:
-    from guard_agent import SecurityEvent
+    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 class RateLimitManager:

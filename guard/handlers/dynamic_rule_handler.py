@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from guard.models import DynamicRules, SecurityConfig
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from guard_agent import SecurityEvent
 
 

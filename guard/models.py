@@ -11,7 +11,7 @@ from typing_extensions import Self
 from guard.protocols.geo_ip_protocol import GeoIPHandler
 
 if TYPE_CHECKING:
-    from guard_agent import AgentConfig
+    from guard_agent import AgentConfig  # pragma: no cover
 
 
 class SecurityConfig(BaseModel):

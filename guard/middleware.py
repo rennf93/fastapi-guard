@@ -33,7 +33,7 @@ if TYPE_CHECKING:
         SecurityEvent,
         SecurityMetric,
         guard_agent,
-    )
+    )  # pragma: no cover
 
 
 class SecurityMiddleware(BaseHTTPMiddleware):

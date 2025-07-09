@@ -12,7 +12,7 @@ from fastapi import Response
 from guard.models import SecurityConfig
 
 if TYPE_CHECKING:
-    from guard_agent import SecurityEvent
+    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 class BehaviorRule:

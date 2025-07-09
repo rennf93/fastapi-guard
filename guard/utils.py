@@ -10,14 +10,14 @@ from fastapi import Request
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.suspatterns_handler import sus_patterns_handler
 from guard.models import GeoIPHandler, SecurityConfig
-from guard.protocols.agent_protocol import AgentHandlerProtocol
 
 if TYPE_CHECKING:
-    from guard_agent import SecurityEvent
+    from guard_agent import SecurityEvent  # pragma: no cover
+    from guard_agent.protocols import AgentHandlerProtocol  # pragma: no cover
 
 
 async def send_agent_event(
-    agent_handler: AgentHandlerProtocol | None,
+    agent_handler: "AgentHandlerProtocol | None",
     event_type: str,
     ip_address: str,
     action_taken: str,
@@ -93,7 +93,7 @@ async def setup_custom_logging(log_file: str) -> logging.Logger:
 async def extract_client_ip(
     request: Request,
     config: SecurityConfig,
-    agent_handler: AgentHandlerProtocol | None = None,
+    agent_handler: "AgentHandlerProtocol | None" = None,
 ) -> str:
     """
     Securely extract the client IP address from the request,

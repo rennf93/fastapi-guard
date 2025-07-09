@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 from cachetools import TTLCache
 
 if TYPE_CHECKING:
-    from guard_agent import SecurityEvent
+    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 class IPBanManager:
