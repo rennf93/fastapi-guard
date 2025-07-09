@@ -1,7 +1,7 @@
 from collections.abc import Awaitable, Callable
 from ipaddress import ip_address, ip_network
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import Request, Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -18,7 +18,7 @@ class SecurityConfig(BaseModel):
     including IP whitelists and blacklists, blocked countries,
     blocked user agents, rate limiting, automatic IP banning,
     HTTPS enforcement, custom hooks, CORS settings,
-    and blocking of cloud provider IPs.
+    blocking of cloud provider IPs, and security headers.
 
     Whitelist takes precedence over all other rules.
     IP addresses can be specified as individual IPs or CIDR ranges.
@@ -26,6 +26,57 @@ class SecurityConfig(BaseModel):
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    # Security Headers Configuration
+    csp_directives: Optional[Dict[str, List[str]]] = Field(
+        default=None,
+        description="Content Security Policy directives",
+    )
+    
+    hsts_max_age: int = Field(
+        default=63072000,  # 2 years in seconds
+        description="HTTP Strict Transport Security max-age in seconds",
+    )
+    
+    frame_options: str = Field(
+        default="SAMEORIGIN",
+        description="X-Frame-Options header value (e.g., DENY, SAMEORIGIN, ALLOW-FROM uri)",
+    )
+    
+    content_type_options: str = Field(
+        default="nosniff",
+        description="X-Content-Type-Options header value (should be 'nosniff')",
+    )
+    
+    xss_protection: str = Field(
+        default="1; mode=block",
+        description="X-XSS-Protection header value",
+    )
+    
+    referrer_policy: str = Field(
+        default="strict-origin-when-cross-origin",
+        description="Referrer-Policy header value",
+    )
+    
+    permissions_policy: Optional[Dict[str, List[str]]] = Field(
+        default=None,
+        description="Permissions-Policy header directives",
+    )
+    
+    cross_origin_opener_policy: str = Field(
+        default="same-origin",
+        description="Cross-Origin-Opener-Policy header value",
+    )
+    
+    cross_origin_resource_policy: str = Field(
+        default="same-origin",
+        description="Cross-Origin-Resource-Policy header value",
+    )
+    
+    cross_origin_embedder_policy: str = Field(
+        default="require-corp",
+        description="Cross-Origin-Embedder-Policy header value",
+    )
 
     trusted_proxies: list[str] = Field(
         default_factory=list,

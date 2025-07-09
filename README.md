@@ -66,6 +66,7 @@ Features
 - **IP Whitelisting and Blacklisting**: Control access based on IP addresses.
 - **User Agent Filtering**: Block requests from specific user agents.
 - **Rate Limiting**: Limit the number of requests from a single IP.
+- **Security Headers**: Add essential security headers to protect against common web vulnerabilities (CSP, HSTS, XSS protection, etc.)
 - **Automatic IP Banning**: Automatically ban IPs after a certain number of suspicious requests.
 - **Penetration Attempt Detection**: Detect and log potential penetration attempts.
 - **Custom Logging**: Log security events to a custom file.

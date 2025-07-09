@@ -5,14 +5,13 @@ import time
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 from ipaddress import ip_address, ip_network
-from typing import Any
-
+from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
-
+from guard.handlers.security_headers import SecurityHeadersMiddleware
 from guard.decorators.base import BaseSecurityDecorator, RouteConfig
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
@@ -671,20 +670,31 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         based on SecurityConfig.
         """
         if config.enable_cors:
-            cors_params: dict[str, Any] = {
-                "allow_origins": config.cors_allow_origins,
-                "allow_methods": config.cors_allow_methods,
-                "allow_headers": config.cors_allow_headers,
-                "allow_credentials": config.cors_allow_credentials,
-                "max_age": config.cors_max_age,
-            }
-
-            if config.cors_expose_headers:
-                cors_params["expose_headers"] = config.cors_expose_headers
-
-            app.add_middleware(CORSMiddleware, **cors_params)
-            return True
-        return False
+            app.add_middleware(
+                CORSMiddleware,
+                allow_origins=config.cors_allow_origins or ["*"],
+                allow_credentials=config.cors_allow_credentials,
+                allow_methods=config.cors_allow_methods or ["*"],
+                allow_headers=config.cors_allow_headers or ["*"],
+                expose_headers=config.cors_expose_headers or [],
+                max_age=config.cors_max_age or 600,
+            )
+            
+        # Add security headers middleware
+        app = SecurityHeadersMiddleware(
+            app,
+            csp=config.csp_directives,
+            hsts_max_age=config.hsts_max_age,
+            frame_options=config.frame_options,
+            content_type_options=config.content_type_options,
+            xss_protection=config.xss_protection,
+            referrer_policy=config.referrer_policy,
+            permissions_policy=config.permissions_policy,
+            cross_origin_opener_policy=config.cross_origin_opener_policy,
+            cross_origin_resource_policy=config.cross_origin_resource_policy,
+            cross_origin_embedder_policy=config.cross_origin_embedder_policy,
+        )
+        return True
 
     async def initialize(self) -> None:
         """Initialize all components asynchronously"""
