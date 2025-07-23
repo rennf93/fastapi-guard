@@ -740,3 +740,100 @@ async def test_is_ip_allowed_blocked_country(mocker: MockerFixture) -> None:
 
     result = await is_ip_allowed("192.168.1.1", config, mock_ipinfo)
     assert not result
+
+
+@pytest.mark.asyncio
+async def test_detect_penetration_attempt_regex_timeout() -> None:
+    """Test regex timeout handling in detect_penetration_attempt."""
+    import concurrent.futures
+    from unittest.mock import MagicMock
+
+    async def receive() -> dict[str, str | bytes]:
+        return {"type": "http.request", "body": b""}
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [],
+            "query_string": b"param=test",
+            "client": ("127.0.0.1", 12345),
+        },
+        receive=receive,
+    )
+
+    # Mock the ThreadPoolExecutor and Future
+    mock_future = MagicMock()
+    mock_future.result.side_effect = concurrent.futures.TimeoutError()
+    mock_future.cancel = MagicMock()
+
+    mock_executor = MagicMock()
+    mock_executor.submit.return_value = mock_future
+    mock_executor.__enter__ = MagicMock(return_value=mock_executor)
+    mock_executor.__exit__ = MagicMock(return_value=None)
+
+    with (
+        patch("concurrent.futures.ThreadPoolExecutor", return_value=mock_executor),
+        patch("logging.warning") as mock_warning,
+    ):
+        result, trigger = await detect_penetration_attempt(request, regex_timeout=0.1)
+
+        # Should not detect as attack when timeout occurs
+        assert not result
+        assert trigger == ""
+
+        # Check that warning was logged
+        mock_warning.assert_called()
+        warning_msg = mock_warning.call_args[0][0]
+        assert "Regex timeout exceeded" in warning_msg
+        assert "Potential ReDoS attack blocked" in warning_msg
+
+        # Check that future was cancelled (multiple times for multiple patterns)
+        assert mock_future.cancel.call_count > 0
+
+
+@pytest.mark.asyncio
+async def test_detect_penetration_attempt_regex_exception() -> None:
+    """Test general exception handling in regex search."""
+    from unittest.mock import MagicMock
+
+    async def receive() -> dict[str, str | bytes]:
+        return {"type": "http.request", "body": b""}
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [],
+            "query_string": b"param=test",
+            "client": ("127.0.0.1", 12345),
+        },
+        receive=receive,
+    )
+
+    # Mock the ThreadPoolExecutor and Future to raise a general exception
+    mock_future = MagicMock()
+    mock_future.result.side_effect = Exception("Unexpected regex error")
+
+    mock_executor = MagicMock()
+    mock_executor.submit.return_value = mock_future
+    mock_executor.__enter__ = MagicMock(return_value=mock_executor)
+    mock_executor.__exit__ = MagicMock(return_value=None)
+
+    with (
+        patch("concurrent.futures.ThreadPoolExecutor", return_value=mock_executor),
+        patch("logging.error") as mock_error,
+    ):
+        result, trigger = await detect_penetration_attempt(request, regex_timeout=2.0)
+
+        # Should not detect as attack when exception occurs
+        assert not result
+        assert trigger == ""
+
+        # Check that error was logged
+        mock_error.assert_called()
+        error_msg = mock_error.call_args[0][0]
+        assert "Error in regex search" in error_msg
+        assert "Unexpected regex error" in str(mock_error.call_args[0])

@@ -10,6 +10,19 @@ Release Notes
 
 ___
 
+v3.0.2 (2025-07-22)
+-------------------
+
+Security Fixes (v3.0.2)
+------------
+
+- **IMPORTANT**: Enhanced ReDoS prevention - Prevent regex bypass due to length limitations on pattern regex. (GHSA-rrf6-pxg8-684g)
+- **CVE ID**: CVE-2025-54365
+- Added timeout to avoid catastrophical backtracking and/or regex bypass by length limitation expression.
+- Added new `regex_timeout` parameter to `SecurityConfig` to allow for custom timeout for regex pattern matching.
+
+___
+
 v3.0.1 (2025-07-07)
 -------------------
 
@@ -17,7 +30,7 @@ Security Fixes (v3.0.1)
 ------------
 
 - **IMPORTANT**: Prevented ReDoS (Regular Expression Denial of Service - CWE-1333) attacks by replacing unbounded regex quantifiers with bounded ones. (GHSA-j47q-rc62-w448)
-- **CVE ID**: (TBD)
+- **CVE ID**: CVE-2025-53539
 
 ___
 

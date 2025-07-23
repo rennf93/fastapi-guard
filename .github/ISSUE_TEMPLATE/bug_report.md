@@ -36,7 +36,7 @@ ___
 
 Environment
 ===========
-- FastAPI Guard version: [e.g. 3.0.1]
+- FastAPI Guard version: [e.g. 3.0.2]
 - Python version: [e.g. 3.11.10]
 - FastAPI version: [e.g. 0.115.0]
 - OS: [e.g. Ubuntu 22.04, Windows 11, MacOS 15.4]

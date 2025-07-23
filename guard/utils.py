@@ -1,4 +1,5 @@
 # fastapi_guard/utils.py
+import concurrent.futures
 import logging
 import re
 from datetime import datetime, timezone
@@ -435,7 +436,9 @@ async def is_ip_allowed(
         return True
 
 
-async def detect_penetration_attempt(request: Request) -> tuple[bool, str]:
+async def detect_penetration_attempt(
+    request: Request, regex_timeout: float = 2.0
+) -> tuple[bool, str]:
     """
     Detect potential penetration
     attempts in the request.
@@ -449,6 +452,8 @@ async def detect_penetration_attempt(request: Request) -> tuple[bool, str]:
     Args:
         request (Request):
             The FastAPI request object to analyze.
+        regex_timeout (float):
+            Timeout in seconds for each regex check. Defaults to 2.0 seconds.
 
     Returns:
         tuple[bool, str]:
@@ -458,6 +463,30 @@ async def detect_penetration_attempt(request: Request) -> tuple[bool, str]:
 
     suspicious_patterns = await sus_patterns_handler.get_all_compiled_patterns()
 
+    def _regex_search_with_timeout(
+        pattern: re.Pattern, text: str, timeout: float
+    ) -> bool:
+        """Execute regex search with a timeout to prevent ReDoS."""
+
+        def _search() -> bool:
+            return pattern.search(text) is not None
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_search)
+            try:
+                return future.result(timeout=timeout)
+            except concurrent.futures.TimeoutError:
+                logging.warning(
+                    f"Regex timeout exceeded for pattern '{pattern.pattern}' - "
+                    f"Potential ReDoS attack blocked."
+                )
+                # Cancel the future to clean up
+                future.cancel()
+                return False
+            except Exception as e:
+                logging.error(f"Error in regex search: {str(e)}")
+                return False
+
     async def check_value(value: str) -> tuple[bool, str]:
         try:
             import json
@@ -466,7 +495,11 @@ async def detect_penetration_attempt(request: Request) -> tuple[bool, str]:
             if isinstance(data, dict):
                 for pattern in suspicious_patterns:
                     for k, v in data.items():
-                        if isinstance(v, str) and pattern.search(v):
+                        if isinstance(v, str) and _regex_search_with_timeout(
+                            pattern,
+                            v,
+                            regex_timeout,
+                        ):
                             return (
                                 True,
                                 f"JSON field '{k}' matched pattern '{pattern.pattern}'",
@@ -474,7 +507,7 @@ async def detect_penetration_attempt(request: Request) -> tuple[bool, str]:
                 return False, ""
         except json.JSONDecodeError:
             for pattern in suspicious_patterns:
-                if pattern.search(value):
+                if _regex_search_with_timeout(pattern, value, regex_timeout):
                     return True, f"Value matched pattern '{pattern.pattern}'"
         return False, ""
 

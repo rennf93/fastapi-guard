@@ -824,7 +824,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if penetration_enabled and not self._should_bypass_check(
             "penetration", route_config
         ):
-            detection_result, trigger_info = await detect_penetration_attempt(request)
+            detection_result, trigger_info = await detect_penetration_attempt(
+                request, self.config.regex_timeout
+            )
         elif (
             route_specific_detection is False
             and self.config.enable_penetration_detection

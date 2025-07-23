@@ -380,6 +380,19 @@ class SecurityConfig(BaseModel):
         Whether to enable penetration attempt detection.
     """
 
+    regex_timeout: float = Field(
+        default=2.0,
+        description="Timeout for regex pattern matching to prevent ReDoS attacks",
+        ge=0.1,
+        le=30.0,
+    )
+    """
+    float:
+        Timeout in seconds for regex pattern matching.
+        This prevents ReDoS (Regular Expression Denial of Service) attacks.
+        Must be between 0.1 and 30.0 seconds. Default is 2.0 seconds.
+    """
+
     ipinfo_token: str | None = Field(
         default=None,
         description="IPInfo API token for IP geolocation. Deprecated. "
