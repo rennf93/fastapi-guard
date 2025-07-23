@@ -190,6 +190,7 @@ class TestDynamicRuleManagerUpdateLoop:
 
         # Track update calls
         update_count = 0
+
         async def mock_update_rules() -> None:
             nonlocal update_count
             update_count += 1
@@ -228,6 +229,7 @@ class TestDynamicRuleManagerUpdateLoop:
 
         # Mock update_rules to raise exception
         call_count = 0
+
         async def mock_update_rules() -> None:
             nonlocal call_count
             call_count += 1
