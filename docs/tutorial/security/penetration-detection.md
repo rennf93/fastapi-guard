@@ -21,7 +21,8 @@ Enable penetration detection:
 config = SecurityConfig(
     enable_penetration_detection=True,
     auto_ban_threshold=5,  # Ban after 5 suspicious requests
-    auto_ban_duration=3600  # Ban duration in seconds
+    auto_ban_duration=3600,  # Ban duration in seconds
+    regex_timeout=2.0  # Timeout for regex pattern matching (default: 2.0 seconds)
 )
 ```
 
@@ -45,6 +46,30 @@ The system checks for various attack patterns including:
 
 ___
 
+Regex Timeout Protection
+------------------------
+
+To prevent ReDoS (Regular Expression Denial of Service) attacks, FastAPI Guard implements a timeout mechanism for regex pattern matching:
+
+```python
+config = SecurityConfig(
+    regex_timeout=2.0  # Default: 2.0 seconds
+)
+```
+
+The `regex_timeout` parameter:
+- Prevents malicious inputs from causing excessive CPU usage through regex backtracking
+- Can be configured between 0.1 and 30.0 seconds
+- Defaults to 2.0 seconds for balanced security and performance
+- If a regex match exceeds the timeout, it's considered non-matching and logged as a potential ReDoS attempt
+
+When a timeout occurs, you'll see a warning in the logs:
+```text
+WARNING - Regex timeout exceeded for pattern '<pattern>' - Potential ReDoS attack blocked.
+```
+
+___
+
 Custom Detection Logic
 ----------------------
 
@@ -55,7 +80,8 @@ from guard.utils import detect_penetration_attempt
 
 @app.post("/api/data")
 async def submit_data(request: Request):
-    is_suspicious, trigger_info = await detect_penetration_attempt(request)
+    # Use custom timeout if needed (default is 2.0 seconds)
+    is_suspicious, trigger_info = await detect_penetration_attempt(request, regex_timeout=1.5)
     if is_suspicious:
         return JSONResponse(
             status_code=400,

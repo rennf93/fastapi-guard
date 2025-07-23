@@ -19,85 +19,85 @@ class SusPatternsManager:
 
     patterns: list[str] = [
         # XSS
-        r"<script[^>]{0,100}>[^<]{0,1000}<\/script\s{0,10}>",  # Basic script tag
-        r"javascript:\s{0,10}[^\s]{1,200}",  # javascript: protocol
+        r"<script[^>]*>[^<]*<\/script\s*>",  # Basic script tag
+        r"javascript:\s*[^\s]+",  # javascript: protocol
         # Event handlers
         r"(?:on(?:error|load|click|mouseover|submit|mouse|unload|change|focus|"
-        r"blur|drag))=(?:[\"'][^\"']{1,100}[\"']|[^\s>]{1,100})",
+        r"blur|drag))=(?:[\"'][^\"']*[\"']|[^\s>]+)",
         # Malicious attributes
-        r"(?:<[^>]{1,200}\s{1,20}(?:href|src|data|action)\s{0,10}=[\s\"\']{0,3}(?:javascript|"
+        r"(?:<[^>]+\s+(?:href|src|data|action)\s*=[\s\"\']*(?:javascript|"
         r"vbscript|data):)",
         # CSS expressions
-        r"(?:<[^>]{1,200}style\s{0,10}=[\s\"\']{0,3}[^>\"\']{1,200}(?:expression|behavior|url)\s{0,10}\("
-        r"[^)]{1,200}\))",
-        r"(?:<object[^>]{1,200}>[\s\S]{1,1000}<\/object\s{0,10}>)",  # Suspicious obj
-        r"(?:<embed[^>]{1,200}>[\s\S]{1,1000}<\/embed\s{0,10}>)",  # Suspicious embeds
-        r"(?:<applet[^>]{1,200}>[\s\S]{1,1000}<\/applet\s{0,10}>)",  # Java applets
+        r"(?:<[^>]+style\s*=[\s\"\']*[^>\"\']*(?:expression|behavior|url)\s*\("
+        r"[^)]*\))",
+        r"(?:<object[^>]*>[\s\S]*<\/object\s*>)",  # Suspicious obj
+        r"(?:<embed[^>]*>[\s\S]*<\/embed\s*>)",  # Suspicious embeds
+        r"(?:<applet[^>]*>[\s\S]*<\/applet\s*>)",  # Java applets
         # SQL Injection
         # Basic SELECT statements
-        r"(?i)SELECT\s{1,20}[\w\s,\*]{1,200}\s{1,20}FROM\s{1,20}[\w\s\._]{1,100}",
+        r"(?i)SELECT\s+[\w\s,\*]+\s+FROM\s+[\w\s\._]+",
         # UNION-based queries
-        r"(?i)UNION\s{1,20}(?:ALL\s{1,20})?SELECT",
+        r"(?i)UNION\s+(?:ALL\s+)?SELECT",
         # Logic-based
-        r"(?i)('\s{0,5}(?:OR|AND)\s{0,5}[\(\s]{0,5}'?[\d\w]{1,50}\s{0,5}(?:=|LIKE|<|>|<=|>=)\s{0,5}"
-        r"[\(\s]{0,5}'?[\d\w]{1,50})",
+        r"(?i)('\s*(?:OR|AND)\s*[\(\s]*'?[\d\w]+\s*(?:=|LIKE|<|>|<=|>=)\s*"
+        r"[\(\s]*'?[\d\w]+)",
         # UNION-based
-        r"(?i)(UNION\s{1,20}(?:ALL\s{1,20})?SELECT\s{1,20}(?:NULL[,\s]{0,10}){1,20}|\(\s{0,10}SELECT\s{1,20}"
+        r"(?i)(UNION\s+(?:ALL\s+)?SELECT\s+(?:NULL[,\s]*)+|\(\s*SELECT\s+"
         r"(?:@@|VERSION))",
-        r"(?i)(?:INTO\s{1,20}(?:OUTFILE|DUMPFILE)\s{1,20}'[^']{1,200}')",  # File ops
-        r"(?i)(?:LOAD_FILE\s{0,10}\([^)]{1,200}\))",  # File reading
-        r"(?i)(?:BENCHMARK\s{0,10}\(\s{0,10}\d{1,10}\s{0,10},)",  # Time-based
-        r"(?i)(?:SLEEP\s{0,10}\(\s{0,10}\d{1,10}\s{0,10}\))",  # Time-based
+        r"(?i)(?:INTO\s+(?:OUTFILE|DUMPFILE)\s+'[^']+')",  # File ops
+        r"(?i)(?:LOAD_FILE\s*\([^)]+\))",  # File reading
+        r"(?i)(?:BENCHMARK\s*\(\s*\d+\s*,)",  # Time-based
+        r"(?i)(?:SLEEP\s*\(\s*\d+\s*\))",  # Time-based
         # Comment-based
-        r"(?i)(?:\/\*![0-9]{0,10}\s{0,10}(?:OR|AND|UNION|SELECT|INSERT|DELETE|DROP|"
+        r"(?i)(?:\/\*![0-9]*\s*(?:OR|AND|UNION|SELECT|INSERT|DELETE|DROP|"
         r"CONCAT|CHAR|UPDATE)\b)",
         # Directory Traversal
-        r"(?:\.\./|\.\\/){2,10}",  # Multiple traversal
+        r"(?:\.\.\/|\.\.\\)(?:\.\.\/|\.\.\\)+",  # Multiple traversal
         # Sensitive files
         r"(?:/etc/(?:passwd|shadow|group|hosts|motd|issue|mysql/my.cnf|ssh/"
         r"ssh_config)$)",
-        r"(?:boot\.ini|win\.ini|system\.ini|config\.sys)\s{0,10}$",  # Windows files
+        r"(?:boot\.ini|win\.ini|system\.ini|config\.sys)\s*$",  # Windows files
         r"(?:\/proc\/self\/environ$)",  # Process information
-        r"(?:\/var\/log\/[^\/]{1,100}$)",  # Log files
+        r"(?:\/var\/log\/[^\/]+$)",  # Log files
         # Command Injection
         # Basic commands
-        r";\s{0,10}(?:ls|cat|rm|chmod|chown|wget|curl|nc|netcat|ping|telnet)\s{1,20}"
-        r"-[a-zA-Z]{1,20}\s{1,20}",
+        r";\s*(?:ls|cat|rm|chmod|chown|wget|curl|nc|netcat|ping|telnet)\s+"
+        r"-[a-zA-Z]+\s+",
         # Download commands
-        r"\|\s{0,10}(?:wget|curl|fetch|lwp-download|lynx|links|GET)\s{1,20}",
+        r"\|\s*(?:wget|curl|fetch|lwp-download|lynx|links|GET)\s+",
         # Command substitution
-        r"(?:[;&|`]\s{0,10}(?:\$\([^)]{1,100}\)|\$\{[^}]{1,100}\}))",
+        r"(?:[;&|`]\s*(?:\$\([^)]+\)|\$\{[^}]+\}))",
         # Shell execution
-        r"(?:^|;)\s{0,10}(?:bash|sh|ksh|csh|tsch|zsh|ash)\s{1,20}-[a-zA-Z]{1,20}",
+        r"(?:^|;)\s*(?:bash|sh|ksh|csh|tsch|zsh|ash)\s+-[a-zA-Z]+",
         # PHP functions
-        r"\b(?:eval|system|exec|shell_exec|passthru|popen|proc_open)\s{0,10}\(",
+        r"\b(?:eval|system|exec|shell_exec|passthru|popen|proc_open)\s*\(",
         # File Inclusion
         # Protocols
         r"(?:php|data|zip|rar|file|glob|expect|input|phpinfo|zlib|phar|ssh2|"
-        r"rar|ogg|expect)://[^\s]{1,200}",
+        r"rar|ogg|expect)://[^\s]+",
         # URLs
-        r"(?:\/\/[0-9a-zA-Z]([-.\w]{0,50}[0-9a-zA-Z]){0,10}(:[0-9]{0,10}){0,1}(?:\/?)(?:"
-        r"[a-zA-Z0-9\-\.\?,'/\\\+&amp;%\$#_]{0,500})?)",
+        r"(?:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:[0-9]+)?(?:\/?)(?:"
+        r"[a-zA-Z0-9\-\.\?,'/\\\+&amp;%\$#_]*)?)",
         # LDAP Injection
-        r"\(\s{0,10}[|&]\s{0,10}\(\s{0,10}[^)]{1,100}=[*]",  # Wildcards
-        r"(?:\*(?:[\s\d\w]{1,50}\s{0,10}=|=\s{0,10}[\d\w\s]{1,50}))",  # Attribute match
-        r"(?:\(\s{0,10}[&|]\s{0,10})",  # Logic operations
+        r"\(\s*[|&]\s*\(\s*[^)]+=[*]",  # Wildcards
+        r"(?:\*(?:[\s\d\w]+\s*=|=\s*[\d\w\s]+))",  # Attribute match
+        r"(?:\(\s*[&|]\s*)",  # Logic operations
         # XML Injection
-        r"<!(?:ENTITY|DOCTYPE)[^>]{1,200}SYSTEM[^>]{1,200}>",  # XXE
-        r"(?:<!\[CDATA\[.{0,1000}?\]\]>)",  # CDATA sections
-        r"(?:<\?xml.{0,200}?\?>)",  # XML declarations
+        r"<!(?:ENTITY|DOCTYPE)[^>]+SYSTEM[^>]+>",  # XXE
+        r"(?:<!\[CDATA\[.*?\]\]>)",  # CDATA sections
+        r"(?:<\?xml.*?\?>)",  # XML declarations
         # SSRF
         # Local addresses
-        r"(?:^|\s|/)(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::(?:\d{0,10})\]|(?:169\.254|192\.168|10\.|"
-        r"172\.(?:1[6-9]|2[0-9]|3[01]))\.\d{1,3})(?:\s|$|/)",
-        r"(?:file|dict|gopher|jar|tftp)://[^\s]{1,200}",  # Dangerous protocols
+        r"(?:^|\s|/)(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::(?:\d*)\]|(?:169\.254|192\.168|10\.|"
+        r"172\.(?:1[6-9]|2[0-9]|3[01]))\.\d+)(?:\s|$|/)",
+        r"(?:file|dict|gopher|jar|tftp)://[^\s]+",  # Dangerous protocols
         # NoSQL Injection
         # MongoDB
-        r"\{\s{0,10}\$(?:where|gt|lt|ne|eq|regex|in|nin|all|size|exists|type|mod|"
+        r"\{\s*\$(?:where|gt|lt|ne|eq|regex|in|nin|all|size|exists|type|mod|"
         r"options):",
-        r"(?:\{\s{0,10}\$[a-zA-Z]{1,20}\s{0,10}:\s{0,10}(?:\{|\[))",  # Nested operators
+        r"(?:\{\s*\$[a-zA-Z]+\s*:\s*(?:\{|\[))",  # Nested operators
         # File Upload
-        r"(?i)filename=[\"'].{0,200}?\.(?:php\d{0,5}|phar|phtml|exe|jsp|asp|aspx|sh|"
+        r"(?i)filename=[\"'].*?\.(?:php\d*|phar|phtml|exe|jsp|asp|aspx|sh|"
         r"bash|rb|py|pl|cgi|com|bat|cmd|vbs|vbe|js|ws|wsf|msi|hta)[\"\']",
         # Path Traversal
         # Encoded traversal
@@ -105,11 +105,11 @@ class SusPatternsManager:
         r"%e0%80%ae|%25c0%25ae)/",
         # Template Injection
         # Basic template injection
-        r"\{\{\s{0,10}[^\}]{1,200}(?:system|exec|popen|eval|require|include)\s{0,10}\}\}",
+        r"\{\{\s*[^\}]+(?:system|exec|popen|eval|require|include)\s*\}\}",
         # Alternative syntax
-        r"\{\%\s{0,10}[^\%]{1,200}(?:system|exec|popen|eval|require|include)\s{0,10}\%\}",
+        r"\{\%\s*[^\%]+(?:system|exec|popen|eval|require|include)\s*\%\}",
         # HTTP Response Splitting
-        r"[\r\n]\s{0,10}(?:HTTP\/[0-9.]{1,10}|Location:|Set-Cookie:)",
+        r"[\r\n]\s*(?:HTTP\/[0-9.]+|Location:|Set-Cookie:)",
     ]
 
     compiled_patterns: list[re.Pattern]
