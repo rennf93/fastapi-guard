@@ -64,6 +64,7 @@ The `regex_timeout` parameter:
 - If a regex match exceeds the timeout, it's considered non-matching and logged as a potential ReDoS attempt
 
 When a timeout occurs, you'll see a warning in the logs:
+
 ```text
 WARNING - Regex timeout exceeded for pattern '<pattern>' - Potential ReDoS attack blocked.
 ```
