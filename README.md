@@ -60,6 +60,8 @@ Documentation
 
 🕹️ **[Live Playground](https://playground.fastapi-guard.com)** - Testing playground for FastAPI Guard's features in action.
 
+🤖 **[Monitoring Agent Integration](https://github.com/rennf93/fastapi-guard-agent)** - Monitor your FastAPI Guard instance with a monitoring agent.
+
 ___
 
 Features

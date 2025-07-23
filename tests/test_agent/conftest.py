@@ -48,6 +48,16 @@ def mock_guard_agent() -> Generator[Any, Any, Any]:
                 create=True,
             ),
             patch(
+                "guard.handlers.ipban_handler.SecurityEvent",
+                SecurityEvent,
+                create=True,
+            ),
+            patch(
+                "guard.handlers.suspatterns_handler.SecurityEvent",
+                SecurityEvent,
+                create=True,
+            ),
+            patch(
                 "guard.models.AgentConfig",
                 AgentConfig,
                 create=True,
