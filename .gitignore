@@ -178,7 +178,8 @@ cython_debug/
 #.idea/
 .DS_Store
 manual_testing/
-.cursor/
 ZZZ/
 CLAUDE.md
 .claude/
+.cursor/
+.kiro/
