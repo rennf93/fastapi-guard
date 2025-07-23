@@ -185,14 +185,11 @@ class TestDynamicRuleManagerUpdateLoop:
         # Reset singleton
         DynamicRuleManager._instance = None
 
-        # Use a very short interval for testing
         config.dynamic_rule_interval = 1
-
         manager = DynamicRuleManager(config)
 
         # Track update calls
         update_count = 0
-
         async def mock_update_rules() -> None:
             nonlocal update_count
             update_count += 1
@@ -231,7 +228,6 @@ class TestDynamicRuleManagerUpdateLoop:
 
         # Mock update_rules to raise exception
         call_count = 0
-
         async def mock_update_rules() -> None:
             nonlocal call_count
             call_count += 1
@@ -271,7 +267,6 @@ class TestDynamicRuleManagerUpdateLoop:
                 0.1
             )  # Long enough to ensure cancellation happens during the loop
 
-        # Use patch.object to mock the method
         with patch.object(manager, "update_rules", mock_update_rules):
             # Create task and let it start
             with caplog.at_level(logging.INFO):

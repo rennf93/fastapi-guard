@@ -55,7 +55,7 @@ class TestDecoratorAgentIntegration:
                 {"requests_made": 101},
                 "test",
                 "10.0.0.1",
-                "basic_success"
+                "basic_success",
             ),
             (
                 "config_violation",
@@ -65,7 +65,7 @@ class TestDecoratorAgentIntegration:
                 {},
                 None,
                 "172.16.0.1",
-                "no_user_agent"
+                "no_user_agent",
             ),
             (
                 "content_filtered",
@@ -80,7 +80,7 @@ class TestDecoratorAgentIntegration:
                 },
                 "test-agent",
                 "203.0.113.0",
-                "complex_metadata"
+                "complex_metadata",
             ),
         ],
     )
@@ -198,9 +198,12 @@ class TestDecoratorAgentIntegration:
 
             # Verify correct parameters passed
             expected_decorator_type = (
-                "authentication" if helper_method == "send_authentication_failed_event"
-                else "rate_limiting" if helper_method == "send_rate_limit_event"
-                else args[0] if helper_method == "send_decorator_violation_event"
+                "authentication"
+                if helper_method == "send_authentication_failed_event"
+                else "rate_limiting"
+                if helper_method == "send_rate_limit_event"
+                else args[0]
+                if helper_method == "send_decorator_violation_event"
                 else args[1]  # send_access_denied_event: second arg is decorator_type
             )
 
@@ -321,8 +324,6 @@ class TestDecoratorAgentIntegration:
             # Verify all events were sent
             assert decorator.agent_handler.send_event.call_count == 3
 
-    # Non-parametrized tests for specific functionality
-
     def test_decorator_initialization(self, config: SecurityConfig) -> None:
         """Test BaseSecurityDecorator initialization."""
         config = SecurityConfig(enable_penetration_detection=True)
@@ -375,7 +376,7 @@ class TestDecoratorAgentIntegration:
         self,
         config: SecurityConfig,
         enable_penetration_detection: bool,
-        expected_suspicious_detection: bool
+        expected_suspicious_detection: bool,
     ) -> None:
         """Test route config creation with different penetration detection settings."""
         config.enable_penetration_detection = enable_penetration_detection
@@ -414,7 +415,7 @@ class TestDecoratorAgentIntegration:
         self,
         config: SecurityConfig,
         redis_handler: AsyncMock | None,
-        should_initialize: bool
+        should_initialize: bool,
     ) -> None:
         """Test behavior tracking initialization."""
         decorator = BaseSecurityDecorator(config)

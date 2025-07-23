@@ -36,30 +36,37 @@ def mock_guard_agent() -> Generator[Any, Any, Any]:
             "guard_agent.models": mock_guard_agent.models,
         },
     ):
-        with patch(
-            "guard.handlers.dynamic_rule_handler.SecurityEvent",
-            SecurityEvent,
-            create=True,
-        ), patch(
-            "guard.decorators.base.SecurityEvent",
-            SecurityEvent,
-            create=True,
-        ), patch(
-            "guard.models.AgentConfig",
-            AgentConfig,
-            create=True,
-        ), patch(
-            "guard.middleware.guard_agent",
-            mock_guard_agent_func,
-            create=True,
-        ), patch(
-            "guard.middleware.SecurityEvent",
-            SecurityEvent,
-            create=True,
-        ), patch(
-            "guard.middleware.SecurityMetric",
-            SecurityMetric,
-            create=True,
+        with (
+            patch(
+                "guard.handlers.dynamic_rule_handler.SecurityEvent",
+                SecurityEvent,
+                create=True,
+            ),
+            patch(
+                "guard.decorators.base.SecurityEvent",
+                SecurityEvent,
+                create=True,
+            ),
+            patch(
+                "guard.models.AgentConfig",
+                AgentConfig,
+                create=True,
+            ),
+            patch(
+                "guard.middleware.guard_agent",
+                mock_guard_agent_func,
+                create=True,
+            ),
+            patch(
+                "guard.middleware.SecurityEvent",
+                SecurityEvent,
+                create=True,
+            ),
+            patch(
+                "guard.middleware.SecurityMetric",
+                SecurityMetric,
+                create=True,
+            ),
         ):
             yield mock_guard_agent
 
