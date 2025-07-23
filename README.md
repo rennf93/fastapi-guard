@@ -52,6 +52,8 @@
 Documentation
 =============
 
+🌐 **[Website](https://fastapi-guard.com)** - Check out the website!
+
 🎮 **[Join our Discord Community](https://discord.gg/ZW7ZJbjMkK)** - Connect with other developers!
 
 📚 **[Documentation](https://rennf93.github.io/fastapi-guard)** - Full technical documentation and deep dive into its inner workings.

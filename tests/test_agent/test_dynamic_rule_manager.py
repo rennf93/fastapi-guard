@@ -11,56 +11,6 @@ from guard.handlers.dynamic_rule_handler import DynamicRuleManager
 from guard.models import DynamicRules, SecurityConfig
 
 
-# Mock Redis and IPInfo to prevent initialization issues
-@pytest.fixture(autouse=True)
-def mock_dependencies(mock_guard_agent: MagicMock) -> Generator[Any, Any, Any]:
-    """Mock external dependencies to prevent connection attempts."""
-    with (
-        patch(
-            "guard.handlers.redis_handler.RedisManager.initialize",
-            new_callable=AsyncMock,
-        ),
-        patch("guard.handlers.ipinfo_handler.IPInfoManager.__new__") as mock_ipinfo,
-    ):
-        # Return a mock IPInfoManager instance
-        mock_ipinfo_instance = MagicMock()
-        mock_ipinfo.return_value = mock_ipinfo_instance
-        yield
-
-
-@pytest.fixture
-def config() -> SecurityConfig:
-    """Create a test security config."""
-    return SecurityConfig(
-        enable_agent=True,
-        agent_api_key="test-api-key",
-        agent_endpoint="http://test.example.com",
-        enable_dynamic_rules=True,
-        dynamic_rule_interval=5,
-        enable_penetration_detection=True,
-        enable_ip_banning=True,
-        enable_rate_limiting=True,
-        rate_limit=100,
-        rate_limit_window=60,
-        auto_ban_threshold=5,
-    )
-
-
-@pytest.fixture
-def mock_agent_handler() -> AsyncMock:
-    """Create a mock agent handler."""
-    handler = AsyncMock()
-    handler.get_dynamic_rules = AsyncMock()
-    handler.send_event = AsyncMock()
-    return handler
-
-
-@pytest.fixture
-def mock_redis_handler() -> AsyncMock:
-    """Create a mock redis handler."""
-    return AsyncMock()
-
-
 @pytest.fixture
 def sample_rules() -> DynamicRules:
     """Create sample dynamic rules for testing."""
@@ -261,10 +211,7 @@ class TestDynamicRuleManagerUpdateLoop:
             loop_task.cancel()
 
             # Wait for cancellation
-            try:
-                await loop_task
-            except asyncio.CancelledError:
-                pass
+            await loop_task
 
         # Verify updates were called
         assert update_count >= 2
@@ -302,10 +249,7 @@ class TestDynamicRuleManagerUpdateLoop:
                 # Cancel the task
                 loop_task.cancel()
 
-                try:
-                    await loop_task
-                except asyncio.CancelledError:
-                    pass
+                await loop_task
 
         # Verify exception was logged
         assert "Error in dynamic rule update loop: Test exception" in caplog.text
@@ -339,10 +283,7 @@ class TestDynamicRuleManagerUpdateLoop:
                 # Cancel the task
                 loop_task.cancel()
 
-                try:
-                    await loop_task
-                except asyncio.CancelledError:
-                    pass
+                await loop_task
 
         # Verify cancellation was logged
         assert "Dynamic rule update loop cancelled" in caplog.text
@@ -1640,10 +1581,7 @@ class TestDynamicRuleManagerUtilityMethods:
 
         # Create asyncio task that can be cancelled
         async def dummy_task() -> None:
-            try:
-                await asyncio.sleep(10)  # Long sleep to ensure it's cancelled
-            except asyncio.CancelledError:
-                raise
+            pass  # pragma: no cover
 
         # Create and start the task
         manager.update_task = asyncio.create_task(dummy_task())
