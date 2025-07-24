@@ -9,7 +9,7 @@ from guard.handlers.suspatterns_handler import SusPatternsManager
 
 
 class TestSusPatternsManagerAgentIntegration:
-    """Test SusPatternsManager agent integration - targeting missing coverage."""
+    """Test SusPatternsManager agent integration"""
 
     @pytest.mark.asyncio
     async def test_initialize_agent(self, cleanup_suspatterns_singleton: None) -> None:

@@ -19,7 +19,7 @@ class AgentHandlerProtocol(Protocol):
         Args:
             redis_handler: The Redis handler instance to use for persistence
         """
-        ...
+        # ...
 
     async def send_event(self, event: Any) -> None:
         """
@@ -28,7 +28,7 @@ class AgentHandlerProtocol(Protocol):
         Args:
             event: SecurityEvent instance containing event data
         """
-        ...
+        # ...
 
     async def send_metric(self, metric: Any) -> None:
         """
@@ -37,25 +37,25 @@ class AgentHandlerProtocol(Protocol):
         Args:
             metric: SecurityMetric instance containing metric data
         """
-        ...
+        # ...
 
     async def start(self) -> None:
         """
         Start the agent background tasks and connections.
         """
-        ...
+        # ...
 
     async def stop(self) -> None:
         """
         Stop the agent and cleanup resources.
         """
-        ...
+        # ...
 
     async def flush_buffer(self) -> None:
         """
         Force flush any buffered events to the remote endpoint.
         """
-        ...
+        # ...
 
     async def get_dynamic_rules(self) -> Any | None:
         """
@@ -64,7 +64,7 @@ class AgentHandlerProtocol(Protocol):
         Returns:
             DynamicRules instance if available, None otherwise
         """
-        ...
+        # ...
 
     async def health_check(self) -> bool:
         """
@@ -73,4 +73,4 @@ class AgentHandlerProtocol(Protocol):
         Returns:
             True if agent is healthy, False otherwise
         """
-        ...
+        # ...

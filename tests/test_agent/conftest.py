@@ -81,7 +81,7 @@ def mock_guard_agent() -> Generator[Any, Any, Any]:
             yield mock_guard_agent
 
 
-# Mock Redis and IPInfo to prevent initialization issues
+# Mock Redis, IPInfo, and CloudManager to prevent initialization issues
 @pytest.fixture(autouse=True)
 def mock_dependencies(mock_guard_agent: MagicMock) -> Generator[Any, Any, Any]:
     """Mock external dependencies to prevent connection attempts."""
@@ -91,10 +91,14 @@ def mock_dependencies(mock_guard_agent: MagicMock) -> Generator[Any, Any, Any]:
             new_callable=AsyncMock,
         ),
         patch("guard.handlers.ipinfo_handler.IPInfoManager.__new__") as mock_ipinfo,
+        patch("guard.handlers.cloud_handler.CloudManager.__new__") as mock_cloud,
     ):
-        # Return a mock IPInfoManager instance
+        # Return mock instances
         mock_ipinfo_instance = MagicMock()
         mock_ipinfo.return_value = mock_ipinfo_instance
+
+        mock_cloud_instance = MagicMock()
+        mock_cloud.return_value = mock_cloud_instance
         yield
 
 

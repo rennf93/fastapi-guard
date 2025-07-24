@@ -10,11 +10,11 @@ from guard.handlers.ipban_handler import IPBanManager
 
 
 class TestIPBanManagerAgentIntegration:
-    """Test IPBanManager agent integration - targeting missing coverage."""
+    """Test IPBanManager agent integration"""
 
     @pytest.mark.asyncio
     async def test_initialize_agent(self, cleanup_ipban_singleton: None) -> None:
-        """Test initialize_agent method (line 35)."""
+        """Test initialize_agent method"""
         # Reset singleton
         IPBanManager._instance = None
 
@@ -27,7 +27,7 @@ class TestIPBanManagerAgentIntegration:
 
     @pytest.mark.asyncio
     async def test_send_ban_event_success(self, cleanup_ipban_singleton: None) -> None:
-        """Test _send_ban_event success path (lines 58-67)."""
+        """Test _send_ban_event success path"""
         # Reset singleton
         IPBanManager._instance = None
 
@@ -51,7 +51,7 @@ class TestIPBanManagerAgentIntegration:
     async def test_send_ban_event_failure(
         self, caplog: pytest.LogCaptureFixture, cleanup_ipban_singleton: None
     ) -> None:
-        """Test _send_ban_event exception handling (lines 68-70)."""
+        """Test _send_ban_event exception handling."""
         # Reset singleton
         IPBanManager._instance = None
 
@@ -67,7 +67,7 @@ class TestIPBanManagerAgentIntegration:
 
     @pytest.mark.asyncio
     async def test_unban_ip_with_agent(self, cleanup_ipban_singleton: None) -> None:
-        """Test unban_ip with agent (lines 78, 82, 86)."""
+        """Test unban_ip with agent."""
         # Reset singleton
         IPBanManager._instance = None
 
@@ -82,21 +82,21 @@ class TestIPBanManagerAgentIntegration:
         # Now unban
         await manager.unban_ip("192.168.1.103")
 
-        # Verify IP was removed from cache (line 78)
+        # Verify IP was removed from cache
         assert await manager.is_ip_banned("192.168.1.103") is False
 
-        # Verify Redis delete was called (line 82)
+        # Verify Redis delete was called
         # Note: delete might be called twice - once in unban_ip and once in is_ip_banned
         manager.redis_handler.delete.assert_called_with("banned_ips", "192.168.1.103")
 
-        # Verify event was sent (line 86)
+        # Verify event was sent
         manager.agent_handler.send_event.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_send_unban_event_success(
         self, cleanup_ipban_singleton: None
     ) -> None:
-        """Test _send_unban_event success path (lines 90-99)."""
+        """Test _send_unban_event success path."""
         # Reset singleton
         IPBanManager._instance = None
 
@@ -121,7 +121,7 @@ class TestIPBanManagerAgentIntegration:
     async def test_send_unban_event_failure(
         self, caplog: pytest.LogCaptureFixture, cleanup_ipban_singleton: None
     ) -> None:
-        """Test _send_unban_event exception handling (lines 100-104)."""
+        """Test _send_unban_event exception handling."""
         # Reset singleton
         IPBanManager._instance = None
 
