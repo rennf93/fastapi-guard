@@ -1,9 +1,14 @@
+import concurrent.futures
 import re
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from guard.handlers.redis_handler import RedisManager
-from guard.handlers.suspatterns_handler import sus_patterns_handler
+from guard.handlers.suspatterns_handler import (
+    SusPatternsManager,
+    sus_patterns_handler,
+)
 from guard.models import SecurityConfig
 
 
@@ -255,3 +260,173 @@ async def test_get_all_compiled_patterns() -> None:
             matched = True
             break
     assert matched
+
+
+@pytest.mark.asyncio
+async def test_init_with_config() -> None:
+    """Test SusPatternsManager initialization with detection engine config."""
+    # Create a config with detection engine settings
+    config = MagicMock()
+    config.detection_compiler_timeout = 3.0
+    config.detection_max_tracked_patterns = 500
+    config.detection_max_content_length = 20000
+    config.detection_preserve_attack_patterns = True
+    config.detection_anomaly_threshold = 2.5
+    config.detection_slow_pattern_threshold = 0.2
+    config.detection_monitor_history_size = 100
+    config.detection_semantic_threshold = 0.8
+
+    # Force a new instance with config
+    SusPatternsManager._instance = None
+    manager = SusPatternsManager(config)
+
+    # Verify components were initialized with config values
+    assert manager._compiler is not None
+    assert manager._compiler.default_timeout == 3.0
+    assert manager._preprocessor is not None
+    assert manager._preprocessor.max_content_length == 20000
+    assert manager._preprocessor.preserve_attack_patterns is True
+    assert manager._semantic_analyzer is not None
+    assert manager._performance_monitor is not None
+    assert manager._performance_monitor.anomaly_threshold == 2.5
+    assert manager._performance_monitor.slow_pattern_threshold == 0.2
+    assert manager._semantic_threshold == 0.8
+
+    # Clean up
+    SusPatternsManager._instance = None
+
+
+@pytest.mark.asyncio
+async def test_regex_timeout_fallback() -> None:
+    """Test regex timeout fallback when compiler is not available."""
+    # Create a manager without compiler
+    SusPatternsManager._instance = None
+    manager = SusPatternsManager()
+
+    # Disable compiler to force fallback
+    original_compiler = manager._compiler
+    manager._compiler = None
+
+    # Create a pattern that will timeout
+    evil_pattern = r"(a+)+$"  # ReDoS pattern
+    await manager.add_pattern(evil_pattern, custom=True)
+
+    # Test with content that triggers timeout
+    evil_content = "a" * 100 + "b"
+
+    # Mock ThreadPoolExecutor to simulate timeout
+    with patch("concurrent.futures.ThreadPoolExecutor") as mock_executor:
+        mock_future = MagicMock()
+        mock_future.result.side_effect = concurrent.futures.TimeoutError()
+        mock_submit = mock_executor.return_value.__enter__.return_value.submit
+        mock_submit.return_value = mock_future
+
+        # Mock logging to verify warning
+        with patch("logging.getLogger") as mock_logger:
+            mock_logger.return_value.warning = MagicMock()
+
+            # Run detection
+            matched, pattern = await manager.detect_pattern_match(
+                evil_content, "127.0.0.1", "test_timeout"
+            )
+
+            # Verify timeout was handled
+            assert not matched
+            assert pattern is None
+
+            # Verify warning was logged
+            mock_logger.return_value.warning.assert_called()
+            warning_msg = mock_logger.return_value.warning.call_args[0][0]
+            assert "Pattern timeout" in warning_msg
+
+    # Restore compiler
+    manager._compiler = original_compiler
+    # Clean up
+    await manager.remove_pattern(evil_pattern, custom=True)
+    SusPatternsManager._instance = None
+
+@pytest.mark.asyncio
+async def test_regex_search_success_fallback() -> None:
+    """
+    Test successful regex search using fallback when compiler is not available.
+    """
+    # Create a manager without compiler
+    SusPatternsManager._instance = None
+    manager = SusPatternsManager()
+
+    # Disable compiler to force fallback
+    original_compiler = manager._compiler
+    manager._compiler = None
+
+    # Create a simple pattern
+    test_pattern = r"test_pattern_\d+"
+    await manager.add_pattern(test_pattern, custom=True)
+
+    # Test with matching content
+    test_content = "This contains test_pattern_123 in it"
+
+    # Run detection
+    matched, pattern = await manager.detect_pattern_match(
+        test_content, "127.0.0.1", "test_search"
+    )
+
+    # Verify match was found
+    assert matched is True
+    assert pattern == test_pattern
+
+    # Restore compiler
+    manager._compiler = original_compiler
+    # Clean up
+    await manager.remove_pattern(test_pattern, custom=True)
+    SusPatternsManager._instance = None
+
+
+@pytest.mark.asyncio
+async def test_get_performance_stats_none() -> None:
+    """Test get_performance_stats returns None when monitor is disabled."""
+    # Create a manager without performance monitor
+    SusPatternsManager._instance = None
+    manager = SusPatternsManager()
+
+    # Disable performance monitor
+    original_monitor = manager._performance_monitor
+    manager._performance_monitor = None
+
+    # Get stats
+    stats = await manager.get_performance_stats()
+
+    # Verify None is returned
+    assert stats is None
+
+    # Restore monitor
+    manager._performance_monitor = original_monitor
+    SusPatternsManager._instance = None
+
+
+@pytest.mark.asyncio
+async def test_get_performance_stats_with_monitor() -> None:
+    """Test get_performance_stats returns stats when monitor is enabled."""
+    manager = sus_patterns_handler
+
+    # Ensure monitor is available
+    if manager._performance_monitor:
+        # Record some test metrics
+        await manager._performance_monitor.record_metric(
+            pattern="test_pattern",
+            execution_time=0.01,
+            content_length=100,
+            matched=True,
+            timeout=False,
+        )
+
+        # Get stats
+        stats = await manager.get_performance_stats()
+
+        # Verify stats structure
+        assert stats is not None
+        assert "summary" in stats
+        assert "slow_patterns" in stats
+        assert "problematic_patterns" in stats
+        assert isinstance(stats["summary"], dict)
+        assert isinstance(stats["slow_patterns"], list)
+        assert isinstance(stats["problematic_patterns"], list)

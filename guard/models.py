@@ -558,6 +558,101 @@ class SecurityConfig(BaseModel):
         Example: {"/api/sensitive": (5, 60)} allows 5 requests per 60 seconds.
     """
 
+    # Detection engine configuration
+    detection_compiler_timeout: float = Field(
+        default=2.0,
+        description="Timeout for pattern compilation and matching (seconds)",
+        ge=0.1,
+        le=10.0,
+    )
+    """
+    float:
+        Timeout in seconds for pattern compilation and matching.
+        Must be between 0.1 and 10.0 seconds. Default is 2.0 seconds.
+    """
+
+    detection_max_content_length: int = Field(
+        default=10000,
+        description="Maximum content length for pattern detection",
+        ge=1000,
+        le=100000,
+    )
+    """
+    int:
+        Maximum content length for pattern detection preprocessing.
+        Must be between 1000 and 100000 characters. Default is 10000.
+    """
+
+    detection_preserve_attack_patterns: bool = Field(
+        default=True,
+        description="Preserve attack patterns during content truncation",
+    )
+    """
+    bool:
+        Whether to preserve attack patterns when truncating content.
+        If True, attack signatures are prioritized during truncation.
+    """
+
+    detection_semantic_threshold: float = Field(
+        default=0.7,
+        description="Threshold for semantic attack detection (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+    """
+    float:
+        Threat score threshold for semantic analysis detection.
+        Must be between 0.0 and 1.0. Default is 0.7.
+    """
+
+    detection_anomaly_threshold: float = Field(
+        default=3.0,
+        description="Standard deviations from mean to consider anomaly",
+        ge=1.0,
+        le=10.0,
+    )
+    """
+    float:
+        Number of standard deviations from mean to consider a performance anomaly.
+        Must be between 1.0 and 10.0. Default is 3.0.
+    """
+
+    detection_slow_pattern_threshold: float = Field(
+        default=0.1,
+        description="Execution time to consider pattern slow (seconds)",
+        ge=0.01,
+        le=1.0,
+    )
+    """
+    float:
+        Execution time in seconds above which a pattern is considered slow.
+        Must be between 0.01 and 1.0 seconds. Default is 0.1 seconds.
+    """
+
+    detection_monitor_history_size: int = Field(
+        default=1000,
+        description="Number of recent metrics to keep in history",
+        ge=100,
+        le=10000,
+    )
+    """
+    int:
+        Number of recent performance metrics to keep in history.
+        Must be between 100 and 10000. Default is 1000.
+    """
+
+    detection_max_tracked_patterns: int = Field(
+        default=1000,
+        description="Maximum number of patterns to track for performance",
+        ge=100,
+        le=5000,
+    )
+    """
+    int:
+        Maximum number of unique patterns to track for performance monitoring.
+        Must be between 100 and 5000. Default is 1000.
+    """
+
     # TODO: Add type hints to the decorator
     @field_validator("whitelist", "blacklist")  # type: ignore
     def validate_ip_lists(cls, v: list[str] | None) -> list[str] | None:
