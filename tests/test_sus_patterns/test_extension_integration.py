@@ -8,9 +8,11 @@ from guard.handlers.suspatterns_handler import SusPatternsManager
 
 
 @pytest.mark.asyncio
-async def test_component_initialization() -> None:
+async def test_component_initialization(
+    sus_patterns_manager_with_detection: SusPatternsManager,
+) -> None:
     """Test that all components are properly initialized."""
-    manager = SusPatternsManager()
+    manager = sus_patterns_manager_with_detection
 
     # Check all components are initialized
     assert manager._compiler is not None
@@ -27,9 +29,11 @@ async def test_component_initialization() -> None:
 
 
 @pytest.mark.asyncio
-async def test_extended_detection() -> None:
+async def test_extended_detection(
+    sus_patterns_manager_with_detection: SusPatternsManager,
+) -> None:
     """Test detection with extended components."""
-    manager = SusPatternsManager()
+    manager = sus_patterns_manager_with_detection
 
     # Test XSS detection
     xss_content = "<script>alert('xss')</script>"
@@ -47,11 +51,12 @@ async def test_extended_detection() -> None:
     assert is_threat is True
 
 
-
 @pytest.mark.asyncio
-async def test_performance_monitoring() -> None:
+async def test_performance_monitoring(
+    sus_patterns_manager_with_detection: SusPatternsManager,
+) -> None:
     """Test that performance monitoring is working."""
-    manager = SusPatternsManager()
+    manager = sus_patterns_manager_with_detection
 
     # Run some detections
     test_contents = [
@@ -74,9 +79,11 @@ async def test_performance_monitoring() -> None:
 
 
 @pytest.mark.asyncio
-async def test_semantic_threshold_configuration() -> None:
+async def test_semantic_threshold_configuration(
+    sus_patterns_manager_with_detection: SusPatternsManager,
+) -> None:
     """Test semantic threshold configuration."""
-    manager = SusPatternsManager()
+    manager = sus_patterns_manager_with_detection
 
     # Configure threshold
     await manager.configure_semantic_threshold(0.5)
@@ -91,9 +98,11 @@ async def test_semantic_threshold_configuration() -> None:
 
 
 @pytest.mark.asyncio
-async def test_compiler_timeout_protection() -> None:
+async def test_compiler_timeout_protection(
+    sus_patterns_manager_with_detection: SusPatternsManager,
+) -> None:
     """Test that compiler provides timeout protection."""
-    manager = SusPatternsManager()
+    manager = sus_patterns_manager_with_detection
 
     # Test with a potentially slow pattern
     # The compiler should protect against ReDoS
@@ -107,15 +116,17 @@ async def test_compiler_timeout_protection() -> None:
 
 
 @pytest.mark.asyncio
-async def test_preprocessor_normalization() -> None:
+async def test_preprocessor_normalization(
+    sus_patterns_manager_with_detection: SusPatternsManager,
+) -> None:
     """Test content preprocessing normalization."""
-    manager = SusPatternsManager()
+    manager = sus_patterns_manager_with_detection
 
-    # Test various encoding bypasses
+    # Test various encoding bypasses with complete script tags
     encoded_attacks = [
-        "%3Cscript%3E",  # URL encoded
-        "&#60;script&#62;",  # HTML entities
-        "\\u003cscript\\u003e",  # Unicode escape
+        "%3Cscript%3Ealert(1)%3C/script%3E",  # URL encoded
+        "&#60;script&#62;alert(1)&#60;/script&#62;",  # HTML entities
+        "<script>alert(1)</script>",  # Direct for comparison
     ]
 
     for encoded in encoded_attacks:

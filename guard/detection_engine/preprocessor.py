@@ -88,22 +88,28 @@ class ContentPreprocessor:
 
         try:
             from datetime import datetime, timezone
-            event = type('SecurityEvent', (), {
-                "timestamp": datetime.now(timezone.utc),
-                "event_type": event_type,
-                "ip_address": "system",
-                "action_taken": action_taken,
-                "reason": reason,
-                "metadata": {
-                    "component": "ContentPreprocessor",
-                    "correlation_id": self.correlation_id,
-                    **kwargs,
+
+            event = type(
+                "SecurityEvent",
+                (),
+                {
+                    "timestamp": datetime.now(timezone.utc),
+                    "event_type": event_type,
+                    "ip_address": "system",
+                    "action_taken": action_taken,
+                    "reason": reason,
+                    "metadata": {
+                        "component": "ContentPreprocessor",
+                        "correlation_id": self.correlation_id,
+                        **kwargs,
+                    },
                 },
-            })()
+            )()
             await self.agent_handler.send_event(event)
         except Exception as e:
             # Don't let agent errors break preprocessing
             import logging
+
             logging.getLogger(__name__).error(
                 f"Failed to send preprocessor event to agent: {e}"
             )

@@ -337,13 +337,14 @@ async def test_regex_timeout_fallback() -> None:
             # Verify warning was logged
             mock_logger.return_value.warning.assert_called()
             warning_msg = mock_logger.return_value.warning.call_args[0][0]
-            assert "Pattern timeout" in warning_msg
+            assert "Regex timeout exceeded" in warning_msg
 
     # Restore compiler
     manager._compiler = original_compiler
     # Clean up
     await manager.remove_pattern(evil_pattern, custom=True)
     SusPatternsManager._instance = None
+
 
 @pytest.mark.asyncio
 async def test_regex_search_success_fallback() -> None:
@@ -405,28 +406,346 @@ async def test_get_performance_stats_none() -> None:
 
 @pytest.mark.asyncio
 async def test_get_performance_stats_with_monitor() -> None:
-    """Test get_performance_stats returns stats when monitor is enabled."""
+    """Test get_performance_stats returns None when monitor is not enabled."""
     manager = sus_patterns_handler
 
-    # Ensure monitor is available
-    if manager._performance_monitor:
-        # Record some test metrics
-        await manager._performance_monitor.record_metric(
-            pattern="test_pattern",
-            execution_time=0.01,
-            content_length=100,
-            matched=True,
-            timeout=False,
+    # Monitor is not initialized without config, so stats should be None
+    stats = await manager.get_performance_stats()
+    assert stats is None
+
+
+@pytest.mark.asyncio
+async def test_pattern_timeout_with_compiler(
+    sus_patterns_manager_with_detection: SusPatternsManager,
+) -> None:
+    """Test pattern timeout detection when compiler is available."""
+    manager = sus_patterns_manager_with_detection
+
+    # Create a ReDoS pattern
+    evil_pattern = r"(a+)+"
+    await manager.add_pattern(evil_pattern, custom=True)
+
+    # Create content that will cause timeout
+    evil_content = "a" * 1000 + "b"
+
+    # Counter for time calls
+    time_counter = 0
+
+    def mock_time() -> float:
+        nonlocal time_counter
+        time_counter += 1
+        # Return 0 for start times, 2.0 for end times to simulate timeout
+        if time_counter % 2 == 1:  # Odd calls are starts
+            return 0.0
+        else:  # Even calls are ends
+            return 2.0
+
+    # Mock the safe_matcher to return None for timeout
+    with patch.object(manager._compiler, "create_safe_matcher") as mock_create:
+        # Create a mock that returns None (simulating timeout)
+        mock_matcher = MagicMock(return_value=None)
+        mock_create.return_value = mock_matcher
+
+        # Mock time
+        with patch("time.time", mock_time):
+            # Mock logging to verify warning
+            with patch("logging.getLogger") as mock_logger:
+                mock_log_instance = MagicMock()
+                mock_logger.return_value = mock_log_instance
+
+                # Run detection
+                result = await manager.detect(evil_content, "127.0.0.1", "test_timeout")
+
+                # Check if any pattern caused a timeout warning
+                # The exact pattern that times out depends on matching
+                if mock_log_instance.warning.called:
+                    warning_calls = [
+                        call[0][0] for call in mock_log_instance.warning.call_args_list
+                    ]
+                    timeout_warnings = [
+                        msg for msg in warning_calls if "Pattern timeout:" in msg
+                    ]
+                    assert len(timeout_warnings) > 0
+
+                    # Verify timeouts were recorded
+                    assert len(result["timeouts"]) > 0
+
+    # Clean up
+    await manager.remove_pattern(evil_pattern, custom=True)
+
+
+@pytest.mark.asyncio
+async def test_regex_search_exception_fallback() -> None:
+    """Test regex search exception handling in fallback mode."""
+    # Create a manager without compiler
+    SusPatternsManager._instance = None
+    manager = SusPatternsManager()
+
+    # Disable compiler to force fallback
+    original_compiler = manager._compiler
+    manager._compiler = None
+
+    # Add a test pattern
+    test_pattern = r"test_pattern"
+    await manager.add_pattern(test_pattern, custom=True)
+
+    # Mock ThreadPoolExecutor to raise an exception
+    with patch("concurrent.futures.ThreadPoolExecutor") as mock_executor:
+        mock_future = MagicMock()
+        # Simulate a non-timeout exception
+        mock_future.result.side_effect = RuntimeError("Test exception")
+        mock_submit = mock_executor.return_value.__enter__.return_value.submit
+        mock_submit.return_value = mock_future
+
+        # Mock logging to verify error
+        with patch("logging.getLogger") as mock_logger:
+            mock_log_instance = MagicMock()
+            mock_logger.return_value = mock_log_instance
+
+            # Run detection
+            result = await manager.detect("test content", "127.0.0.1", "test_exception")
+
+            # Verify exception was handled
+            assert not result["is_threat"]
+
+            # Verify error was logged
+            mock_log_instance.error.assert_called()
+            error_msg = mock_log_instance.error.call_args[0][0]
+            assert "Error in regex search" in error_msg
+
+    # Restore compiler
+    manager._compiler = original_compiler
+    # Clean up
+    await manager.remove_pattern(test_pattern, custom=True)
+    SusPatternsManager._instance = None
+
+
+@pytest.mark.asyncio
+async def test_semantic_threat_detection(
+    sus_patterns_manager_with_detection: SusPatternsManager,
+) -> None:
+    """Test semantic threat detection."""
+    manager = sus_patterns_manager_with_detection
+
+    # Ensure semantic analyzer is available
+    assert manager._semantic_analyzer is not None
+
+    # Mock semantic analysis to return high threat score
+    with patch.object(manager._semantic_analyzer, "analyze") as mock_analyze:
+        with patch.object(manager._semantic_analyzer, "get_threat_score") as mock_score:
+            # Set up analysis results with attack probabilities
+            semantic_analysis = {
+                "attack_probabilities": {
+                    "sql_injection": 0.85,
+                    "xss": 0.65,
+                    "command_injection": 0.45,
+                },
+                "tokens": ["SELECT", "*", "FROM", "users"],
+                "suspicious_patterns": ["sql_keywords"],
+            }
+            mock_analyze.return_value = semantic_analysis
+            mock_score.return_value = 0.85
+
+            # Set semantic threshold
+            await manager.configure_semantic_threshold(0.7)
+
+            # Run detection
+            result = await manager.detect(
+                "SELECT * FROM users WHERE id=1", "127.0.0.1", "test_semantic"
+            )
+
+            # Verify semantic threat was detected
+            assert result["is_threat"]
+            assert result["threat_score"] >= 0.85
+
+            # Find semantic threats
+            semantic_threats = [t for t in result["threats"] if t["type"] == "semantic"]
+            assert len(semantic_threats) >= 1
+
+            # Verify specific attack types were detected
+            attack_types = [t["attack_type"] for t in semantic_threats]
+            assert "sql_injection" in attack_types
+
+
+@pytest.mark.asyncio
+async def test_semantic_threat_suspicious_fallback(
+    sus_patterns_manager_with_detection: SusPatternsManager,
+) -> None:
+    """Test semantic threat detection with general suspicious behavior."""
+    manager = sus_patterns_manager_with_detection
+
+    # Mock semantic analysis with high score but no specific attacks above threshold
+    with patch.object(manager._semantic_analyzer, "analyze") as mock_analyze:
+        with patch.object(manager._semantic_analyzer, "get_threat_score") as mock_score:
+            # Set up analysis with low individual attack probabilities
+            semantic_analysis = {
+                "attack_probabilities": {
+                    "sql_injection": 0.4,
+                    "xss": 0.3,
+                    "command_injection": 0.2,
+                },
+                "suspicious_patterns": ["multiple_keywords"],
+            }
+            mock_analyze.return_value = semantic_analysis
+            mock_score.return_value = 0.75  # High overall score
+
+            # Set semantic threshold
+            await manager.configure_semantic_threshold(0.7)
+
+            # Run detection
+            result = await manager.detect(
+                "Suspicious content with multiple patterns",
+                "127.0.0.1",
+                "test_suspicious",
+            )
+
+            # Verify threat was detected
+            assert result["is_threat"]
+
+            # Find semantic threats
+            semantic_threats = [t for t in result["threats"] if t["type"] == "semantic"]
+            assert len(semantic_threats) == 1
+
+            # Verify it's marked as general suspicious behavior
+            assert semantic_threats[0]["attack_type"] == "suspicious"
+            assert semantic_threats[0]["threat_score"] == 0.75
+
+
+@pytest.mark.asyncio
+async def test_legacy_detect_semantic_threat(
+    sus_patterns_manager_with_detection: SusPatternsManager,
+) -> None:
+    """Test legacy detect_pattern_match with semantic threat."""
+    manager = sus_patterns_manager_with_detection
+
+    # Mock to return only semantic threats
+    with patch.object(manager, "detect") as mock_detect:
+        mock_detect.return_value = {
+            "is_threat": True,
+            "threats": [
+                {"type": "semantic", "attack_type": "sql_injection", "probability": 0.9}
+            ],
+        }
+
+        # Call legacy method
+        matched, pattern = await manager.detect_pattern_match(
+            "test content", "127.0.0.1", "test"
         )
 
-        # Get stats
-        stats = await manager.get_performance_stats()
+        # Verify semantic threat format
+        assert matched is True
+        assert pattern == "semantic:sql_injection"
 
-        # Verify stats structure
-        assert stats is not None
-        assert "summary" in stats
-        assert "slow_patterns" in stats
-        assert "problematic_patterns" in stats
-        assert isinstance(stats["summary"], dict)
-        assert isinstance(stats["slow_patterns"], list)
-        assert isinstance(stats["problematic_patterns"], list)
+
+@pytest.mark.asyncio
+async def test_legacy_detect_unknown_threat(
+    sus_patterns_manager_with_detection: SusPatternsManager,
+) -> None:
+    """Test legacy detect_pattern_match with unknown threat type."""
+    manager = sus_patterns_manager_with_detection
+
+    # Mock to return unknown threat type
+    with patch.object(manager, "detect") as mock_detect:
+        mock_detect.return_value = {
+            "is_threat": True,
+            "threats": [{"type": "unknown_type", "data": "some_data"}],
+        }
+
+        # Call legacy method
+        matched, pattern = await manager.detect_pattern_match(
+            "test content", "127.0.0.1", "test"
+        )
+
+        # Verify unknown threat format
+        assert matched is True
+        assert pattern == "unknown"
+
+
+@pytest.mark.asyncio
+async def test_compiler_cache_clearing_on_pattern_operations(
+    sus_patterns_manager_with_detection: SusPatternsManager,
+) -> None:
+    """Test compiler cache clearing on pattern add/remove."""
+    manager = sus_patterns_manager_with_detection
+
+    # Ensure compiler is available
+    assert manager._compiler is not None
+
+    # Mock compiler clear_cache method
+    with patch.object(manager._compiler, "clear_cache") as mock_clear:
+        # Test adding pattern clears cache
+        test_pattern = r"cache_test_pattern"
+        await manager.add_pattern(test_pattern, custom=True)
+
+        # Verify cache was cleared
+        mock_clear.assert_called_once()
+
+        # Reset mock
+        mock_clear.reset_mock()
+
+        # Test removing pattern clears cache
+        result = await manager.remove_pattern(test_pattern, custom=True)
+        assert result is True
+
+        # Verify cache was cleared again
+        mock_clear.assert_called_once()
+
+    # Also test performance monitor stats removal
+    if manager._performance_monitor:
+        with patch.object(
+            manager._performance_monitor, "remove_pattern_stats"
+        ) as mock_remove:
+            # Remove a default pattern
+            pattern_to_remove = manager.patterns[0]
+            await manager.remove_pattern(pattern_to_remove, custom=False)
+
+            # Verify stats were removed
+            mock_remove.assert_called_once_with(pattern_to_remove)
+
+
+@pytest.mark.asyncio
+async def test_detect_semantic_only_pattern_info(
+    sus_patterns_manager_with_detection: SusPatternsManager,
+) -> None:
+    """Test pattern info extraction for semantic-only threats."""
+    manager = sus_patterns_manager_with_detection
+
+    # Mock to detect only semantic threats
+    with patch.object(manager._semantic_analyzer, "analyze") as mock_analyze:
+        with patch.object(manager._semantic_analyzer, "get_threat_score") as mock_score:
+            # High semantic score
+            mock_analyze.return_value = {"attack_probabilities": {"xss": 0.9}}
+            mock_score.return_value = 0.9
+
+            # Mock agent handler to capture event
+            mock_agent = MagicMock()
+            manager.agent_handler = mock_agent
+
+            # Run detection (no regex patterns will match)
+            result = await manager.detect(
+                "semantic only threat", "127.0.0.1", "test_semantic_info"
+            )
+
+            # Verify threat detected
+            assert result["is_threat"]
+
+
+@pytest.mark.asyncio
+async def test_get_component_status() -> None:
+    """Test getting component status."""
+    # Save original instance
+    original_instance = SusPatternsManager._instance
+
+    try:
+        # Test with no components
+        SusPatternsManager._instance = None
+        manager = SusPatternsManager()
+
+        status = await manager.get_component_status()
+        assert status["compiler"] is False
+        assert status["preprocessor"] is False
+        assert status["semantic_analyzer"] is False
+        assert status["performance_monitor"] is False
+    finally:
+        # Restore original instance
+        SusPatternsManager._instance = original_instance

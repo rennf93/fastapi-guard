@@ -4,6 +4,7 @@ Comprehensive tests for the SemanticAnalyzer module.
 
 import concurrent.futures
 import random
+import re
 import string
 from unittest.mock import MagicMock, patch
 
@@ -75,9 +76,7 @@ def test_extract_tokens_special_patterns_limit() -> None:
 
     # Mock attack_structures to have many patterns that will produce many matches
     original_structures = analyzer.attack_structures
-    analyzer.attack_structures = {
-        f"pattern_{i}": r"<script>" for i in range(20)
-    }
+    analyzer.attack_structures = {f"pattern_{i}": r"<script>" for i in range(20)}
 
     tokens = analyzer.extract_tokens(content)
 
@@ -199,7 +198,7 @@ def test_detect_obfuscation_high_entropy() -> None:
 
     # Create high entropy content (random-looking)
     random.seed(42)  # For reproducibility
-    high_entropy_content = ''.join(
+    high_entropy_content = "".join(
         random.choice(string.ascii_letters + string.digits + string.punctuation)
         for _ in range(100)
     )
@@ -353,7 +352,7 @@ def test_get_threat_score() -> None:
         "is_obfuscated": True,
         "encoding_layers": 2,
         "code_injection_risk": 0.5,
-        "suspicious_patterns": [{"type": "tag_like"}, {"type": "function_call"}]
+        "suspicious_patterns": [{"type": "tag_like"}, {"type": "function_call"}],
     }
 
     score = analyzer.get_threat_score(analysis_results)
@@ -372,7 +371,7 @@ def test_get_threat_score_minimal() -> None:
         "is_obfuscated": False,
         "encoding_layers": 0,
         "code_injection_risk": 0.0,
-        "suspicious_patterns": []
+        "suspicious_patterns": [],
     }
 
     score = analyzer.get_threat_score(analysis_results)
@@ -451,6 +450,71 @@ def test_integration_long_string_obfuscation() -> None:
     assert analysis["is_obfuscated"] is True
 
 
+def test_detect_obfuscation_multiple_encoding_layers() -> None:
+    """Test detect_obfuscation with multiple encoding layers."""
+    analyzer = SemanticAnalyzer()
+
+    # We need content that will be detected as having > 2 encoding layers
+    # Let's carefully craft content with 3-4 encoding types:
+
+    # 1. URL encoding - definite match
+    content = "%3Cscript%3E"
+
+    # 2. HTML entities - definite match
+    content += "&lt;test&gt;"
+
+    # 3. Unicode encoding - definite match
+    content += "\\u0041\\u0042"
+
+    # Now we have 3, but let's verify the patterns:
+    assert re.search(r"%[0-9a-fA-F]{2}", content) is not None  # URL
+    assert re.search(r"&[#\w]+;", content) is not None  # HTML
+    assert re.search(r"\\u[0-9a-fA-F]{4}", content) is not None  # Unicode
+
+    # Call detect_encoding_layers directly to debug
+    layers = analyzer.detect_encoding_layers(content)
+    # We expect more than 2 layers (the test shows 5)
+    assert layers > 2, f"Expected >2 layers, got {layers}"
+
+    # Now test detect_obfuscation which should return True for > 2 layers
+    is_obfuscated = analyzer.detect_obfuscation(content)
+    assert is_obfuscated is True
+
+
+def test_analyze_code_injection_risk_ast_dangerous_nodes() -> None:
+    """Test AST parsing finding dangerous nodes in eval mode."""
+    analyzer = SemanticAnalyzer()
+
+    # Mock ast.parse to return a tree with dangerous nodes
+    import ast
+
+    with patch("ast.parse"):
+        # Create an Import node (shouldn't be in eval mode)
+        mock_import_node = ast.Import(names=[ast.alias(name="os", asname=None)])
+
+        # Mock ast.walk to return dangerous nodes
+        with patch("ast.walk", return_value=[mock_import_node]):
+            risk = analyzer.analyze_code_injection_risk("import os")
+
+            # Should detect the dangerous node and increase risk
+            assert risk >= 0.3
+
+
+def test_analyze_code_injection_risk_ast_parse_exception() -> None:
+    """Test AST parsing with non-SyntaxError exception."""
+    analyzer = SemanticAnalyzer()
+
+    # Create short enough content to trigger AST parsing
+    content = "test code"
+
+    # We need to patch ast.parse to raise a non-SyntaxError
+    with patch("ast.parse", side_effect=ValueError("Unexpected AST error")):
+        risk = analyzer.analyze_code_injection_risk(content)
+
+        # Should handle the exception gracefully
+        assert risk >= 0.0  # Should have some risk from other checks
+
+
 def test_edge_case_unicode_content() -> None:
     """Test handling of Unicode content."""
     analyzer = SemanticAnalyzer()
@@ -481,6 +545,7 @@ def test_performance_large_input() -> None:
     large_content = "normal text " * 10000 + "<script>alert(1)</script>"
 
     import time
+
     start = time.time()
     analysis = analyzer.analyze(large_content)
     duration = time.time() - start

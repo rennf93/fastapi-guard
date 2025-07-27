@@ -1,5 +1,4 @@
 # fastapi_guard/utils.py
-import concurrent.futures
 import logging
 import re
 from datetime import datetime, timezone
@@ -461,91 +460,117 @@ async def detect_penetration_attempt(
             Second element is trigger information if detected, empty string otherwise.
     """
 
-    suspicious_patterns = await sus_patterns_handler.get_all_compiled_patterns()
+    # Extract client IP for tracking
+    client_ip = "unknown"
+    if request.client:
+        client_ip = request.client.host
 
-    def _regex_search_with_timeout(
-        pattern: re.Pattern, text: str, timeout: float
-    ) -> bool:
-        """Execute regex search with a timeout to prevent ReDoS."""
+    # Generate correlation ID for this request
+    import uuid
 
-        def _search() -> bool:
-            return pattern.search(text) is not None
+    correlation_id = str(uuid.uuid4())
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(_search)
-            try:
-                return future.result(timeout=timeout)
-            except concurrent.futures.TimeoutError:
-                logging.warning(
-                    f"Regex timeout exceeded for pattern '{pattern.pattern}' - "
-                    f"Potential ReDoS attack blocked."
-                )
-                # Cancel the future to clean up
-                future.cancel()
-                return False
-            except Exception as e:
-                logging.error(f"Error in regex search: {str(e)}")
-                return False
+    async def check_value(value: str, context: str) -> tuple[bool, str]:
+        """
+        Check a value using the enhanced detection engine.
 
-    async def check_value(value: str) -> tuple[bool, str]:
+        Args:
+            value: The value to check
+            context: Context information (e.g., "query_param:id")
+
+        Returns:
+            Tuple of (detected, trigger_info)
+        """
+        # First check if value looks like JSON
         try:
             import json
 
             data = json.loads(value)
             if isinstance(data, dict):
-                for pattern in suspicious_patterns:
-                    for k, v in data.items():
-                        if isinstance(v, str) and _regex_search_with_timeout(
-                            pattern,
-                            v,
-                            regex_timeout,
-                        ):
-                            return (
-                                True,
-                                f"JSON field '{k}' matched pattern '{pattern.pattern}'",
-                            )
+                # Check each JSON field
+                for k, v in data.items():
+                    if isinstance(v, str):
+                        result = await sus_patterns_handler.detect(
+                            content=v,
+                            ip_address=client_ip,
+                            context=f"{context}.{k}",
+                            correlation_id=correlation_id,
+                        )
+                        if result["is_threat"]:
+                            if result["threats"]:
+                                threat = result["threats"][0]
+                                if threat["type"] == "regex":
+                                    pattern = threat["pattern"]
+                                    return (
+                                        True,
+                                        f"JSON field '{k}' matched pattern '{pattern}'",
+                                    )
+                                else:
+                                    threat_type = threat["type"]
+                                    return (
+                                        True,
+                                        f"JSON field '{k}' contains: {threat_type}",
+                                    )
+                            return True, f"JSON field '{k}' contains threat"
                 return False, ""
         except json.JSONDecodeError:
-            for pattern in suspicious_patterns:
-                if _regex_search_with_timeout(pattern, value, regex_timeout):
-                    return True, f"Value matched pattern '{pattern.pattern}'"
-        return False, ""
+            # Not JSON, check as plain string
+            pass
+
+        # Use enhanced detection engine
+        try:
+            # Use the new detect() method for richer results
+            result = await sus_patterns_handler.detect(
+                content=value,
+                ip_address=client_ip,
+                context=context,
+                correlation_id=correlation_id,
+            )
+
+            if result["is_threat"]:
+                # Build informative trigger message from threats
+                if result["threats"]:
+                    threat = result["threats"][0]
+                    if threat["type"] == "regex":
+                        return True, f"Value matched pattern '{threat['pattern']}'"
+                    elif threat["type"] == "semantic":
+                        attack_type = threat.get("attack_type", "suspicious")
+                        score = threat.get("probability", threat.get("threat_score", 0))
+                        msg = f"Semantic attack: {attack_type} (score: {score:.2f})"
+                        return True, msg
+                return True, "Threat detected"
+            return False, ""
+        except Exception as e:
+            # Log error but fall back to basic detection
+            logging.error(
+                f"Enhanced detection failed: {e}, falling back to basic check"
+            )
+            # Fall back to basic pattern check
+            for pattern in await sus_patterns_handler.get_all_compiled_patterns():
+                try:
+                    if pattern.search(value):
+                        return True, "Value matched pattern (fallback)"
+                except Exception:
+                    continue
+            return False, ""
 
     # Query params
     for key, value in request.query_params.items():
-        detected, trigger = await check_value(value)
+        detected, trigger = await check_value(value, f"query_param:{key}")
         if detected:
             message = "Potential attack detected from"
-            client_ip = "unknown"
-            if request.client:
-                client_ip = request.client.host
             details = f"{client_ip}: {value}"
             reason_message = f"Suspicious pattern in query param '{key}'"
             logging.warning(f"{message} {details} - {reason_message}")
-
-            # Send pattern detection event to agent through handler's public method
-            await sus_patterns_handler.detect_pattern_match(
-                content=value, ip_address=client_ip, context=f"query_param:{key}"
-            )
-
             return True, f"Query param '{key}': {trigger}"
 
     # Path
-    detected, trigger = await check_value(request.url.path)
+    detected, trigger = await check_value(request.url.path, "url_path")
     if detected:
         message = "Potential attack detected from"
-        client_ip = "unknown"
-        if request.client:
-            client_ip = request.client.host
         details = f"{client_ip}: {request.url.path}"
         reason_message = "Suspicious pattern: path"
         logging.warning(f"{message} {details} - {reason_message}")
-
-        # Send pattern detection event to agent through handler's public method
-        await sus_patterns_handler.detect_pattern_match(
-            content=request.url.path, ip_address=client_ip, context="url_path"
-        )
-
         return True, f"URL path: {trigger}"
 
     # Headers
@@ -566,41 +591,26 @@ async def detect_penetration_attempt(
     }
     for key, value in request.headers.items():
         if key.lower() not in excluded_headers:
-            detected, trigger = await check_value(value)
+            detected, trigger = await check_value(value, f"header:{key}")
             if detected:
                 message = "Potential attack detected from"
-                client_ip = "unknown"
-                if request.client:
-                    client_ip = request.client.host
                 details = f"{client_ip}: {key}={value}"
                 reason_message = "Suspicious pattern: header"
                 logging.warning(f"{message} {details} - {reason_message}")
-
-                # Send pattern detection event to agent through handler's public method
-                await sus_patterns_handler.detect_pattern_match(
-                    content=value, ip_address=client_ip, context=f"header:{key}"
-                )
-
                 return True, f"Header '{key}': {trigger}"
 
     # Body
     try:
         body = (await request.body()).decode()
-        detected, trigger = await check_value(body)
+        detected, trigger = await check_value(body, "request_body")
         if detected:
             message = "Potential attack detected from"
-            client_ip = "unknown"
-            if request.client:
-                client_ip = request.client.host
-            details = f"{client_ip}: {body}"
+            if len(body) > 100:
+                details = f"{client_ip}: {body[:100]}..."
+            else:
+                details = f"{client_ip}: {body}"
             reason_message = "Suspicious pattern: body"
             logging.warning(f"{message} {details} - {reason_message}")
-
-            # Send pattern detection event to agent through handler's public method
-            await sus_patterns_handler.detect_pattern_match(
-                content=body, ip_address=client_ip, context="request_body"
-            )
-
             return True, f"Request body: {trigger}"
     except Exception:
         pass

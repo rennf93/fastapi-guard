@@ -27,7 +27,6 @@ async def reset_state() -> AsyncGenerator[None, None]:
 
     # Reset SusPatternsManager
     original_patterns = sus_patterns_handler.patterns.copy()
-    sus_patterns_handler._instance = None
 
     # Reset CloudManager
     cloud_instance = cloud_handler._instance
@@ -43,7 +42,6 @@ async def reset_state() -> AsyncGenerator[None, None]:
 
     yield
     sus_patterns_handler.patterns = original_patterns.copy()
-    sus_patterns_handler._instance = None
 
 
 @pytest.fixture

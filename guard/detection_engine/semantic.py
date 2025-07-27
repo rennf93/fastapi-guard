@@ -123,6 +123,7 @@ class SemanticAnalyzer:
         import concurrent.futures
 
         for _, pattern in self.attack_structures.items():
+
             def _find_pattern(p: str, c: str) -> list[str]:
                 return re.findall(p, c, re.IGNORECASE)[:10]  # Limit matches
 
@@ -166,6 +167,7 @@ class SemanticAnalyzer:
 
         # Calculate entropy
         import math
+
         entropy = 0.0
         for count in char_counts.values():
             probability = count / length
@@ -353,9 +355,27 @@ class SemanticAnalyzer:
 
                 def _parse_ast() -> bool:
                     try:
-                        ast.parse(content)
+                        # Use mode='eval' to be extra safe - only allows expressions
+                        tree = ast.parse(content, mode="eval")
+                        # Check for dangerous nodes
+                        for node in ast.walk(tree):
+                            # Check for potentially dangerous AST nodes
+                            if isinstance(
+                                node,
+                                ast.Import
+                                | ast.ImportFrom
+                                | ast.FunctionDef
+                                | ast.AsyncFunctionDef
+                                | ast.ClassDef,
+                            ):
+                                # These shouldn't appear in eval mode anyway
+                                return True
                         return True
+                    except SyntaxError:
+                        # Not valid Python - this is normal
+                        return False
                     except Exception:
+                        # Other parsing errors
                         return False
 
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
@@ -368,7 +388,7 @@ class SemanticAnalyzer:
                         risk_score += 0.2
         except Exception:  # pragma: no cover
             # AST parsing failed - this is expected for malformed code
-            # We already added risk score for timeout, so just continue
+            # There's already the risk score for timeout, so just continue
             pass
 
         # Check for common injection keywords

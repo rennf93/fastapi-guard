@@ -3,7 +3,6 @@ from guard.detection_engine import (
     PatternCompiler,
     PerformanceMonitor,
     SemanticAnalyzer,
-    ThreatDetector,
 )
 
 
@@ -72,35 +71,3 @@ async def test_performance_monitor() -> None:
     slow = monitor.get_slow_patterns()
     assert len(slow) > 0
     assert slow[0]["pattern"] == "slow_pattern"
-
-
-async def test_threat_detector() -> None:
-    """Test integrated threat detection."""
-    patterns = [
-        r"<script[^>]*>",
-        r"javascript:",
-        r"SELECT\s+.*\s+FROM",
-    ]
-
-    detector = ThreatDetector(
-        patterns=patterns,
-        enable_preprocessing=True,
-        enable_semantic=True,
-        enable_monitoring=True,
-    )
-
-    # Test XSS detection
-    xss_content = "<script>alert('xss')</script>"
-    result = await detector.detect(xss_content, "test")
-    assert result["is_threat"] is True
-    assert len(result["threats"]) > 0
-
-    # Test SQL injection detection
-    sql_content = "SELECT * FROM users WHERE id=1"
-    result = await detector.detect(sql_content, "test")
-    assert result["is_threat"] is True
-
-    # Test clean content
-    clean_content = "This is a normal message"
-    result = await detector.detect(clean_content, "test")
-    assert result["is_threat"] is False

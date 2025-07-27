@@ -5,14 +5,12 @@ Comprehensive tests for the PatternCompiler module.
 import asyncio
 import concurrent.futures
 import re
-import signal
 import time
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from guard.detection_engine.compiler import PatternCompiler, TimeoutError
+from guard.detection_engine.compiler import PatternCompiler
 
 
 @pytest.fixture
@@ -122,54 +120,6 @@ async def test_compile_pattern_concurrent_access(compiler: PatternCompiler) -> N
     assert len(compiler._compiled_cache) == 1
 
 
-def test_timeout_context(compiler: PatternCompiler) -> None:
-    """Test timeout context manager."""
-    # Test successful operation within timeout
-    with compiler._timeout_context(1.0):
-        time.sleep(0.01)  # Should complete successfully
-
-    # Test timeout scenario
-    def handler(signum: int, frame: Any) -> None:
-        raise TimeoutError("Operation timed out after 0.1 seconds")
-
-    # Save original handler
-    old_handler = signal.signal(signal.SIGALRM, handler)
-
-    try:
-        # Set alarm and trigger timeout
-        signal.alarm(0)  # Clear any existing alarm
-        with pytest.raises(TimeoutError) as exc_info:
-            signal.alarm(0)  # Set immediate alarm
-            handler(signal.SIGALRM, None)  # Call handler directly
-
-        assert "Operation timed out after 0.1 seconds" in str(exc_info.value)
-    finally:
-        # Restore original handler
-        signal.signal(signal.SIGALRM, old_handler)
-        signal.alarm(0)
-
-
-def test_timeout_context_signal_handling(compiler: PatternCompiler) -> None:
-    """Test timeout context signal handling."""
-
-    # Create a mock frame
-    mock_frame = MagicMock()
-
-    # Access the actual timeout handler through the context manager
-    with patch('signal.signal') as mock_signal:
-        with patch('signal.alarm'):
-            # Capture the handler when context is entered
-            with compiler._timeout_context(1.5):
-                # Get the handler that was passed to signal.signal
-                handler = mock_signal.call_args[0][1]
-
-            # Test that the handler raises TimeoutError with correct message
-            with pytest.raises(TimeoutError) as exc_info:
-                handler(signal.SIGALRM, mock_frame)
-
-            assert "Operation timed out after 1.5 seconds" in str(exc_info.value)
-
-
 def test_validate_pattern_safety_dangerous_patterns(compiler: PatternCompiler) -> None:
     """Test validation of dangerous regex patterns."""
     dangerous_patterns = [
@@ -206,23 +156,10 @@ def test_validate_pattern_safety_slow_pattern(compiler: PatternCompiler) -> None
         else:  # Start time measurement
             return start_time
 
-    with patch('time.time', side_effect=mock_time):
+    with patch("time.time", side_effect=mock_time):
         is_safe, reason = compiler.validate_pattern_safety(slow_pattern)
         assert is_safe is False
         assert "timed out on test string" in reason
-
-
-def test_validate_pattern_safety_timeout_error(compiler: PatternCompiler) -> None:
-    """Test validation with timeout error."""
-    pattern = r"test_pattern"
-
-    # Mock the timeout context to raise TimeoutError
-    with patch.object(compiler, '_timeout_context') as mock_context:
-        mock_context.return_value.__enter__.side_effect = TimeoutError("Test timeout")
-
-        is_safe, reason = compiler.validate_pattern_safety(pattern)
-        assert is_safe is False
-        assert reason == "Pattern timed out during validation"
 
 
 def test_validate_pattern_safety_exception(compiler: PatternCompiler) -> None:
@@ -231,7 +168,7 @@ def test_validate_pattern_safety_exception(compiler: PatternCompiler) -> None:
 
     # Mock compile_pattern_sync to raise an exception
     with patch.object(
-        compiler, 'compile_pattern_sync', side_effect=Exception("Test error")
+        compiler, "compile_pattern_sync", side_effect=Exception("Test error")
     ):
         is_safe, reason = compiler.validate_pattern_safety(pattern)
         assert is_safe is False
@@ -251,6 +188,28 @@ def test_validate_pattern_safety_safe_pattern(compiler: PatternCompiler) -> None
         is_safe, reason = compiler.validate_pattern_safety(pattern)
         assert is_safe is True
         assert reason == "Pattern appears safe"
+
+
+def test_validate_pattern_safety_timeout() -> None:
+    """Test pattern validation timeout during testing."""
+    compiler = PatternCompiler()
+
+    # Use a safe-looking pattern
+    pattern = r"test_pattern"
+
+    # Mock ThreadPoolExecutor to simulate timeout during validation
+    with patch("concurrent.futures.ThreadPoolExecutor") as mock_executor:
+        mock_future = MagicMock()
+        # Simulate timeout when result() is called
+        mock_future.result.side_effect = concurrent.futures.TimeoutError()
+        mock_executor.return_value.__enter__.return_value.submit.return_value = (
+            mock_future
+        )
+
+        is_safe, reason = compiler.validate_pattern_safety(pattern)
+
+        assert is_safe is False
+        assert "Pattern timed out on test string" in reason
 
 
 def test_validate_pattern_safety_custom_test_strings(compiler: PatternCompiler) -> None:
@@ -284,7 +243,7 @@ def test_create_safe_matcher_with_timeout(compiler: PatternCompiler) -> None:
     matcher = compiler.create_safe_matcher(pattern, timeout=0.1)
 
     # Mock ThreadPoolExecutor to simulate timeout
-    with patch('concurrent.futures.ThreadPoolExecutor') as mock_executor:
+    with patch("concurrent.futures.ThreadPoolExecutor") as mock_executor:
         mock_future = MagicMock()
         mock_future.result.side_effect = concurrent.futures.TimeoutError()
         mock_future.cancel.return_value = True
@@ -303,7 +262,7 @@ def test_create_safe_matcher_with_exception(compiler: PatternCompiler) -> None:
     matcher = compiler.create_safe_matcher(pattern)
 
     # Mock ThreadPoolExecutor to simulate exception
-    with patch('concurrent.futures.ThreadPoolExecutor') as mock_executor:
+    with patch("concurrent.futures.ThreadPoolExecutor") as mock_executor:
         mock_future = MagicMock()
         mock_future.result.side_effect = Exception("Test error")
         mock_executor.return_value.__enter__.return_value.submit.return_value = (
@@ -396,11 +355,7 @@ async def test_clear_cache_thread_safety(compiler: PatternCompiler) -> None:
         await compiler.clear_cache()
 
     # Run concurrently
-    await asyncio.gather(
-        compile_task(),
-        clear_task(),
-        return_exceptions=True
-    )
+    await asyncio.gather(compile_task(), clear_task(), return_exceptions=True)
 
     # Cache should be in a consistent state
     assert len(compiler._compiled_cache) == len(compiler._cache_order)

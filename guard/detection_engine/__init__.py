@@ -7,14 +7,12 @@ performance monitoring, and bypass prevention.
 """
 
 from .compiler import PatternCompiler
-from .detector import ThreatDetector
 from .monitor import PerformanceMonitor
 from .preprocessor import ContentPreprocessor
 from .semantic import SemanticAnalyzer
 
 __all__ = [
     "PatternCompiler",
-    "ThreatDetector",
     "PerformanceMonitor",
     "ContentPreprocessor",
     "SemanticAnalyzer",

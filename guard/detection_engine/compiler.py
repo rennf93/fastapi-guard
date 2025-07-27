@@ -1,10 +1,7 @@
 import asyncio
 import re
-import signal
 import time
-from collections.abc import Callable, Generator
-from contextlib import contextmanager
-from typing import Any
+from collections.abc import Callable
 
 
 class TimeoutError(Exception):
@@ -36,33 +33,6 @@ class PatternCompiler:
         self._compiled_cache: dict[str, re.Pattern] = {}
         self._cache_order: list[str] = []  # Track insertion order for LRU
         self._lock = asyncio.Lock()  # Thread safety for cache operations
-
-    @contextmanager
-    def _timeout_context(self, seconds: float) -> Generator[None, None, None]:
-        """
-        Context manager for timeout protection.
-
-        Args:
-            seconds: Timeout duration in seconds
-
-        Raises:
-            TimeoutError: If the operation exceeds the timeout
-        """
-
-        def timeout_handler(signum: int, frame: Any) -> None:
-            raise TimeoutError(f"Operation timed out after {seconds} seconds")
-
-        # Set the signal alarm
-        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(int(seconds))
-
-        try:
-            yield
-        finally:
-            # Disable the alarm
-            signal.alarm(0)
-            # Restore the old handler
-            signal.signal(signal.SIGALRM, old_handler)
 
     async def compile_pattern(
         self, pattern: str, flags: int = re.IGNORECASE | re.MULTILINE
@@ -163,21 +133,34 @@ class PatternCompiler:
                 "<" * 100 + ">" * 100,
             ]
 
-        # Test pattern performance
+        # Test pattern performance using thread-based timeout
         try:
             compiled = self.compile_pattern_sync(pattern)
+            import concurrent.futures
+
             for test_str in test_strings:
                 start_time = time.time()
-                with self._timeout_context(0.1):  # 100ms timeout for testing
-                    compiled.search(test_str)
+
+                def _search(text: str = test_str) -> re.Match | None:
+                    return compiled.search(text)
+
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(_search)
+                    try:
+                        future.result(timeout=0.1)  # 100ms timeout for testing
+                    except concurrent.futures.TimeoutError:
+                        return (
+                            False,
+                            f"Pattern timed out on test string of length "
+                            f"{len(test_str)}",
+                        )
+
                 elapsed = time.time() - start_time
                 if elapsed > 0.05:  # 50ms threshold
                     return (
                         False,
                         f"Pattern timed out on test string of length {len(test_str)}",
                     )
-        except TimeoutError:
-            return False, "Pattern timed out during validation"
         except Exception as e:
             return False, f"Pattern validation failed: {str(e)}"
 

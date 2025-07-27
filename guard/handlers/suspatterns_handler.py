@@ -1,4 +1,3 @@
-import concurrent.futures
 import re
 import time
 from datetime import datetime, timezone
@@ -28,8 +27,6 @@ class SusPatternsManager:
 
     _instance = None
     _config = None
-
-    custom_patterns: set[str] = set()
 
     patterns: list[str] = [
         # XSS
@@ -126,16 +123,16 @@ class SusPatternsManager:
         r"[\r\n]\s*(?:HTTP\/[0-9.]+|Location:|Set-Cookie:)",
     ]
 
+    custom_patterns: set[str]
     compiled_patterns: list[re.Pattern]
     compiled_custom_patterns: set[re.Pattern]
-    redis_handler: Any = None
-    agent_handler: Any = None
-
-    # Detection engine components - extending functionality
-    _compiler: PatternCompiler | None = None
-    _preprocessor: ContentPreprocessor | None = None
-    _semantic_analyzer: SemanticAnalyzer | None = None
-    _performance_monitor: PerformanceMonitor | None = None
+    redis_handler: Any
+    agent_handler: Any
+    _compiler: PatternCompiler | None
+    _preprocessor: ContentPreprocessor | None
+    _semantic_analyzer: SemanticAnalyzer | None
+    _performance_monitor: PerformanceMonitor | None
+    _semantic_threshold: float
 
     def __new__(
         cls: type["SusPatternsManager"], config: Any = None
@@ -153,6 +150,7 @@ class SusPatternsManager:
         """
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            cls._instance.custom_patterns = set()
             cls._instance.compiled_patterns = [
                 re.compile(pattern, re.IGNORECASE | re.MULTILINE)
                 for pattern in cls.patterns
@@ -165,11 +163,11 @@ class SusPatternsManager:
             cls._config = config
 
             # Initialize detection engine components with config if available
-            if config and hasattr(config, 'detection_compiler_timeout'):
+            if config and hasattr(config, "detection_compiler_timeout"):
                 # Use config values
                 cls._instance._compiler = PatternCompiler(
                     default_timeout=config.detection_compiler_timeout,
-                    max_cache_size=config.detection_max_tracked_patterns
+                    max_cache_size=config.detection_max_tracked_patterns,
                 )
                 cls._instance._preprocessor = ContentPreprocessor(
                     max_content_length=config.detection_max_content_length,
@@ -184,18 +182,13 @@ class SusPatternsManager:
                 )
                 cls._instance._semantic_threshold = config.detection_semantic_threshold
             else:
-                # Fallback to defaults
-                cls._instance._compiler = PatternCompiler(default_timeout=2.0)
-                cls._instance._preprocessor = ContentPreprocessor(
-                    max_content_length=10000,
-                    preserve_attack_patterns=True,
-                )
-                cls._instance._semantic_analyzer = SemanticAnalyzer()
-                cls._instance._performance_monitor = PerformanceMonitor(
-                    anomaly_threshold=3.0,
-                    slow_pattern_threshold=0.1,
-                )
+                # Don't initialize by default - only when explicitly needed
+                cls._instance._compiler = None
+                cls._instance._preprocessor = None
+                cls._instance._semantic_analyzer = None
+                cls._instance._performance_monitor = None
                 cls._instance._semantic_threshold = 0.7
+
         return cls._instance
 
     async def initialize_redis(self, redis_handler: Any) -> None:
@@ -243,11 +236,269 @@ class SusPatternsManager:
                 f"Failed to send pattern event to agent: {e}"
             )
 
+    async def detect(
+        self,
+        content: str,
+        ip_address: str,
+        context: str = "unknown",
+        correlation_id: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Perform comprehensive threat detection with detailed results.
+
+        This method provides a rich detection result similar to ThreatDetector,
+        including threat scores, detailed threat information, and performance metrics.
+
+        Args:
+            content:
+                Content to check against patterns
+            ip_address:
+                IP address of the request
+            context:
+                Context where the pattern was found
+                (e.g., "query_param", "header", "body")
+            correlation_id:
+                Optional correlation ID for tracking
+
+        Returns:
+            Detection results dictionary containing:
+            - is_threat: Whether a threat was detected
+            - threat_score: Score from 0.0 to 1.0
+            - threats: List of detected threats with details
+            - context: The context where detection occurred
+            - original_length: Length of original content
+            - processed_length: Length after preprocessing
+            - execution_time: Total detection time in seconds
+            - detection_method: Method used (enhanced/legacy)
+        """
+        original_content = content
+
+        # Preprocess content if preprocessor is available
+        processed_content = content
+        if self._preprocessor:
+            context_preprocessor = ContentPreprocessor(
+                max_content_length=self._preprocessor.max_content_length,
+                preserve_attack_patterns=self._preprocessor.preserve_attack_patterns,
+                agent_handler=self.agent_handler,
+                correlation_id=correlation_id,
+            )
+            processed_content = await context_preprocessor.preprocess(content)
+
+        # Initialize threat tracking
+        threats = []
+        matched_patterns = []
+        regex_threats = []
+        semantic_threats = []
+        timeouts: list[str] = []
+
+        # Check with compiled patterns
+        all_patterns = await self.get_all_compiled_patterns()
+        execution_start = time.time()
+
+        # Try regex patterns with timeout protection
+        for pattern in all_patterns:
+            pattern_start = time.time()
+            timeout_occurred = False
+            try:
+                if self._compiler:
+                    # Use safe matcher with timeout when compiler is available
+                    safe_matcher = self._compiler.create_safe_matcher(pattern.pattern)
+                    match = safe_matcher(processed_content)
+
+                    # Check if timeout occurred (safe_matcher returns None on timeout)
+                    if match is None and time.time() - pattern_start >= 0.9 * 2.0:
+                        # Likely a timeout (using 90% of default timeout as threshold)
+                        timeout_occurred = True
+                        timeouts.append(pattern.pattern)
+                        import logging
+
+                        logging.getLogger(__name__).warning(
+                            f"Pattern timeout: {pattern.pattern[:50]}..."
+                        )
+                    elif match:
+                        matched_patterns.append(pattern.pattern)
+                        regex_threat = {
+                            "type": "regex",
+                            "pattern": pattern.pattern,
+                            "match": match.group(),
+                            "position": match.start(),
+                            "execution_time": time.time() - pattern_start,
+                        }
+                        regex_threats.append(regex_threat)
+                        threats.append(regex_threat)
+                else:
+                    # Fallback: Direct pattern matching with thread-based timeout
+                    import concurrent.futures
+
+                    def _search(p: re.Pattern = pattern) -> re.Match | None:
+                        return p.search(processed_content)
+
+                    executor_class = concurrent.futures.ThreadPoolExecutor
+                    with executor_class(max_workers=1) as executor:
+                        future = executor.submit(_search)
+                        try:
+                            match = future.result(timeout=2.0)  # Default timeout
+                            if match:
+                                matched_patterns.append(pattern.pattern)
+                                regex_threat = {
+                                    "type": "regex",
+                                    "pattern": pattern.pattern,
+                                    "match": match.group(),
+                                    "position": match.start(),
+                                    "execution_time": time.time() - pattern_start,
+                                }
+                                regex_threats.append(regex_threat)
+                                threats.append(regex_threat)
+                        except concurrent.futures.TimeoutError:
+                            timeout_occurred = True
+                            timeouts.append(pattern.pattern)
+                            import logging
+
+                            logger = logging.getLogger(__name__)
+                            logger.warning(
+                                f"Regex timeout exceeded for pattern: "
+                                f"{pattern.pattern[:50]}... "
+                                f"Potential ReDoS attack blocked. IP: {ip_address}"
+                            )
+                            future.cancel()
+                        except Exception as e:
+                            import logging
+
+                            logger = logging.getLogger(__name__)
+                            logger.error(
+                                f"Error in regex search for pattern "
+                                f"{pattern.pattern[:50]}...: {e}"
+                            )
+
+            finally:
+                # Record performance metrics if monitor available
+                if self._performance_monitor:
+                    await self._performance_monitor.record_metric(
+                        pattern=pattern.pattern,
+                        execution_time=time.time() - pattern_start,
+                        content_length=len(processed_content),
+                        matched=bool(pattern.pattern in matched_patterns),
+                        timeout=timeout_occurred,
+                        agent_handler=self.agent_handler,
+                        correlation_id=correlation_id,
+                    )
+
+        # Perform semantic analysis if analyzer available
+        semantic_score = 0.0
+        semantic_analysis = None
+        if self._semantic_analyzer:
+            semantic_analysis = self._semantic_analyzer.analyze(processed_content)
+            semantic_score = self._semantic_analyzer.get_threat_score(semantic_analysis)
+
+            if semantic_score > self._semantic_threshold:
+                # Find the most likely attack type
+                attack_probs = semantic_analysis.get("attack_probabilities", {})
+
+                for attack_type, probability in attack_probs.items():
+                    if probability >= self._semantic_threshold:
+                        semantic_threat = {
+                            "type": "semantic",
+                            "attack_type": attack_type,
+                            "probability": probability,
+                            "analysis": semantic_analysis,
+                        }
+                        semantic_threats.append(semantic_threat)
+                        threats.append(semantic_threat)
+
+                # Add general suspicious behavior if no specific attacks found
+                if not semantic_threats and semantic_score >= self._semantic_threshold:
+                    semantic_threat = {
+                        "type": "semantic",
+                        "attack_type": "suspicious",
+                        "threat_score": semantic_score,
+                        "analysis": semantic_analysis,
+                    }
+                    semantic_threats.append(semantic_threat)
+                    threats.append(semantic_threat)
+
+        # Calculate total execution time
+        total_execution_time = time.time() - execution_start
+
+        # Determine if threat detected
+        is_threat = len(threats) > 0
+
+        # Calculate overall threat score
+        threat_score = 0.0
+        if threats:
+            # Take the maximum threat score from all detections
+            regex_score = 1.0 if regex_threats else 0.0
+            semantic_scores = [
+                t.get("probability", t.get("threat_score", 0.0))
+                for t in semantic_threats
+            ]
+            semantic_max = max(semantic_scores) if semantic_scores else 0.0
+            threat_score = max(regex_score, semantic_max)
+
+        # Record overall detection metrics if monitor available
+        if self._performance_monitor:
+            await self._performance_monitor.record_metric(
+                pattern="overall_detection",
+                execution_time=total_execution_time,
+                content_length=len(content),
+                matched=is_threat,
+                timeout=False,
+                agent_handler=self.agent_handler,
+                correlation_id=correlation_id,
+            )
+
+        # Send event if threat detected
+        if is_threat:
+            # Prepare pattern info for event
+            pattern_info = "unknown"
+            if matched_patterns:
+                pattern_info = matched_patterns[0]  # First matched pattern
+            elif semantic_threats:
+                pattern_info = f"semantic:{semantic_threats[0]['attack_type']}"
+
+            await self._send_pattern_event(
+                event_type="pattern_detected",
+                ip_address=ip_address,
+                action_taken="threat_detected",
+                reason=f"Threat detected in {context}",
+                pattern=pattern_info,
+                context=context,
+                content_preview=content[:100] if len(content) > 100 else content,
+                threat_score=threat_score,
+                threats=len(threats),
+                regex_threats=len(regex_threats),
+                semantic_threats=len(semantic_threats),
+                timeouts=len(timeouts),
+                detection_method="enhanced" if self._compiler else "legacy",
+                execution_time_ms=int(total_execution_time * 1000),
+                correlation_id=correlation_id,
+            )
+
+        # Build comprehensive result
+        result = {
+            "is_threat": is_threat,
+            "threat_score": threat_score,
+            "threats": threats,
+            "context": context,
+            "original_length": len(original_content),
+            "processed_length": len(processed_content),
+            "execution_time": total_execution_time,
+            "detection_method": "enhanced" if self._compiler else "legacy",
+            "timeouts": timeouts,
+            "correlation_id": correlation_id,
+        }
+
+        return result
+
     async def detect_pattern_match(
-        self, content: str, ip_address: str, context: str = "unknown",
-        correlation_id: str | None = None
+        self,
+        content: str,
+        ip_address: str,
+        context: str = "unknown",
+        correlation_id: str | None = None,
     ) -> tuple[bool, str | None]:
         """
+        Legacy method for backward compatibility.
+
         Detect if content matches any suspicious patterns and send agent events.
 
         Args:
@@ -262,111 +513,21 @@ class SusPatternsManager:
         Returns:
             Tuple of (pattern_detected, matched_pattern)
         """
-        # Preprocess content if preprocessor is available
-        processed_content = content
-        if self._preprocessor:
-            # Update preprocessor with current context
-            self._preprocessor.correlation_id = correlation_id
-            self._preprocessor.agent_handler = self.agent_handler
-            processed_content = await self._preprocessor.preprocess(content)
+        # Use the new detect method
+        result = await self.detect(content, ip_address, context, correlation_id)
 
-        # Check with compiled patterns (enhanced with compiler if available)
-        all_patterns = await self.get_all_compiled_patterns()
-        matched_pattern = None
-        pattern_matched = False
-        execution_start = time.time()
+        # Extract legacy format from rich result
+        if result["is_threat"]:
+            # Get first matched pattern for backward compatibility
+            if result["threats"]:
+                threat = result["threats"][0]
+                if threat["type"] == "regex":
+                    return True, threat["pattern"]
+                elif threat["type"] == "semantic":
+                    return True, f"semantic:{threat.get('attack_type', 'suspicious')}"
+            return True, "unknown"
 
-        # Try regex patterns with timeout protection
-        # Always use timeout protection to prevent ReDoS
-        for pattern in all_patterns:
-            pattern_start = time.time()
-            timeout_occurred = False
-            try:
-                if self._compiler:
-                    # Use safe matcher with timeout
-                    safe_matcher = self._compiler.create_safe_matcher(pattern.pattern)
-                    match = safe_matcher(processed_content)
-                else:
-                    # Fallback: Use utils.py timeout mechanism
-                    def _search(p: re.Pattern, content: str) -> re.Match | None:
-                        return p.search(content)
-
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future = executor.submit(_search, pattern, processed_content)
-                        try:
-                            match = future.result(timeout=2.0)
-                        except concurrent.futures.TimeoutError:
-                            match = None
-                            timeout_occurred = True
-                            import logging
-                            logging.getLogger(__name__).warning(
-                                f"Pattern timeout: {pattern.pattern[:50]}..."
-                            )
-
-                if match:
-                    matched_pattern = pattern.pattern
-                    pattern_matched = True
-                    break
-            finally:
-                # Record performance metrics if monitor available
-                if self._performance_monitor:
-                    await self._performance_monitor.record_metric(
-                        pattern=pattern.pattern,
-                        execution_time=time.time() - pattern_start,
-                        content_length=len(processed_content),
-                        matched=bool(matched_pattern == pattern.pattern),
-                        timeout=timeout_occurred,
-                        agent_handler=self.agent_handler,
-                        correlation_id=correlation_id,
-                    )
-
-        # Perform semantic analysis if no regex match and analyzer available
-        semantic_threat = False
-        semantic_score = 0.0
-        if not pattern_matched and self._semantic_analyzer:
-            analysis = self._semantic_analyzer.analyze(processed_content)
-            semantic_score = self._semantic_analyzer.get_threat_score(analysis)
-            if semantic_score > getattr(self, "_semantic_threshold", 0.7):
-                semantic_threat = True
-                # Find the most likely attack type
-                attack_probs = analysis.get("attack_probabilities", {})
-                if attack_probs:
-                    likely_attack = max(attack_probs.items(), key=lambda x: x[1])
-                    matched_pattern = f"semantic:{likely_attack[0]}"
-                    pattern_matched = True
-
-        # Calculate total execution time
-        total_execution_time = time.time() - execution_start
-
-        # Record overall detection metrics if monitor available
-        if self._performance_monitor:
-            await self._performance_monitor.record_metric(
-                pattern="overall_detection",
-                execution_time=total_execution_time,
-                content_length=len(content),
-                matched=pattern_matched,
-                timeout=False,
-                agent_handler=self.agent_handler,
-                correlation_id=correlation_id,
-            )
-
-        # Send event if pattern matched
-        if pattern_matched:
-            await self._send_pattern_event(
-                event_type="pattern_detected",
-                ip_address=ip_address,
-                action_taken="pattern_matched",
-                reason=f"Suspicious pattern detected in {context}",
-                pattern=matched_pattern or "unknown",
-                context=context,
-                content_preview=content[:100] if len(content) > 100 else content,
-                threat_score=semantic_score if semantic_threat else 1.0,
-                detection_method="enhanced" if self._compiler else "legacy",
-                semantic_detection=semantic_threat,
-                execution_time_ms=int(total_execution_time * 1000),
-            )
-
-        return pattern_matched, matched_pattern
+        return False, None
 
     @classmethod
     async def add_pattern(cls, pattern: str, custom: bool = False) -> None:
@@ -602,6 +763,40 @@ class SusPatternsManager:
         """
         # Store as class variable for now
         self._semantic_threshold = max(0.0, min(1.0, threshold))
+
+    @classmethod
+    async def reset(cls) -> None:
+        """
+        Reset the singleton instance to clean state.
+
+        This method is primarily for testing to ensure clean state between tests.
+        It clears all custom patterns and resets handlers to None.
+
+        WARNING: This will clear all custom patterns and cached data.
+        """
+        if cls._instance is not None:
+            # Clear custom patterns
+            cls._instance.custom_patterns.clear()
+            cls._instance.compiled_custom_patterns.clear()
+
+            # Reset handlers
+            cls._instance.redis_handler = None
+            cls._instance.agent_handler = None
+
+            # Clear compiler cache if available
+            if hasattr(cls._instance, "_compiler") and cls._instance._compiler:
+                await cls._instance._compiler.clear_cache()
+
+            # Clear performance monitor stats if available
+            if (
+                hasattr(cls._instance, "_performance_monitor")
+                and cls._instance._performance_monitor
+            ):
+                cls._instance._performance_monitor.pattern_stats.clear()
+                cls._instance._performance_monitor.recent_metrics.clear()
+
+            # Reset config
+            cls._config = None
 
 
 # Instance

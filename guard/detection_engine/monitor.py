@@ -56,11 +56,7 @@ class PerformanceMonitor:
         # Validate and bound parameters
         self.anomaly_threshold = max(1.0, min(10.0, float(anomaly_threshold)))
         self.slow_pattern_threshold = max(
-            0.01,
-            min(
-                10.0,
-                float(slow_pattern_threshold)
-            )
+            0.01, min(10.0, float(slow_pattern_threshold))
         )
         self.history_size = max(100, min(10000, int(history_size)))
         self.max_tracked_patterns = max(100, min(5000, int(max_tracked_patterns)))
@@ -150,9 +146,10 @@ class PerformanceMonitor:
         await self._check_anomalies(metric, agent_handler, correlation_id)
 
     async def _check_anomalies(
-        self, metric: PerformanceMetric,
+        self,
+        metric: PerformanceMetric,
         agent_handler: Any = None,
-        correlation_id: str | None = None
+        correlation_id: str | None = None,
     ) -> None:
         """
         Check if the metric represents an anomaly.
@@ -211,6 +208,7 @@ class PerformanceMonitor:
             for anomaly in anomalies:
                 try:
                     from datetime import datetime, timezone
+
                     # Import at runtime to avoid circular dependency
                     event_data = {
                         "timestamp": datetime.now(timezone.utc),
@@ -222,10 +220,10 @@ class PerformanceMonitor:
                             "component": "PerformanceMonitor",
                             "correlation_id": correlation_id,
                             **anomaly,
-                        }
+                        },
                     }
                     # Use duck typing to avoid import
-                    event = type('SecurityEvent', (), event_data)()
+                    event = type("SecurityEvent", (), event_data)()
                     await agent_handler.send_event(event)
                 except Exception:
                     # Don't let agent errors affect monitoring
@@ -252,6 +250,7 @@ class PerformanceMonitor:
                     if agent_handler:
                         try:
                             from datetime import datetime, timezone
+
                             event_data = {
                                 "timestamp": datetime.now(timezone.utc),
                                 "event_type": "detection_engine_callback_error",
@@ -263,9 +262,9 @@ class PerformanceMonitor:
                                     "correlation_id": correlation_id,
                                     "callback_error": str(e),
                                     "anomaly_type": safe_anomaly.get("type", "unknown"),
-                                }
+                                },
                             }
-                            event = type('SecurityEvent', (), event_data)()
+                            event = type("SecurityEvent", (), event_data)()
                             await agent_handler.send_event(event)
                         except Exception:
                             # Double failure - silently continue
@@ -307,7 +306,7 @@ class PerformanceMonitor:
                 stats.min_execution_time
                 if stats.min_execution_time != float("inf")
                 else 0.0,
-                4
+                4,
             ),
         }
 

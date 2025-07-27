@@ -61,7 +61,7 @@ def test_normalize_unicode() -> None:
         assert result == f"test{expected}test"
 
     # Test combined lookalikes in attack pattern
-    malicious = f"<script{chr(0x200b)}>{chr(0xff0f)}alert(1){chr(0xff1c)}/script>"
+    malicious = f"<script{chr(0x200B)}>{chr(0xFF0F)}alert(1){chr(0xFF1C)}/script>"
     normalized = preprocessor.normalize_unicode(malicious)
     assert normalized == "<script>/alert(1)</script>"
 
@@ -71,24 +71,28 @@ def test_remove_excessive_whitespace() -> None:
     preprocessor = ContentPreprocessor()
 
     # Test multiple spaces
-    assert preprocessor.remove_excessive_whitespace(
-        "test  multiple   spaces"
-    ) == "test multiple spaces"
+    assert (
+        preprocessor.remove_excessive_whitespace("test  multiple   spaces")
+        == "test multiple spaces"
+    )
 
     # Test tabs and newlines
-    assert preprocessor.remove_excessive_whitespace(
-        "test\t\ttabs\n\nnewlines"
-    ) == "test tabs newlines"
+    assert (
+        preprocessor.remove_excessive_whitespace("test\t\ttabs\n\nnewlines")
+        == "test tabs newlines"
+    )
 
     # Test leading/trailing whitespace
-    assert preprocessor.remove_excessive_whitespace(
-        "  leading trailing  "
-    ) == "leading trailing"
+    assert (
+        preprocessor.remove_excessive_whitespace("  leading trailing  ")
+        == "leading trailing"
+    )
 
     # Test mixed whitespace
-    assert preprocessor.remove_excessive_whitespace(
-        "  mixed\t \n  whitespace  "
-    ) == "mixed whitespace"
+    assert (
+        preprocessor.remove_excessive_whitespace("  mixed\t \n  whitespace  ")
+        == "mixed whitespace"
+    )
 
 
 def test_remove_null_bytes() -> None:
@@ -116,9 +120,7 @@ async def test_send_preprocessor_event_no_agent() -> None:
 
     # Should return early without error
     await preprocessor._send_preprocessor_event(
-        event_type="test_event",
-        action_taken="test_action",
-        reason="test_reason"
+        event_type="test_event", action_taken="test_action", reason="test_reason"
     )
 
 
@@ -129,15 +131,14 @@ async def test_send_preprocessor_event_with_agent() -> None:
     agent_handler.send_event = AsyncMock()
 
     preprocessor = ContentPreprocessor(
-        agent_handler=agent_handler,
-        correlation_id="test-456"
+        agent_handler=agent_handler, correlation_id="test-456"
     )
 
     await preprocessor._send_preprocessor_event(
         event_type="test_event",
         action_taken="test_action",
         reason="test_reason",
-        extra_data="test_value"
+        extra_data="test_value",
     )
 
     # Check event was sent
@@ -164,9 +165,7 @@ async def test_send_preprocessor_event_with_error() -> None:
         mock_logger.return_value.error = MagicMock()
 
         await preprocessor._send_preprocessor_event(
-            event_type="test_event",
-            action_taken="test_action",
-            reason="test_reason"
+            event_type="test_event", action_taken="test_action", reason="test_reason"
         )
 
         # Check error was logged
@@ -238,7 +237,9 @@ def test_extract_attack_regions_merge_overlapping() -> None:
 
     # Check that regions don't overlap (they should be merged)
     for i in range(1, len(regions)):
-        assert regions[i][0] > regions[i-1][1], "Regions should not overlap"  # pragma: no cover  # noqa: E501
+        assert regions[i][0] > regions[i - 1][1], (
+            "Regions should not overlap"
+        )  # pragma: no cover  # noqa: E501
 
 
 def test_extract_attack_regions_non_overlapping() -> None:
@@ -280,8 +281,7 @@ def test_truncate_safely_no_truncation_needed() -> None:
 def test_truncate_safely_preserve_disabled() -> None:
     """Test truncate_safely with preserve_attack_patterns=False."""
     preprocessor = ContentPreprocessor(
-        max_content_length=50,
-        preserve_attack_patterns=False
+        max_content_length=50, preserve_attack_patterns=False
     )
 
     content = "a" * 100
@@ -322,11 +322,15 @@ def test_truncate_safely_with_non_attack_content() -> None:
     # Create content with attack region that leaves room for non-attack content
     # The key is that the attack region must be small enough that there's
     # remaining space to fill with non-attack content
-    content = "safe_prefix_content_before" + "<script>alert(1)</script>" + "safe_suffix_content_after"  # noqa: E501
+    content = (
+        "safe_prefix_content_before"
+        + "<script>alert(1)</script>"
+        + "safe_suffix_content_after"
+    )  # noqa: E501
 
     # Mock extract_attack_regions to return a specific region
     # that will trigger the non-attack content processing
-    with patch.object(preprocessor, 'extract_attack_regions') as mock_extract:
+    with patch.object(preprocessor, "extract_attack_regions") as mock_extract:
         # Return region that starts after some prefix content
         # The attack region is 25 chars, so with max_content_length=50,
         # we have 25 chars remaining to fill with non-attack content
@@ -434,13 +438,13 @@ async def test_preprocess_full_flow() -> None:
     preprocessor = ContentPreprocessor(max_content_length=200)
 
     # Create content with various issues
-    content = f"{chr(0x200b)}<script>{chr(0xff0f)}alert(1)</script>  multiple   spaces %3Cimg%3E\x00null"  # noqa: E501
+    content = f"{chr(0x200B)}<script>{chr(0xFF0F)}alert(1)</script>  multiple   spaces %3Cimg%3E\x00null"  # noqa: E501
 
     result = await preprocessor.preprocess(content)
 
     # Check all preprocessing steps were applied
-    assert chr(0x200b) not in result  # Unicode normalized
-    assert chr(0xff0f) not in result  # Lookalike replaced
+    assert chr(0x200B) not in result  # Unicode normalized
+    assert chr(0xFF0F) not in result  # Lookalike replaced
     assert "  " not in result  # Whitespace normalized
     assert "<img>" in result  # URL decoded
     assert "\x00" not in result  # Null bytes removed
@@ -452,12 +456,7 @@ async def test_preprocess_batch() -> None:
     """Test batch preprocessing."""
     preprocessor = ContentPreprocessor()
 
-    contents = [
-        "<script>alert(1)</script>",
-        "%3Cimg%3E",
-        "normal text",
-        ""
-    ]
+    contents = ["<script>alert(1)</script>", "%3Cimg%3E", "normal text", ""]
 
     results = await preprocessor.preprocess_batch(contents)
 
@@ -493,7 +492,7 @@ async def test_integration_xss_bypass_attempt() -> None:
     preprocessor = ContentPreprocessor()
 
     # XSS with Unicode bypass attempt
-    xss = f"<scr{chr(0x200b)}ipt>al{chr(0x200c)}ert(1)</sc{chr(0x200d)}ript>"
+    xss = f"<scr{chr(0x200B)}ipt>al{chr(0x200C)}ert(1)</sc{chr(0x200D)}ript>"
     result = await preprocessor.preprocess(xss)
 
     assert "<script>alert(1)</script>" in result
