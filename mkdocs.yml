@@ -59,10 +59,17 @@ nav:
       - Advanced Decorators: tutorial/decorators/advanced.md
     - Security Features:
       - Penetration Detection: tutorial/security/penetration-detection.md
+      - Detection Engine:
+        - Overview: tutorial/security/detection-engine/overview.md
+        - Architecture: tutorial/security/detection-engine/architecture.md
+        - Components: tutorial/security/detection-engine/components.md
+        - Configuration: tutorial/security/detection-engine/configuration.md
+        - Performance Tuning: tutorial/security/detection-engine/performance-tuning.md
       - Proxy Security: tutorial/security/proxy-security.md
       - Custom Patterns: tutorial/security/custom-patterns.md
       - Security Monitoring: tutorial/security/monitoring.md
     - Configuration:
+      - Security Config: tutorial/configuration/security-config.md
       - CORS: tutorial/configuration/cors.md
       - Logging: tutorial/configuration/logging.md
     - Redis Integration: tutorial/redis-integration/caching.md

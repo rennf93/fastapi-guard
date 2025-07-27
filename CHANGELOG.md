@@ -3,6 +3,33 @@ Release Notes
 
 ___
 
+v4.0.0 (2025-07-27)
+-------------------
+
+New Features (v4.0.0)
+------------
+
+- **Sus Patterns Handler Overhaul**: Complete redesign of the suspicious patterns detection system with modular architecture
+  - **Pattern Compiler**: Safe regex execution with configurable timeouts to prevent ReDoS attacks
+  - **Content Preprocessor**: Intelligent content truncation that preserves attack signatures
+  - **Semantic Analyzer**: Heuristic-based detection using TF-IDF and n-gram analysis for obfuscated attacks
+  - **Performance Monitor**: Real-time tracking of pattern execution times and anomaly detection
+  - **Enhanced Detection API**: Rich detection results with threat scores, detailed threat information, and performance metrics
+  - **Lazy Component Initialization**: Detection components only load when explicitly configured
+  - **Comprehensive Configuration**: New `detection_*` configuration options for fine-tuning all components
+
+Improvements (v4.0.0)
+------------
+
+- **Pattern Matching Performance**: Timeout protection prevents slow patterns from blocking requests
+- **Detection Accuracy**: Multi-layered approach combines regex patterns with semantic analysis
+- **Memory Efficiency**: Configurable limits on content length and pattern tracking
+- **Observability**: Detailed performance metrics and slow pattern identification
+- **Backward Compatibility**: Legacy `detect_pattern_match` API maintained for smooth migration
+- **Agent Integration**: Automatic telemetry for pattern detection events and performance metrics
+
+___
+
 v3.0.2 (2025-07-22)
 -------------------
 

@@ -788,7 +788,7 @@ async def test_detect_penetration_attempt_regex_timeout() -> None:
         mock_logger = MagicMock()
         mock_get_logger.return_value = mock_logger
 
-        result, trigger = await detect_penetration_attempt(request, regex_timeout=0.1)
+        result, trigger = await detect_penetration_attempt(request)
 
         # Should not detect as attack when timeout occurs
         assert not result
@@ -824,7 +824,7 @@ async def test_detect_penetration_attempt_regex_exception() -> None:
         ),
         patch("logging.error") as mock_error,
     ):
-        result, trigger = await detect_penetration_attempt(request, regex_timeout=2.0)
+        result, trigger = await detect_penetration_attempt(request)
 
         # Should not detect as attack when exception occurs
         assert not result

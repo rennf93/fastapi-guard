@@ -260,7 +260,6 @@ security_config = SecurityConfig(
     agent_project_id="example_project",
 
     # Advanced Configuration
-    regex_timeout=2.0,
     passive_mode=False,  # Set to True for log-only mode
 )
 

@@ -119,25 +119,27 @@ detect_penetration_attempt
 ```python
 async def detect_penetration_attempt(
     request: Request,
-    regex_timeout: float = 2.0
 ) -> tuple[bool, str]
 ```
 
-Detect potential penetration attempts in the request.
+Detect potential penetration attempts in the request using the enhanced Detection Engine.
 
-This function checks various parts of the request (query params, body, path, headers) against a list of suspicious patterns to identify potential security threats.
+This function analyzes various parts of the request (query params, body, path, headers) using the Detection Engine's components including pattern matching, semantic analysis, and performance monitoring.
 
 Parameters:
 
 - `request`: The FastAPI request object to analyze
-- `regex_timeout`: Timeout in seconds for each regex check to prevent ReDoS attacks (default: 2.0 seconds)
 
 Returns a tuple where:
 
 - First element is a boolean: `True` if a potential attack is detected, `False` otherwise
 - Second element is a string with details about what triggered the detection, or empty string if no attack detected
 
-The regex timeout mechanism protects against ReDoS (Regular Expression Denial of Service) attacks by limiting the execution time of each pattern match. If a pattern match exceeds the timeout, it's considered non-matching and a warning is logged.
+The Detection Engine provides:
+- Timeout-protected pattern matching (configured via `detection_compiler_timeout` in SecurityConfig)
+- Intelligent content preprocessing that preserves attack patterns
+- Semantic analysis for obfuscated attacks (when enabled)
+- Performance monitoring for pattern effectiveness
 
 Example usage:
 
@@ -147,7 +149,7 @@ from guard.utils import detect_penetration_attempt
 
 @app.post("/api/submit")
 async def submit_data(request: Request):
-    # Use default timeout of 2.0 seconds
+    # Detection uses configuration from SecurityConfig
     is_suspicious, trigger_info = await detect_penetration_attempt(request)
     if is_suspicious:
         # Log the detection with details
@@ -157,8 +159,8 @@ async def submit_data(request: Request):
 
 @app.post("/api/critical")
 async def critical_endpoint(request: Request):
-    # Use shorter timeout for critical endpoints
-    is_suspicious, trigger_info = await detect_penetration_attempt(request, regex_timeout=0.5)
+    # Timeout protection is configured via SecurityConfig.detection_compiler_timeout
+    is_suspicious, trigger_info = await detect_penetration_attempt(request)
     if is_suspicious:
         return {"error": "Security check failed"}
     return {"success": True}
@@ -211,7 +213,4 @@ await log_activity(
 
 # Check for penetration attempts
 is_suspicious, trigger_info = await detect_penetration_attempt(request)
-
-# Or with custom timeout
-is_suspicious, trigger_info = await detect_penetration_attempt(request, regex_timeout=1.0)
 ```

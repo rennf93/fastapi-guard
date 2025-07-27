@@ -435,9 +435,7 @@ async def is_ip_allowed(
         return True
 
 
-async def detect_penetration_attempt(
-    request: Request, regex_timeout: float = 2.0
-) -> tuple[bool, str]:
+async def detect_penetration_attempt(request: Request) -> tuple[bool, str]:
     """
     Detect potential penetration
     attempts in the request.
@@ -451,8 +449,6 @@ async def detect_penetration_attempt(
     Args:
         request (Request):
             The FastAPI request object to analyze.
-        regex_timeout (float):
-            Timeout in seconds for each regex check. Defaults to 2.0 seconds.
 
     Returns:
         tuple[bool, str]:
