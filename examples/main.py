@@ -263,7 +263,7 @@ app = FastAPI(
 app.add_middleware(SecurityMiddleware, config=security_config)
 
 # Initialize security decorator
-guard = SecurityDecorator(security_config)
+guard_decorator = SecurityDecorator(security_config)
 
 
 # ==================== Basic Features Router ====================
@@ -327,49 +327,49 @@ access_router = APIRouter(prefix="/access", tags=["Access Control"])
 
 
 @access_router.get("/ip-whitelist", response_model=MessageResponse)
-@guard.require_ip(whitelist=["127.0.0.1", "10.0.0.0/8"])
+@guard_decorator.require_ip(whitelist=["127.0.0.1", "10.0.0.0/8"])
 async def ip_whitelist_only() -> MessageResponse:
     """Only accessible from whitelisted IPs."""
     return MessageResponse(message="Access granted from whitelisted IP")
 
 
 @access_router.get("/ip-blacklist", response_model=MessageResponse)
-@guard.require_ip(blacklist=["192.168.1.0/24", "172.16.0.0/12"])
+@guard_decorator.require_ip(blacklist=["192.168.1.0/24", "172.16.0.0/12"])
 async def ip_blacklist_demo() -> MessageResponse:
     """Blocked for specific IP ranges."""
     return MessageResponse(message="Access granted - you're not blacklisted")
 
 
 @access_router.get("/country-block", response_model=MessageResponse)
-@guard.block_countries(["CN", "RU", "KP"])
+@guard_decorator.block_countries(["CN", "RU", "KP"])
 async def block_specific_countries() -> MessageResponse:
     """Block access from specific countries."""
     return MessageResponse(message="Access granted - your country is not blocked")
 
 
 @access_router.get("/country-allow", response_model=MessageResponse)
-@guard.allow_countries(["US", "CA", "GB", "AU"])
+@guard_decorator.allow_countries(["US", "CA", "GB", "AU"])
 async def allow_specific_countries() -> MessageResponse:
     """Only allow access from specific countries."""
     return MessageResponse(message="Access granted from allowed country")
 
 
 @access_router.get("/no-cloud", response_model=MessageResponse)
-@guard.block_clouds()  # Block all cloud providers
+@guard_decorator.block_clouds()  # Block all cloud providers
 async def block_all_clouds() -> MessageResponse:
     """Block access from all cloud provider IPs."""
     return MessageResponse(message="Access granted - not from cloud provider")
 
 
 @access_router.get("/no-aws", response_model=MessageResponse)
-@guard.block_clouds(["AWS"])
+@guard_decorator.block_clouds(["AWS"])
 async def block_aws_only() -> MessageResponse:
     """Block access only from AWS IPs."""
     return MessageResponse(message="Access granted - not from AWS")
 
 
 @access_router.get("/bypass-demo", response_model=MessageResponse)
-@guard.bypass(["rate_limit", "geo_check"])
+@guard_decorator.bypass(["rate_limit", "geo_check"])
 async def bypass_specific_checks() -> MessageResponse:
     """Bypass rate limiting and geo checks for this endpoint."""
     return MessageResponse(
@@ -384,7 +384,7 @@ auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @auth_router.get("/https-only", response_model=MessageResponse)
-@guard.require_https()
+@guard_decorator.require_https()
 async def https_required_endpoint(request: Request) -> MessageResponse:
     """This endpoint requires HTTPS connection."""
     return MessageResponse(
@@ -394,7 +394,7 @@ async def https_required_endpoint(request: Request) -> MessageResponse:
 
 
 @auth_router.get("/bearer-auth", response_model=AuthResponse)
-@guard.require_auth(type="bearer")
+@guard_decorator.require_auth(type="bearer")
 async def bearer_authentication(
     authorization: Annotated[str | None, Header()] = None,
 ) -> AuthResponse:
@@ -408,7 +408,7 @@ async def bearer_authentication(
 
 
 @auth_router.get("/api-key", response_model=AuthResponse)
-@guard.api_key_auth(header_name="X-API-Key")
+@guard_decorator.api_key_auth(header_name="X-API-Key")
 async def api_key_authentication(
     x_api_key: Annotated[str | None, Header()] = None,
 ) -> AuthResponse:
@@ -422,7 +422,7 @@ async def api_key_authentication(
 
 
 @auth_router.get("/custom-headers", response_model=MessageResponse)
-@guard.require_headers(
+@guard_decorator.require_headers(
     {"X-Custom-Header": "required-value", "X-Client-ID": "required-value"}
 )
 async def require_custom_headers(
@@ -441,7 +441,7 @@ rate_router = APIRouter(prefix="/rate", tags=["Rate Limiting"])
 
 
 @rate_router.get("/custom-limit", response_model=MessageResponse)
-@guard.rate_limit(requests=5, window=60)
+@guard_decorator.rate_limit(requests=5, window=60)
 async def custom_rate_limit() -> MessageResponse:
     """Custom rate limit: 5 requests per minute."""
     return MessageResponse(
@@ -451,7 +451,7 @@ async def custom_rate_limit() -> MessageResponse:
 
 
 @rate_router.get("/strict-limit", response_model=MessageResponse)
-@guard.rate_limit(requests=1, window=10)
+@guard_decorator.rate_limit(requests=1, window=10)
 async def strict_rate_limit() -> MessageResponse:
     """Very strict rate limit: 1 request per 10 seconds."""
     return MessageResponse(
@@ -461,7 +461,7 @@ async def strict_rate_limit() -> MessageResponse:
 
 
 @rate_router.get("/geo-rate-limit", response_model=MessageResponse)
-@guard.geo_rate_limit(
+@guard_decorator.geo_rate_limit(
     {
         "US": (100, 60),  # 100 requests per minute for US
         "CN": (10, 60),  # 10 requests per minute for China
@@ -483,7 +483,7 @@ behavior_router = APIRouter(prefix="/behavior", tags=["Behavioral Analysis"])
 
 
 @behavior_router.get("/usage-monitor", response_model=MessageResponse)
-@guard.usage_monitor(max_calls=10, window=300, action="log")
+@guard_decorator.usage_monitor(max_calls=10, window=300, action="log")
 async def monitor_usage_patterns() -> MessageResponse:
     """Monitor endpoint usage: log if more than 10 calls in 5 minutes."""
     return MessageResponse(
@@ -493,7 +493,12 @@ async def monitor_usage_patterns() -> MessageResponse:
 
 
 @behavior_router.get("/return-monitor/{status_code}")
-@guard.return_monitor(pattern="404", max_occurrences=3, window=60, action="ban")
+@guard_decorator.return_monitor(
+    pattern="404",
+    max_occurrences=3,
+    window=60,
+    action="ban"
+)
 async def monitor_return_patterns(status_code: int) -> MessageResponse:
     """Ban IP if it receives 404 more than 3 times in 60 seconds."""
     if status_code == 404:
@@ -502,7 +507,7 @@ async def monitor_return_patterns(status_code: int) -> MessageResponse:
 
 
 @behavior_router.get("/suspicious-frequency", response_model=MessageResponse)
-@guard.suspicious_frequency(max_frequency=0.5, window=10, action="throttle")
+@guard_decorator.suspicious_frequency(max_frequency=0.5, window=10, action="throttle")
 async def detect_suspicious_frequency() -> MessageResponse:
     """Detect suspicious request frequency: max 1 request per 2 seconds."""
     return MessageResponse(
@@ -512,7 +517,7 @@ async def detect_suspicious_frequency() -> MessageResponse:
 
 
 @behavior_router.post("/behavior-rules", response_model=MessageResponse)
-@guard.behavior_analysis(
+@guard_decorator.behavior_analysis(
     [
         BehaviorRule(rule_type="frequency", threshold=10, window=60, action="throttle"),
         BehaviorRule(
@@ -538,14 +543,14 @@ content_router = APIRouter(prefix="/content", tags=["Content Filtering"])
 
 
 @content_router.get("/no-bots", response_model=MessageResponse)
-@guard.block_user_agents(["bot", "crawler", "spider", "scraper"])
+@guard_decorator.block_user_agents(["bot", "crawler", "spider", "scraper"])
 async def block_bots() -> MessageResponse:
     """Block common bot user agents."""
     return MessageResponse(message="Human users only - bots blocked")
 
 
 @content_router.post("/json-only", response_model=MessageResponse)
-@guard.content_type_filter(["application/json"])
+@guard_decorator.content_type_filter(["application/json"])
 async def json_content_only(data: dict[str, Any]) -> MessageResponse:
     """Only accept JSON content type."""
     return MessageResponse(
@@ -555,7 +560,7 @@ async def json_content_only(data: dict[str, Any]) -> MessageResponse:
 
 
 @content_router.post("/size-limit", response_model=MessageResponse)
-@guard.max_request_size(1024 * 100)  # 100KB limit
+@guard_decorator.max_request_size(1024 * 100)  # 100KB limit
 async def limited_upload_size(data: dict[str, Any]) -> MessageResponse:
     """Limit request body size to 100KB."""
     return MessageResponse(
@@ -565,7 +570,7 @@ async def limited_upload_size(data: dict[str, Any]) -> MessageResponse:
 
 
 @content_router.get("/referrer-check", response_model=MessageResponse)
-@guard.require_referrer(["https://example.com", "https://app.example.com"])
+@guard_decorator.require_referrer(["https://example.com", "https://app.example.com"])
 async def check_referrer(request: Request) -> MessageResponse:
     """Require requests to come from specific referrer domains."""
     referrer = request.headers.get("referer", "No referrer")
@@ -588,7 +593,7 @@ async def custom_validator(request: Request) -> Response | None:
 
 
 @content_router.get("/custom-validation", response_model=MessageResponse)
-@guard.custom_validation(custom_validator)
+@guard_decorator.custom_validation(custom_validator)
 async def custom_content_validation() -> MessageResponse:
     """Custom validation logic for requests."""
     return MessageResponse(
@@ -603,7 +608,7 @@ advanced_router = APIRouter(prefix="/advanced", tags=["Advanced Features"])
 
 
 @advanced_router.get("/business-hours", response_model=MessageResponse)
-@guard.time_window(start_time="09:00", end_time="17:00", timezone="UTC")
+@guard_decorator.time_window(start_time="09:00", end_time="17:00", timezone="UTC")
 async def business_hours_only() -> MessageResponse:
     """Only accessible during business hours (9 AM - 5 PM UTC)."""
     return MessageResponse(
@@ -613,7 +618,7 @@ async def business_hours_only() -> MessageResponse:
 
 
 @advanced_router.get("/weekend-only", response_model=MessageResponse)
-@guard.time_window(start_time="00:00", end_time="23:59", timezone="UTC")
+@guard_decorator.time_window(start_time="00:00", end_time="23:59", timezone="UTC")
 async def weekend_endpoint() -> MessageResponse:
     """This would need custom logic to check for weekends."""
     return MessageResponse(
@@ -623,7 +628,7 @@ async def weekend_endpoint() -> MessageResponse:
 
 
 @advanced_router.post("/honeypot", response_model=MessageResponse)
-@guard.honeypot_detection(["honeypot_field", "trap_input", "hidden_field"])
+@guard_decorator.honeypot_detection(["honeypot_field", "trap_input", "hidden_field"])
 async def honeypot_detection(payload: TestPayload) -> MessageResponse:
     """Detect bots using honeypot fields."""
     return MessageResponse(
@@ -633,7 +638,7 @@ async def honeypot_detection(payload: TestPayload) -> MessageResponse:
 
 
 @advanced_router.get("/suspicious-patterns", response_model=MessageResponse)
-@guard.suspicious_detection(enabled=True)
+@guard_decorator.suspicious_detection(enabled=True)
 async def detect_suspicious_patterns(
     query: str = Query(None, description="Test query parameter"),
 ) -> MessageResponse:
@@ -650,7 +655,7 @@ admin_router = APIRouter(prefix="/admin", tags=["Admin & Utilities"])
 
 
 @admin_router.post("/unban-ip", response_model=MessageResponse)
-@guard.require_ip(whitelist=["127.0.0.1"])  # Admin only from localhost
+@guard_decorator.require_ip(whitelist=["127.0.0.1"])  # Admin only from localhost
 async def unban_ip_address(
     ip: str = Body(..., description="IP address to unban"),
     background_tasks: BackgroundTasks = BackgroundTasks(),  # noqa: B008
@@ -665,7 +670,7 @@ async def unban_ip_address(
 
 
 @admin_router.get("/stats", response_model=StatsResponse)
-@guard.require_ip(whitelist=["127.0.0.1"])
+@guard_decorator.require_ip(whitelist=["127.0.0.1"])
 async def get_security_stats() -> StatsResponse:
     """Get security statistics (admin only)."""
     # In real implementation, you would gather actual stats
@@ -697,7 +702,7 @@ async def get_security_stats() -> StatsResponse:
 
 
 @admin_router.post("/clear-cache", response_model=MessageResponse)
-@guard.require_ip(whitelist=["127.0.0.1"])
+@guard_decorator.require_ip(whitelist=["127.0.0.1"])
 async def clear_security_cache() -> MessageResponse:
     """Clear security-related caches (admin only)."""
     return MessageResponse(
@@ -707,7 +712,7 @@ async def clear_security_cache() -> MessageResponse:
 
 
 @admin_router.put("/emergency-mode", response_model=MessageResponse)
-@guard.require_ip(whitelist=["127.0.0.1"])
+@guard_decorator.require_ip(whitelist=["127.0.0.1"])
 async def toggle_emergency_mode(
     enable: bool = Body(..., description="Enable or disable emergency mode"),
 ) -> MessageResponse:

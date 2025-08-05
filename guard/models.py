@@ -742,6 +742,8 @@ class SecurityConfig(BaseModel):
             return None
 
         try:
+            from guard_agent import AgentConfig
+            
             return AgentConfig(
                 api_key=self.agent_api_key,
                 endpoint=self.agent_endpoint,
