@@ -308,7 +308,7 @@ async def test_regex_timeout_fallback() -> None:
     manager._compiler = None
 
     # Create a pattern that will timeout
-    evil_pattern = r"(a+)+$"  # ReDoS pattern
+    evil_pattern = r"a{100,}b"  # Pattern that takes long to match but not exponential
     await manager.add_pattern(evil_pattern, custom=True)
 
     # Test with content that triggers timeout
