@@ -3,10 +3,10 @@ Release Notes
 
 ___
 
-v4.0.0 (2025-08-05)
+v4.0.1 (2025-08-05)
 -------------------
 
-New Features (v4.0.0)
+New Features (v4.0.1)
 ------------
 
 - **Sus Patterns Handler Overhaul**: Complete redesign of the suspicious patterns detection system with modular architecture
@@ -18,7 +18,7 @@ New Features (v4.0.0)
   - **Lazy Component Initialization**: Detection components only load when explicitly configured
   - **Comprehensive Configuration**: New `detection_*` configuration options for fine-tuning all components
 
-Improvements (v4.0.0)
+Improvements (v4.0.1)
 ------------
 
 - **Pattern Matching Performance**: Timeout protection prevents slow patterns from blocking requests
