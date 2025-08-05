@@ -494,10 +494,7 @@ async def monitor_usage_patterns() -> MessageResponse:
 
 @behavior_router.get("/return-monitor/{status_code}")
 @guard_decorator.return_monitor(
-    pattern="404",
-    max_occurrences=3,
-    window=60,
-    action="ban"
+    pattern="404", max_occurrences=3, window=60, action="ban"
 )
 async def monitor_return_patterns(status_code: int) -> MessageResponse:
     """Ban IP if it receives 404 more than 3 times in 60 seconds."""

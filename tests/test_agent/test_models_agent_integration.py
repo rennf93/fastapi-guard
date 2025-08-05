@@ -157,5 +157,3 @@ class TestSecurityConfigAgentIntegration:
         assert config.enable_agent is True
         assert config.enable_dynamic_rules is True
         assert config.dynamic_rule_interval == 600
-
-
