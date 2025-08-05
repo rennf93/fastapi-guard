@@ -65,6 +65,7 @@ logger = logging.getLogger(__name__)
 
 # ==================== Response Models ====================
 
+
 class MessageResponse(BaseModel):
     message: str
     details: dict[str, Any] | None = None
@@ -158,6 +159,7 @@ class TestPayload(BaseModel):
 
 # ==================== Custom Hooks ====================
 
+
 async def custom_request_check(request: Request) -> Response | None:
     """Custom request validation hook."""
     # Example: Block requests with specific query parameters
@@ -188,48 +190,37 @@ security_config = SecurityConfig(
     # IP Configuration
     whitelist=["127.0.0.1", "::1", "10.0.0.0/8"],  # Localhost and private network
     blacklist=["192.168.100.0/24"],  # Example blacklisted subnet
-
     # Proxy Configuration
     trusted_proxies=["127.0.0.1", "10.0.0.0/8"],
     trusted_proxy_depth=2,
     trust_x_forwarded_proto=True,
-
     # Geographical Filtering (requires ipinfo_token)
     geo_ip_handler=IPInfoManager("your_token_here"),  # Replace with actual token
     blocked_countries=["XX"],  # Example: block country code XX
     whitelist_countries=[],  # Allow all countries by default
-
     # Cloud Provider Blocking
     block_cloud_providers={"AWS", "GCP", "Azure"},
-
     # User Agent Filtering
     blocked_user_agents=["badbot", "evil-crawler", "sqlmap"],
-
     # Rate Limiting
     enable_rate_limiting=True,
     rate_limit=30,  # 30 requests
     rate_limit_window=60,  # per 60 seconds
-
     # Auto-banning
     enable_ip_banning=True,
     auto_ban_threshold=5,
     auto_ban_duration=300,  # 5 minutes
-
     # Penetration Detection
     enable_penetration_detection=True,
-
     # Redis Configuration
     enable_redis=True,
     redis_url="redis://localhost:6379",
     redis_prefix="fastapi_guard:",
-
     # HTTPS Enforcement
     enforce_https=False,  # Set to True in production
-
     # Custom Hooks
     custom_request_check=custom_request_check,
     custom_response_modifier=custom_response_modifier,
-
     # CORS Configuration
     enable_cors=True,
     cors_allow_origins=["http://localhost:3000", "https://example.com"],
@@ -238,12 +229,10 @@ security_config = SecurityConfig(
     cors_allow_credentials=True,
     cors_expose_headers=["X-Total-Count"],
     cors_max_age=3600,
-
     # Logging
     log_request_level="INFO",
     log_suspicious_level="WARNING",
     custom_log_file="security_events.log",
-
     # Excluded Paths
     exclude_paths=[
         "/docs",
@@ -253,12 +242,10 @@ security_config = SecurityConfig(
         "/static",
         "/health",
     ],
-
     # Agent Configuration (optional)
     enable_agent=False,  # Set to True to enable telemetry
     agent_api_key="your_agent_api_key",
     agent_project_id="example_project",
-
     # Advanced Configuration
     passive_mode=False,  # Set to True for log-only mode
 )
@@ -474,12 +461,14 @@ async def strict_rate_limit() -> MessageResponse:
 
 
 @rate_router.get("/geo-rate-limit", response_model=MessageResponse)
-@guard.geo_rate_limit({
-    "US": (100, 60),    # 100 requests per minute for US
-    "CN": (10, 60),     # 10 requests per minute for China
-    "RU": (20, 60),     # 20 requests per minute for Russia
-    "*": (50, 60),      # 50 requests per minute for others
-})
+@guard.geo_rate_limit(
+    {
+        "US": (100, 60),  # 100 requests per minute for US
+        "CN": (10, 60),  # 10 requests per minute for China
+        "RU": (20, 60),  # 20 requests per minute for Russia
+        "*": (50, 60),  # 50 requests per minute for others
+    }
+)
 async def geographic_rate_limiting() -> MessageResponse:
     """Different rate limits based on country."""
     return MessageResponse(
@@ -504,12 +493,7 @@ async def monitor_usage_patterns() -> MessageResponse:
 
 
 @behavior_router.get("/return-monitor/{status_code}")
-@guard.return_monitor(
-    pattern="404",
-    max_occurrences=3,
-    window=60,
-    action="ban"
-)
+@guard.return_monitor(pattern="404", max_occurrences=3, window=60, action="ban")
 async def monitor_return_patterns(status_code: int) -> MessageResponse:
     """Ban IP if it receives 404 more than 3 times in 60 seconds."""
     if status_code == 404:
@@ -528,21 +512,18 @@ async def detect_suspicious_frequency() -> MessageResponse:
 
 
 @behavior_router.post("/behavior-rules", response_model=MessageResponse)
-@guard.behavior_analysis([
-    BehaviorRule(
-        rule_type="frequency",
-        threshold=10,
-        window=60,
-        action="throttle"
-    ),
-    BehaviorRule(
-        rule_type="return_pattern",
-        pattern="404",
-        threshold=5,
-        window=60,
-        action="ban"
-    ),
-])
+@guard.behavior_analysis(
+    [
+        BehaviorRule(rule_type="frequency", threshold=10, window=60, action="throttle"),
+        BehaviorRule(
+            rule_type="return_pattern",
+            pattern="404",
+            threshold=5,
+            window=60,
+            action="ban",
+        ),
+    ]
+)
 async def complex_behavior_analysis() -> MessageResponse:
     """Complex behavioral analysis with multiple rules."""
     return MessageResponse(
@@ -804,6 +785,7 @@ async def test_mixed_attack(payload: TestPayload) -> MessageResponse:
 
 # ==================== WebSocket Endpoint ====================
 
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket) -> None:
     """WebSocket endpoint with security protection."""
@@ -816,16 +798,19 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
 
             # Simulate some processing
             if data == "status":
-                await websocket.send_json({
-                    "type": "status",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "security": "active",
-                })
+                await websocket.send_json(
+                    {
+                        "type": "status",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "security": "active",
+                    }
+                )
     except WebSocketDisconnect:
         logger.info("WebSocket disconnected")
 
 
 # ==================== Root Endpoint ====================
+
 
 @app.get("/", response_model=MessageResponse)
 async def root() -> MessageResponse:
@@ -862,6 +847,7 @@ async def root() -> MessageResponse:
 
 
 # ==================== Error Handlers ====================
+
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
@@ -903,6 +889,7 @@ app.include_router(test_router)
 
 # ==================== Startup/Shutdown Events ====================
 
+
 @app.on_event("startup")
 async def startup_event() -> None:
     """Initialize services on startup."""
@@ -910,7 +897,9 @@ async def startup_event() -> None:
     logger.info("Security features enabled:")
     logger.info(f"  - Rate limiting: {security_config.enable_rate_limiting}")
     logger.info(f"  - IP banning: {security_config.enable_ip_banning}")
-    logger.info(f"  - Penetration detection: {security_config.enable_penetration_detection}")  # noqa: E501
+    logger.info(
+        f"  - Penetration detection: {security_config.enable_penetration_detection}"
+    )  # noqa: E501
     logger.info(f"  - Redis: {security_config.enable_redis}")
     logger.info(f"  - Agent: {security_config.enable_agent}")
 
