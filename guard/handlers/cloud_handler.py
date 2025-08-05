@@ -2,9 +2,13 @@ import html
 import ipaddress
 import logging
 import re
-from typing import Any
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any
 
 import requests
+
+if TYPE_CHECKING:
+    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 def fetch_aws_ip_ranges() -> set[ipaddress.IPv4Network | ipaddress.IPv6Network]:
@@ -82,6 +86,7 @@ class CloudManager:
     _instance = None
     ip_ranges: dict[str, set[ipaddress.IPv4Network | ipaddress.IPv6Network]]
     redis_handler: Any = None
+    agent_handler: Any = None
     logger: logging.Logger
 
     def __new__(cls: type["CloudManager"]) -> "CloudManager":
@@ -93,6 +98,7 @@ class CloudManager:
                 "Azure": set(),
             }
             cls._instance.redis_handler = None
+            cls._instance.agent_handler = None
             cls._instance.logger = logging.getLogger(__name__)
         return cls._instance
 
@@ -117,6 +123,10 @@ class CloudManager:
         """Initialize Redis connection and load cached ranges."""
         self.redis_handler = redis_handler
         await self.refresh_async(providers)
+
+    async def initialize_agent(self, agent_handler: Any) -> None:
+        """Initialize agent integration."""
+        self.agent_handler = agent_handler
 
     def refresh(self, providers: set[str] = _ALL_PROVIDERS) -> None:
         """Synchronous refresh method for backward compatibility."""
@@ -177,14 +187,86 @@ class CloudManager:
         """
         try:
             ip_obj = ipaddress.ip_address(ip)
-            return any(
-                any(ip_obj in network for network in self.ip_ranges[provider])
-                for provider in providers
-                if provider in self.ip_ranges
-            )
+            for provider in providers:
+                if provider in self.ip_ranges:
+                    for network in self.ip_ranges[provider]:
+                        if ip_obj in network:
+                            return True
+            return False
         except ValueError:
             self.logger.error(f"Invalid IP address: {ip}")
             return False
+
+    def get_cloud_provider_details(
+        self, ip: str, providers: set[str] = _ALL_PROVIDERS
+    ) -> tuple[str, str] | None:
+        """
+        Get information about which cloud provider and network an IP belongs to.
+
+        Args:
+            ip: IP address to check
+            providers: Set of cloud provider names to check against
+
+        Returns:
+            tuple: (provider_name, network_range) if found, None otherwise
+        """
+        try:
+            ip_obj = ipaddress.ip_address(ip)
+            for provider in providers:
+                if provider in self.ip_ranges:
+                    for network in self.ip_ranges[provider]:
+                        if ip_obj in network:
+                            return (provider, str(network))
+            return None
+        except ValueError:
+            self.logger.error(f"Invalid IP address: {ip}")
+            return None
+
+    async def send_cloud_detection_event(
+        self,
+        ip: str,
+        provider: str,
+        network: str,
+        action_taken: str = "request_blocked",
+    ) -> None:
+        """Send cloud provider detection event to agent."""
+        if not self.agent_handler:
+            return
+
+        await self._send_cloud_event(
+            event_type="cloud_blocked",
+            ip_address=ip,
+            action_taken=action_taken,
+            reason=f"IP belongs to blocked cloud provider: {provider}",
+            cloud_provider=provider,
+            network=network,
+        )
+
+    async def _send_cloud_event(
+        self,
+        event_type: str,
+        ip_address: str,
+        action_taken: str,
+        reason: str,
+        **kwargs: Any,
+    ) -> None:
+        """Send cloud provider events to agent."""
+        if not self.agent_handler:
+            return
+
+        try:
+            event = SecurityEvent(
+                timestamp=datetime.now(timezone.utc),
+                event_type=event_type,
+                ip_address=ip_address,
+                action_taken=action_taken,
+                reason=reason,
+                metadata=kwargs,
+            )
+            await self.agent_handler.send_event(event)
+        except Exception as e:
+            # Don't let agent errors break cloud provider functionality
+            self.logger.error(f"Failed to send cloud event to agent: {e}")
 
 
 # Instance

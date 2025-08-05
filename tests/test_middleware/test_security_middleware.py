@@ -1198,7 +1198,7 @@ async def test_passive_mode_penetration_detection() -> None:
         assert response.status_code == status.HTTP_200_OK
         assert call_next_called, "call_next should be called in passive mode"
 
-        mock_detect.assert_called_once_with(request, 2.0)
+        mock_detect.assert_called_once_with(request)
 
         mock_log.assert_any_call(
             request,

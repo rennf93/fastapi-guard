@@ -145,7 +145,7 @@ jobs:
             - Pymarkdownlnt formatting
             - Pymarkdownlnt linting
             .
-          COLOR: good
+          COLOR: warning
 
       - name: Set up Python
         uses: actions/setup-python@v5

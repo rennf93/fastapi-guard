@@ -2,7 +2,8 @@ import logging
 import time
 from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable
-from typing import Any, Optional
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any, Optional
 
 from fastapi import Request, Response, status
 from redis.exceptions import RedisError
@@ -10,6 +11,9 @@ from redis.exceptions import RedisError
 from guard.models import SecurityConfig
 from guard.scripts.rate_lua import RATE_LIMIT_SCRIPT
 from guard.utils import log_activity
+
+if TYPE_CHECKING:
+    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 class RateLimitManager:
@@ -23,6 +27,7 @@ class RateLimitManager:
     request_timestamps: defaultdict[str, deque[float]]
     logger: logging.Logger
     redis_handler: Any = None
+    agent_handler: Any = None
     rate_limit_script_sha: str | None = None
 
     def __new__(
@@ -36,6 +41,7 @@ class RateLimitManager:
             )
             cls._instance.logger = logging.getLogger(__name__)
             cls._instance.redis_handler = None
+            cls._instance.agent_handler = None
             cls._instance.rate_limit_script_sha = None
 
         cls._instance.config = config
@@ -56,6 +62,10 @@ class RateLimitManager:
             except Exception as e:
                 self.logger.error(f"Failed to load rate limiting Lua script: {str(e)}")
                 # Fallback to non-Lua implementation
+
+    async def initialize_agent(self, agent_handler: Any) -> None:
+        """Initialize agent integration."""
+        self.agent_handler = agent_handler
 
     async def check_rate_limit(
         self,
@@ -120,6 +130,11 @@ class RateLimitManager:
                         reason=f"{message} {client_ip} ({count} {detail})",
                         level=self.config.log_suspicious_level,
                     )
+
+                    # Send event to agent
+                    if self.agent_handler:
+                        await self._send_rate_limit_event(request, client_ip, count)
+
                     return await create_error_response(
                         status.HTTP_429_TOO_MANY_REQUESTS,
                         "Too many requests",
@@ -159,12 +174,46 @@ class RateLimitManager:
                 reason=f"{message} {client_ip} ({request_count + 1} {detail})",
                 level=self.config.log_suspicious_level,
             )
+
+            # Send event to agent
+            if self.agent_handler:
+                await self._send_rate_limit_event(request, client_ip, request_count + 1)
+
             return await create_error_response(
                 status.HTTP_429_TOO_MANY_REQUESTS,
                 "Too many requests",
             )
 
         return None
+
+    async def _send_rate_limit_event(
+        self, request: Request, client_ip: str, request_count: int
+    ) -> None:
+        """Send rate limit event to agent."""
+        try:
+            message = "Rate limit exceeded"
+            details = (
+                f"{request_count} requests in {self.config.rate_limit_window}s window"
+            )
+
+            event = SecurityEvent(
+                timestamp=datetime.now(timezone.utc),
+                event_type="rate_limited",
+                ip_address=client_ip,
+                action_taken="request_blocked",
+                reason=f"{message}: {details}",
+                endpoint=str(request.url.path),
+                method=request.method,
+                metadata={
+                    "request_count": request_count,
+                    "rate_limit": self.config.rate_limit,
+                    "window": self.config.rate_limit_window,
+                },
+            )
+            await self.agent_handler.send_event(event)
+        except Exception as e:
+            # Don't let agent errors break rate limiting
+            self.logger.error(f"Failed to send rate limit event to agent: {e}")
 
     async def reset(self) -> None:
         """Reset all rate limit data"""

@@ -1,12 +1,17 @@
 import asyncio
+import logging
 import os
 import time
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
 import maxminddb
 from maxminddb import Reader
+
+if TYPE_CHECKING:
+    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 class IPInfoManager:
@@ -17,6 +22,8 @@ class IPInfoManager:
     db_path: Path
     reader: Reader | None = None
     redis_handler: Any = None
+    agent_handler: Any = None
+    logger: logging.Logger
 
     def __new__(
         cls: type["IPInfoManager"], token: str, db_path: Path | None = None
@@ -30,6 +37,8 @@ class IPInfoManager:
             cls._instance.db_path = db_path or Path("data/ipinfo/country_asn.mmdb")
             cls._instance.reader = None
             cls._instance.redis_handler = None
+            cls._instance.agent_handler = None
+            cls._instance.logger = logging.getLogger(__name__)
 
         cls._instance.token = token
         # Update db_path
@@ -40,6 +49,10 @@ class IPInfoManager:
     @property
     def is_initialized(self) -> bool:
         return self.reader is not None
+
+    async def initialize_agent(self, agent_handler: Any) -> None:
+        """Initialize agent integration."""
+        self.agent_handler = agent_handler
 
     async def initialize(self) -> None:
         """Initialize the database"""
@@ -60,7 +73,16 @@ class IPInfoManager:
         try:
             if not self.db_path.exists() or self._is_db_outdated():
                 await self._download_database()
-        except Exception:
+        except Exception as e:
+            # Send agent event for database download failure
+            if self.agent_handler:
+                await self._send_geo_event(
+                    event_type="geo_lookup_failed",
+                    ip_address="system",
+                    action_taken="database_download_failed",
+                    reason=f"Failed to download IPInfo database: {str(e)}",
+                )
+
             if self.db_path.exists():
                 self.db_path.unlink()
             self.reader = None
@@ -68,6 +90,32 @@ class IPInfoManager:
 
         if self.db_path.exists():
             self.reader = maxminddb.open_database(str(self.db_path))
+
+    async def _send_geo_event(
+        self,
+        event_type: str,
+        ip_address: str,
+        action_taken: str,
+        reason: str,
+        **kwargs: Any,
+    ) -> None:
+        """Send geographic-related events to agent."""
+        if not self.agent_handler:
+            return
+
+        try:
+            event = SecurityEvent(
+                timestamp=datetime.now(timezone.utc),
+                event_type=event_type,
+                ip_address=ip_address,
+                action_taken=action_taken,
+                reason=reason,
+                metadata=kwargs,
+            )
+            await self.agent_handler.send_event(event)
+        except Exception as e:
+            # Don't let agent errors break geo functionality
+            self.logger.error(f"Failed to send geo event to agent: {e}")
 
     async def _download_database(self) -> None:
         """Download the latest database from IPInfo"""
@@ -119,8 +167,76 @@ class IPInfoManager:
                 country = result.get("country")
                 return str(country) if country is not None else None
             return None
-        except Exception:
+        except Exception as e:
+            # Send agent event for lookup failure
+            if self.agent_handler:
+                import asyncio
+
+                try:
+                    # Create a task to send the event without blocking
+                    asyncio.create_task(
+                        self._send_geo_event(
+                            event_type="geo_lookup_failed",
+                            ip_address=ip,
+                            action_taken="lookup_failed",
+                            reason=f"Geographic lookup failed: {str(e)}",
+                        )
+                    )
+                except Exception:
+                    # Ignore agent errors in sync context
+                    pass
             return None
+
+    async def check_country_access(
+        self,
+        ip: str,
+        blocked_countries: list[str],
+        whitelist_countries: list[str] | None = None,
+    ) -> tuple[bool, str | None]:
+        """
+        Check if IP is allowed based on country rules and send agent events.
+
+        Args:
+            ip: IP address to check
+            blocked_countries:
+                List of blocked country codes
+            whitelist_countries:
+                List of allowed country codes (only allowed if set)
+
+        Returns:
+            Tuple of (is_allowed, country_code)
+        """
+        country = self.get_country(ip)
+
+        if not country:
+            # TODO: Review this
+            return True, None  # Allow if country cannot be determined
+
+        # Check whitelist first
+        if whitelist_countries and country not in whitelist_countries:
+            await self._send_geo_event(
+                event_type="country_blocked",
+                ip_address=ip,
+                action_taken="request_blocked",
+                reason=f"Country {country} not in allowed list",
+                country=country,
+                rule_type="country_whitelist",
+            )
+            return False, country
+
+        # Check blacklist
+        if country in blocked_countries:
+            await self._send_geo_event(
+                event_type="country_blocked",
+                ip_address=ip,
+                action_taken="request_blocked",
+                reason=f"Country {country} is blocked",
+                country=country,
+                rule_type="country_blacklist",
+            )
+            return False, country
+
+        return True, country
 
     def close(self) -> None:
         """Close the database connection"""

@@ -4,11 +4,15 @@ import re
 import time
 from collections import defaultdict
 from collections.abc import Callable
-from typing import Any, Literal
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any, Literal
 
 from fastapi import Response
 
 from guard.models import SecurityConfig
+
+if TYPE_CHECKING:
+    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 class BehaviorRule:
@@ -51,10 +55,15 @@ class BehaviorTracker:
             lambda: defaultdict(list)
         )
         self.redis_handler: Any | None = None
+        self.agent_handler: Any | None = None
 
     async def initialize_redis(self, redis_handler: Any) -> None:
         """Initialize Redis connection for distributed tracking."""
         self.redis_handler = redis_handler
+
+    async def initialize_agent(self, agent_handler: Any) -> None:
+        """Initialize agent integration."""
+        self.agent_handler = agent_handler
 
     async def track_endpoint_usage(
         self, endpoint_id: str, client_ip: str, rule: BehaviorRule
@@ -264,6 +273,19 @@ class BehaviorTracker:
     ) -> None:
         """Apply the configured action when a rule is violated."""
 
+        # Send behavioral violation event to agent
+        if self.agent_handler:
+            await self._send_behavior_event(
+                event_type="behavioral_violation",
+                ip_address=client_ip,
+                action_taken=rule.action,
+                reason=f"Behavioral rule violated: {details}",
+                endpoint=endpoint_id,
+                rule_type=rule.rule_type,
+                threshold=rule.threshold,
+                window=rule.window,
+            )
+
         if rule.custom_action:
             await rule.custom_action(client_ip, endpoint_id, details)
             return
@@ -272,7 +294,9 @@ class BehaviorTracker:
             # Import here to avoid circular imports
             from guard.handlers.ipban_handler import ip_ban_manager
 
-            await ip_ban_manager.ban_ip(client_ip, 3600)  # 1 hour ban
+            await ip_ban_manager.ban_ip(
+                client_ip, 3600, "behavioral_violation"
+            )  # 1 hour ban
             self.logger.warning(
                 f"IP {client_ip} banned for behavioral violation: {details}"
             )
@@ -287,3 +311,29 @@ class BehaviorTracker:
         elif rule.action == "alert":
             # Could send webhook/notification here
             self.logger.critical(f"ALERT - Behavioral anomaly: {details}")
+
+    async def _send_behavior_event(
+        self,
+        event_type: str,
+        ip_address: str,
+        action_taken: str,
+        reason: str,
+        **kwargs: Any,
+    ) -> None:
+        """Send behavioral analysis events to agent."""
+        if not self.agent_handler:
+            return
+
+        try:
+            event = SecurityEvent(
+                timestamp=datetime.now(timezone.utc),
+                event_type=event_type,
+                ip_address=ip_address,
+                action_taken=action_taken,
+                reason=reason,
+                metadata=kwargs,
+            )
+            await self.agent_handler.send_event(event)
+        except Exception as e:
+            # Don't let agent errors break behavioral analysis
+            self.logger.error(f"Failed to send behavior event to agent: {e}")

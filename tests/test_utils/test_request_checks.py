@@ -1,13 +1,14 @@
 import logging
 import os
 from typing import Any
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from fastapi import Request
 from pytest_mock import MockerFixture
 
 from guard.handlers.cloud_handler import cloud_handler
+from guard.handlers.suspatterns_handler import sus_patterns_handler
 from guard.models import SecurityConfig
 from guard.utils import (
     check_ip_country,
@@ -103,8 +104,9 @@ async def test_detect_penetration_attempt_xss() -> None:
         },
         receive=receive,
     )
-    result, _ = await detect_penetration_attempt(request)
+    result, trigger = await detect_penetration_attempt(request)
     assert result
+    assert "script" in trigger.lower()
     body = await request.body()
     assert body == b""
 
@@ -745,7 +747,6 @@ async def test_is_ip_allowed_blocked_country(mocker: MockerFixture) -> None:
 @pytest.mark.asyncio
 async def test_detect_penetration_attempt_regex_timeout() -> None:
     """Test regex timeout handling in detect_penetration_attempt."""
-    import concurrent.futures
     from unittest.mock import MagicMock
 
     async def receive() -> dict[str, str | bytes]:
@@ -763,40 +764,40 @@ async def test_detect_penetration_attempt_regex_timeout() -> None:
         receive=receive,
     )
 
-    # Mock the ThreadPoolExecutor and Future
-    mock_future = MagicMock()
-    mock_future.result.side_effect = concurrent.futures.TimeoutError()
-    mock_future.cancel = MagicMock()
-
-    mock_executor = MagicMock()
-    mock_executor.submit.return_value = mock_future
-    mock_executor.__enter__ = MagicMock(return_value=mock_executor)
-    mock_executor.__exit__ = MagicMock(return_value=None)
+    async def mock_detect_with_timeout(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        # Simulate a timeout by returning a result with timeouts
+        return {
+            "is_threat": False,
+            "threat_score": 0.0,
+            "threats": [],
+            "context": kwargs.get("context", "unknown"),
+            "original_length": len(kwargs.get("content", "")),
+            "processed_length": len(kwargs.get("content", "")),
+            "execution_time": 2.1,  # Simulate timeout
+            "detection_method": "enhanced",
+            "timeouts": ["test_pattern"],  # Indicate timeout occurred
+            "correlation_id": kwargs.get("correlation_id"),
+        }
 
     with (
-        patch("concurrent.futures.ThreadPoolExecutor", return_value=mock_executor),
-        patch("logging.warning") as mock_warning,
+        patch.object(
+            sus_patterns_handler, "detect", side_effect=mock_detect_with_timeout
+        ),
+        patch("logging.getLogger") as mock_get_logger,
     ):
-        result, trigger = await detect_penetration_attempt(request, regex_timeout=0.1)
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+
+        result, trigger = await detect_penetration_attempt(request)
 
         # Should not detect as attack when timeout occurs
         assert not result
         assert trigger == ""
 
-        # Check that warning was logged
-        mock_warning.assert_called()
-        warning_msg = mock_warning.call_args[0][0]
-        assert "Regex timeout exceeded" in warning_msg
-        assert "Potential ReDoS attack blocked" in warning_msg
-
-        # Check that future was cancelled (multiple times for multiple patterns)
-        assert mock_future.cancel.call_count > 0
-
 
 @pytest.mark.asyncio
 async def test_detect_penetration_attempt_regex_exception() -> None:
     """Test general exception handling in regex search."""
-    from unittest.mock import MagicMock
 
     async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
@@ -813,20 +814,17 @@ async def test_detect_penetration_attempt_regex_exception() -> None:
         receive=receive,
     )
 
-    # Mock the ThreadPoolExecutor and Future to raise a general exception
-    mock_future = MagicMock()
-    mock_future.result.side_effect = Exception("Unexpected regex error")
-
-    mock_executor = MagicMock()
-    mock_executor.submit.return_value = mock_future
-    mock_executor.__enter__ = MagicMock(return_value=mock_executor)
-    mock_executor.__exit__ = MagicMock(return_value=None)
+    # Mock the SusPatternsManager's detect method to raise an exception
+    async def mock_detect_with_exception(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        raise Exception("Unexpected detection error")
 
     with (
-        patch("concurrent.futures.ThreadPoolExecutor", return_value=mock_executor),
+        patch.object(
+            sus_patterns_handler, "detect", side_effect=mock_detect_with_exception
+        ),
         patch("logging.error") as mock_error,
     ):
-        result, trigger = await detect_penetration_attempt(request, regex_timeout=2.0)
+        result, trigger = await detect_penetration_attempt(request)
 
         # Should not detect as attack when exception occurs
         assert not result
@@ -835,5 +833,298 @@ async def test_detect_penetration_attempt_regex_exception() -> None:
         # Check that error was logged
         mock_error.assert_called()
         error_msg = mock_error.call_args[0][0]
-        assert "Error in regex search" in error_msg
-        assert "Unexpected regex error" in str(mock_error.call_args[0])
+        assert "Enhanced detection failed" in error_msg
+
+
+@pytest.mark.asyncio
+async def test_detect_penetration_json_non_regex_threat() -> None:
+    """Test JSON field detection with non-regex threat types."""
+
+    # Create JSON payload
+    json_payload = '{"username": "admin", "password": "test_password"}'
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "POST",
+            "path": "/api/login",
+            "headers": [],
+            "query_string": f"data={json_payload}".encode(),
+            "client": ("127.0.0.1", 12345),
+        },
+    )
+
+    # Mock detect to return a non-regex threat for JSON field
+    async def mock_detect(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        content = args[0] if args else kwargs.get("content", "")
+        if "test_password" in content:
+            return {
+                "is_threat": True,
+                "threats": [{"type": "semantic", "attack_type": "credential_stuffing"}],
+            }
+        return {"is_threat": False, "threats": []}
+
+    with patch.object(sus_patterns_handler, "detect", side_effect=mock_detect):
+        result, trigger = await detect_penetration_attempt(request)
+
+        assert result is True
+        assert "JSON field 'password' contains: semantic" in trigger
+
+
+@pytest.mark.asyncio
+async def test_detect_penetration_semantic_threat() -> None:
+    """Test semantic threat detection."""
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [],
+            "query_string": b"search=SELECT * FROM users WHERE admin=1",
+            "client": ("127.0.0.1", 12345),
+        },
+    )
+
+    # Mock detect to return semantic threat
+    async def mock_detect(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        return {
+            "is_threat": True,
+            "threats": [
+                {
+                    "type": "semantic",
+                    "attack_type": "sql_injection",
+                    "probability": 0.95,
+                }
+            ],
+        }
+
+    with patch.object(sus_patterns_handler, "detect", side_effect=mock_detect):
+        result, trigger = await detect_penetration_attempt(request)
+
+        assert result is True
+        assert "Semantic attack: sql_injection (score: 0.95)" in trigger
+
+
+@pytest.mark.asyncio
+async def test_detect_penetration_semantic_threat_with_score() -> None:
+    """Test semantic threat with threat_score instead of probability."""
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [],
+            "query_string": b"input=malicious_content",
+            "client": ("127.0.0.1", 12345),
+        },
+    )
+
+    # Mock detect to return semantic threat with threat_score
+    async def mock_detect(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        return {
+            "is_threat": True,
+            "threats": [
+                {"type": "semantic", "attack_type": "suspicious", "threat_score": 0.88}
+            ],
+        }
+
+    with patch.object(sus_patterns_handler, "detect", side_effect=mock_detect):
+        result, trigger = await detect_penetration_attempt(request)
+
+        assert result is True
+        assert "Semantic attack: suspicious (score: 0.88)" in trigger
+
+
+@pytest.mark.asyncio
+async def test_detect_penetration_fallback_pattern_match() -> None:
+    """Test fallback pattern matching when enhanced detection fails."""
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [],
+            "query_string": b"test=<script>alert(1)</script>",
+            "client": ("127.0.0.1", 12345),
+        },
+    )
+
+    # Mock detect to raise exception
+    async def mock_detect_error(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise RuntimeError("Detection engine failure")
+
+    # Create a mock pattern that will match
+    mock_pattern = MagicMock()
+    mock_pattern.search.return_value = MagicMock()  # Truthy value
+
+    with (
+        patch.object(sus_patterns_handler, "detect", side_effect=mock_detect_error),
+        patch.object(
+            sus_patterns_handler,
+            "get_all_compiled_patterns",
+            return_value=[mock_pattern],
+        ),
+        patch("logging.error") as mock_error,
+    ):
+        result, trigger = await detect_penetration_attempt(request)
+
+        assert result is True
+        assert "Value matched pattern (fallback)" in trigger
+
+        # Verify error was logged
+        mock_error.assert_called()
+        error_msg = mock_error.call_args[0][0]
+        assert "Enhanced detection failed" in error_msg
+
+
+@pytest.mark.asyncio
+async def test_detect_penetration_fallback_pattern_exception() -> None:
+    """Test fallback pattern exception handling."""
+
+    async def receive() -> dict[str, str | bytes]:
+        return {"type": "http.request", "body": b""}
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [],
+            "query_string": b"test=normal_content",
+            "client": ("127.0.0.1", 12345),
+        },
+        receive=receive,
+    )
+
+    # Mock detect to raise exception
+    async def mock_detect_error(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise RuntimeError("Detection engine failure")
+
+    # Create a mock pattern that raises exception
+    mock_pattern = MagicMock()
+    mock_pattern.search.side_effect = Exception("Pattern error")
+
+    with (
+        patch.object(sus_patterns_handler, "detect", side_effect=mock_detect_error),
+        patch.object(
+            sus_patterns_handler,
+            "get_all_compiled_patterns",
+            return_value=[mock_pattern],
+        ),
+        patch("logging.error") as mock_log_error,
+    ):
+        result, trigger = await detect_penetration_attempt(request)
+
+        # Should continue and return False when pattern fails
+        assert result is False
+        assert trigger == ""
+
+        # Verify error was logged (multiple times for different checks)
+        assert mock_log_error.call_count >= 1
+        # Check that all calls were for the expected error
+        for call in mock_log_error.call_args_list:
+            assert "Enhanced detection failed" in call[0][0]
+            assert "Detection engine failure" in call[0][0]
+
+
+@pytest.mark.asyncio
+async def test_detect_penetration_short_body() -> None:
+    """Test request body logging when body is short."""
+
+    # Create a short body payload
+    short_body = b"<script>XSS</script>"
+
+    async def receive() -> dict[str, str | bytes]:
+        return {"type": "http.request", "body": short_body}
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "POST",
+            "path": "/api/data",
+            "headers": [],
+            "query_string": b"",
+            "client": ("127.0.0.1", 12345),
+        },
+        receive=receive,
+    )
+
+    with patch("logging.warning") as mock_warning:
+        result, trigger = await detect_penetration_attempt(request)
+
+        assert result is True
+        assert "Request body:" in trigger
+
+        # Check that the short body was logged in full
+        warning_calls = mock_warning.call_args_list
+        body_logged = False
+        for call in warning_calls:
+            if "<script>XSS</script>" in str(call):
+                body_logged = True
+                break
+        assert body_logged
+
+
+@pytest.mark.asyncio
+async def test_detect_penetration_empty_threat_fallback() -> None:
+    """Test empty threats array fallback."""
+
+    # Create JSON payload
+    json_payload = '{"field": "suspicious_value"}'
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "POST",
+            "path": "/api/data",
+            "headers": [],
+            "query_string": f"data={json_payload}".encode(),
+            "client": ("127.0.0.1", 12345),
+        },
+    )
+
+    # Mock detect to return threat with empty threats array
+    async def mock_detect(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        # This test always expects "suspicious_value" in content
+        return {
+            "is_threat": True,
+            "threats": [],  # Empty threats array
+        }
+
+    with patch.object(sus_patterns_handler, "detect", side_effect=mock_detect):
+        result, trigger = await detect_penetration_attempt(request)
+
+        assert result is True
+        assert "JSON field 'field' contains threat" in trigger
+
+
+@pytest.mark.asyncio
+async def test_detect_penetration_unknown_threat_type() -> None:
+    """Test handling of unknown threat type."""
+
+    request = Request(
+        scope={
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [],
+            "query_string": b"param=test_value",
+            "client": ("127.0.0.1", 12345),
+        },
+    )
+
+    # Mock detect to return unknown threat type
+    async def mock_detect(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        return {
+            "is_threat": True,
+            "threats": [{"type": "unknown_type", "data": "some_data"}],
+        }
+
+    with patch.object(sus_patterns_handler, "detect", side_effect=mock_detect):
+        result, trigger = await detect_penetration_attempt(request)
+
+        assert result is True
+        assert trigger == "Query param 'param': Threat detected"

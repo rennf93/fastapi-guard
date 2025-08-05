@@ -77,7 +77,7 @@ async def test_check_route_ip_access_invalid_ip() -> None:
     mock_route_config.ip_blacklist = None
     mock_route_config.ip_whitelist = None
     mock_route_config.blocked_countries = None
-    mock_route_config.allowed_countries = None
+    mock_route_config.whitelist_countries = None
 
     result = await middleware._check_route_ip_access("invalid_ip", mock_route_config)
     assert result is False
@@ -93,7 +93,7 @@ async def test_check_route_ip_access_blacklist() -> None:
     mock_route_config.ip_blacklist = ["192.168.1.100", "10.0.0.0/8"]
     mock_route_config.ip_whitelist = None
     mock_route_config.blocked_countries = None
-    mock_route_config.allowed_countries = None
+    mock_route_config.whitelist_countries = None
 
     # Test blocked IP
     result = await middleware._check_route_ip_access("192.168.1.100", mock_route_config)
@@ -118,7 +118,7 @@ async def test_check_route_ip_access_whitelist() -> None:
     mock_route_config.ip_blacklist = None
     mock_route_config.ip_whitelist = ["192.168.1.100", "10.0.0.0/8"]
     mock_route_config.blocked_countries = None
-    mock_route_config.allowed_countries = None
+    mock_route_config.whitelist_countries = None
 
     # Test allowed IP
     result = await middleware._check_route_ip_access("192.168.1.100", mock_route_config)
@@ -149,7 +149,7 @@ async def test_check_route_ip_access_countries() -> None:
 
     # Test blocked countries
     mock_route_config.blocked_countries = ["XX"]
-    mock_route_config.allowed_countries = None
+    mock_route_config.whitelist_countries = None
     mock_geo_handler.get_country.return_value = "XX"
 
     result = await middleware._check_route_ip_access("8.8.8.8", mock_route_config)
@@ -157,7 +157,7 @@ async def test_check_route_ip_access_countries() -> None:
 
     # Test allowed countries
     mock_route_config.blocked_countries = None
-    mock_route_config.allowed_countries = ["US"]
+    mock_route_config.whitelist_countries = ["US"]
     mock_geo_handler.get_country.return_value = "US"
 
     result = await middleware._check_route_ip_access("8.8.8.8", mock_route_config)

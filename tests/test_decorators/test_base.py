@@ -22,7 +22,7 @@ async def test_route_config_initialization() -> None:
     assert config.ip_whitelist is None
     assert config.ip_blacklist is None
     assert config.blocked_countries is None
-    assert config.allowed_countries is None
+    assert config.whitelist_countries is None
     assert config.bypassed_checks == set()
     assert config.require_https is False
     assert config.auth_required is None
