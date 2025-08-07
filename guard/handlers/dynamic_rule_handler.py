@@ -2,12 +2,9 @@ import asyncio
 import logging
 import time
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from guard.models import DynamicRules, SecurityConfig
-
-if TYPE_CHECKING:
-    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 class DynamicRuleManager:
@@ -260,6 +257,8 @@ class DynamicRuleManager:
             return
 
         try:
+            from guard_agent import SecurityEvent
+
             event = SecurityEvent(
                 timestamp=datetime.now(timezone.utc),
                 event_type="dynamic_rule_applied",
@@ -284,6 +283,8 @@ class DynamicRuleManager:
             return
 
         try:
+            from guard_agent import SecurityEvent
+
             event = SecurityEvent(
                 timestamp=datetime.now(timezone.utc),
                 event_type="emergency_mode_activated",

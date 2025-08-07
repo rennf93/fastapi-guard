@@ -3,16 +3,13 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from fastapi import HTTPException, status
 from redis.asyncio import Redis
 from redis.exceptions import ConnectionError
 
 from guard.models import SecurityConfig
-
-if TYPE_CHECKING:
-    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 class RedisManager:
@@ -48,6 +45,8 @@ class RedisManager:
             return
 
         try:
+            from guard_agent import SecurityEvent
+
             event = SecurityEvent(
                 timestamp=datetime.now(timezone.utc),
                 event_type=event_type,

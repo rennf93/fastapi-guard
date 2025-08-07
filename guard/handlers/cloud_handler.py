@@ -3,12 +3,9 @@ import ipaddress
 import logging
 import re
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import requests
-
-if TYPE_CHECKING:
-    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 def fetch_aws_ip_ranges() -> set[ipaddress.IPv4Network | ipaddress.IPv6Network]:
@@ -255,6 +252,8 @@ class CloudManager:
             return
 
         try:
+            from guard_agent import SecurityEvent
+
             event = SecurityEvent(
                 timestamp=datetime.now(timezone.utc),
                 event_type=event_type,

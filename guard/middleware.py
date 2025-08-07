@@ -5,7 +5,7 @@ import time
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 from ipaddress import ip_address, ip_network
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,13 +27,6 @@ from guard.utils import (
     log_activity,
     setup_custom_logging,
 )
-
-if TYPE_CHECKING:
-    from guard_agent import (
-        SecurityEvent,
-        SecurityMetric,
-        guard_agent,
-    )  # pragma: no cover
 
 
 class SecurityMiddleware(BaseHTTPMiddleware):
@@ -84,6 +77,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             agent_config = config.to_agent_config()
             if agent_config:
                 try:
+                    from guard_agent import guard_agent
+
                     self.agent_handler = guard_agent(agent_config)
                     self.logger.info("Guard Agent initialized successfully")
                 except ImportError:
@@ -141,6 +136,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     # Don't let geo IP lookup failures break event sending
                     pass
 
+            from guard_agent import SecurityEvent
+
             event = SecurityEvent(
                 timestamp=datetime.now(timezone.utc),
                 event_type=event_type,
@@ -165,6 +162,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         """Send performance metric to agent."""
         if self.agent_handler and self.config.agent_enable_metrics:
             try:
+                from guard_agent import SecurityMetric
+
                 metric = SecurityMetric(
                     timestamp=datetime.now(timezone.utc),
                     metric_type=metric_type,

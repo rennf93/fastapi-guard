@@ -1,12 +1,9 @@
 import logging
 import time
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from cachetools import TTLCache
-
-if TYPE_CHECKING:
-    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 class IPBanManager:
@@ -56,6 +53,8 @@ class IPBanManager:
     async def _send_ban_event(self, ip: str, duration: int, reason: str) -> None:
         """Send IP ban event to agent."""
         try:
+            from guard_agent import SecurityEvent
+
             event = SecurityEvent(
                 timestamp=datetime.now(timezone.utc),
                 event_type="ip_banned",
@@ -88,6 +87,8 @@ class IPBanManager:
     async def _send_unban_event(self, ip: str) -> None:
         """Send IP unban event to agent."""
         try:
+            from guard_agent import SecurityEvent
+
             event = SecurityEvent(
                 timestamp=datetime.now(timezone.utc),
                 event_type="ip_banned",
