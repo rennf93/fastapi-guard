@@ -1,10 +1,7 @@
 import re
 import time
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from guard_agent import SecurityEvent  # pragma: no cover
+from typing import Any
 
 from guard.detection_engine import (
     ContentPreprocessor,
@@ -219,6 +216,8 @@ class SusPatternsManager:
             return
 
         try:
+            from guard_agent import SecurityEvent
+
             event = SecurityEvent(
                 timestamp=datetime.now(timezone.utc),
                 event_type=event_type,

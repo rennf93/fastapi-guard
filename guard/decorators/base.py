@@ -1,14 +1,11 @@
 from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from fastapi import Request
 
 from guard.handlers.behavior_handler import BehaviorRule, BehaviorTracker
 from guard.models import SecurityConfig
-
-if TYPE_CHECKING:
-    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 class RouteConfig:
@@ -118,6 +115,8 @@ class BaseSecurityDecorator:
             client_ip = await extract_client_ip(
                 request, self.config, self.agent_handler
             )
+
+            from guard_agent import SecurityEvent
 
             event = SecurityEvent(
                 timestamp=datetime.now(timezone.utc),

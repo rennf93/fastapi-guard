@@ -3,7 +3,7 @@ import time
 from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Optional
 
 from fastapi import Request, Response, status
 from redis.exceptions import RedisError
@@ -11,9 +11,6 @@ from redis.exceptions import RedisError
 from guard.models import SecurityConfig
 from guard.scripts.rate_lua import RATE_LIMIT_SCRIPT
 from guard.utils import log_activity
-
-if TYPE_CHECKING:
-    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 class RateLimitManager:
@@ -195,6 +192,8 @@ class RateLimitManager:
             details = (
                 f"{request_count} requests in {self.config.rate_limit_window}s window"
             )
+
+            from guard_agent import SecurityEvent
 
             event = SecurityEvent(
                 timestamp=datetime.now(timezone.utc),

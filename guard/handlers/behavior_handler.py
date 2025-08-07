@@ -5,14 +5,11 @@ import time
 from collections import defaultdict
 from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Any, Literal
 
 from fastapi import Response
 
 from guard.models import SecurityConfig
-
-if TYPE_CHECKING:
-    from guard_agent import SecurityEvent  # pragma: no cover
 
 
 class BehaviorRule:
@@ -325,6 +322,8 @@ class BehaviorTracker:
             return
 
         try:
+            from guard_agent import SecurityEvent
+
             event = SecurityEvent(
                 timestamp=datetime.now(timezone.utc),
                 event_type=event_type,

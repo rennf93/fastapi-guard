@@ -1,4 +1,5 @@
 # tests/test_agent/test_middleware_agent_integration.py
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -18,29 +19,87 @@ class TestMiddlewareAgentIntegration:
         app = MagicMock(spec=ASGIApp)
         middleware = SecurityMiddleware(app, config=config)
 
-        # Verify agent was initialized (mock_guard_agent fixture provides the mock)
         assert middleware.agent_handler is not None
 
     def test_agent_initialization_import_error(
         self, caplog: pytest.LogCaptureFixture, config: SecurityConfig
     ) -> None:
         """Test agent initialization when guard_agent not installed."""
-        # Override the guard_agent mock to raise ImportError
-        with patch("guard.middleware.guard_agent", side_effect=ImportError):
-            app = MagicMock(spec=ASGIApp)
-            middleware = SecurityMiddleware(app, config=config)
+        # Temporarily remove guard_agent from sys.modules
+        import sys
 
-            # Verify warning logged and agent_handler is None
-            assert middleware.agent_handler is None
-            assert "guard_agent package not installed" in caplog.text
+        guard_agent_backup = sys.modules.pop("guard_agent", None)
+        guard_models_backup = sys.modules.pop("guard_agent.models", None)
+
+        try:
+            # Mock the import to raise ImportError when guard_agent is imported
+            import builtins
+
+            original_import = builtins.__import__
+
+            def mock_import(name: str, *args: Any, **kwargs: Any) -> Any:
+                if name == "guard_agent":
+                    raise ImportError("No module named 'guard_agent'")
+                return original_import(name, *args, **kwargs)
+
+            with patch("builtins.__import__", side_effect=mock_import):
+                app = MagicMock(spec=ASGIApp)
+                middleware = SecurityMiddleware(app, config=config)
+
+                # Verify warning logged and agent_handler is None
+                assert middleware.agent_handler is None
+                # The ImportError happens in to_agent_config() which returns None
+                # So the middleware logs "invalid configuration"
+                assert "Agent enabled but configuration is invalid" in caplog.text
+        finally:
+            # Restore modules
+            if guard_agent_backup:
+                sys.modules["guard_agent"] = guard_agent_backup
+            if guard_models_backup:
+                sys.modules["guard_agent.models"] = guard_models_backup
+
+    def test_middleware_import_error_handler(
+        self, caplog: pytest.LogCaptureFixture, config: SecurityConfig
+    ) -> None:
+        """Test middleware's own ImportError handler when guard_agent import fails."""
+        # AgentConfig object to bypass to_agent_config's ImportError handling
+        mock_agent_config = MagicMock()
+
+        # Patch to_agent_config at the class level to return a valid AgentConfig object
+        # This ensures we reach the middleware's try-except block
+        with patch.object(
+            SecurityConfig, "to_agent_config", return_value=mock_agent_config
+        ):
+            # Now mock the import to fail when middleware tries to import guard_agent
+            import builtins
+
+            original_import = builtins.__import__
+
+            def mock_import(name: str, *args: Any, **kwargs: Any) -> Any:
+                if name == "guard_agent":
+                    raise ImportError("No module named 'guard_agent'")
+                return original_import(name, *args, **kwargs)
+
+            with patch("builtins.__import__", side_effect=mock_import):
+                app = MagicMock(spec=ASGIApp)
+                middleware = SecurityMiddleware(app, config=config)
+
+                # Verify the middleware's ImportError handler was triggered
+                assert middleware.agent_handler is None
+                warning_msg = "Agent enabled but guard_agent package not installed"
+                assert warning_msg in caplog.text
+                assert "Install with: pip install fastapi-guard-agent" in caplog.text
 
     def test_agent_initialization_exception(
         self, caplog: pytest.LogCaptureFixture, config: SecurityConfig
     ) -> None:
         """Test agent initialization with general exception."""
-        # Override the guard_agent mock to raise general exception
-        with patch(
-            "guard.middleware.guard_agent", side_effect=Exception("Connection failed")
+        # Mock the guard_agent function to raise an exception
+        mock_guard_agent = MagicMock(side_effect=Exception("Connection failed"))
+
+        with patch.dict(
+            "sys.modules",
+            {"guard_agent": MagicMock(guard_agent=mock_guard_agent)},
         ):
             app = MagicMock(spec=ASGIApp)
             middleware = SecurityMiddleware(app, config=config)
@@ -227,14 +286,12 @@ class TestMiddlewareAgentIntegration:
             "guard.middleware.extract_client_ip",
             AsyncMock(return_value="192.168.1.100"),
         ):
-            # Mock SecurityEvent
-            with patch("guard_agent.models.SecurityEvent"):
-                await middleware._send_middleware_event(
-                    "config_violation", request, "blocked", "test reason"
-                )
+            await middleware._send_middleware_event(
+                "config_violation", request, "blocked", "test reason"
+            )
 
-                # Should log error but not raise
-                assert "Failed to send security event to agent" in caplog.text
+            # Should log error but not raise
+            assert "Failed to send security event to agent" in caplog.text
 
     @pytest.mark.asyncio
     async def test_send_security_metric_success(self, config: SecurityConfig) -> None:
