@@ -229,13 +229,16 @@ async def submit_data(request: Request):
 Custom Logging
 --------------
 
-Log security events to a custom file using the `custom_log_file` option.
+Log security events with console output (always enabled) and optional file logging:
 
 ```python
 config = SecurityConfig(
-    custom_log_file="security.log",
+    custom_log_file="security.log",  # Optional: adds file logging
+    # custom_log_file=None,  # Default: console output only
 )
 ```
+
+**Note:** Console output is always enabled for visibility. File logging is only activated when `custom_log_file` is provided.
 
 CORS Configuration
 ------------------
@@ -581,7 +584,7 @@ The `SecurityConfig` class defines the structure for security configuration, inc
 - **blocked_user_agents**: ```list[str]``` - A list of user agent strings or patterns that should be blocked.
 - **auto_ban_threshold**: ```int``` - The threshold for auto-banning an IP address after a certain number of requests.
 - **auto_ban_duration**: ```int``` - The duration in seconds for which an IP address should be banned after reaching the auto-ban threshold.
-- **custom_log_file**: ```str | None``` - The path to a custom log file for logging security events.
+- **custom_log_file**: ```str | None``` - Optional path to a log file. When provided, enables file logging in addition to console output (which is always enabled). Default: `None` (console only).
 - **custom_error_responses**: ```dict[int, str]``` - A dictionary of custom error responses for specific HTTP status codes.
 - **rate_limit**: ```int``` - The maximum number of requests allowed per minute from a single IP.
 - **enforce_https**: ```bool``` - Whether to enforce HTTPS connections. If True, all HTTP requests will be redirected to HTTPS.

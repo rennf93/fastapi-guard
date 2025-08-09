@@ -138,7 +138,7 @@ class BaseSecurityDecorator:
             # Don't let agent errors break decorator functionality
             import logging
 
-            logging.getLogger(__name__).error(
+            logging.getLogger("fastapi_guard.decorators.base").error(
                 f"Failed to send decorator event to agent: {e}"
             )
 

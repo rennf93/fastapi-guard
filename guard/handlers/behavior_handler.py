@@ -44,7 +44,7 @@ class BehaviorTracker:
 
     def __init__(self, config: SecurityConfig):
         self.config = config
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("fastapi_guard.handlers.behavior")
         self.usage_counts: dict[str, dict[str, list[float]]] = defaultdict(
             lambda: defaultdict(list)
         )
@@ -275,7 +275,9 @@ class BehaviorTracker:
             await self._send_behavior_event(
                 event_type="behavioral_violation",
                 ip_address=client_ip,
-                action_taken=rule.action,
+                action_taken=rule.action
+                if not self.config.passive_mode
+                else "logged_only",
                 reason=f"Behavioral rule violated: {details}",
                 endpoint=endpoint_id,
                 rule_type=rule.rule_type,
@@ -283,6 +285,24 @@ class BehaviorTracker:
                 window=rule.window,
             )
 
+        # In passive mode, only log, don't take blocking actions
+        if self.config.passive_mode:
+            prefix = "[PASSIVE MODE] "
+            if rule.action == "ban":
+                self.logger.warning(
+                    f"{prefix}Would ban IP {client_ip} for behavioral "
+                    f"violation: {details}"
+                )
+            elif rule.action == "log":
+                self.logger.warning(f"{prefix}Behavioral anomaly detected: {details}")
+            elif rule.action == "throttle":
+                self.logger.warning(f"{prefix}Would throttle IP {client_ip}: {details}")
+            elif rule.action == "alert":
+                self.logger.critical(f"{prefix}ALERT - Behavioral anomaly: {details}")
+            # Don't execute custom actions in passive mode
+            return
+
+        # Active mode - take actual actions
         if rule.custom_action:
             await rule.custom_action(client_ip, endpoint_id, details)
             return

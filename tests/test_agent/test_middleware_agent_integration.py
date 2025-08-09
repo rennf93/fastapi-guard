@@ -25,6 +25,8 @@ class TestMiddlewareAgentIntegration:
         self, caplog: pytest.LogCaptureFixture, config: SecurityConfig
     ) -> None:
         """Test agent initialization when guard_agent not installed."""
+        caplog.set_level("INFO", logger="fastapi_guard")
+
         # Temporarily remove guard_agent from sys.modules
         import sys
 
@@ -62,6 +64,8 @@ class TestMiddlewareAgentIntegration:
         self, caplog: pytest.LogCaptureFixture, config: SecurityConfig
     ) -> None:
         """Test middleware's own ImportError handler when guard_agent import fails."""
+        caplog.set_level("INFO", logger="fastapi_guard")
+
         # AgentConfig object to bypass to_agent_config's ImportError handling
         mock_agent_config = MagicMock()
 
@@ -94,6 +98,8 @@ class TestMiddlewareAgentIntegration:
         self, caplog: pytest.LogCaptureFixture, config: SecurityConfig
     ) -> None:
         """Test agent initialization with general exception."""
+        caplog.set_level("INFO", logger="fastapi_guard")
+
         # Mock the guard_agent function to raise an exception
         mock_guard_agent = MagicMock(side_effect=Exception("Connection failed"))
 
@@ -270,6 +276,8 @@ class TestMiddlewareAgentIntegration:
         self, caplog: pytest.LogCaptureFixture, config: SecurityConfig
     ) -> None:
         """Test event sending when agent fails."""
+        caplog.set_level("INFO", logger="fastapi_guard")
+
         app = MagicMock(spec=ASGIApp)
         middleware = SecurityMiddleware(app, config=config)
         middleware.agent_handler = AsyncMock()
@@ -488,6 +496,8 @@ class TestMiddlewareAgentIntegration:
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         """Test warning when agent enabled but config is invalid"""
+        caplog.set_level("INFO", logger="fastapi_guard")
+
         config = SecurityConfig(
             enable_agent=True,
             agent_api_key="test-key",  # Valid key to pass validation

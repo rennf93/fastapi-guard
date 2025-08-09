@@ -231,7 +231,7 @@ class SusPatternsManager:
             # Don't let agent errors break pattern detection
             import logging
 
-            logging.getLogger(__name__).error(
+            logging.getLogger("fastapi_guard.handlers.suspatterns").error(
                 f"Failed to send pattern event to agent: {e}"
             )
 
@@ -311,7 +311,7 @@ class SusPatternsManager:
                         timeouts.append(pattern.pattern)
                         import logging
 
-                        logging.getLogger(__name__).warning(
+                        logging.getLogger("fastapi_guard.handlers.suspatterns").warning(
                             f"Pattern timeout: {pattern.pattern[:50]}..."
                         )
                     elif match:
@@ -353,7 +353,9 @@ class SusPatternsManager:
                             timeouts.append(pattern.pattern)
                             import logging
 
-                            logger = logging.getLogger(__name__)
+                            logger = logging.getLogger(
+                                "fastapi_guard.handlers.suspatterns"
+                            )
                             logger.warning(
                                 f"Regex timeout exceeded for pattern: "
                                 f"{pattern.pattern[:50]}... "
@@ -363,7 +365,9 @@ class SusPatternsManager:
                         except Exception as e:
                             import logging
 
-                            logger = logging.getLogger(__name__)
+                            logger = logging.getLogger(
+                                "fastapi_guard.handlers.suspatterns"
+                            )
                             logger.error(
                                 f"Error in regex search for pattern "
                                 f"{pattern.pattern[:50]}...: {e}"

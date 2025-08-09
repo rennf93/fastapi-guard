@@ -10,6 +10,33 @@ Release Notes
 
 ___
 
+v4.0.3 (2025-08-09)
+-------------------
+
+Bug Fixes (v4.0.3)
+---------
+
+- **Logging Configuration Fix**: Fixed `custom_log_file` configuration being ignored - file logging now works correctly
+- **Logging Behavior**: File logging is now truly optional - only enabled when `custom_log_file` is explicitly set
+- **Namespace Consistency**: All FastAPI Guard components now use consistent `fastapi_guard.*` logger namespace hierarchy
+  - Root logger: `fastapi_guard`
+  - Handlers: `fastapi_guard.handlers.{component}`
+  - Decorators: `fastapi_guard.decorators.{component}`
+  - Detection Engine: `fastapi_guard.detection_engine`
+- **Console Output**: Console logging is now always enabled for visibility, regardless of file logging configuration
+- **Passive Mode Enhancement**: Fixed passive mode to properly log without blocking for all security checks including rate limiting, suspicious patterns, and decorator violations
+
+Improvements (v4.0.3)
+------------
+
+- **Logger Isolation**: FastAPI Guard logs are now properly isolated from user application logs
+- **Test Compatibility**: Logger propagation enabled for better test framework integration
+- **Documentation**: Updated all logging documentation to reflect actual behavior
+- **Passive Mode Consistency**: All security checks now properly respect passive mode - logging violations without blocking requests
+- **Enhanced Logging Context**: Improved log messages with better context for passive mode operations, including trigger information for suspicious patterns
+
+___
+
 v4.0.2 (2025-08-07)
 -------------------
 

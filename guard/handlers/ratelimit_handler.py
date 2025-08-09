@@ -36,7 +36,7 @@ class RateLimitManager:
             cls._instance.request_timestamps = defaultdict(
                 lambda: deque(maxlen=config.rate_limit * 2)
             )
-            cls._instance.logger = logging.getLogger(__name__)
+            cls._instance.logger = logging.getLogger("fastapi_guard.handlers.ratelimit")
             cls._instance.redis_handler = None
             cls._instance.agent_handler = None
             cls._instance.rate_limit_script_sha = None
@@ -126,6 +126,7 @@ class RateLimitManager:
                         log_type="suspicious",
                         reason=f"{message} {client_ip} ({count} {detail})",
                         level=self.config.log_suspicious_level,
+                        passive_mode=self.config.passive_mode,
                     )
 
                     # Send event to agent
@@ -170,6 +171,7 @@ class RateLimitManager:
                 log_type="suspicious",
                 reason=f"{message} {client_ip} ({request_count + 1} {detail})",
                 level=self.config.log_suspicious_level,
+                passive_mode=self.config.passive_mode,
             )
 
             # Send event to agent

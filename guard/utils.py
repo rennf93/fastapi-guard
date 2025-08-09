@@ -6,11 +6,11 @@ from ipaddress import ip_address, ip_network
 from typing import Any, Literal
 
 from fastapi import Request
-from guard_agent.protocols import AgentHandlerProtocol
 
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.suspatterns_handler import sus_patterns_handler
 from guard.models import GeoIPHandler, SecurityConfig
+from guard.protocols.agent_protocol import AgentHandlerProtocol
 
 
 async def send_agent_event(
@@ -74,18 +74,48 @@ async def send_agent_event(
         logging.getLogger(__name__).error(f"Failed to send agent event: {e}")
 
 
-async def setup_custom_logging(log_file: str) -> logging.Logger:
+def setup_custom_logging(log_file: str | None = None) -> logging.Logger:
     """
-    Setup custom logging
-    for the application.
+    Setup custom logging for FastAPI Guard.
+
+    Configures a hierarchical logger that outputs to both console and file.
+    Console output is ALWAYS enabled for visibility.
+    File output is optional for persistence.
     """
-    logger = logging.getLogger(__name__)
-    file_handler = logging.FileHandler(log_file)
-    file_handler.setFormatter(
-        logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    logger = logging.getLogger("fastapi_guard")
+    logger.handlers.clear()
+
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(
+        logging.Formatter("[%(name)s] %(asctime)s - %(levelname)s - %(message)s")
     )
-    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+    # File handler
+    if log_file:
+        try:
+            import os
+
+            log_dir = os.path.dirname(log_file)
+            if log_dir and not os.path.exists(log_dir):
+                os.makedirs(log_dir, exist_ok=True)
+
+            file_handler = logging.FileHandler(log_file)
+            file_handler.setFormatter(
+                logging.Formatter(
+                    "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+                )
+            )
+            logger.addHandler(file_handler)
+        except Exception as e:
+            # Log to console if file handler fails
+            logger.warning(f"Failed to create log file {log_file}: {e}")
+
     logger.setLevel(logging.INFO)
+    # Allow propagation so tests can capture logs
+    # Users won't see duplicates because we use a specific namespace
+
     return logger
 
 

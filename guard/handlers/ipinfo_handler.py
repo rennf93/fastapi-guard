@@ -35,7 +35,7 @@ class IPInfoManager:
             cls._instance.reader = None
             cls._instance.redis_handler = None
             cls._instance.agent_handler = None
-            cls._instance.logger = logging.getLogger(__name__)
+            cls._instance.logger = logging.getLogger("fastapi_guard.handlers.ipinfo")
 
         cls._instance.token = token
         # Update db_path

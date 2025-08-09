@@ -96,7 +96,7 @@ class CloudManager:
             }
             cls._instance.redis_handler = None
             cls._instance.agent_handler = None
-            cls._instance.logger = logging.getLogger(__name__)
+            cls._instance.logger = logging.getLogger("fastapi_guard.handlers.cloud")
         return cls._instance
 
     def _refresh_sync(self, providers: set[str] = _ALL_PROVIDERS) -> None:

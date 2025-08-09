@@ -28,7 +28,7 @@ class RedisManager:
     def __new__(cls: type["RedisManager"], config: SecurityConfig) -> "RedisManager":
         cls._instance = super().__new__(cls)
         cls._instance.config = config
-        cls._instance.logger = logging.getLogger(__name__)
+        cls._instance.logger = logging.getLogger("fastapi_guard.handlers.redis")
         cls._instance._closed = False
         cls._instance.agent_handler = None
         return cls._instance

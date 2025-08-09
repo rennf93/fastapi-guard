@@ -25,7 +25,9 @@ class DynamicRuleManager:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance.config = config
-            cls._instance.logger = logging.getLogger(__name__)
+            cls._instance.logger = logging.getLogger(
+                "fastapi_guard.handlers.dynamic_rule"
+            )
             cls._instance.last_update = 0
             cls._instance.current_rules = None
             cls._instance.update_task = None
