@@ -66,7 +66,9 @@ class IPBanManager:
             await self.agent_handler.send_event(event)
         except Exception as e:
             # Don't let agent errors break the ban functionality
-            logging.getLogger(__name__).error(f"Failed to send ban event to agent: {e}")
+            logging.getLogger("fastapi_guard.handlers.ipban").error(
+                f"Failed to send ban event to agent: {e}"
+            )
 
     async def unban_ip(self, ip: str) -> None:
         """
@@ -100,7 +102,7 @@ class IPBanManager:
             await self.agent_handler.send_event(event)
         except Exception as e:
             # Don't let agent errors break the unban functionality
-            logging.getLogger(__name__).error(
+            logging.getLogger("fastapi_guard.handlers.ipban").error(
                 f"Failed to send unban event to agent: {e}"
             )
 

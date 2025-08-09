@@ -859,7 +859,6 @@ async def test_cloud_ip_blocking_with_logging() -> None:
         enable_penetration_detection=False,
     )
     middleware = SecurityMiddleware(app, config=config)
-    await middleware.setup_logger()
 
     call_next_executed = False
 
@@ -902,6 +901,7 @@ async def test_cloud_ip_blocking_with_logging() -> None:
             log_type="suspicious",
             reason="Blocked cloud provider IP: 13.59.255.255",
             level="WARNING",
+            passive_mode=False,
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -1156,7 +1156,6 @@ async def test_passive_mode_penetration_detection() -> None:
         whitelist=[],
     )
     middleware = SecurityMiddleware(app, config=config)
-    await middleware.setup_logger()
 
     call_next_called = False
 

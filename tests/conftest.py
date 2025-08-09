@@ -87,7 +87,6 @@ async def security_middleware() -> AsyncGenerator[SecurityMiddleware, None]:
     )
     app = FastAPI()
     middleware = SecurityMiddleware(app=app, config=config)
-    await middleware.setup_logger()
     yield middleware
     await middleware.reset()
 

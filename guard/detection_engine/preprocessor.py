@@ -110,7 +110,7 @@ class ContentPreprocessor:
             # Don't let agent errors break preprocessing
             import logging
 
-            logging.getLogger(__name__).error(
+            logging.getLogger("fastapi_guard.detection_engine").error(
                 f"Failed to send preprocessor event to agent: {e}"
             )
 

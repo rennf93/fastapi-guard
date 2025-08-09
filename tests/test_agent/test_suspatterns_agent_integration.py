@@ -37,8 +37,7 @@ class TestSusPatternsManagerAgentIntegration:
         mock_agent.send_event.side_effect = Exception("Network error")
         manager.agent_handler = mock_agent
 
-        # Enable logging
-        caplog.set_level(logging.ERROR)
+        caplog.set_level(logging.ERROR, logger="fastapi_guard.handlers.suspatterns")
 
         # Should not raise exception
         await manager._send_pattern_event(

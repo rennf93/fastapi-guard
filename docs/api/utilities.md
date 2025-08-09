@@ -19,11 +19,24 @@ setup_custom_logging
 ---------------------
 
 ```python
-async def setup_custom_logging(
-    log_file: str
+def setup_custom_logging(
+    log_file: str | None = None
 ) -> logging.Logger:
     """
-    Setup custom logging for the application.
+    Setup custom logging for FastAPI Guard.
+    
+    Configures a hierarchical logger that outputs to both console and file.
+    Console output is ALWAYS enabled for visibility.
+    File output is optional for persistence.
+    
+    Args:
+        log_file: Optional path to log file. If None, only console output is enabled.
+                  If provided, creates the directory if it doesn't exist.
+    
+    Returns:
+        logging.Logger: Configured logger with namespace "fastapi_guard"
+    
+    Note: This function is synchronous (not async).
     """
 ```
 
@@ -197,8 +210,12 @@ from guard.utils import (
     detect_penetration_attempt
 )
 
-# Setup logging
-logger = await setup_custom_logging("security.log")
+# Setup logging (synchronous function)
+# Console only
+logger = setup_custom_logging()  # or setup_custom_logging(None)
+
+# Console + file
+logger = setup_custom_logging("security.log")
 
 # Log regular request
 await log_activity(request, logger)

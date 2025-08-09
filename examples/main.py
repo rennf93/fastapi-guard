@@ -53,14 +53,21 @@ from pydantic import BaseModel, Field
 from guard import SecurityConfig, SecurityMiddleware
 from guard.decorators import SecurityDecorator
 from guard.handlers.behavior_handler import BehaviorRule
-from guard.handlers.ipinfo_handler import IPInfoManager
+
+# TODO: Uncomment this when IPInfoManager is implemented
+# from guard.handlers.ipinfo_handler import IPInfoManager
 
 # Configure logging
+# FastAPI Guard uses its own logger hierarchy under "fastapi_guard" namespace
+# This basic config is for the example app's own logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# Note: FastAPI Guard automatically sets up its own logging via the middleware
+# with console output always enabled and optional file logging based on config
 
 
 # ==================== Response Models ====================
@@ -195,9 +202,9 @@ security_config = SecurityConfig(
     trusted_proxy_depth=2,
     trust_x_forwarded_proto=True,
     # Geographical Filtering (requires ipinfo_token)
-    geo_ip_handler=IPInfoManager("your_token_here"),  # Replace with actual token
-    blocked_countries=["XX"],  # Example: block country code XX
-    whitelist_countries=[],  # Allow all countries by default
+    # geo_ip_handler=IPInfoManager("your_token_here"),  # Replace with actual token
+    # blocked_countries=["XX"],  # Example: block country code XX
+    # whitelist_countries=[],  # Allow all countries by default
     # Cloud Provider Blocking
     block_cloud_providers={"AWS", "GCP", "Azure"},
     # User Agent Filtering
@@ -229,10 +236,11 @@ security_config = SecurityConfig(
     cors_allow_credentials=True,
     cors_expose_headers=["X-Total-Count"],
     cors_max_age=3600,
-    # Logging
-    log_request_level="INFO",
+    # Logging Configuration
+    # Console output is always enabled. File logging is optional.
+    log_request_level="INFO",  # Or None to disable request logging
     log_suspicious_level="WARNING",
-    custom_log_file="security_events.log",
+    custom_log_file="security.log",  # Or remove/set to None for console-only output
     # Excluded Paths
     exclude_paths=[
         "/docs",
@@ -242,12 +250,12 @@ security_config = SecurityConfig(
         "/static",
         "/health",
     ],
-    # Agent Configuration (optional)
-    enable_agent=False,  # Set to True to enable telemetry
-    agent_api_key="your_agent_api_key",
-    agent_project_id="example_project",
     # Advanced Configuration
     passive_mode=False,  # Set to True for log-only mode
+    # Agent Configuration (optional)
+    # enable_agent=True,  # Set to True to enable telemetry
+    # agent_api_key="api-test-key",
+    # agent_project_id="test-project",
 )
 
 # Initialize FastAPI app
