@@ -10,6 +10,46 @@ Release Notes
 
 ___
 
+v4.0.2 (2025-08-07)
+-------------------
+
+New Features (v4.0.2)
+------------
+
+- **Sus Patterns Handler Overhaul**: Complete redesign of the suspicious patterns detection system with modular architecture
+  - **Pattern Compiler**: Safe regex execution with configurable timeouts to prevent ReDoS attacks
+  - **Content Preprocessor**: Intelligent content truncation that preserves attack signatures
+  - **Semantic Analyzer**: Heuristic-based detection using TF-IDF and n-gram analysis for obfuscated attacks
+  - **Performance Monitor**: Real-time tracking of pattern execution times and anomaly detection
+  - **Enhanced Detection API**: Rich detection results with threat scores, detailed threat information, and performance metrics
+  - **Lazy Component Initialization**: Detection components only load when explicitly configured
+  - **Comprehensive Configuration**: New `detection_*` configuration options for fine-tuning all components
+
+Improvements (v4.0.2)
+------------
+
+- **Pattern Matching Performance**: Timeout protection prevents slow patterns from blocking requests
+- **Detection Accuracy**: Multi-layered approach combines regex patterns with semantic analysis
+- **Memory Efficiency**: Configurable limits on content length and pattern tracking
+- **Observability**: Detailed performance metrics and slow pattern identification
+- **Backward Compatibility**: Legacy `detect_pattern_match` API maintained for smooth migration
+- **Agent Integration**: Automatic telemetry for pattern detection events and performance metrics
+
+___
+
+v3.0.2 (2025-07-22)
+-------------------
+
+Security Fixes (v3.0.2)
+------------
+
+- **IMPORTANT**: Enhanced ReDoS prevention - Prevent regex bypass due to length limitations on pattern regex. (GHSA-rrf6-pxg8-684g)
+- **CVE ID**: CVE-2025-54365
+- Added timeout to avoid catastrophical backtracking and/or regex bypass by length limitation expression.
+- Added new `regex_timeout` parameter to `SecurityConfig` to allow for custom timeout for regex pattern matching.
+
+___
+
 v3.0.1 (2025-07-07)
 -------------------
 

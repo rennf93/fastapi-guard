@@ -118,18 +118,28 @@ detect_penetration_attempt
 
 ```python
 async def detect_penetration_attempt(
-    request: Request
+    request: Request,
 ) -> tuple[bool, str]
 ```
 
-Detect potential penetration attempts in the request.
+Detect potential penetration attempts in the request using the enhanced Detection Engine.
 
-This function checks various parts of the request (query params, body, path, headers) against a list of suspicious patterns to identify potential security threats.
+This function analyzes various parts of the request (query params, body, path, headers) using the Detection Engine's components including pattern matching, semantic analysis, and performance monitoring.
+
+Parameters:
+
+- `request`: The FastAPI request object to analyze
 
 Returns a tuple where:
 
 - First element is a boolean: `True` if a potential attack is detected, `False` otherwise
 - Second element is a string with details about what triggered the detection, or empty string if no attack detected
+
+The Detection Engine provides:
+- Timeout-protected pattern matching (configured via `detection_compiler_timeout` in SecurityConfig)
+- Intelligent content preprocessing that preserves attack patterns
+- Semantic analysis for obfuscated attacks (when enabled)
+- Performance monitoring for pattern effectiveness
 
 Example usage:
 
@@ -139,11 +149,20 @@ from guard.utils import detect_penetration_attempt
 
 @app.post("/api/submit")
 async def submit_data(request: Request):
+    # Detection uses configuration from SecurityConfig
     is_suspicious, trigger_info = await detect_penetration_attempt(request)
     if is_suspicious:
         # Log the detection with details
         logger.warning(f"Attack detected: {trigger_info}")
         return {"error": "Suspicious activity detected"}
+    return {"success": True}
+
+@app.post("/api/critical")
+async def critical_endpoint(request: Request):
+    # Timeout protection is configured via SecurityConfig.detection_compiler_timeout
+    is_suspicious, trigger_info = await detect_penetration_attempt(request)
+    if is_suspicious:
+        return {"error": "Security check failed"}
     return {"success": True}
 ```
 

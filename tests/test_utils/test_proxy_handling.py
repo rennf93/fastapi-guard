@@ -30,7 +30,7 @@ async def test_extract_client_ip_without_trusted_proxies() -> None:
     body = await request.body()
     assert body == b""
 
-    ip = extract_client_ip(request, config)
+    ip = await extract_client_ip(request, config)
     assert ip == "127.0.0.1"
 
 
@@ -56,7 +56,7 @@ async def test_extract_client_ip_with_trusted_proxies() -> None:
     body = await request.body()
     assert body == b""
 
-    ip = extract_client_ip(request, config)
+    ip = await extract_client_ip(request, config)
     assert ip == "1.2.3.4"
 
 
@@ -82,7 +82,7 @@ async def test_extract_client_ip_with_cidr_trusted_proxies() -> None:
     body = await request.body()
     assert body == b""
 
-    ip = extract_client_ip(request, config)
+    ip = await extract_client_ip(request, config)
     assert ip == "1.2.3.4"
 
 
@@ -108,7 +108,7 @@ async def test_extract_client_ip_with_proxy_depth() -> None:
     body = await request.body()
     assert body == b""
 
-    ip = extract_client_ip(request, config)
+    ip = await extract_client_ip(request, config)
     assert ip == "5.6.7.8"
 
 
@@ -135,7 +135,7 @@ async def test_extract_client_ip_without_xforwarded() -> None:
     assert body == b""
 
     # Should fall back to client IP
-    ip = extract_client_ip(request, config)
+    ip = await extract_client_ip(request, config)
     assert ip == "127.0.0.1"
 
 
@@ -161,7 +161,7 @@ async def test_extract_client_ip_with_untrusted_proxy() -> None:
     body = await request.body()
     assert body == b""
 
-    ip = extract_client_ip(request, config)
+    ip = await extract_client_ip(request, config)
     assert ip == "127.0.0.1"
 
 
@@ -191,7 +191,7 @@ async def test_extract_client_ip_error_handling(
 
     with caplog.at_level(logging.WARNING):
         with patch("guard.utils.ip_address", side_effect=ValueError("Invalid IP")):
-            ip = extract_client_ip(request, config)
+            ip = await extract_client_ip(request, config)
             assert ip == "127.0.0.1"
             assert "Error processing client IP" in caplog.text
 
@@ -218,7 +218,7 @@ async def test_extract_client_ip_no_client() -> None:
     body = await request.body()
     assert body == b""
 
-    ip = extract_client_ip(request, config)
+    ip = await extract_client_ip(request, config)
     assert ip == "unknown"
 
 
@@ -244,7 +244,7 @@ async def test_extract_client_ip_fallback_to_connecting_ip() -> None:
     body = await request.body()
     assert body == b""
 
-    ip = extract_client_ip(request, config)
+    ip = await extract_client_ip(request, config)
     assert ip == "127.0.0.1"
 
 
@@ -270,5 +270,5 @@ async def test_extract_client_ip_untrusted_without_forwarded() -> None:
     body = await request.body()
     assert body == b""
 
-    ip = extract_client_ip(request, config)
+    ip = await extract_client_ip(request, config)
     assert ip == "127.0.0.1"

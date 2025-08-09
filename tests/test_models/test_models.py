@@ -65,6 +65,9 @@ class ValidGeoIPHandler:
     async def initialize_redis(self, redis_handler: Any) -> None:
         return
 
+    async def initialize_agent(self, agent_handler: Any) -> None:
+        return
+
     def get_country(self, ip: str) -> str | None:
         return None
 
@@ -106,6 +109,10 @@ async def test_geo_ip_handler_async_methods() -> None:
     # Test initialize_redis method
     mock_redis = object()  # Simple mock object
     await handler.initialize_redis(mock_redis)
+
+    # Test initialize_agent method
+    mock_agent = object()  # Simple mock object
+    await handler.initialize_agent(mock_agent)
 
     # Test get_country method
     result = handler.get_country("192.168.1.1")

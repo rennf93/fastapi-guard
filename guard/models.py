@@ -1,13 +1,17 @@
 from collections.abc import Awaitable, Callable
+from datetime import datetime
 from ipaddress import ip_address, ip_network
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
 from fastapi import Request, Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing_extensions import Self
 
 from guard.protocols.geo_ip_protocol import GeoIPHandler
+
+if TYPE_CHECKING:
+    from guard_agent import AgentConfig  # pragma: no cover
 
 
 class SecurityConfig(BaseModel):
@@ -453,6 +457,240 @@ class SecurityConfig(BaseModel):
         The path to the IPInfo database file.
     """
 
+    # Agent configuration
+    enable_agent: bool = Field(
+        default=False, description="Enable FastAPI Guard Agent telemetry and monitoring"
+    )
+    """
+    bool:
+        Whether to enable the FastAPI Guard Agent for telemetry,
+        monitoring, and dynamic rule management.
+    """
+
+    agent_api_key: str | None = Field(
+        default=None, description="API key for FastAPI Guard Agent SaaS platform"
+    )
+    """
+    str | None:
+        API key for authenticating with the FastAPI Guard Agent SaaS platform.
+        Required if enable_agent is True.
+    """
+
+    agent_endpoint: str = Field(
+        default="https://api.fastapi-guard.com",
+        description="FastAPI Guard Agent SaaS platform endpoint",
+    )
+    """
+    str:
+        The endpoint URL for the FastAPI Guard Agent SaaS platform.
+    """
+
+    agent_project_id: str | None = Field(
+        default=None, description="Project ID for organizing telemetry data"
+    )
+    """
+    str | None:
+        Project identifier for organizing and filtering telemetry data
+        in the SaaS platform.
+    """
+
+    agent_buffer_size: int = Field(
+        default=100, description="Number of events to buffer before auto-flush"
+    )
+    """
+    int:
+        Maximum number of events to buffer in memory before
+        automatically flushing to the SaaS platform.
+    """
+
+    agent_flush_interval: int = Field(
+        default=30, description="Interval in seconds between automatic buffer flushes"
+    )
+    """
+    int:
+        Time interval in seconds between automatic buffer flushes
+        to the SaaS platform.
+    """
+
+    agent_enable_events: bool = Field(
+        default=True, description="Enable sending security events to SaaS platform"
+    )
+    """
+    bool:
+        Whether to send security events (IP bans, rate limits, etc.)
+        to the SaaS platform for monitoring and analysis.
+    """
+
+    agent_enable_metrics: bool = Field(
+        default=True, description="Enable sending performance metrics to SaaS platform"
+    )
+    """
+    bool:
+        Whether to send performance metrics (response times, request counts, etc.)
+        to the SaaS platform for monitoring and analysis.
+    """
+
+    agent_timeout: int = Field(
+        default=30, description="Timeout in seconds for agent HTTP requests"
+    )
+    """
+    int:
+        Timeout in seconds for HTTP requests to the SaaS platform.
+    """
+
+    agent_retry_attempts: int = Field(
+        default=3, description="Number of retry attempts for failed requests"
+    )
+    """
+    int:
+        Number of retry attempts for failed requests to the SaaS platform.
+    """
+
+    enable_dynamic_rules: bool = Field(
+        default=False, description="Enable dynamic rule updates from SaaS platform"
+    )
+    """
+    bool:
+        Whether to enable dynamic rule updates from the SaaS platform.
+        Allows remote configuration of IP blocks, rate limits, etc.
+    """
+
+    dynamic_rule_interval: int = Field(
+        default=300, description="Interval in seconds between dynamic rule updates"
+    )
+    """
+    int:
+        Time interval in seconds between checks for dynamic rule updates
+        from the SaaS platform.
+    """
+
+    # Emergency mode fields (used by dynamic rules)
+    emergency_mode: bool = Field(
+        default=False, description="Emergency lockdown mode (set by dynamic rules)"
+    )
+    """
+    bool:
+        Emergency lockdown mode flag set by dynamic rules.
+        When activated, security becomes more aggressive.
+    """
+
+    emergency_whitelist: list[str] = Field(
+        default_factory=list,
+        description="Emergency whitelist IPs (set by dynamic rules)",
+    )
+    """
+    list[str]:
+        Emergency whitelist IP addresses set by dynamic rules.
+        These IPs are allowed even in emergency mode.
+    """
+
+    # Endpoint-specific rate limiting (used by dynamic rules)
+    endpoint_rate_limits: dict[str, tuple[int, int]] = Field(
+        default_factory=dict,
+        description="Per-endpoint rate limits set by dynamic rules",
+    )
+    """
+    dict[str, tuple[int, int]]:
+        Per-endpoint rate limits set by dynamic rules.
+        Maps endpoint paths to (requests, window) tuples.
+        Example: {"/api/sensitive": (5, 60)} allows 5 requests per 60 seconds.
+    """
+
+    # Detection engine configuration
+    detection_compiler_timeout: float = Field(
+        default=2.0,
+        description="Timeout for pattern compilation and matching (seconds)",
+        ge=0.1,
+        le=10.0,
+    )
+    """
+    float:
+        Timeout in seconds for pattern compilation and matching.
+        Must be between 0.1 and 10.0 seconds. Default is 2.0 seconds.
+    """
+
+    detection_max_content_length: int = Field(
+        default=10000,
+        description="Maximum content length for pattern detection",
+        ge=1000,
+        le=100000,
+    )
+    """
+    int:
+        Maximum content length for pattern detection preprocessing.
+        Must be between 1000 and 100000 characters. Default is 10000.
+    """
+
+    detection_preserve_attack_patterns: bool = Field(
+        default=True,
+        description="Preserve attack patterns during content truncation",
+    )
+    """
+    bool:
+        Whether to preserve attack patterns when truncating content.
+        If True, attack signatures are prioritized during truncation.
+    """
+
+    detection_semantic_threshold: float = Field(
+        default=0.7,
+        description="Threshold for semantic attack detection (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+    """
+    float:
+        Threat score threshold for semantic analysis detection.
+        Must be between 0.0 and 1.0. Default is 0.7.
+    """
+
+    detection_anomaly_threshold: float = Field(
+        default=3.0,
+        description="Standard deviations from mean to consider anomaly",
+        ge=1.0,
+        le=10.0,
+    )
+    """
+    float:
+        Number of standard deviations from mean to consider a performance anomaly.
+        Must be between 1.0 and 10.0. Default is 3.0.
+    """
+
+    detection_slow_pattern_threshold: float = Field(
+        default=0.1,
+        description="Execution time to consider pattern slow (seconds)",
+        ge=0.01,
+        le=1.0,
+    )
+    """
+    float:
+        Execution time in seconds above which a pattern is considered slow.
+        Must be between 0.01 and 1.0 seconds. Default is 0.1 seconds.
+    """
+
+    detection_monitor_history_size: int = Field(
+        default=1000,
+        description="Number of recent metrics to keep in history",
+        ge=100,
+        le=10000,
+    )
+    """
+    int:
+        Number of recent performance metrics to keep in history.
+        Must be between 100 and 10000. Default is 1000.
+    """
+
+    detection_max_tracked_patterns: int = Field(
+        default=1000,
+        description="Maximum number of patterns to track for performance",
+        ge=100,
+        le=5000,
+    )
+    """
+    int:
+        Maximum number of unique patterns to track for performance monitoring.
+        Must be between 100 and 5000. Default is 1000.
+    """
+
     # TODO: Add type hints to the decorator
     @field_validator("whitelist", "blacklist")  # type: ignore
     def validate_ip_lists(cls, v: list[str] | None) -> list[str] | None:
@@ -529,3 +767,114 @@ class SecurityConfig(BaseModel):
                     "if blocked_countries or whitelist_countries is set"
                 )
         return self
+
+    # TODO: Add type hints to the decorator
+    @model_validator(mode="after")  # type: ignore
+    def validate_agent_config(self) -> Self:
+        """Validate agent configuration."""
+        if self.enable_agent and not self.agent_api_key:
+            raise ValueError("agent_api_key is required when enable_agent is True")
+
+        if self.enable_dynamic_rules and not self.enable_agent:
+            raise ValueError(
+                "enable_agent must be True when enable_dynamic_rules is True"
+            )
+
+        return self
+
+    def to_agent_config(self) -> "AgentConfig | None":
+        """
+        Convert SecurityConfig to AgentConfig for guard-agent initialization.
+
+        Returns:
+            AgentConfig if agent is enabled, None otherwise.
+        """
+        if not self.enable_agent or not self.agent_api_key:
+            return None
+
+        try:
+            from guard_agent import AgentConfig
+
+            return AgentConfig(
+                api_key=self.agent_api_key,
+                endpoint=self.agent_endpoint,
+                project_id=self.agent_project_id,
+                buffer_size=self.agent_buffer_size,
+                flush_interval=self.agent_flush_interval,
+                enable_events=self.agent_enable_events,
+                enable_metrics=self.agent_enable_metrics,
+                timeout=self.agent_timeout,
+                retry_attempts=self.agent_retry_attempts,
+            )
+        except ImportError:
+            # guard_agent is not installed
+            return None
+
+
+class DynamicRules(BaseModel):
+    """Dynamic rules fetched from SaaS platform."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    # Rule metadata
+    rule_id: str = Field(description="Unique rule ID")
+    version: int = Field(description="Rule version number")
+    timestamp: datetime = Field(description="Rule creation/update timestamp")
+    expires_at: datetime | None = Field(
+        default=None, description="Rule expiration time"
+    )
+
+    # IP management rules
+    ip_blacklist: list[str] = Field(default_factory=list, description="IPs to ban")
+    ip_whitelist: list[str] = Field(default_factory=list, description="IPs to allow")
+    ip_ban_duration: int = Field(default=3600, description="Ban duration in seconds")
+
+    # Country/geo rules
+    blocked_countries: list[str] = Field(
+        default_factory=list, description="Countries to block"
+    )
+    whitelist_countries: list[str] = Field(
+        default_factory=list, description="Countries to allow"
+    )
+
+    # Rate limiting rules
+    global_rate_limit: int | None = Field(default=None, description="Global rate limit")
+    global_rate_window: int | None = Field(
+        default=None, description="Global rate window"
+    )
+    endpoint_rate_limits: dict[str, tuple[int, int]] = Field(
+        default_factory=dict,
+        description="Per-endpoint rate limits {endpoint: (requests, window)}",
+    )
+
+    # Cloud provider rules
+    blocked_cloud_providers: set[str] = Field(
+        default_factory=set, description="Cloud providers to block"
+    )
+
+    # User agent rules
+    blocked_user_agents: list[str] = Field(
+        default_factory=list, description="User agents to block"
+    )
+
+    # Pattern rules
+    suspicious_patterns: list[str] = Field(
+        default_factory=list, description="Additional suspicious patterns"
+    )
+
+    # Feature toggles
+    enable_penetration_detection: bool | None = Field(
+        default=None, description="Override penetration detection setting"
+    )
+    enable_ip_banning: bool | None = Field(
+        default=None, description="Override IP banning setting"
+    )
+    enable_rate_limiting: bool | None = Field(
+        default=None, description="Override rate limiting setting"
+    )
+
+    # Emergency controls
+    emergency_mode: bool = Field(default=False, description="Emergency lockdown mode")
+    emergency_whitelist: list[str] = Field(
+        default_factory=list, description="Emergency whitelist IPs"
+    )

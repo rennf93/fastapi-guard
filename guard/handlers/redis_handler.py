@@ -2,6 +2,7 @@ import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import HTTPException, status
@@ -22,13 +23,42 @@ class RedisManager:
     _closed = False
     config: SecurityConfig
     logger: logging.Logger
+    agent_handler: Any = None
 
     def __new__(cls: type["RedisManager"], config: SecurityConfig) -> "RedisManager":
         cls._instance = super().__new__(cls)
         cls._instance.config = config
         cls._instance.logger = logging.getLogger(__name__)
         cls._instance._closed = False
+        cls._instance.agent_handler = None
         return cls._instance
+
+    async def initialize_agent(self, agent_handler: Any) -> None:
+        """Initialize agent integration."""
+        self.agent_handler = agent_handler
+
+    async def _send_redis_event(
+        self, event_type: str, action_taken: str, reason: str, **kwargs: Any
+    ) -> None:
+        """Send Redis-related events to agent."""
+        if not self.agent_handler:
+            return
+
+        try:
+            from guard_agent import SecurityEvent
+
+            event = SecurityEvent(
+                timestamp=datetime.now(timezone.utc),
+                event_type=event_type,
+                ip_address="system",  # Redis events are system-level
+                action_taken=action_taken,
+                reason=reason,
+                metadata=kwargs,
+            )
+            await self.agent_handler.send_event(event)
+        except Exception as e:
+            # Don't let agent errors break Redis functionality
+            self.logger.error(f"Failed to send Redis event to agent: {e}")
 
     async def initialize(self) -> None:
         """Initialize Redis connection with retry logic"""
@@ -45,11 +75,29 @@ class RedisManager:
                     if self._redis is not None:
                         await self._redis.ping()
                         self.logger.info("Redis connection established")
+
+                        # Send success event to agent
+                        await self._send_redis_event(
+                            event_type="redis_connection",
+                            action_taken="connection_established",
+                            reason="Redis connection successfully established",
+                            redis_url=self.config.redis_url,
+                        )
                 else:
                     self.logger.warning("Redis URL is None, skipping connection")
 
             except Exception as e:
                 self.logger.error(f"Redis connection failed: {str(e)}")
+
+                # Send failure event to agent
+                await self._send_redis_event(
+                    event_type="redis_error",
+                    action_taken="connection_failed",
+                    reason=f"Redis connection failed: {str(e)}",
+                    redis_url=self.config.redis_url,
+                    error_type="connection_error",
+                )
+
                 self._redis = None
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -62,6 +110,13 @@ class RedisManager:
             await self._redis.aclose()
             self._redis = None
             self.logger.info("Redis connection closed")
+
+            # Send close event to agent
+            await self._send_redis_event(
+                event_type="redis_connection",
+                action_taken="connection_closed",
+                reason="Redis connection closed gracefully",
+            )
         self._closed = True
 
     @asynccontextmanager
@@ -69,6 +124,12 @@ class RedisManager:
         """Context manager for safe Redis operations"""
         try:
             if self._closed:
+                await self._send_redis_event(
+                    event_type="redis_error",
+                    action_taken="operation_failed",
+                    reason="Attempted to use closed Redis connection",
+                    error_type="connection_closed",
+                )
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Redis connection closed",
@@ -78,6 +139,12 @@ class RedisManager:
                 await self.initialize()
 
             if self._redis is None:
+                await self._send_redis_event(
+                    event_type="redis_error",
+                    action_taken="operation_failed",
+                    reason="Redis connection is None after initialization",
+                    error_type="initialization_failed",
+                )
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Redis connection failed",
@@ -86,6 +153,15 @@ class RedisManager:
             yield self._redis
         except (ConnectionError, AttributeError) as e:
             self.logger.error(f"Redis operation failed: {str(e)}")
+
+            # Send operation failure event to agent
+            await self._send_redis_event(
+                event_type="redis_error",
+                action_taken="operation_failed",
+                reason=f"Redis operation failed: {str(e)}",
+                error_type="operation_error",
+            )
+
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Redis connection failed",
@@ -101,6 +177,16 @@ class RedisManager:
                 return await func(conn, *args, **kwargs)
         except Exception as e:
             self.logger.error(f"Redis operation failed: {str(e)}")
+
+            # Send operation failure event to agent
+            await self._send_redis_event(
+                event_type="redis_error",
+                action_taken="safe_operation_failed",
+                reason=f"Redis safe operation failed: {str(e)}",
+                error_type="safe_operation_error",
+                function_name=getattr(func, "__name__", "unknown"),
+            )
+
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Redis operation failed",
