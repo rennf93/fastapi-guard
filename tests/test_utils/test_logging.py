@@ -465,9 +465,7 @@ def test_setup_custom_logging_file_handler_exception(
 
     # Should have logged a warning about the failure
     assert "Failed to create log file /invalid/path/test.log" in caplog.text
-    assert (
-        "Permission denied" in caplog.text or "cannot create log file" in caplog.text
-    )
+    assert "Permission denied" in caplog.text or "cannot create log file" in caplog.text
 
     # Logger should still work (console only)
     assert logger is not None
