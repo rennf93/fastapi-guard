@@ -72,6 +72,7 @@ Features
 - **Rate Limiting**: Limit the number of requests from a single IP.
 - **Automatic IP Banning**: Automatically ban IPs after a certain number of suspicious requests.
 - **Penetration Attempt Detection**: Detect and log potential penetration attempts.
+- **HTTP Security Headers**: Comprehensive security headers management (CSP, HSTS, X-Frame-Options, etc.)
 - **Custom Logging**: Log security events to a custom file.
 - **CORS Configuration**: Configure CORS settings for your FastAPI application.
 - **Cloud Provider IP Blocking**: Block requests from cloud provider IPs (AWS, GCP, Azure).
@@ -239,6 +240,54 @@ config = SecurityConfig(
 ```
 
 **Note:** Console output is always enabled for visibility. File logging is only activated when `custom_log_file` is provided.
+
+HTTP Security Headers
+---------------------
+
+Configure comprehensive security headers following OWASP best practices:
+
+```python
+config = SecurityConfig(
+    security_headers={
+        "enabled": True,
+        "hsts": {
+            "max_age": 31536000,  # 1 year
+            "include_subdomains": True,
+            "preload": False
+        },
+        "csp": {
+            "default-src": ["'self'"],
+            "script-src": ["'self'", "https://trusted.cdn.com"],
+            "style-src": ["'self'", "'unsafe-inline'"],
+            "img-src": ["'self'", "data:", "https:"],
+            "connect-src": ["'self'", "https://api.example.com"],
+            "frame-ancestors": ["'none'"],
+            "base-uri": ["'self'"],
+            "form-action": ["'self'"]
+        },
+        "frame_options": "DENY",
+        "content_type_options": "nosniff",
+        "xss_protection": "1; mode=block",
+        "referrer_policy": "strict-origin-when-cross-origin",
+        "permissions_policy": "geolocation=(), microphone=(), camera=()",
+        "custom": {
+            "X-Custom-Header": "CustomValue"
+        }
+    }
+)
+```
+
+Key security headers supported:
+- **Content Security Policy (CSP)**: Prevent XSS attacks by controlling resource loading
+- **HTTP Strict Transport Security (HSTS)**: Force HTTPS connections
+- **X-Frame-Options**: Prevent clickjacking attacks
+- **X-Content-Type-Options**: Prevent MIME type sniffing
+- **X-XSS-Protection**: Enable browser XSS filtering
+- **Referrer-Policy**: Control referrer information
+- **Permissions-Policy**: Restrict browser features
+- **Cross-Origin Policies**: Control cross-origin resource access and embedding
+- **Header Injection Prevention**: Automatic validation against injection attacks
+- **CORS Security**: Secure wildcard and credentials handling
 
 CORS Configuration
 ------------------

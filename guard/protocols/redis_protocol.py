@@ -1,3 +1,4 @@
+# guard/protocols/redis_protocol.py
 from typing import Any, Protocol, runtime_checkable
 
 from redis.asyncio import Redis

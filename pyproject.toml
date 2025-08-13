@@ -1,6 +1,6 @@
 [project]
 name = "fastapi_guard"
-version = "4.0.3"
+version = "4.1.0"
 description = "A security library for FastAPI to control IPs, log requests, and detect penetration attempts."
 authors = [
     {name = "Renzo Franceschini", email = "rennf93@users.noreply.github.com"}
@@ -36,7 +36,6 @@ Homepage = "https://github.com/rennf93/fastapi-guard"
 
 [project.optional-dependencies]
 dev = [
-    "black",
     "fastapi-guard-agent",
     "httpx",
     "matplotlib",

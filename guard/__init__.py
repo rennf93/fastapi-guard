@@ -6,6 +6,10 @@ from guard.handlers.ipban_handler import IPBanManager, ip_ban_manager
 from guard.handlers.ipinfo_handler import IPInfoManager
 from guard.handlers.ratelimit_handler import RateLimitManager, rate_limit_handler
 from guard.handlers.redis_handler import RedisManager, redis_handler
+from guard.handlers.security_headers_handler import (
+    SecurityHeadersManager,
+    security_headers_manager,
+)
 from guard.handlers.suspatterns_handler import sus_patterns_handler
 from guard.middleware import SecurityMiddleware
 from guard.models import SecurityConfig
@@ -28,6 +32,8 @@ __all__ = [
     "RateLimitManager",
     "redis_handler",
     "RedisManager",
+    "security_headers_manager",
+    "SecurityHeadersManager",
     "sus_patterns_handler",
     "GeoIPHandler",
     "RedisHandlerProtocol",

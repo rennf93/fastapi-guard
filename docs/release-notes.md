@@ -10,6 +10,44 @@ Release Notes
 
 ___
 
+v4.1.0 (2025-08-13)
+-------------------
+
+New Features (v4.1.0)
+------------
+
+- **Enhanced Security Headers**: Added 5 new default security headers following OWASP best practices:
+  - `X-Permitted-Cross-Domain-Policies: none` - Restricts Adobe Flash cross-domain access
+  - `X-Download-Options: noopen` - Prevents file download execution in Internet Explorer
+  - `Cross-Origin-Embedder-Policy: require-corp` - Controls cross-origin resource embedding
+  - `Cross-Origin-Opener-Policy: same-origin` - Controls cross-origin window interactions
+  - `Cross-Origin-Resource-Policy: same-origin` - Controls cross-origin resource access
+- **Security Validation Framework**: Comprehensive input validation for all header configurations
+- **Advanced CORS Validation**: Runtime validation and logging for CORS misconfiguration attempts
+- **Security Event Logging**: Enhanced logging for security violations and configuration warnings
+
+Security Fixes (v4.1.0)
+---------
+
+- Fixed header injection vulnerability in SecurityHeadersManager - preventing injection attacks via newlines and control characters
+- Enhanced CORS security - wildcard origins (`*`) now properly blocked when credentials are enabled to prevent security bypass
+- Implemented thread-safe singleton pattern with double-checked locking to prevent race conditions in multi-threaded environments
+- Secure cache key generation using SHA256 hashing to prevent cache poisoning attacks
+- Added CSP unsafe directive validation - warnings for `'unsafe-inline'` and `'unsafe-eval'` directives
+- HSTS preload validation - ensures preload requirements (max_age ≥ 31536000, includeSubDomains) are met
+- Input validation for all header values - sanitization of control characters and length limits (8192 bytes)
+
+Improvements (v4.1.0)
+------------
+
+- **Performance**: Optimized cache key generation using SHA256 with path normalization
+- **Reliability**: Thread-safe singleton implementation prevents multiple instances in concurrent environments
+- **Security**: All header values now validated against injection attacks, newlines, and excessive length
+- **Monitoring**: Improved security event logging for better observability and debugging
+- **Documentation**: Updated security headers documentation with new features and best practices
+
+___
+
 v4.0.3 (2025-08-09)
 -------------------
 

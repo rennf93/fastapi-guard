@@ -1,11 +1,4 @@
-"""
-Detection Engine for FastAPI Guard.
-
-This module provides advanced threat detection capabilities with multiple
-layers of security analysis including pattern matching, semantic analysis,
-performance monitoring, and bypass prevention.
-"""
-
+# guard/detection_engine/__init__.py
 from .compiler import PatternCompiler
 from .monitor import PerformanceMonitor
 from .preprocessor import ContentPreprocessor

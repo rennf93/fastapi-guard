@@ -1,3 +1,4 @@
+# guard/scripts/rate_lua.py
 # Lua script for atomic rate limiting operations in Redis
 # This ensures all operations happen atomically, preventing race conditions
 RATE_LIMIT_SCRIPT = """
