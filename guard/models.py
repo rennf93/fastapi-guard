@@ -2,7 +2,7 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 from ipaddress import ip_address, ip_network
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal
 
 from fastapi import Request, Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -31,56 +31,7 @@ class SecurityConfig(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    # Security Headers Configuration
-    csp_directives: Optional[Dict[str, List[str]]] = Field(
-        default=None,
-        description="Content Security Policy directives",
-    )
-    
-    hsts_max_age: int = Field(
-        default=63072000,  # 2 years in seconds
-        description="HTTP Strict Transport Security max-age in seconds",
-    )
-    
-    frame_options: str = Field(
-        default="SAMEORIGIN",
-        description="X-Frame-Options header value (e.g., DENY, SAMEORIGIN, ALLOW-FROM uri)",
-    )
-    
-    content_type_options: str = Field(
-        default="nosniff",
-        description="X-Content-Type-Options header value (should be 'nosniff')",
-    )
-    
-    xss_protection: str = Field(
-        default="1; mode=block",
-        description="X-XSS-Protection header value",
-    )
-    
-    referrer_policy: str = Field(
-        default="strict-origin-when-cross-origin",
-        description="Referrer-Policy header value",
-    )
-    
-    permissions_policy: Optional[Dict[str, List[str]]] = Field(
-        default=None,
-        description="Permissions-Policy header directives",
-    )
-    
-    cross_origin_opener_policy: str = Field(
-        default="same-origin",
-        description="Cross-Origin-Opener-Policy header value",
-    )
-    
-    cross_origin_resource_policy: str = Field(
-        default="same-origin",
-        description="Cross-Origin-Resource-Policy header value",
-    )
-    
-    cross_origin_embedder_policy: str = Field(
-        default="require-corp",
-        description="Cross-Origin-Embedder-Policy header value",
-    )
+    # --- (moved) Security Headers configuration is defined later for clarity ---
 
     trusted_proxies: list[str] = Field(
         default_factory=list,
@@ -422,6 +373,57 @@ class SecurityConfig(BaseModel):
     bool:
         Whether to enable rate limiting functionality.
     """
+
+    # Security Headers Configuration (grouped after core request/response controls)
+    csp_directives: dict[str, list[str]] | None = Field(
+        default=None,
+        description="Content Security Policy directives",
+    )
+
+    hsts_max_age: int = Field(
+        default=63072000,  # 2 years in seconds
+        description="HTTP Strict Transport Security max-age in seconds",
+    )
+
+    frame_options: str = Field(
+        default="SAMEORIGIN",
+        description="X-Frame-Options header value (e.g., DENY, SAMEORIGIN, ALLOW-FROM uri)",
+    )
+
+    content_type_options: str = Field(
+        default="nosniff",
+        description="X-Content-Type-Options header value (should be 'nosniff')",
+    )
+
+    xss_protection: str = Field(
+        default="1; mode=block",
+        description="X-XSS-Protection header value",
+    )
+
+    referrer_policy: str = Field(
+        default="strict-origin-when-cross-origin",
+        description="Referrer-Policy header value",
+    )
+
+    permissions_policy: dict[str, list[str]] | None = Field(
+        default=None,
+        description="Permissions-Policy header directives",
+    )
+
+    cross_origin_opener_policy: str = Field(
+        default="same-origin",
+        description="Cross-Origin-Opener-Policy header value",
+    )
+
+    cross_origin_resource_policy: str = Field(
+        default="same-origin",
+        description="Cross-Origin-Resource-Policy header value",
+    )
+
+    cross_origin_embedder_policy: str = Field(
+        default="require-corp",
+        description="Cross-Origin-Embedder-Policy header value",
+    )
 
     enable_penetration_detection: bool = Field(
         default=True, description="Enable/disable penetration attempt detection"

@@ -1,25 +1,23 @@
-"""Tests for security headers middleware."""
-from typing import Dict, List
+"""Tests for security headers integration via SecurityMiddleware."""
+from typing import Dict
 
 import pytest
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from starlette.types import ASGIApp, Receive, Scope, Send
-from guard.handlers.security_headers import SecurityHeadersMiddleware
+from guard.middleware import SecurityMiddleware
+from guard.models import SecurityConfig
 
 
-def test_security_headers_middleware() -> None:
-    """Test that security headers are correctly added to responses."""
+def test_security_headers_integration() -> None:
+    """Test that security headers are correctly added to responses via SecurityMiddleware."""
     app = FastAPI()
-    
+
     @app.get("/")
     async def read_root() -> Dict[str, str]:
         return {"message": "Hello World"}
-    
-    # Add middleware with test configuration
-    app.add_middleware(
-        SecurityHeadersMiddleware,
-        csp={
+
+    config = SecurityConfig(
+        csp_directives={
             "default-src": ["'self'"],
             "script-src": ["'self'", "trusted.cdn.com"],
             "style-src": ["'self'"],
@@ -37,6 +35,7 @@ def test_security_headers_middleware() -> None:
         cross_origin_resource_policy="same-origin",
         cross_origin_embedder_policy="require-corp",
     )
+    app.add_middleware(SecurityMiddleware, config=config)
     
     client = TestClient(app)
     response = client.get("/")
@@ -70,13 +69,14 @@ def test_security_headers_middleware() -> None:
 def test_security_headers_default_values() -> None:
     """Test that default values are used when not specified."""
     app = FastAPI()
-    
+
     @app.get("/")
     async def read_root() -> Dict[str, str]:
         return {"message": "Hello World"}
-    
+
     # Add middleware with minimal configuration
-    app.add_middleware(SecurityHeadersMiddleware)
+    config = SecurityConfig()
+    app.add_middleware(SecurityMiddleware, config=config)
     
     client = TestClient(app)
     response = client.get("/")
@@ -97,56 +97,49 @@ def test_security_headers_default_values() -> None:
     assert "permissions-policy" not in response.headers
 
 
-def test_security_headers_non_http_requests() -> None:
-    """Test that non-HTTP requests are passed through without modification."""
-    class MockApp:
-        async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-            assert scope["type"] == "websocket"
-            await send({"type": "websocket.accept"})
-    
-    app = MockApp()
-    middleware = SecurityHeadersMiddleware(app)
-    
-    async def receive() -> dict:
-        return {"type": "websocket.connect"}
-    
-    send_called = False
-    
-    async def send(message: dict) -> None:
-        nonlocal send_called
-        send_called = True
-        assert message == {"type": "websocket.accept"}
-    
-    # Call the middleware with a WebSocket scope
-    import asyncio
-    asyncio.run(middleware({"type": "websocket"}, receive, send))
-    assert send_called, "Send should have been called with the original message"
+def test_https_redirect_has_headers() -> None:
+    """Ensure HTTPS redirect responses also have security headers applied."""
+    app = FastAPI()
+
+    @app.get("/")
+    async def read_root() -> Dict[str, str]:
+        return {"message": "Hello World"}
+
+    config = SecurityConfig(enforce_https=True)
+    app.add_middleware(SecurityMiddleware, config=config)
+
+    client = TestClient(app)
+    response = client.get("http://test/")
+    assert response.status_code in (301, 307, 308)
+    assert "x-frame-options" in response.headers
 
 
 def test_build_csp() -> None:
-    """Test building Content Security Policy header."""
-    middleware = SecurityHeadersMiddleware(lambda x: x)
+    """Test building Content Security Policy header via handler."""
+    from guard.handlers.headers_handler import headers_handler
+
     csp = {
         "default-src": ["'self'"],
         "script-src": ["'self'", "*.example.com"],
         "style-src": ["'self'", "'unsafe-inline'"],
     }
-    result = middleware._build_csp(csp)
+    result = headers_handler._build_csp(csp)  # type: ignore[attr-defined]
     assert "default-src 'self'" in result
     assert "script-src 'self' *.example.com" in result
     assert "style-src 'self' 'unsafe-inline'" in result
 
 
 def test_build_permissions_policy() -> None:
-    """Test building Permissions Policy header."""
-    middleware = SecurityHeadersMiddleware(lambda x: x)
+    """Test building Permissions Policy header via handler."""
+    from guard.handlers.headers_handler import headers_handler
+
     policy = {
         "geolocation": ["'self'"],
         "camera": ["'none'"],
         "microphone": ["https://example.com"],
         "fullscreen": [],
     }
-    result = middleware._build_permissions_policy(policy)
+    result = headers_handler._build_permissions_policy(policy)  
     assert "geolocation=('self')" in result
     assert "camera=()" in result
     assert "microphone=(https://example.com)" in result

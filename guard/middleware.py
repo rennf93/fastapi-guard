@@ -5,13 +5,13 @@ import time
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 from ipaddress import ip_address, ip_network
-from typing import Any, Dict, List, Optional
+from typing import Any
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
-from guard.handlers.security_headers import SecurityHeadersMiddleware
+from guard.handlers.headers_handler import headers_handler
 from guard.decorators.base import BaseSecurityDecorator, RouteConfig
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
@@ -286,17 +286,49 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 redirect_response = RedirectResponse(
                     https_url, status_code=status.HTTP_301_MOVED_PERMANENTLY
                 )
+                # Apply security headers to redirect
+                try:
+                    from guard.handlers.headers_handler import headers_handler
+
+                    redirect_response.headers.update(
+                        headers_handler.get_headers(self.config)
+                    )
+                except Exception:
+                    pass
                 if self.config.custom_response_modifier:
                     modified_response = await self.config.custom_response_modifier(
                         redirect_response
                     )
+                    try:
+                        from guard.handlers.headers_handler import headers_handler
+
+                        modified_response.headers.update(
+                            headers_handler.get_headers(self.config)
+                        )
+                    except Exception:
+                        pass
                     return modified_response
                 return redirect_response
 
         if not request.client:
             response = await call_next(request)
+            # Apply security headers
+            try:
+                from guard.handlers.headers_handler import headers_handler
+
+                response.headers.update(headers_handler.get_headers(self.config))
+            except Exception:
+                pass
             if self.config.custom_response_modifier:
                 modified_response = await self.config.custom_response_modifier(response)
+                try:
+                    from guard.handlers.headers_handler import headers_handler
+
+                    modified_response.headers.update(
+                        headers_handler.get_headers(self.config)
+                    )
+                except Exception:
+                    pass
                 return modified_response
             return response
 
@@ -353,8 +385,23 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             )
 
             response = await call_next(request)
+            # Apply security headers
+            try:
+                from guard.handlers.headers_handler import headers_handler
+
+                response.headers.update(headers_handler.get_headers(self.config))
+            except Exception:
+                pass
             if self.config.custom_response_modifier:
                 modified_response = await self.config.custom_response_modifier(response)
+                try:
+                    from guard.handlers.headers_handler import headers_handler
+
+                    modified_response.headers.update(
+                        headers_handler.get_headers(self.config)
+                    )
+                except Exception:
+                    pass
                 return modified_response
             return response
 
@@ -371,8 +418,23 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             )
 
             response = await call_next(request)
+            # Apply security headers
+            try:
+                from guard.handlers.headers_handler import headers_handler
+
+                response.headers.update(headers_handler.get_headers(self.config))
+            except Exception:
+                pass
             if self.config.custom_response_modifier:
                 modified_response = await self.config.custom_response_modifier(response)
+                try:
+                    from guard.handlers.headers_handler import headers_handler
+
+                    modified_response.headers.update(
+                        headers_handler.get_headers(self.config)
+                    )
+                except Exception:
+                    pass
                 return modified_response
             return response
 
@@ -956,8 +1018,24 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             request, response_time, response.status_code
         )
 
+        # Apply security headers
+        try:
+            from guard.handlers.headers_handler import headers_handler
+
+            response.headers.update(headers_handler.get_headers(self.config))
+        except Exception:
+            pass
+
         if self.config.custom_response_modifier:
             modified_response = await self.config.custom_response_modifier(response)
+            try:
+                from guard.handlers.headers_handler import headers_handler
+
+                modified_response.headers.update(
+                    headers_handler.get_headers(self.config)
+                )
+            except Exception:
+                pass
             return modified_response
 
         return response
@@ -1290,9 +1368,22 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             status_code, default_message
         )
         response = Response(custom_message, status_code=status_code)
+        # Apply security headers to error responses
+        try:
+            from guard.handlers.headers_handler import headers_handler
+
+            response.headers.update(headers_handler.get_headers(self.config))
+        except Exception:
+            pass
 
         if self.config.custom_response_modifier:
             response = await self.config.custom_response_modifier(response)
+            try:
+                from guard.handlers.headers_handler import headers_handler
+
+                response.headers.update(headers_handler.get_headers(self.config))
+            except Exception:
+                pass
 
         return response
 
@@ -1316,22 +1407,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 expose_headers=config.cors_expose_headers or [],
                 max_age=config.cors_max_age or 600,
             )
-            
-        # Add security headers middleware
-        app = SecurityHeadersMiddleware(
-            app,
-            csp=config.csp_directives,
-            hsts_max_age=config.hsts_max_age,
-            frame_options=config.frame_options,
-            content_type_options=config.content_type_options,
-            xss_protection=config.xss_protection,
-            referrer_policy=config.referrer_policy,
-            permissions_policy=config.permissions_policy,
-            cross_origin_opener_policy=config.cross_origin_opener_policy,
-            cross_origin_resource_policy=config.cross_origin_resource_policy,
-            cross_origin_embedder_policy=config.cross_origin_embedder_policy,
-        )
-        return True
+            return True
+        return False
 
     async def initialize(self) -> None:
         """Initialize all components asynchronously"""
@@ -1346,6 +1423,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 await self.geo_ip_handler.initialize_redis(self.redis_handler)
             await self.rate_limit_handler.initialize_redis(self.redis_handler)
             await sus_patterns_handler.initialize_redis(self.redis_handler)
+            # Initialize headers handler with Redis
+            try:
+                await headers_handler.initialize_redis(self.redis_handler)
+            except Exception:
+                pass
 
         # Initialize agent handler
         if self.agent_handler:
@@ -1364,6 +1446,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 await cloud_handler.initialize_agent(self.agent_handler)
             if self.geo_ip_handler and hasattr(self.geo_ip_handler, "initialize_agent"):
                 await self.geo_ip_handler.initialize_agent(self.agent_handler)
+            # Initialize headers handler with Agent
+            try:
+                await headers_handler.initialize_agent(self.agent_handler)
+            except Exception:
+                pass
 
             # Initialize agent in decorator handler if it exists
             if self.guard_decorator and hasattr(

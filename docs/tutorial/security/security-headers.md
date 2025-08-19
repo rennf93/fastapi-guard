@@ -6,7 +6,7 @@ keywords: security headers, CSP, HSTS, XSS protection, FastAPI security
 
 # Security Headers
 
-FastAPI Guard provides robust security headers to protect your application from common web vulnerabilities. This guide explains how to configure and use the `SecurityHeadersMiddleware` to add essential security headers to your responses.
+FastAPI Guard provides robust security headers to protect your application from common web vulnerabilities. This guide explains how to configure security headers via `SecurityMiddleware` and `SecurityConfig` so they are automatically applied to all responses.
 
 ## Overview
 
@@ -49,14 +49,13 @@ Controls which browser features can be used by your site.
 
 ```python
 from fastapi import FastAPI
-from fastapi_guard.handlers.security_headers import SecurityHeadersMiddleware
+from guard.middleware import SecurityMiddleware
+from guard.models import SecurityConfig
 
 app = FastAPI()
 
-# Add security headers middleware
-app.add_middleware(
-    SecurityHeadersMiddleware,
-    csp={
+config = SecurityConfig(
+    csp_directives={
         "default-src": ["'self'"],
         "script-src": ["'self'", "trusted.cdn.com"],
         "style-src": ["'self'"],
@@ -75,6 +74,8 @@ app.add_middleware(
     cross_origin_embedder_policy="require-corp",
 )
 
+app.add_middleware(SecurityMiddleware, config=config)
+
 @app.get("/")
 async def root():
     return {"message": "Hello, World!"}
@@ -82,7 +83,7 @@ async def root():
 
 ## Configuration Options
 
-### `csp` (Optional[Dict[str, List[str]]])
+### `csp_directives` (dict[str, list[str]] | None)
 Content Security Policy directives. Each key is a directive name and the value is a list of sources.
 
 ### `hsts_max_age` (int, default: 63072000)
@@ -111,7 +112,7 @@ Value for Referrer-Policy header. Common values:
 - `strict-origin-when-cross-origin`
 - `unsafe-url`
 
-### `permissions_policy` (Optional[Dict[str, List[str]]])
+### `permissions_policy` (dict[str, list[str]] | None)
 Permissions Policy directives. Each key is a feature name and the value is a list of origins.
 
 ### Cross-Origin Policies
@@ -137,9 +138,11 @@ You can test your security headers using:
 ## Example: Secure Configuration
 
 ```python
-app.add_middleware(
-    SecurityHeadersMiddleware,
-    csp={
+from guard.middleware import SecurityMiddleware
+from guard.models import SecurityConfig
+
+config = SecurityConfig(
+    csp_directives={
         "default-src": ["'self'"],
         "script-src": ["'self'", "'unsafe-inline'"],  # Note: Avoid 'unsafe-inline' in production
         "style-src": ["'self'", "'unsafe-inline'"],
@@ -166,13 +169,15 @@ app.add_middleware(
     cross_origin_resource_policy="same-origin",
     cross_origin_embedder_policy="require-corp",
 )
+
+app.add_middleware(SecurityMiddleware, config=config)
 ```
 
 ## Troubleshooting
 
 ### Headers Not Being Set
-- Ensure the middleware is added before other middleware that might modify responses
-- Check for any other middleware that might be removing headers
+- Ensure `SecurityMiddleware` is added (and with the intended `SecurityConfig`)
+- Check for any other middleware that might be removing or overriding headers
 
 ### CSP Blocking Resources
 - Check browser console for CSP violation reports
