@@ -1,3 +1,4 @@
+# guard/models.py
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from ipaddress import ip_address, ip_network
@@ -238,6 +239,53 @@ class SecurityConfig(BaseModel):
     bool:
         Whether to enforce HTTPS connections.
         If True, all HTTP requests will be redirected to HTTPS.
+    """
+
+    # Security Headers Configuration
+    security_headers: dict[str, Any] | None = Field(
+        default_factory=lambda: {
+            "enabled": True,
+            "hsts": {
+                "max_age": 31536000,  # 1 year
+                "include_subdomains": True,
+                "preload": False,
+            },
+            "csp": None,  # Content Security Policy directives
+            "frame_options": "SAMEORIGIN",
+            "content_type_options": "nosniff",
+            "xss_protection": "1; mode=block",
+            "referrer_policy": "strict-origin-when-cross-origin",
+            "permissions_policy": "geolocation=(), microphone=(), camera=()",
+            "custom": None,  # Additional custom headers
+        },
+        description="Security headers configuration",
+    )
+    """
+    dict[str, Any] | None:
+        Security headers configuration for enhanced protection.
+
+        Example:
+            {
+                "enabled": True,
+                "hsts": {
+                    "max_age": 31536000,  # 1 year in seconds
+                    "include_subdomains": True,
+                    "preload": False
+                },
+                "csp": {
+                    "default-src": ["'self'"],
+                    "script-src": ["'self'", "https://trusted.cdn.com"],
+                    "style-src": ["'self'", "'unsafe-inline'"]
+                },
+                "frame_options": "DENY",  # or "SAMEORIGIN"
+                "content_type_options": "nosniff",
+                "xss_protection": "1; mode=block",
+                "referrer_policy": "no-referrer",
+                "permissions_policy": "geolocation=(), microphone=(), camera=()",
+                "custom": {
+                    "X-Custom-Header": "value"
+                }
+            }
     """
 
     custom_request_check: Callable[[Request], Awaitable[Response | None]] | None = (

@@ -1,3 +1,4 @@
+# guard/protocols/geo_ip_protocol.py
 from typing import Protocol, runtime_checkable
 
 from guard.protocols.agent_protocol import AgentHandlerProtocol

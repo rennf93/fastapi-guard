@@ -100,6 +100,58 @@ Cloud Provider Settings
 | `block_cloud_providers` | dict | {} | Cloud providers to block |
 | `cloud_provider_cache_ttl` | int | 86400 | Cache TTL for cloud provider data |
 
+Security Headers Settings
+------------------------
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `security_headers` | dict[str, Any] | See below | Security headers configuration |
+
+Default security_headers configuration:
+
+```python
+{
+    "enabled": True,
+    "hsts": {
+        "max_age": 31536000,  # 1 year
+        "include_subdomains": True,
+        "preload": False
+    },
+    "csp": None,  # Content Security Policy directives
+    "frame_options": "SAMEORIGIN",
+    "content_type_options": "nosniff",
+    "xss_protection": "1; mode=block",
+    "referrer_policy": "strict-origin-when-cross-origin",
+    "permissions_policy": "geolocation=(), microphone=(), camera=()",
+    "custom": None  # Additional custom headers
+}
+```
+
+The following additional security headers are now included by default:
+
+- `X-Permitted-Cross-Domain-Policies: none`
+- `X-Download-Options: noopen`
+- `Cross-Origin-Embedder-Policy: require-corp`
+- `Cross-Origin-Opener-Policy: same-origin`
+- `Cross-Origin-Resource-Policy: same-origin`
+
+Security Headers Sub-fields
+----------------------------
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | bool | True | Enable security headers |
+| `hsts.max_age` | int | 31536000 | HSTS max-age in seconds |
+| `hsts.include_subdomains` | bool | True | Include subdomains in HSTS |
+| `hsts.preload` | bool | False | Enable HSTS preload |
+| `csp` | dict[str, list[str]] | None | Content Security Policy directives |
+| `frame_options` | str | "SAMEORIGIN" | X-Frame-Options value (DENY, SAMEORIGIN) |
+| `content_type_options` | str | "nosniff" | X-Content-Type-Options value |
+| `xss_protection` | str | "1; mode=block" | X-XSS-Protection value |
+| `referrer_policy` | str | "strict-origin-when-cross-origin" | Referrer-Policy value |
+| `permissions_policy` | str | See default | Permissions-Policy value |
+| `custom` | dict[str, str] | None | Additional custom headers |
+
 CORS Settings
 -------------
 
@@ -152,6 +204,34 @@ config = SecurityConfig(
     detection_slow_pattern_threshold=0.1,
     detection_monitor_history_size=1000,
     detection_max_tracked_patterns=1000,
+
+    # Security headers
+    security_headers={
+        "enabled": True,
+        "hsts": {
+            "max_age": 31536000,  # 1 year
+            "include_subdomains": True,
+            "preload": False
+        },
+        "csp": {
+            "default-src": ["'self'"],
+            "script-src": ["'self'", "https://cdn.example.com"],
+            "style-src": ["'self'", "'unsafe-inline'"],
+            "img-src": ["'self'", "data:", "https:"],
+            "connect-src": ["'self'", "https://api.example.com"],
+            "frame-ancestors": ["'none'"],
+            "base-uri": ["'self'"],
+            "form-action": ["'self'"]
+        },
+        "frame_options": "DENY",
+        "content_type_options": "nosniff",
+        "xss_protection": "1; mode=block",
+        "referrer_policy": "no-referrer",
+        "permissions_policy": "geolocation=(), microphone=(), camera=()",
+        "custom": {
+            "X-Custom-Header": "CustomValue"
+        }
+    },
 
     # Redis
     use_redis=True,

@@ -1,3 +1,4 @@
+# guard/detection_engine/compiler.py
 import asyncio
 import re
 import time

@@ -126,6 +126,18 @@ jobs:
           mike list
           git push origin gh-pages --force
 
+      - name: Update Context7 Documentation
+        id: context7
+        uses: rennf93/upsert-context7@1.0
+        with:
+          operation: refresh
+
+      - name: Show result
+        run: |
+          echo "Success: ${{ steps.context7.outputs.success }}"
+          echo "Status: ${{ steps.context7.outputs.status-code }}"
+          echo "Message: ${{ steps.context7.outputs.message }}"
+
       - name: Notify Success on Slack Channel
         uses: rennf93/good-comms@master
         with:

@@ -17,6 +17,7 @@ from guard.decorators.base import BaseSecurityDecorator, RouteConfig
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ipban_handler import ip_ban_manager
 from guard.handlers.ratelimit_handler import RateLimitManager
+from guard.handlers.security_headers_handler import security_headers_manager
 from guard.handlers.suspatterns_handler import sus_patterns_handler
 from guard.models import SecurityConfig
 from guard.utils import (
@@ -60,6 +61,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self.rate_limit_handler = RateLimitManager(config)
         self.guard_decorator: BaseSecurityDecorator | None = None
 
+        self._configure_security_headers(config)
+
         self.geo_ip_handler = None
         if config.whitelist_countries or config.blocked_countries:
             self.geo_ip_handler = config.geo_ip_handler
@@ -94,6 +97,40 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     "Agent enabled but configuration is invalid. "
                     "Check agent_api_key and other required fields."
                 )
+
+    def _configure_security_headers(self, config: SecurityConfig) -> None:
+        """Configure security headers manager if enabled."""
+        if not config.security_headers:
+            security_headers_manager.enabled = False
+            return
+
+        if not config.security_headers.get("enabled", True):
+            security_headers_manager.enabled = False
+            return
+
+        security_headers_manager.enabled = True
+        headers_config = config.security_headers
+        hsts_config = headers_config.get("hsts", {})
+
+        security_headers_manager.configure(
+            enabled=headers_config.get("enabled", True),
+            csp=headers_config.get("csp"),
+            hsts_max_age=hsts_config.get("max_age"),
+            hsts_include_subdomains=hsts_config.get("include_subdomains", True),
+            hsts_preload=hsts_config.get("preload", False),
+            frame_options=headers_config.get("frame_options", "SAMEORIGIN"),
+            content_type_options=headers_config.get("content_type_options", "nosniff"),
+            xss_protection=headers_config.get("xss_protection", "1; mode=block"),
+            referrer_policy=headers_config.get(
+                "referrer_policy", "strict-origin-when-cross-origin"
+            ),
+            permissions_policy=headers_config.get("permissions_policy", "UNSET"),
+            custom_headers=headers_config.get("custom"),
+            cors_origins=config.cors_allow_origins if config.enable_cors else None,
+            cors_allow_credentials=config.cors_allow_credentials,
+            cors_allow_methods=config.cors_allow_methods,
+            cors_allow_headers=config.cors_allow_headers,
+        )
 
     def set_decorator_handler(
         self, decorator_handler: BaseSecurityDecorator | None
@@ -1026,6 +1063,23 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             request, response_time, response.status_code
         )
 
+        # Add security headers if enabled
+        if self.config.security_headers and self.config.security_headers.get(
+            "enabled", True
+        ):
+            security_headers = await security_headers_manager.get_headers(
+                str(request.url.path)
+            )
+            for header_name, header_value in security_headers.items():
+                response.headers[header_name] = header_value
+
+            # Add CORS headers if origin is present
+            origin = request.headers.get("origin")
+            if origin:
+                cors_headers = await security_headers_manager.get_cors_headers(origin)
+                for header_name, header_value in cors_headers.items():
+                    response.headers[header_name] = header_value
+
         if self.config.custom_response_modifier:
             modified_response = await self.config.custom_response_modifier(response)
             return modified_response
@@ -1376,6 +1430,14 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             status_code, default_message
         )
         response = Response(custom_message, status_code=status_code)
+
+        # Add security headers to error responses
+        if self.config.security_headers and self.config.security_headers.get(
+            "enabled", True
+        ):
+            security_headers = await security_headers_manager.get_headers()
+            for header_name, header_value in security_headers.items():
+                response.headers[header_name] = header_value
 
         if self.config.custom_response_modifier:
             response = await self.config.custom_response_modifier(response)

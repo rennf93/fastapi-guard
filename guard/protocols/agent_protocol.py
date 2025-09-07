@@ -1,3 +1,4 @@
+# guard/protocols/agent_protocol.py
 from typing import Any, Protocol, runtime_checkable
 
 from guard.protocols.redis_protocol import RedisHandlerProtocol

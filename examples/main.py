@@ -47,7 +47,7 @@ from fastapi import (
     WebSocketDisconnect,
     status,
 )
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from guard import SecurityConfig, SecurityMiddleware
@@ -228,7 +228,38 @@ security_config = SecurityConfig(
     # Custom Hooks
     custom_request_check=custom_request_check,
     custom_response_modifier=custom_response_modifier,
-    # CORS Configuration
+    # Security Headers Configuration
+    security_headers={
+        "enabled": True,
+        # Content Security Policy
+        "csp": {
+            "default-src": ["'self'"],
+            "script-src": ["'self'", "'strict-dynamic'"],
+            "style-src": ["'self'", "'unsafe-inline'"],  # Allow inline styles for demo
+            "img-src": ["'self'", "data:", "https:"],
+            "font-src": ["'self'", "https://fonts.gstatic.com"],
+            "connect-src": ["'self'", "wss://localhost:8000"],  # WebSocket support
+        },
+        # HTTP Strict Transport Security
+        "hsts": {
+            "max_age": 31536000,  # 1 year
+            "include_subdomains": True,
+            "preload": False,  # Set to True for production
+        },
+        # Custom security headers
+        "frame_options": "SAMEORIGIN",
+        "referrer_policy": "strict-origin-when-cross-origin",
+        "permissions_policy": (
+            "accelerometer=(), camera=(), geolocation=(), "
+            "gyroscope=(), magnetometer=(), microphone=(), "
+            "payment=(), usb=()"
+        ),
+        "custom": {
+            "X-App-Name": "FastAPI-Guard-Example",
+            "X-Security-Contact": "security@example.com",
+        },
+    },
+    # CORS Configuration (works alongside security headers)
     enable_cors=True,
     cors_allow_origins=["http://localhost:3000", "https://example.com"],
     cors_allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -542,6 +573,256 @@ async def complex_behavior_analysis() -> MessageResponse:
     )
 
 
+# ==================== Security Headers Router ====================
+
+headers_router = APIRouter(prefix="/headers", tags=["Security Headers"])
+
+
+@headers_router.get("/", response_model=MessageResponse)
+async def security_headers_info() -> MessageResponse:
+    """Information about security headers applied to all responses."""
+    return MessageResponse(
+        message="All responses include comprehensive security headers",
+        details={
+            "headers": [
+                "X-Content-Type-Options: nosniff",
+                "X-Frame-Options: SAMEORIGIN",
+                "X-XSS-Protection: 1; mode=block",
+                "Strict-Transport-Security: max-age=31536000",
+                "Content-Security-Policy: default-src 'self'",
+                "Referrer-Policy: strict-origin-when-cross-origin",
+                "Permissions-Policy: accelerometer=(), camera=(), ...",
+                "X-App-Name: FastAPI-Guard-Example",
+                "X-Security-Contact: security@example.com",
+            ],
+            "note": "Check browser developer tools to see all headers"
+        },
+    )
+
+
+@headers_router.get("/test-page", response_class=HTMLResponse)
+async def security_headers_test_page() -> str:
+    """
+    HTML test page to demonstrate Content Security Policy.
+
+    This page includes inline scripts and styles that may be blocked
+    depending on CSP configuration. Check browser console for violations.
+    """
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Security Headers Demo</title>
+        <style>
+            /* Inline styles - may be blocked by CSP */
+            body {
+                font-family: Arial, sans-serif;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+            .header {
+                color: #333;
+                border-bottom: 2px solid #007acc;
+                padding-bottom: 10px;
+            }
+            .demo-box {
+                background: white;
+                padding: 20px;
+                margin: 20px 0;
+                border-radius: 5px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }
+            .warning {
+                color: #d63384;
+                font-weight: bold;
+            }
+            .success {
+                color: #198754;
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+        <h1 class="header">🛡️ FastAPI Guard Security Headers Demo</h1>
+
+        <div class="demo-box">
+            <h2>Content Security Policy Test</h2>
+            <p>This page tests various CSP restrictions:</p>
+            <ul>
+                <li><strong>Inline Styles:</strong> <span id="style-test">Should be styled</span></li>
+                <li><strong>Inline Scripts:</strong> <span id="script-test">Waiting for script...</span></li>
+                <li><strong>External Resources:</strong> Limited by CSP directives</li>
+            </ul>
+        </div>
+
+        <div class="demo-box">
+            <h2>Security Headers Applied</h2>
+            <p>Check the <strong>Network</strong> tab in Developer Tools to see:</p>
+            <ul>
+                <li>X-Content-Type-Options: nosniff</li>
+                <li>X-Frame-Options: SAMEORIGIN</li>
+                <li>X-XSS-Protection: 1; mode=block</li>
+                <li>Strict-Transport-Security</li>
+                <li>Content-Security-Policy</li>
+                <li>Custom headers from FastAPI Guard</li>
+            </ul>
+        </div>
+
+        <div class="demo-box">
+            <h2>CSP Violation Testing</h2>
+            <button onclick="testInlineScript()">Test Inline Script</button>
+            <button onclick="testEval()">Test eval() Function</button>
+            <p id="test-results"></p>
+            <p><em>Check browser console for CSP violation reports</em></p>
+        </div>
+
+        <script>
+            // This inline script may be blocked by CSP
+            console.log("Inline script executed - CSP allows inline scripts");
+            document.getElementById('script-test').textContent = 'Script executed successfully!';
+            document.getElementById('script-test').className = 'success';
+
+            function testInlineScript() {
+                try {
+                    // This should work since it's part of the page
+                    document.getElementById('test-results').innerHTML =
+                        '<span class="success">✓ Inline event handlers work</span>';
+                } catch (e) {
+                    document.getElementById('test-results').innerHTML =
+                        '<span class="warning">✗ Inline script blocked: ' + e.message + '</span>';
+                }
+            }
+
+            function testEval() {
+                try {
+                    // This will likely be blocked by CSP
+                    eval('console.log("eval() executed")');
+                    document.getElementById('test-results').innerHTML =
+                        '<span class="warning">⚠️ eval() was allowed (security risk)</span>';
+                } catch (e) {
+                    document.getElementById('test-results').innerHTML =
+                        '<span class="success">✓ eval() blocked by CSP: ' + e.message + '</span>';
+                }
+            }
+
+            // Test dynamic script injection
+            try {
+                const script = document.createElement('script');
+                script.textContent = 'console.log("Dynamic script executed")';
+                document.head.appendChild(script);
+            } catch (e) {
+                console.log('Dynamic script blocked:', e.message);
+            }
+        </script>
+    </body>
+    </html>
+    """  # noqa: E501
+
+
+@headers_router.post("/csp-report", response_model=MessageResponse)
+async def receive_csp_report(report: dict[str, Any]) -> MessageResponse:
+    """
+    Endpoint to receive CSP violation reports.
+
+    To enable CSP reporting, add this to your CSP header:
+    "report-uri": ["/headers/csp-report"]
+    """
+    violation = report.get("csp-report", {})
+
+    # Log the violation (in production, you'd want to store/alert on these)
+    logger.warning(
+        f"CSP Violation: {violation.get('violated-directive', 'unknown')} "
+        f"blocked {violation.get('blocked-uri', 'unknown')} "
+        f"on {violation.get('document-uri', 'unknown')}"
+    )
+
+    return MessageResponse(
+        message="CSP violation report received",
+        details={
+            "violated_directive": violation.get("violated-directive"),
+            "blocked_uri": violation.get("blocked-uri"),
+            "source_file": violation.get("source-file"),
+            "line_number": violation.get("line-number"),
+        }
+    )
+
+
+@headers_router.get("/frame-test", response_class=HTMLResponse)
+async def frame_test() -> str:
+    """Test page for X-Frame-Options header (iframe embedding)."""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head><title>Frame Options Test</title></head>
+    <body>
+        <h1>🖼️ X-Frame-Options Test</h1>
+        <p>This page has X-Frame-Options: SAMEORIGIN header.</p>
+        <p>It can be embedded in iframes from the same origin, but not from external sites.</p>
+        <div style="margin: 20px; padding: 20px; border: 1px solid #ccc;">
+            <h3>Try embedding this page:</h3>
+            <code>&lt;iframe src="/headers/frame-test"&gt;&lt;/iframe&gt;</code>
+            <p>✅ Should work from same origin<br>
+               ❌ Should be blocked from external sites</p>
+        </div>
+    </body>
+    </html>
+    """  # noqa: E501
+
+
+@headers_router.get("/hsts-info", response_model=MessageResponse)
+async def hsts_info() -> MessageResponse:
+    """Information about HTTP Strict Transport Security."""
+    return MessageResponse(
+        message="HSTS (HTTP Strict Transport Security) is active",
+        details={
+            "max_age": "31536000 seconds (1 year)",
+            "include_subdomains": True,
+            "preload": False,
+            "description": "Forces HTTPS connections for improved security",
+            "note": "In production, enable preload and submit to HSTS preload list"
+        }
+    )
+
+
+@headers_router.get("/security-analysis", response_model=MessageResponse)
+async def security_analysis(request: Request) -> MessageResponse:
+    """Analyze the security headers in the current request/response."""
+    return MessageResponse(
+        message="Security analysis of current request",
+        details={
+            "request_headers": {
+                "user_agent": request.headers.get("user-agent", "Not provided"),
+                "origin": request.headers.get("origin", "Not provided"),
+                "referer": request.headers.get("referer", "Not provided"),
+                "x_forwarded_for": request.headers.get(
+                    "x-forwarded-for", "Not provided"
+                ),
+            },
+            "security_features": [
+                "Content-Type sniffing protection (X-Content-Type-Options)",
+                "Clickjacking protection (X-Frame-Options)",
+                "XSS filtering (X-XSS-Protection)",
+                "HTTPS enforcement (Strict-Transport-Security)",
+                "Content restrictions (Content-Security-Policy)",
+                "Referrer policy control",
+                "Feature permissions control",
+                "Custom security headers"
+            ],
+            "recommendations": [
+                "Always use HTTPS in production",
+                "Regularly review and tighten CSP directives",
+                "Monitor CSP violation reports",
+                "Consider HSTS preload for production domains",
+                "Test security headers with online tools"
+            ]
+        }
+    )
+
+
 # ==================== Content Filtering Router ====================
 
 content_router = APIRouter(prefix="/content", tags=["Content Filtering"])
@@ -834,6 +1115,7 @@ async def root() -> MessageResponse:
                 "Country blocking",
                 "Cloud provider blocking",
                 "Rate limiting",
+                "Security headers",
                 "Behavioral analysis",
                 "Content filtering",
                 "Authentication",
@@ -846,6 +1128,7 @@ async def root() -> MessageResponse:
                 "/auth": "Authentication examples",
                 "/rate": "Rate limiting examples",
                 "/behavior": "Behavioral analysis",
+                "/headers": "Security headers demonstration",
                 "/content": "Content filtering",
                 "/advanced": "Advanced features",
                 "/admin": "Admin utilities",
@@ -891,6 +1174,7 @@ app.include_router(access_router)
 app.include_router(auth_router)
 app.include_router(rate_router)
 app.include_router(behavior_router)
+app.include_router(headers_router)
 app.include_router(content_router)
 app.include_router(advanced_router)
 app.include_router(admin_router)
