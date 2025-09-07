@@ -669,7 +669,7 @@ ___
 Author
 ------
 
-Renzo Franceschini - [rennf93@users.noreply.github.com](mailto:rennf93@users.noreply.github.com)
+Renzo Franceschini - [rennf93@users.noreply.github.com](mailto:rennf93@users.noreply.github.com) .
 
 ___
 

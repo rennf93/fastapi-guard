@@ -33,6 +33,7 @@ on:
       - 'reqs.pip'
       - 'setup.py'
       - 'tests/**'
+  workflow_dispatch:
 
 jobs:
   pre-commit:

@@ -33,6 +33,7 @@ on:
       - 'tests/**'
   schedule:
     - cron: '0 0 * * 1'
+  workflow_dispatch:
 
 jobs:
   analyze:
@@ -132,4 +133,3 @@ jobs:
             .
           COLOR: danger
           SLACK_THREAD_TS: ${{ steps.send_initial_slack_codeql.outputs.SLACK_THREAD_TS }}
-          

@@ -9,6 +9,7 @@ on:
     paths:
       - 'examples/**'
       - '.github/workflows/container-release.yml'
+  workflow_dispatch:
 
 jobs:
   publish-container:
