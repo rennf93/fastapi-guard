@@ -595,7 +595,7 @@ async def security_headers_info() -> MessageResponse:
                 "X-App-Name: FastAPI-Guard-Example",
                 "X-Security-Contact: security@example.com",
             ],
-            "note": "Check browser developer tools to see all headers"
+            "note": "Check browser developer tools to see all headers",
         },
     )
 
@@ -747,7 +747,7 @@ async def receive_csp_report(report: dict[str, Any]) -> MessageResponse:
             "blocked_uri": violation.get("blocked-uri"),
             "source_file": violation.get("source-file"),
             "line_number": violation.get("line-number"),
-        }
+        },
     )
 
 
@@ -783,8 +783,8 @@ async def hsts_info() -> MessageResponse:
             "include_subdomains": True,
             "preload": False,
             "description": "Forces HTTPS connections for improved security",
-            "note": "In production, enable preload and submit to HSTS preload list"
-        }
+            "note": "In production, enable preload and submit to HSTS preload list",
+        },
     )
 
 
@@ -810,16 +810,16 @@ async def security_analysis(request: Request) -> MessageResponse:
                 "Content restrictions (Content-Security-Policy)",
                 "Referrer policy control",
                 "Feature permissions control",
-                "Custom security headers"
+                "Custom security headers",
             ],
             "recommendations": [
                 "Always use HTTPS in production",
                 "Regularly review and tighten CSP directives",
                 "Monitor CSP violation reports",
                 "Consider HSTS preload for production domains",
-                "Test security headers with online tools"
-            ]
-        }
+                "Test security headers with online tools",
+            ],
+        },
     )
 
 
