@@ -128,7 +128,7 @@ jobs:
 
       - name: Update Context7 Documentation
         id: context7
-        uses: rennf93/upsert-context7@1.0
+        uses: rennf93/upsert-context7@1.1
         with:
           operation: refresh
 
