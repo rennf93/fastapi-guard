@@ -156,7 +156,7 @@ class TestMiddlewareAgentIntegration:
             AsyncMock(return_value="192.168.1.100"),
         ):
             await middleware._send_middleware_event(
-                "config_violation", request, "blocked", "test reason", extra="data"
+                "decorator_violation", request, "blocked", "test reason", extra="data"
             )
 
             # Verify event was sent to agent handler
@@ -177,7 +177,7 @@ class TestMiddlewareAgentIntegration:
         request = MagicMock(spec=Request)
 
         await middleware._send_middleware_event(
-            "config_violation", request, "blocked", "test reason"
+            "decorator_violation", request, "blocked", "test reason"
         )
 
         # Should not send event
@@ -194,7 +194,7 @@ class TestMiddlewareAgentIntegration:
 
         # Should not raise any errors
         await middleware._send_middleware_event(
-            "config_violation", request, "blocked", "test reason"
+            "decorator_violation", request, "blocked", "test reason"
         )
 
     @pytest.mark.asyncio
@@ -260,7 +260,7 @@ class TestMiddlewareAgentIntegration:
             AsyncMock(return_value="192.168.1.100"),
         ):
             await middleware._send_middleware_event(
-                "config_violation", request, "blocked", "test reason"
+                "decorator_violation", request, "blocked", "test reason"
             )
 
             # Verify event was sent to agent handler
@@ -295,7 +295,7 @@ class TestMiddlewareAgentIntegration:
             AsyncMock(return_value="192.168.1.100"),
         ):
             await middleware._send_middleware_event(
-                "config_violation", request, "blocked", "test reason"
+                "decorator_violation", request, "blocked", "test reason"
             )
 
             # Should log error but not raise

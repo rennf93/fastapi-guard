@@ -58,7 +58,7 @@ class TestDecoratorAgentIntegration:
                 "basic_success",
             ),
             (
-                "config_violation",
+                "decorator_violation",
                 "allowed",
                 "test passed",
                 "custom_decorator",

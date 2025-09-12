@@ -10,10 +10,10 @@ Release Notes
 
 ___
 
-v4.1.1 (2025-09-12)
+v4.1.2 (2025-09-12)
 -------------------
 
-Enhancements (v4.1.1)
+Enhancements (v4.1.2)
 ------------
 
 - Added dynamic rule updated event type.
