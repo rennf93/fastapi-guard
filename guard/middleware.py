@@ -439,9 +439,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     passive_mode=self.config.passive_mode,
                 )
 
-                # Send decorator violation event to agent
+                # Send content filtered event to agent
                 await self._send_middleware_event(
-                    event_type="decorator_violation",
+                    event_type="content_filtered",
                     request=request,
                     action_taken="request_blocked"
                     if not self.config.passive_mode
@@ -472,9 +472,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
                 message = f"Content type {content_type} not in allowed types"
 
-                # Send decorator violation event to agent
+                # Send content filtered event to agent
                 await self._send_middleware_event(
-                    event_type="decorator_violation",
+                    event_type="content_filtered",
                     request=request,
                     action_taken="request_blocked"
                     if not self.config.passive_mode
@@ -966,7 +966,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
                 # Send passive mode detection event
                 await self._send_middleware_event(
-                    event_type="suspicious_request",
+                    event_type="penetration_attempt",
                     request=request,
                     action_taken="logged_only",
                     reason=f"{message}: {trigger_info}",
@@ -1008,6 +1008,16 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     log_type="suspicious",
                     reason=f"Suspicious activity detected for IP: {sus_specs}",
                     level=self.config.log_suspicious_level,
+                )
+
+                # Send penetration attempt event for active mode
+                await self._send_middleware_event(
+                    event_type="penetration_attempt",
+                    request=request,
+                    action_taken="request_blocked",
+                    reason=f"Penetration attempt detected: {trigger_info}",
+                    request_count=self.suspicious_request_counts[client_ip],
+                    trigger_info=trigger_info,
                 )
 
                 return await self.create_error_response(

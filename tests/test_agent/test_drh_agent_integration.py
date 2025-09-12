@@ -438,6 +438,65 @@ class TestDynamicRuleManagerUpdateRules:
         )
 
     @pytest.mark.asyncio
+    async def test_update_rules_dynamic_rule_updated_event_failure(
+        self,
+        config: SecurityConfig,
+        mock_agent_handler: AsyncMock,
+        sample_rules: DynamicRules,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Test update_rules when sending dynamic_rule_updated event fails."""
+        # Reset singleton
+        DynamicRuleManager._instance = None
+
+        manager = DynamicRuleManager(config)
+        manager.agent_handler = mock_agent_handler
+
+        # Set current rules with different version to trigger update
+        current_rules = sample_rules.model_copy()
+        current_rules.version = 1
+        manager.current_rules = current_rules
+
+        # Update sample_rules to have a newer version
+        sample_rules.version = 2
+
+        # Mock agent to return new rules
+        mock_agent_handler.get_dynamic_rules.return_value = sample_rules
+
+        # Make send_event fail when called for dynamic_rule_updated event
+        mock_agent_handler.send_event.side_effect = Exception("Network error")
+
+        # Mock the internal methods
+        with (
+            patch.object(manager, "_apply_rules", AsyncMock()) as mock_apply_rules,
+            patch.object(
+                manager, "_send_rule_applied_event", AsyncMock()
+            ) as mock_send_event,
+        ):
+            with caplog.at_level(logging.ERROR):
+                await manager.update_rules()
+
+            # Verify dynamic_rule_updated event was attempted
+            mock_agent_handler.send_event.assert_called_once()
+            sent_event = mock_agent_handler.send_event.call_args[0][0]
+            assert sent_event.event_type == "dynamic_rule_updated"
+            assert sent_event.action_taken == "rules_received"
+            assert "Received updated rules" in sent_event.reason
+
+            # Verify error was logged for failed event
+            assert "Failed to send rule updated event: Network error" in caplog.text
+
+            # Verify rules were still applied despite event failure
+            mock_apply_rules.assert_called_once_with(sample_rules)
+
+            # Verify rules were cached
+            assert manager.current_rules == sample_rules
+            assert manager.last_update > 0
+
+            # Verify the rule applied event was also sent
+            mock_send_event.assert_called_once_with(sample_rules)
+
+    @pytest.mark.asyncio
     async def test_update_rules_apply_failure(
         self,
         config: SecurityConfig,

@@ -111,7 +111,7 @@ class TestIPBanManagerAgentIntegration:
 
         # Check the unban event
         sent_event = manager.agent_handler.send_event.call_args[0][0]
-        assert sent_event.event_type == "ip_banned"
+        assert sent_event.event_type == "ip_unbanned"
         assert sent_event.ip_address == "172.16.0.1"
         assert sent_event.action_taken == "unbanned"
         assert sent_event.reason == "dynamic_rule_whitelist"
