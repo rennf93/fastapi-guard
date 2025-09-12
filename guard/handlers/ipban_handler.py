@@ -94,7 +94,7 @@ class IPBanManager:
 
             event = SecurityEvent(
                 timestamp=datetime.now(timezone.utc),
-                event_type="ip_banned",
+                event_type="ip_unbanned",
                 ip_address=ip,
                 action_taken="unbanned",
                 reason="dynamic_rule_whitelist",
