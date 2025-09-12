@@ -80,6 +80,31 @@ class DynamicRuleManager:
             ):
                 return
 
+            # Send rule updated event
+            if self.agent_handler:
+                try:
+                    from guard_agent import SecurityEvent
+
+                    reason = f"Received updated rules {rules.rule_id} v{rules.version}"
+
+                    event = SecurityEvent(
+                        timestamp=datetime.now(timezone.utc),
+                        event_type="dynamic_rule_updated",
+                        ip_address="system",
+                        action_taken="rules_received",
+                        reason=reason,
+                        metadata={
+                            "rule_id": rules.rule_id,
+                            "version": rules.version,
+                            "previous_version": self.current_rules.version
+                            if self.current_rules
+                            else 0,
+                        },
+                    )
+                    await self.agent_handler.send_event(event)
+                except Exception as e:
+                    self.logger.error(f"Failed to send rule updated event: {e}")
+
             self.logger.info(
                 f"Applying dynamic rules: {rules.rule_id} v{rules.version}"
             )
