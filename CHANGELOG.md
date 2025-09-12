@@ -8,6 +8,7 @@ v4.1.1 (2025-09-12)
 
 Enhancements (v4.1.1)
 ------------
+
 - Added dynamic rule updated event type.
 
 ___
