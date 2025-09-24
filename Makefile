@@ -55,7 +55,7 @@ restart: stop start-example
 # Lint code
 .PHONY: lint
 lint:
-	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "echo 'Formatting w/ Ruff...' ; echo '' ; ruff format . ; echo '' ; echo '' ; echo 'Linting w/ Ruff...' ; echo '' ; ruff check . ; echo '' ; echo '' ; echo 'Type checking w/ Mypy...' ; echo '' ; mypy ."
+	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "echo 'Formatting w/ Ruff...' ; echo '' ; ruff format . ; echo '' ; echo '' ; echo 'Linting w/ Ruff...' ; echo '' ; ruff check . ; echo '' ; echo '' ; echo 'Type checking w/ Mypy...' ; echo '' ; mypy . ; echo '' ; echo '' ; echo 'Finding dead code w/ Vulture...' ; echo '' ; vulture"
 	@docker compose down --rmi all --remove-orphans -v
 	@docker system prune -f
 
@@ -66,6 +66,16 @@ fix:
 	@echo ''
 	@uv run ruff check --fix .
 	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
+
+# Find dead code with Vulture
+.PHONY: vulture
+vulture:
+	@echo "Finding dead code with Vulture..."
+	@echo ''
+#	@uv run vulture
+#	@uv run vulture --verbose
+	@uv run vulture vulture_whitelist.py
+	@find . | grep -E "(__pycache__|\.pyc|\.pyo|\.pytest_cache|\.ruff_cache|\.mypy_cache)" | xargs rm -rf
 
 # Run tests (default Python version)
 .PHONY: test
@@ -181,6 +191,7 @@ help:
 	@echo "  make restart            	   - Restart example application"
 	@echo "  make lint               	   - Run linting checks"
 	@echo "  make fix                	   - Auto-fix linting issues"
+	@echo "  make vulture            	   - Find dead code with Vulture"
 	@echo "  make test               	   - Run tests with Python $(DEFAULT_PYTHON)"
 	@echo "  make test-all           	   - Run tests with all Python versions ($(PYTHON_VERSIONS))"
 	@echo "  make test-<version>     	   - Run tests with specific Python version (e.g., make test-3.10)"

@@ -20,3 +20,10 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+      - id: vulture
+        name: vulture
+        entry: uv run vulture vulture_whitelist.py
+        require_serial: true
+        language: system
+        types: [python]
+        pass_filenames: false

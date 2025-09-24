@@ -54,6 +54,7 @@ dev = [
     "ruff",
     "types-cachetools",
     "types-requests",
+    "vulture",
 ]
 
 [build-system]
@@ -68,6 +69,7 @@ allow-direct-references = true
 
 [tool.ruff]
 target-version = "py310"
+exclude = ["vulture_whitelist.py"]
 
 [tool.ruff.lint]
 select = [
@@ -107,6 +109,7 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
+exclude = ["vulture_whitelist.py"]
 
 [[tool.mypy.overrides]]
 module = "pydantic.*"
@@ -150,3 +153,34 @@ enabled = false
 [tool.pymarkdown.plugins.md046]
 # MD046 - Code block style (disabled - allow any style)
 enabled = false
+
+[tool.vulture]
+paths = ["guard", "tests", "vulture_whitelist.py"]
+exclude = ["**/conftest.py"]
+min_confidence = 100
+ignore_decorators = [
+    "@app.route",
+    "@app.get",
+    "@app.post",
+    "@app.put",
+    "@app.delete",
+    "@app.patch",
+    "@pytest.fixture",
+    "@pytest.mark.*",
+    "@validator",
+    "@root_validator",
+    "@field_validator",
+    "@model_validator",
+]
+ignore_names = [
+    "test_*",
+    "Test*",
+    "cleanup_*",
+    "mock_*",
+    "expected_*",
+    "exc_*",
+    "__*__",
+    "Config",
+    "Field",
+]
+sort_by_size = true
