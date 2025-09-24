@@ -36,6 +36,7 @@ services:
         - ./tests:/app/tests:z
         - ./pyproject.toml:/app/pyproject.toml:z
         - ./uv.lock:/app/uv.lock:z
+        - ./vulture_whitelist.py:/app/vulture_whitelist.py:z
       depends_on:
         redis:
           condition: service_started
