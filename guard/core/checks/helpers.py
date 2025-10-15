@@ -107,6 +107,29 @@ def check_country_access(
     return None
 
 
+def _check_ip_blacklist(
+    client_ip: str, ip_addr: object, route_config: RouteConfig
+) -> bool:
+    """Check if IP is in route blacklist. Returns True if blocked."""
+    if not route_config.ip_blacklist:
+        return False
+    return is_ip_in_blacklist(client_ip, ip_addr, route_config.ip_blacklist)
+
+
+def _check_ip_whitelist(
+    client_ip: str, ip_addr: object, route_config: RouteConfig
+) -> bool | None:
+    """
+    Check if IP is in route whitelist.
+
+    Returns:
+        True if whitelisted
+        False if whitelist exists but IP not in it
+        None if no whitelist configured
+    """
+    return is_ip_in_whitelist(client_ip, ip_addr, route_config.ip_whitelist or [])
+
+
 async def check_route_ip_access(
     client_ip: str, route_config: RouteConfig, middleware: Any
 ) -> bool | None:
@@ -127,14 +150,11 @@ async def check_route_ip_access(
         ip_addr = ip_address(client_ip)
 
         # Check IP blacklist
-        if route_config.ip_blacklist:
-            if is_ip_in_blacklist(client_ip, ip_addr, route_config.ip_blacklist):
-                return False
+        if _check_ip_blacklist(client_ip, ip_addr, route_config):
+            return False
 
         # Check IP whitelist
-        whitelist_result = is_ip_in_whitelist(
-            client_ip, ip_addr, route_config.ip_whitelist or []
-        )
+        whitelist_result = _check_ip_whitelist(client_ip, ip_addr, route_config)
         if whitelist_result is not None:
             return whitelist_result
 
@@ -256,6 +276,38 @@ def is_referrer_domain_allowed(referrer: str, allowed_domains: list[str]) -> boo
 # Suspicious activity helpers
 
 
+def _get_effective_penetration_setting(
+    config: SecurityConfig, route_config: RouteConfig | None
+) -> tuple[bool, bool | None]:
+    """
+    Get effective penetration detection setting.
+
+    Args:
+        config: Global security configuration
+        route_config: Route-specific configuration
+
+    Returns:
+        Tuple of (penetration_enabled, route_specific_detection)
+    """
+    route_specific_detection = None
+    penetration_enabled = config.enable_penetration_detection
+
+    if route_config and hasattr(route_config, "enable_suspicious_detection"):
+        route_specific_detection = route_config.enable_suspicious_detection
+        penetration_enabled = route_specific_detection
+
+    return penetration_enabled, route_specific_detection
+
+
+def _get_detection_disabled_reason(
+    config: SecurityConfig, route_specific_detection: bool | None
+) -> str:
+    """Get reason why detection is disabled."""
+    if route_specific_detection is False and config.enable_penetration_detection:
+        return "disabled_by_decorator"
+    return "not_enabled"
+
+
 async def detect_penetration_patterns(
     request: Request,
     route_config: RouteConfig | None,
@@ -294,20 +346,15 @@ async def detect_penetration_patterns(
         >>> result, info = await detect_penetration_patterns(...)
         >>> (False, "disabled_by_decorator")
     """
-    penetration_enabled = config.enable_penetration_detection
-    route_specific_detection = None
-
-    if route_config and hasattr(route_config, "enable_suspicious_detection"):
-        route_specific_detection = route_config.enable_suspicious_detection
-        penetration_enabled = route_specific_detection
+    # Get effective penetration detection setting
+    penetration_enabled, route_specific_detection = _get_effective_penetration_setting(
+        config, route_config
+    )
 
     # Run detection if enabled and not bypassed
     if penetration_enabled and not should_bypass_check_fn("penetration", route_config):
         return await detect_penetration_attempt(request)
 
-    # Detection disabled by decorator - return flag indicating this
-    if route_specific_detection is False and config.enable_penetration_detection:
-        return False, "disabled_by_decorator"
-
-    # Detection not enabled
-    return False, "not_enabled"
+    # Detection disabled - return reason
+    reason = _get_detection_disabled_reason(config, route_specific_detection)
+    return False, reason

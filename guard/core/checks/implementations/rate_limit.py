@@ -25,35 +25,10 @@ class RateLimitCheck(SecurityCheck):
     def check_name(self) -> str:
         return "rate_limit"
 
-    async def _apply_rate_limit_check(
-        self,
-        request: Request,
-        client_ip: str,
-        rate_limit: int,
-        window: int,
-        event_type: str,
-        event_kwargs: dict[str, Any],
-    ) -> Response | None:
-        """
-        Apply rate limit check with given configuration and send events if exceeded.
-
-        This uses the ORIGINAL working delegation pattern from middleware.py:
-        Creates a temporary RateLimitManager and calls its check_rate_limit() method.
-
-        Args:
-            request: The request object
-            client_ip: Client IP address
-            rate_limit: Number of requests allowed
-            window: Time window in seconds
-            event_type: Type of event to send
-                (dynamic_rule_violation or decorator_violation)
-            event_kwargs: Additional event metadata for agent reporting
-
-        Returns:
-            Response if rate limit exceeded (and not in passive mode), None otherwise
-        """
-        # Create temporary rate limit config and handler
-        # This is the ORIGINAL working approach from middleware.py
+    async def _create_rate_handler(
+        self, rate_limit: int, window: int
+    ) -> RateLimitManager:
+        """Create and initialize a temporary rate limit handler."""
         rate_config = SecurityConfig(
             rate_limit=rate_limit,
             rate_limit_window=window,
@@ -64,36 +39,116 @@ class RateLimitCheck(SecurityCheck):
         rate_handler = RateLimitManager(rate_config)
         if self.middleware.redis_handler:
             await rate_handler.initialize_redis(self.middleware.redis_handler)
+        return rate_handler
 
-        # Check rate limit using the handler's check_rate_limit() method
+    async def _send_rate_limit_event(
+        self,
+        request: Request,
+        event_type: str,
+        event_kwargs: dict[str, Any],
+    ) -> None:
+        """Send rate limit violation event to agent."""
+        await self.middleware.event_bus.send_middleware_event(
+            event_type=event_type,
+            request=request,
+            action_taken="request_blocked"
+            if not self.config.passive_mode
+            else "logged_only",
+            **event_kwargs,
+        )
+
+    async def _apply_rate_limit_check(
+        self,
+        request: Request,
+        client_ip: str,
+        rate_limit: int,
+        window: int,
+        event_type: str,
+        event_kwargs: dict[str, Any],
+    ) -> Response | None:
+        """Apply rate limit check and send events if exceeded."""
+        # Create and use temporary rate limit handler
+        rate_handler = await self._create_rate_handler(rate_limit, window)
         response = await rate_handler.check_rate_limit(
             request, client_ip, self.middleware.create_error_response
         )
 
-        # Send event if rate limit exceeded
+        # Send event and handle passive mode
         if response is not None:
-            await self.middleware.event_bus.send_middleware_event(
-                event_type=event_type,
-                request=request,
-                action_taken="request_blocked"
-                if not self.config.passive_mode
-                else "logged_only",
-                **event_kwargs,
-            )
-
+            await self._send_rate_limit_event(request, event_type, event_kwargs)
             if self.config.passive_mode:
-                return None  # Don't block in passive mode
+                return None
+
+        return response
+
+    async def _check_endpoint_rate_limit(
+        self, request: Request, client_ip: str, endpoint_path: str
+    ) -> Response | None:
+        """Priority 1: Check endpoint-specific rate limit."""
+        if endpoint_path not in self.config.endpoint_rate_limits:
+            return None
+
+        rate_limit, window = self.config.endpoint_rate_limits[endpoint_path]
+        return await self._apply_rate_limit_check(
+            request,
+            client_ip,
+            rate_limit,
+            window,
+            "dynamic_rule_violation",
+            {
+                "reason": (
+                    f"Endpoint-specific rate limit exceeded: {rate_limit} "
+                    f"requests per {window}s for {endpoint_path}"
+                ),
+                "rule_type": "endpoint_rate_limit",
+                "endpoint": endpoint_path,
+                "rate_limit": rate_limit,
+                "window": window,
+            },
+        )
+
+    async def _check_route_rate_limit(
+        self, request: Request, client_ip: str, route_config: Any
+    ) -> Response | None:
+        """Priority 2: Check route-specific rate limit."""
+        if not route_config or route_config.rate_limit is None:
+            return None
+
+        window = route_config.rate_limit_window or 60
+        return await self._apply_rate_limit_check(
+            request,
+            client_ip,
+            route_config.rate_limit,
+            window,
+            "decorator_violation",
+            {
+                "reason": (
+                    f"Route-specific rate limit exceeded: "
+                    f"{route_config.rate_limit} requests per {window}s"
+                ),
+                "decorator_type": "rate_limiting",
+                "violation_type": "rate_limit",
+                "rate_limit": route_config.rate_limit,
+                "window": window,
+            },
+        )
+
+    async def _check_global_rate_limit(
+        self, request: Request, client_ip: str
+    ) -> Response | None:
+        """Priority 3: Check global rate limiting."""
+        response = await self.middleware.rate_limit_handler.check_rate_limit(
+            request, client_ip, self.middleware.create_error_response
+        )
+
+        if response is not None and self.config.passive_mode:
+            return None
 
         return response
 
     async def check(self, request: Request) -> Response | None:
         """
-        Check rate limiting with route overrides and dynamic endpoint-specific config.
-
-        Three-tier priority system:
-        1. Endpoint-specific rate limits (from config.endpoint_rate_limits)
-        2. Route-specific rate limits (from decorator configuration)
-        3. Global rate limiting (from middleware rate_limit_handler)
+        Check rate limiting with three-tier priority system.
 
         Returns:
             Response if rate limit exceeded, None if allowed
@@ -112,55 +167,17 @@ class RateLimitCheck(SecurityCheck):
 
         endpoint_path = request.url.path
 
-        # Priority 1: Endpoint-specific rate limit (dynamic rules)
-        if endpoint_path in self.config.endpoint_rate_limits:
-            rate_limit, window = self.config.endpoint_rate_limits[endpoint_path]
-            return await self._apply_rate_limit_check(
-                request,
-                client_ip,
-                rate_limit,
-                window,
-                "dynamic_rule_violation",
-                {
-                    "reason": (
-                        f"Endpoint-specific rate limit exceeded: {rate_limit} "
-                        f"requests per {window}s for {endpoint_path}"
-                    ),
-                    "rule_type": "endpoint_rate_limit",
-                    "endpoint": endpoint_path,
-                    "rate_limit": rate_limit,
-                    "window": window,
-                },
-            )
+        # Priority 1: Endpoint-specific rate limit
+        if response := await self._check_endpoint_rate_limit(
+            request, client_ip, endpoint_path
+        ):
+            return response
 
-        # Priority 2: Route-specific rate limit (decorator config)
-        if route_config and route_config.rate_limit is not None:
-            window = route_config.rate_limit_window or 60
-            return await self._apply_rate_limit_check(
-                request,
-                client_ip,
-                route_config.rate_limit,
-                window,
-                "decorator_violation",
-                {
-                    "reason": (
-                        f"Route-specific rate limit exceeded: "
-                        f"{route_config.rate_limit} requests per {window}s"
-                    ),
-                    "decorator_type": "rate_limiting",
-                    "violation_type": "rate_limit",
-                    "rate_limit": route_config.rate_limit,
-                    "window": window,
-                },
-            )
+        # Priority 2: Route-specific rate limit
+        if response := await self._check_route_rate_limit(
+            request, client_ip, route_config
+        ):
+            return response
 
         # Priority 3: Global rate limiting
-        # The rate_limit_handler will check if enable_rate_limiting is True
-        response = await self.middleware.rate_limit_handler.check_rate_limit(
-            request, client_ip, self.middleware.create_error_response
-        )
-
-        if response is not None and self.config.passive_mode:
-            return None  # Don't block in passive mode
-
-        return response
+        return await self._check_global_rate_limit(request, client_ip)
