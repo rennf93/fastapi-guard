@@ -634,7 +634,7 @@ class TestMiddlewareAgentIntegration:
         middleware.metrics_collector.agent_handler = middleware.agent_handler
 
         with patch.object(
-            middleware, "_get_route_decorator_config", return_value=route_config
+            middleware.route_resolver, "get_route_config", return_value=route_config
         ):
             request = MagicMock(spec=Request)
             request.client = MagicMock(host="127.0.0.1")
@@ -669,7 +669,7 @@ class TestMiddlewareAgentIntegration:
         middleware.metrics_collector.agent_handler = middleware.agent_handler
 
         with patch.object(
-            middleware, "_get_route_decorator_config", return_value=route_config
+            middleware.route_resolver, "get_route_config", return_value=route_config
         ):
             request = MagicMock(spec=Request)
             request.client = MagicMock(host="127.0.0.1")
@@ -700,7 +700,7 @@ class TestMiddlewareAgentIntegration:
         middleware.agent_handler = AsyncMock()
 
         with patch.object(
-            middleware, "_get_route_decorator_config", return_value=route_config
+            middleware.route_resolver, "get_route_config", return_value=route_config
         ):
             with patch("urllib.parse.urlparse", side_effect=Exception("Parse error")):
                 request = MagicMock(spec=Request)
@@ -732,7 +732,7 @@ class TestMiddlewareAgentIntegration:
         middleware.metrics_collector.agent_handler = middleware.agent_handler
 
         with patch.object(
-            middleware, "_get_route_decorator_config", return_value=route_config
+            middleware.route_resolver, "get_route_config", return_value=route_config
         ):
             request = MagicMock(spec=Request)
             request.client = MagicMock(host="127.0.0.1")
@@ -767,7 +767,7 @@ class TestMiddlewareAgentIntegration:
         middleware.metrics_collector.agent_handler = middleware.agent_handler
 
         with patch.object(
-            middleware, "_get_route_decorator_config", return_value=route_config
+            middleware.route_resolver, "get_route_config", return_value=route_config
         ):
             request = MagicMock(spec=Request)
             request.client = MagicMock(host="127.0.0.1")
@@ -810,7 +810,7 @@ class TestMiddlewareAgentIntegration:
         middleware.metrics_collector.agent_handler = middleware.agent_handler
 
         with patch.object(
-            middleware, "_get_route_decorator_config", return_value=route_config
+            middleware.route_resolver, "get_route_config", return_value=route_config
         ):
             request = MagicMock(spec=Request)
             request.client = MagicMock(host="127.0.0.1")
@@ -946,7 +946,7 @@ class TestMiddlewareAgentIntegration:
 
         with (
             patch.object(
-                middleware, "_get_route_decorator_config", return_value=route_config
+                middleware.route_resolver, "get_route_config", return_value=route_config
             ),
             patch(
                 "guard.middleware_components.checks.implementations.rate_limit.RateLimitManager",

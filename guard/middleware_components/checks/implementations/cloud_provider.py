@@ -3,7 +3,6 @@
 
 from fastapi import Request, Response, status
 
-from guard.decorators.base import RouteConfig
 from guard.handlers.cloud_handler import cloud_handler
 from guard.middleware_components.checks.base import SecurityCheck
 from guard.utils import log_activity
@@ -16,16 +15,6 @@ class CloudProviderCheck(SecurityCheck):
     def check_name(self) -> str:
         return "cloud_provider"
 
-    def _get_cloud_providers_to_check(
-        self, route_config: RouteConfig | None
-    ) -> list[str] | None:
-        """Get list of cloud providers to check (route-specific or global)."""
-        if route_config and route_config.block_cloud_providers:
-            return list(route_config.block_cloud_providers)
-        if self.config.block_cloud_providers:
-            return list(self.config.block_cloud_providers)
-        return None
-
     async def check(self, request: Request) -> Response | None:
         """Check cloud provider blocking."""
         client_ip = getattr(request.state, "client_ip", None)
@@ -33,11 +22,13 @@ class CloudProviderCheck(SecurityCheck):
         if not client_ip:
             return None
 
-        if self.middleware._should_bypass_check("clouds", route_config):
+        if self.middleware.route_resolver.should_bypass_check("clouds", route_config):
             return None
 
         # Get cloud providers to check
-        cloud_providers_to_check = self._get_cloud_providers_to_check(route_config)
+        cloud_providers_to_check = (
+            self.middleware.route_resolver.get_cloud_providers_to_check(route_config)
+        )
         if not cloud_providers_to_check:
             return None
 

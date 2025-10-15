@@ -18,6 +18,7 @@ from guard.middleware_components.checks.pipeline import SecurityCheckPipeline
 from guard.middleware_components.events import MetricsCollector, SecurityEventBus
 from guard.middleware_components.initialization import HandlerInitializer
 from guard.middleware_components.responses import ErrorResponseFactory, ResponseContext
+from guard.middleware_components.routing import RouteConfigResolver, RoutingContext
 from guard.models import SecurityConfig
 from guard.utils import (
     extract_client_ip,
@@ -121,6 +122,14 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             guard_decorator=self.guard_decorator,
         )
         self.response_factory = ErrorResponseFactory(response_context)
+
+        # Initialize route config resolver
+        routing_context = RoutingContext(
+            config=self.config,
+            logger=self.logger,
+            guard_decorator=self.guard_decorator,
+        )
+        self.route_resolver = RouteConfigResolver(routing_context)
 
     def _build_security_pipeline(self) -> None:
         """Build the security check pipeline with configured checks."""
@@ -359,7 +368,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         route_config: RouteConfig | None,
     ) -> Response | None:
         """Handle bypassed security checks."""
-        if not route_config or not self._should_bypass_check("all", route_config):
+        if not route_config or not self.route_resolver.should_bypass_check(
+            "all", route_config
+        ):
             return None
 
         # Send security bypass event for monitoring
@@ -396,7 +407,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response | None:
         """Handle bypassed security checks and return response if applicable."""
-        if route_config and self._should_bypass_check("all", route_config):
+        if route_config and self.route_resolver.should_bypass_check(
+            "all", route_config
+        ):
             # Send security bypass event for monitoring
             await self.event_bus.send_middleware_event(
                 event_type="security_bypass",
@@ -433,15 +446,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             process_behavioral_rules=self._process_decorator_return_rules,
         )
 
-    def _get_cloud_providers_to_check(
-        self, route_config: RouteConfig | None
-    ) -> list[str] | None:
-        """Get list of cloud providers to check (route-specific or global)."""
-        if route_config and route_config.block_cloud_providers:
-            return list(route_config.block_cloud_providers)
-        if self.config.block_cloud_providers:
-            return list(self.config.block_cloud_providers)
-        return None
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
@@ -469,7 +473,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         # Get route config for bypass check before pipeline
         client_ip = await extract_client_ip(request, self.config, self.agent_handler)
-        route_config = self._get_route_decorator_config(request)
+        route_config = self.route_resolver.get_route_config(request)
 
         # Handle bypassed security checks
         bypass_response = await self._handle_security_bypass(
@@ -506,81 +510,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             request, response, response_time, route_config
         )
 
-    def _get_guard_decorator(self, app: Any) -> BaseSecurityDecorator | None:
-        """
-        Get the guard decorator instance from app state or middleware.
 
-        Returns:
-            BaseSecurityDecorator instance or None if not available
-        """
-        # Try to get decorator from app state first
-        if app and hasattr(app, "state") and hasattr(app.state, "guard_decorator"):
-            app_guard_decorator = app.state.guard_decorator
-            if isinstance(app_guard_decorator, BaseSecurityDecorator):
-                return app_guard_decorator
 
-        # Fall back to middleware-level decorator
-        return self.guard_decorator if self.guard_decorator else None
 
-    def _is_matching_route(
-        self, route: Any, path: str, method: str
-    ) -> tuple[bool, str | None]:
-        """
-        Check if a route matches the request path and method, and has a guard route ID.
-
-        Returns:
-            Tuple of (is_match, route_id): is_match is True if route matches,
-            route_id is the guard route ID if found, None otherwise
-        """
-        # Check if route has required attributes
-        if not hasattr(route, "path") or not hasattr(route, "methods"):
-            return False, None
-
-        # Check path and method match
-        if route.path != path or method not in route.methods:
-            return False, None
-
-        # Check for guard route ID
-        if not hasattr(route, "endpoint") or not hasattr(
-            route.endpoint, "_guard_route_id"
-        ):
-            return False, None
-
-        return True, route.endpoint._guard_route_id
-
-    def _get_route_decorator_config(self, request: Request) -> RouteConfig | None:
-        """Get route-specific security configuration from decorators."""
-        app = request.scope.get("app")
-
-        # Get decorator instance
-        guard_decorator = self._get_guard_decorator(app)
-        if not guard_decorator:
-            return None
-
-        # Try to find matching route
-        if not app:
-            return None
-
-        path = request.url.path
-        method = request.method
-
-        for route in app.routes:
-            is_match, route_id = self._is_matching_route(route, path, method)
-            if is_match and route_id:
-                return guard_decorator.get_route_config(route_id)
-
-        return None
-
-    def _should_bypass_check(
-        self, check_name: str, route_config: RouteConfig | None
-    ) -> bool:
-        """Check if a security check should be bypassed."""
-        if not route_config:
-            return False
-        return (
-            check_name in route_config.bypassed_checks
-            or "all" in route_config.bypassed_checks
-        )
 
     async def _process_decorator_usage_rules(
         self, request: Request, client_ip: str, route_config: RouteConfig

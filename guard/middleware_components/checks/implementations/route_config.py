@@ -20,7 +20,7 @@ class RouteConfigCheck(SecurityCheck):
 
     async def check(self, request: Request) -> Response | None:
         """Extract route config and attach to request state."""
-        route_config = self.middleware._get_route_decorator_config(request)
+        route_config = self.middleware.route_resolver.get_route_config(request)
         # Store in request state for other checks to access
         request.state.route_config = route_config
         request.state.client_ip = await extract_client_ip(

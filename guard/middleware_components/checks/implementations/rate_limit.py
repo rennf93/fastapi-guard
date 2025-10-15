@@ -105,7 +105,7 @@ class RateLimitCheck(SecurityCheck):
             return None
 
         # Check if rate limit should be bypassed
-        if route_config and self.middleware._should_bypass_check(
+        if route_config and self.middleware.route_resolver.should_bypass_check(
             "rate_limit", route_config
         ):
             return None

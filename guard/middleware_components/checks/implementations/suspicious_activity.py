@@ -141,7 +141,7 @@ class SuspiciousActivityCheck(SecurityCheck):
             request,
             route_config,
             self.config,
-            self.middleware._should_bypass_check,
+            self.middleware.route_resolver.should_bypass_check,
         )
 
         # Detection disabled by decorator - send event

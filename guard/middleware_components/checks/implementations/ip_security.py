@@ -21,7 +21,7 @@ class IpSecurityCheck(SecurityCheck):
         self, request: Request, client_ip: str, route_config: RouteConfig | None
     ) -> Response | None:
         """Check if IP is banned and handle accordingly."""
-        if self.middleware._should_bypass_check("ip_ban", route_config):
+        if self.middleware.route_resolver.should_bypass_check("ip_ban", route_config):
             return None
 
         if not await ip_ban_manager.is_ip_banned(client_ip):
@@ -137,7 +137,7 @@ class IpSecurityCheck(SecurityCheck):
             return ban_response
 
         # Check IP allowlist/blocklist (with route overrides)
-        if self.middleware._should_bypass_check("ip", route_config):
+        if self.middleware.route_resolver.should_bypass_check("ip", route_config):
             return None
 
         # Route-specific IP restrictions
