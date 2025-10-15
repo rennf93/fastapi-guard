@@ -8,21 +8,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
+from guard.core.behavioral import (
+    BehavioralContext,
+    BehavioralProcessor,
+)
+from guard.core.bypass import BypassContext, BypassHandler
+from guard.core.checks.pipeline import SecurityCheckPipeline
+from guard.core.events import MetricsCollector, SecurityEventBus
+from guard.core.initialization import HandlerInitializer
+from guard.core.responses import ErrorResponseFactory, ResponseContext
+from guard.core.routing import RouteConfigResolver, RoutingContext
+from guard.core.validation import RequestValidator, ValidationContext
 from guard.decorators.base import BaseSecurityDecorator, RouteConfig
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ratelimit_handler import RateLimitManager
 from guard.handlers.security_headers_handler import security_headers_manager
-from guard.middleware_components.behavioral import (
-    BehavioralContext,
-    BehavioralProcessor,
-)
-from guard.middleware_components.bypass import BypassContext, BypassHandler
-from guard.middleware_components.checks.pipeline import SecurityCheckPipeline
-from guard.middleware_components.events import MetricsCollector, SecurityEventBus
-from guard.middleware_components.initialization import HandlerInitializer
-from guard.middleware_components.responses import ErrorResponseFactory, ResponseContext
-from guard.middleware_components.routing import RouteConfigResolver, RoutingContext
-from guard.middleware_components.validation import RequestValidator, ValidationContext
 from guard.models import SecurityConfig
 from guard.utils import (
     extract_client_ip,
@@ -165,7 +165,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
     def _build_security_pipeline(self) -> None:
         """Build the security check pipeline with configured checks."""
-        from guard.middleware_components.checks import (
+        from guard.core.checks import (
             AuthenticationCheck,
             CloudIpRefreshCheck,
             CloudProviderCheck,
@@ -278,7 +278,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self, client_ip: str, route_config: RouteConfig
     ) -> bool | None:
         """Check route-specific IP restrictions (for tests)."""
-        from guard.middleware_components.checks.helpers import check_route_ip_access
+        from guard.core.checks.helpers import check_route_ip_access
 
         return await check_route_ip_access(client_ip, route_config, self)
 
@@ -286,7 +286,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self, user_agent: str, route_config: RouteConfig | None
     ) -> bool:
         """Check if user agent is allowed (for tests)."""
-        from guard.middleware_components.checks.helpers import check_user_agent_allowed
+        from guard.core.checks.helpers import check_user_agent_allowed
 
         return await check_user_agent_allowed(user_agent, route_config, self.config)
 

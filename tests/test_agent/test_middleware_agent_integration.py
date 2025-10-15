@@ -607,7 +607,7 @@ class TestMiddlewareAgentIntegration:
         with (
             patch("guard.utils.log_activity", new_callable=AsyncMock),
             patch(
-                "guard.middleware_components.checks.helpers.detect_penetration_attempt",
+                "guard.core.checks.helpers.detect_penetration_attempt",
                 new_callable=AsyncMock,
                 return_value=(False, ""),
             ),
@@ -866,7 +866,7 @@ class TestMiddlewareAgentIntegration:
 
         with (
             patch(
-                "guard.middleware_components.checks.implementations.rate_limit.RateLimitManager",
+                "guard.core.checks.implementations.rate_limit.RateLimitManager",
                 return_value=mock_rate_handler,
             ),
             patch(
@@ -876,7 +876,7 @@ class TestMiddlewareAgentIntegration:
             ),
             patch("guard.utils.log_activity", new_callable=AsyncMock),
             patch(
-                "guard.middleware_components.checks.helpers.detect_penetration_attempt",
+                "guard.core.checks.helpers.detect_penetration_attempt",
                 new_callable=AsyncMock,
                 return_value=(False, ""),
             ),
@@ -949,7 +949,7 @@ class TestMiddlewareAgentIntegration:
                 middleware.route_resolver, "get_route_config", return_value=route_config
             ),
             patch(
-                "guard.middleware_components.checks.implementations.rate_limit.RateLimitManager",
+                "guard.core.checks.implementations.rate_limit.RateLimitManager",
                 return_value=mock_rate_handler,
             ),
             patch(
@@ -959,7 +959,7 @@ class TestMiddlewareAgentIntegration:
             ),
             patch("guard.utils.log_activity", new_callable=AsyncMock),
             patch(
-                "guard.middleware_components.checks.helpers.detect_penetration_attempt",
+                "guard.core.checks.helpers.detect_penetration_attempt",
                 new_callable=AsyncMock,
                 return_value=(False, ""),
             ),
@@ -1031,11 +1031,11 @@ class TestMiddlewareAgentIntegration:
 
         with (
             patch(
-                "guard.middleware_components.checks.implementations.cloud_provider.cloud_handler",
+                "guard.core.checks.implementations.cloud_provider.cloud_handler",
                 mock_cloud_handler,
             ),
             patch(
-                "guard.middleware_components.checks.implementations.cloud_ip_refresh.time",
+                "guard.core.checks.implementations.cloud_ip_refresh.time",
                 mock_time,
             ),
             patch(
@@ -1045,7 +1045,7 @@ class TestMiddlewareAgentIntegration:
             ),
             patch("guard.utils.log_activity", new_callable=AsyncMock),
             patch(
-                "guard.middleware_components.checks.helpers.detect_penetration_attempt",
+                "guard.core.checks.helpers.detect_penetration_attempt",
                 new_callable=AsyncMock,
                 return_value=(False, ""),
             ),

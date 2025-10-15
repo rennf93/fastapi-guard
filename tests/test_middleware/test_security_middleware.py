@@ -870,10 +870,10 @@ async def test_cloud_ip_blocking_with_logging() -> None:
     with (
         patch.object(cloud_handler, "is_cloud_ip", return_value=True),
         patch(
-            "guard.middleware_components.checks.implementations.cloud_provider.log_activity"
+            "guard.core.checks.implementations.cloud_provider.log_activity"
         ) as mock_log,
         patch(
-            "guard.middleware_components.checks.implementations.ip_security.is_ip_allowed",
+            "guard.core.checks.implementations.ip_security.is_ip_allowed",
             new_callable=AsyncMock,
             return_value=True,
         ),
@@ -918,7 +918,7 @@ async def test_cloud_ip_blocking_with_logging() -> None:
     with (
         patch.object(cloud_handler, "is_cloud_ip", return_value=False),
         patch(
-            "guard.middleware_components.checks.implementations.ip_security.is_ip_allowed",
+            "guard.core.checks.implementations.ip_security.is_ip_allowed",
             new_callable=AsyncMock,
             return_value=True,
         ),
@@ -1192,12 +1192,12 @@ async def test_passive_mode_penetration_detection() -> None:
 
     with (
         patch(
-            "guard.middleware_components.checks.implementations.suspicious_activity.detect_penetration_patterns",
+            "guard.core.checks.implementations.suspicious_activity.detect_penetration_patterns",
             new_callable=AsyncMock,
             return_value=(True, "SQL injection attempt"),
         ) as mock_detect,
         patch(
-            "guard.middleware_components.checks.implementations.suspicious_activity.log_activity"
+            "guard.core.checks.implementations.suspicious_activity.log_activity"
         ) as mock_log,
         patch(
             "guard.utils.detect_penetration_attempt",

@@ -81,9 +81,7 @@ async def test_time_window_restrictions(
     mock_datetime = datetime(2024, 1, 1, mock_hour, 0, 0, tzinfo=timezone.utc)
 
     # Patch datetime at both locations where it's used
-    with patch(
-        "guard.middleware_components.checks.implementations.time_window.datetime"
-    ) as mock_dt:
+    with patch("guard.core.checks.implementations.time_window.datetime") as mock_dt:
         mock_dt.now.return_value = mock_datetime
         mock_dt.side_effect = lambda *args, **kw: datetime(*args, **kw)
 

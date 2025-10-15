@@ -228,25 +228,19 @@ async def test_time_window_overnight() -> None:
     time_restrictions = {"start": "22:00", "end": "06:00"}
 
     # Test time within overnight window (after start)
-    with patch(
-        "guard.middleware_components.validation.validator.datetime"
-    ) as mock_datetime:
+    with patch("guard.core.validation.validator.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "23:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is True
 
     # Test time within overnight window (before end)
-    with patch(
-        "guard.middleware_components.validation.validator.datetime"
-    ) as mock_datetime:
+    with patch("guard.core.validation.validator.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "05:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is True
 
     # Test time outside overnight window
-    with patch(
-        "guard.middleware_components.validation.validator.datetime"
-    ) as mock_datetime:
+    with patch("guard.core.validation.validator.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "12:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is False
@@ -261,17 +255,13 @@ async def test_time_window_normal() -> None:
     time_restrictions = {"start": "09:00", "end": "17:00"}
 
     # Test time within normal window
-    with patch(
-        "guard.middleware_components.validation.validator.datetime"
-    ) as mock_datetime:
+    with patch("guard.core.validation.validator.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "12:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is True
 
     # Test time outside normal window
-    with patch(
-        "guard.middleware_components.validation.validator.datetime"
-    ) as mock_datetime:
+    with patch("guard.core.validation.validator.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "20:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is False
