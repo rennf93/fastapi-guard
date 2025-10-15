@@ -60,11 +60,15 @@ async def test_should_bypass_check() -> None:
     mock_route_config = Mock()
     mock_route_config.bypassed_checks = {"ip"}
     assert middleware.route_resolver.should_bypass_check("ip", mock_route_config)
-    assert not middleware.route_resolver.should_bypass_check("rate_limit", mock_route_config)
+    assert not middleware.route_resolver.should_bypass_check(
+        "rate_limit", mock_route_config
+    )
 
     mock_route_config.bypassed_checks = {"all"}
     assert middleware.route_resolver.should_bypass_check("ip", mock_route_config)
-    assert middleware.route_resolver.should_bypass_check("rate_limit", mock_route_config)
+    assert middleware.route_resolver.should_bypass_check(
+        "rate_limit", mock_route_config
+    )
 
 
 async def test_check_route_ip_access_invalid_ip() -> None:
@@ -224,19 +228,25 @@ async def test_time_window_overnight() -> None:
     time_restrictions = {"start": "22:00", "end": "06:00"}
 
     # Test time within overnight window (after start)
-    with patch("guard.middleware.datetime") as mock_datetime:
+    with patch(
+        "guard.middleware_components.validation.validator.datetime"
+    ) as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "23:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is True
 
     # Test time within overnight window (before end)
-    with patch("guard.middleware.datetime") as mock_datetime:
+    with patch(
+        "guard.middleware_components.validation.validator.datetime"
+    ) as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "05:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is True
 
     # Test time outside overnight window
-    with patch("guard.middleware.datetime") as mock_datetime:
+    with patch(
+        "guard.middleware_components.validation.validator.datetime"
+    ) as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "12:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is False
@@ -251,13 +261,17 @@ async def test_time_window_normal() -> None:
     time_restrictions = {"start": "09:00", "end": "17:00"}
 
     # Test time within normal window
-    with patch("guard.middleware.datetime") as mock_datetime:
+    with patch(
+        "guard.middleware_components.validation.validator.datetime"
+    ) as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "12:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is True
 
     # Test time outside normal window
-    with patch("guard.middleware.datetime") as mock_datetime:
+    with patch(
+        "guard.middleware_components.validation.validator.datetime"
+    ) as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "20:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is False
@@ -415,7 +429,7 @@ async def test_get_route_decorator_config_no_guard_decorator() -> None:
 
 
 async def test_get_route_decorator_config_fallback_to_middleware_decorator() -> None:
-    """Test get_route_config (via route_resolver) falls back to middleware guard_decorator."""
+    """Test get_route_config falls back to middleware guard_decorator."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)

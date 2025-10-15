@@ -1,5 +1,6 @@
 # guard/middleware_components/responses/factory.py
 """Factory for creating and processing HTTP responses."""
+
 from collections.abc import Awaitable, Callable
 
 from fastapi import Request, Response, status
@@ -151,11 +152,7 @@ class ErrorResponseFactory:
             Processed response with headers, metrics collected, and modifier applied
         """
         # Process behavioral rules after response (if callback provided)
-        if (
-            route_config
-            and route_config.behavior_rules
-            and process_behavioral_rules
-        ):
+        if route_config and route_config.behavior_rules and process_behavioral_rules:
             client_ip = await extract_client_ip(
                 request, self.context.config, self.context.agent_handler
             )
@@ -167,9 +164,7 @@ class ErrorResponseFactory:
         )
 
         # Add security headers if enabled
-        response = await self.apply_security_headers(
-            response, str(request.url.path)
-        )
+        response = await self.apply_security_headers(response, str(request.url.path))
 
         # Add CORS headers if origin is present
         origin = request.headers.get("origin")

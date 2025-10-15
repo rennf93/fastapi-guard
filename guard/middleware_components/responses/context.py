@@ -1,5 +1,6 @@
 # guard/middleware_components/responses/context.py
 """Response context for dependency injection."""
+
 from dataclasses import dataclass
 from logging import Logger
 from typing import Any

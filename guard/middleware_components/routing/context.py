@@ -1,5 +1,6 @@
 # guard/middleware_components/routing/context.py
 """Routing context for dependency injection."""
+
 from dataclasses import dataclass
 from logging import Logger
 

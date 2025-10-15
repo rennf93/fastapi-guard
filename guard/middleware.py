@@ -1,8 +1,6 @@
 # fastapi_guard/middleware.py
 import time
 from collections.abc import Awaitable, Callable
-from datetime import datetime, timezone
-from ipaddress import ip_address, ip_network
 from typing import Any
 
 from fastapi import FastAPI, Request, Response
@@ -14,11 +12,17 @@ from guard.decorators.base import BaseSecurityDecorator, RouteConfig
 from guard.handlers.cloud_handler import cloud_handler
 from guard.handlers.ratelimit_handler import RateLimitManager
 from guard.handlers.security_headers_handler import security_headers_manager
+from guard.middleware_components.behavioral import (
+    BehavioralContext,
+    BehavioralProcessor,
+)
+from guard.middleware_components.bypass import BypassContext, BypassHandler
 from guard.middleware_components.checks.pipeline import SecurityCheckPipeline
 from guard.middleware_components.events import MetricsCollector, SecurityEventBus
 from guard.middleware_components.initialization import HandlerInitializer
 from guard.middleware_components.responses import ErrorResponseFactory, ResponseContext
 from guard.middleware_components.routing import RouteConfigResolver, RoutingContext
+from guard.middleware_components.validation import RequestValidator, ValidationContext
 from guard.models import SecurityConfig
 from guard.utils import (
     extract_client_ip,
@@ -131,6 +135,34 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         )
         self.route_resolver = RouteConfigResolver(routing_context)
 
+        # Initialize request validator
+        validation_context = ValidationContext(
+            config=self.config,
+            logger=self.logger,
+            event_bus=self.event_bus,
+        )
+        self.validator = RequestValidator(validation_context)
+
+        # Initialize bypass handler (requires validator and route_resolver)
+        bypass_context = BypassContext(
+            config=self.config,
+            logger=self.logger,
+            event_bus=self.event_bus,
+            route_resolver=self.route_resolver,
+            response_factory=self.response_factory,
+            validator=self.validator,
+        )
+        self.bypass_handler = BypassHandler(bypass_context)
+
+        # Initialize behavioral processor
+        behavioral_context = BehavioralContext(
+            config=self.config,
+            logger=self.logger,
+            event_bus=self.event_bus,
+            guard_decorator=self.guard_decorator,
+        )
+        self.behavioral_processor = BehavioralProcessor(behavioral_context)
+
     def _build_security_pipeline(self) -> None:
         """Build the security check pipeline with configured checks."""
         from guard.middleware_components.checks import (
@@ -230,41 +262,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         """Set the SecurityDecorator instance for decorator support."""
         self.guard_decorator = decorator_handler
 
-    def _is_request_https(self, request: Request) -> bool:
-        """
-        Check if request is HTTPS, considering X-Forwarded-Proto from trusted proxies.
-
-        Returns:
-            True if request is HTTPS or forwarded as HTTPS from trusted proxy
-        """
-        # Direct HTTPS check
-        is_https = request.url.scheme == "https"
-
-        # Check X-Forwarded-Proto from trusted proxies
-        if (
-            self.config.trust_x_forwarded_proto
-            and self.config.trusted_proxies
-            and request.client
-        ):
-            if self._is_trusted_proxy(request.client.host):
-                forwarded_proto = request.headers.get("X-Forwarded-Proto", "")
-                is_https = is_https or forwarded_proto.lower() == "https"
-
-        return is_https
-
-    def _is_trusted_proxy(self, connecting_ip: str) -> bool:
-        """Check if connecting IP is a trusted proxy."""
-        for proxy in self.config.trusted_proxies:
-            if "/" not in proxy:
-                # Single IP comparison
-                if connecting_ip == proxy:
-                    return True
-            else:
-                # CIDR range comparison
-                if ip_address(connecting_ip) in ip_network(proxy, strict=False):
-                    return True
-        return False
-
     async def _create_https_redirect(self, request: Request) -> Response:
         """
         Create HTTPS redirect response with custom modifier if configured.
@@ -275,24 +272,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
     async def _check_time_window(self, time_restrictions: dict[str, str]) -> bool:
         """Check if current time is within allowed time window (for tests)."""
-        try:
-            start_time = time_restrictions["start"]
-            end_time = time_restrictions["end"]
-
-            current_time = datetime.now(timezone.utc)
-            current_hour_minute = current_time.strftime("%H:%M")
-
-            # Handle overnight time windows (e.g., 22:00 to 06:00)
-            if start_time > end_time:
-                return (
-                    current_hour_minute >= start_time or current_hour_minute <= end_time
-                )
-            else:
-                return start_time <= current_hour_minute <= end_time
-
-        except Exception as e:
-            self.logger.error(f"Error checking time window: {e!s}")
-            return True  # Allow access if time check fails
+        return await self.validator.check_time_window(time_restrictions)
 
     async def _check_route_ip_access(
         self, client_ip: str, route_config: RouteConfig
@@ -324,108 +304,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         return response
 
-    async def _is_path_excluded(self, request: Request) -> bool:
-        """Check if the request path is excluded from security checks."""
-        if any(request.url.path.startswith(path) for path in self.config.exclude_paths):
-            # Send path exclusion event for monitoring
-            await self.event_bus.send_middleware_event(
-                event_type="path_excluded",
-                request=request,
-                action_taken="security_checks_bypassed",
-                reason=f"Path {request.url.path} excluded from security checks",
-                excluded_path=request.url.path,
-                configured_exclusions=self.config.exclude_paths,
-            )
-            return True
-        return False
-
-    async def _handle_passthrough_cases(
-        self,
-        request: Request,
-        call_next: Callable[[Request], Awaitable[Response]],
-    ) -> Response | None:
-        """
-        Handle special cases that require immediate passthrough.
-
-        This includes requests with no client information and excluded paths.
-        """
-        # No client information
-        if not request.client:
-            response = await call_next(request)
-            return await self.response_factory.apply_modifier(response)
-
-        # Excluded paths
-        if await self._is_path_excluded(request):
-            response = await call_next(request)
-            return await self.response_factory.apply_modifier(response)
-
-        return None
-
-    async def _handle_security_bypass(
-        self,
-        request: Request,
-        call_next: Callable[[Request], Awaitable[Response]],
-        route_config: RouteConfig | None,
-    ) -> Response | None:
-        """Handle bypassed security checks."""
-        if not route_config or not self.route_resolver.should_bypass_check(
-            "all", route_config
-        ):
-            return None
-
-        # Send security bypass event for monitoring
-        await self.event_bus.send_middleware_event(
-            event_type="security_bypass",
-            request=request,
-            action_taken="all_checks_bypassed",
-            reason="Route configured to bypass all security checks",
-            bypassed_checks=list(route_config.bypassed_checks),
-            endpoint=str(request.url.path),
-        )
-
-        if not self.config.passive_mode:
-            response = await call_next(request)
-            return await self.response_factory.apply_modifier(response)
-
-        return None
-
-    async def _handle_no_client(
-        self,
-        request: Request,
-        call_next: Callable[[Request], Awaitable[Response]],
-    ) -> Response | None:
-        """Handle requests with no client information."""
-        if not request.client:
-            response = await call_next(request)
-            return await self.response_factory.apply_modifier(response)
-        return None
-
-    async def _handle_bypass_and_excluded(
-        self,
-        request: Request,
-        route_config: RouteConfig | None,
-        call_next: Callable[[Request], Awaitable[Response]],
-    ) -> Response | None:
-        """Handle bypassed security checks and return response if applicable."""
-        if route_config and self.route_resolver.should_bypass_check(
-            "all", route_config
-        ):
-            # Send security bypass event for monitoring
-            await self.event_bus.send_middleware_event(
-                event_type="security_bypass",
-                request=request,
-                action_taken="all_checks_bypassed",
-                reason="Route configured to bypass all security checks",
-                bypassed_checks=list(route_config.bypassed_checks),
-                endpoint=str(request.url.path),
-            )
-
-            # In passive mode, log but don't actually bypass
-            if not self.config.passive_mode:
-                response = await call_next(request)
-                return await self.response_factory.apply_modifier(response)
-        return None
-
     async def _process_response(
         self,
         request: Request,
@@ -436,16 +314,15 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         """
         Process the response with behavioral rules, metrics, and headers.
 
-        Delegates to ErrorResponseFactory for response processing.
+        Delegates to ErrorResponseFactory and BehavioralProcessor.
         """
         return await self.response_factory.process_response(
             request,
             response,
             response_time,
             route_config,
-            process_behavioral_rules=self._process_decorator_return_rules,
+            process_behavioral_rules=self.behavioral_processor.process_return_rules,
         )
-
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
@@ -453,10 +330,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         """
         Dispatch method to handle incoming requests and apply security measures.
 
-        This method uses a security check pipeline to process requests through
-        multiple security validations in sequence. Special cases (no client,
-        excluded paths, bypassed checks) are handled separately to allow
-        request passthrough when appropriate.
+        Pure orchestration - delegates all logic to specialized handlers:
+        - BypassHandler: Handles passthrough cases and security bypass
+        - SecurityCheckPipeline: Executes security checks
+        - BehavioralProcessor: Processes behavioral rules
+        - ErrorResponseFactory: Processes response with metrics and headers
 
         Args:
             request: The incoming request object.
@@ -466,94 +344,52 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             Response: The response object, either from the next handler
             or a security-related blocking response.
         """
-        # Handle special cases that require immediate passthrough
-        passthrough_response = await self._handle_passthrough_cases(request, call_next)
-        if passthrough_response:
-            return passthrough_response
+        # 1. Handle passthrough cases (no client, excluded paths)
+        passthrough = await self.bypass_handler.handle_passthrough(request, call_next)
+        if passthrough:
+            return passthrough
 
-        # Get route config for bypass check before pipeline
+        # 2. Get route config and client IP
         client_ip = await extract_client_ip(request, self.config, self.agent_handler)
         route_config = self.route_resolver.get_route_config(request)
 
-        # Handle bypassed security checks
-        bypass_response = await self._handle_security_bypass(
+        # 3. Handle bypassed security checks
+        if bypass := await self.bypass_handler.handle_security_bypass(
             request, call_next, route_config
-        )
-        if bypass_response:
-            return bypass_response
+        ):
+            return bypass
 
-        # Execute security check pipeline
-        # Build pipeline if not already initialized (for backwards compatibility)
+        # 4. Execute security pipeline
         if not self.security_pipeline:
             self._build_security_pipeline()
-
-        # Type narrowing: pipeline is now guaranteed to exist
         assert self.security_pipeline is not None
-        blocking_response = await self.security_pipeline.execute(request)
-        if blocking_response:
-            return blocking_response
 
-        # Note: client_ip and route_config are already set from lines 1277-1278
-        # They may also be set by pipeline checks, but we use the original values here
+        if blocking := await self.security_pipeline.execute(request):
+            return blocking
 
-        # Process behavioral rules before calling next
+        # 5. Process behavioral usage rules
         if route_config and route_config.behavior_rules and client_ip:
-            await self._process_decorator_usage_rules(request, client_ip, route_config)
+            await self.behavioral_processor.process_usage_rules(
+                request, client_ip, route_config
+            )
 
-        # Call next middleware/handler
+        # 6. Call next handler and measure time
         start_time = time.time()
         response = await call_next(request)
         response_time = time.time() - start_time
 
-        # Process response with rules, metrics, and headers
+        # 7. Process response (rules, metrics, headers)
         return await self._process_response(
             request, response, response_time, route_config
         )
 
-
-
-
-
     async def _process_decorator_usage_rules(
         self, request: Request, client_ip: str, route_config: RouteConfig
     ) -> None:
-        """Process behavioral usage rules from decorators before request processing."""
-        if not self.guard_decorator:
-            return
-
-        endpoint_id = self._get_endpoint_id(request)
-        for rule in route_config.behavior_rules:
-            if rule.rule_type in ["usage", "frequency"]:
-                threshold_exceeded = (
-                    await self.guard_decorator.behavior_tracker.track_endpoint_usage(
-                        endpoint_id, client_ip, rule
-                    )
-                )
-                if threshold_exceeded:
-                    details = f"{rule.threshold} calls in {rule.window}s"
-                    message = f"Behavioral {rule.rule_type}"
-                    reason = "threshold exceeded"
-
-                    # Send decorator violation event for behavioral rule violation
-                    await self.event_bus.send_middleware_event(
-                        event_type="decorator_violation",
-                        request=request,
-                        action_taken="behavioral_action_triggered",
-                        reason=f"{message} {reason}: {details}",
-                        decorator_type="behavioral",
-                        violation_type=rule.rule_type,
-                        threshold=rule.threshold,
-                        window=rule.window,
-                        action=rule.action,
-                        endpoint_id=endpoint_id,
-                    )
-
-                    await self.guard_decorator.behavior_tracker.apply_action(
-                        rule,
-                        client_ip,
-                        endpoint_id,
-                        f"Usage threshold exceeded: {details}",
-                    )
+        """Process behavioral usage rules (wrapper for tests)."""
+        return await self.behavioral_processor.process_usage_rules(
+            request, client_ip, route_config
+        )
 
     async def _process_decorator_return_rules(
         self,
@@ -562,50 +398,14 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         client_ip: str,
         route_config: RouteConfig,
     ) -> None:
-        """Process behavioral return pattern rules from decorators after response."""
-        if not self.guard_decorator:
-            return
-
-        endpoint_id = self._get_endpoint_id(request)
-        for rule in route_config.behavior_rules:
-            if rule.rule_type == "return_pattern":
-                pattern_detected = (
-                    await self.guard_decorator.behavior_tracker.track_return_pattern(
-                        endpoint_id, client_ip, response, rule
-                    )
-                )
-                if pattern_detected:
-                    details = f"{rule.threshold} for '{rule.pattern}' in {rule.window}s"
-
-                    # Send decorator violation event for return pattern violation
-                    await self.event_bus.send_middleware_event(
-                        event_type="decorator_violation",
-                        request=request,
-                        action_taken="behavioral_action_triggered",
-                        reason=f"Return pattern threshold exceeded: {details}",
-                        decorator_type="behavioral",
-                        violation_type="return_pattern",
-                        threshold=rule.threshold,
-                        window=rule.window,
-                        pattern=rule.pattern,
-                        action=rule.action,
-                        endpoint_id=endpoint_id,
-                    )
-
-                    await self.guard_decorator.behavior_tracker.apply_action(
-                        rule,
-                        client_ip,
-                        endpoint_id,
-                        f"Return pattern threshold exceeded: {details}",
-                    )
+        """Process behavioral return rules (wrapper for tests)."""
+        return await self.behavioral_processor.process_return_rules(
+            request, response, client_ip, route_config
+        )
 
     def _get_endpoint_id(self, request: Request) -> str:
-        """Generate unique endpoint identifier."""
-        if hasattr(request, "scope") and "route" in request.scope:
-            route = request.scope["route"]
-            if hasattr(route, "endpoint"):
-                return f"{route.endpoint.__module__}.{route.endpoint.__qualname__}"
-        return f"{request.method}:{request.url.path}"
+        """Generate unique endpoint identifier (wrapper for tests)."""
+        return self.behavioral_processor.get_endpoint_id(request)
 
     async def refresh_cloud_ip_ranges(self) -> None:
         """Refresh cloud IP ranges asynchronously."""
