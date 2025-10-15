@@ -3,7 +3,7 @@ import logging
 
 from fastapi import Request, Response
 
-from guard.checks.base import SecurityCheck
+from guard.middleware_components.checks.base import SecurityCheck
 
 
 class SecurityCheckPipeline:

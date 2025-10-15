@@ -1,11 +1,15 @@
-# guard/middleware/checks/__init__.py
-from guard.checks.base import SecurityCheck
-from guard.checks.implementations import (
+# guard/middleware_components/checks/__init__.py
+"""Security checks module with modular architecture."""
+
+from guard.middleware_components.checks.base import SecurityCheck
+from guard.middleware_components.checks.context import CheckContext
+from guard.middleware_components.checks.implementations import (
     AuthenticationCheck,
     CloudIpRefreshCheck,
     CloudProviderCheck,
     CustomRequestCheck,
     CustomValidatorsCheck,
+    EmergencyModeCheck,
     HttpsEnforcementCheck,
     IpSecurityCheck,
     RateLimitCheck,
@@ -18,14 +22,16 @@ from guard.checks.implementations import (
     TimeWindowCheck,
     UserAgentCheck,
 )
-from guard.checks.pipeline import SecurityCheckPipeline
+from guard.middleware_components.checks.pipeline import SecurityCheckPipeline
 
 __all__ = [
     # Base
     "SecurityCheck",
+    "CheckContext",
     "SecurityCheckPipeline",
     # Implementations
     "RouteConfigCheck",
+    "EmergencyModeCheck",
     "HttpsEnforcementCheck",
     "RequestLoggingCheck",
     "RequestSizeContentCheck",

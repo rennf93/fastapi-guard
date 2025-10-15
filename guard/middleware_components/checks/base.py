@@ -73,7 +73,7 @@ class SecurityCheck(ABC):
             reason: Reason for the action.
             **kwargs: Additional metadata for the event.
         """
-        await self.middleware._send_middleware_event(
+        await self.middleware.event_bus.send_middleware_event(
             event_type=event_type,
             request=request,
             action_taken=action_taken,

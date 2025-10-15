@@ -184,7 +184,7 @@ async def test_check_user_agent_allowed() -> None:
     mock_route_config = Mock()
     mock_route_config.blocked_user_agents = [r"badbot"]
 
-    with patch("guard.middleware.is_user_agent_allowed", return_value=True):
+    with patch("guard.utils.is_user_agent_allowed", return_value=True):
         result = await middleware._check_user_agent_allowed("badbot", mock_route_config)
         assert result is False
 
@@ -194,9 +194,7 @@ async def test_check_user_agent_allowed() -> None:
         assert result is True
 
     # Test without route config
-    with patch(
-        "guard.middleware.is_user_agent_allowed", return_value=False
-    ) as mock_global:
+    with patch("guard.utils.is_user_agent_allowed", return_value=False) as mock_global:
         result = await middleware._check_user_agent_allowed("somebot", None)
         assert result is False
         mock_global.assert_called_once()
