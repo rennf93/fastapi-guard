@@ -146,6 +146,202 @@ class PerformanceMonitor:
         # Check for anomalies (outside lock to avoid blocking)
         await self._check_anomalies(metric, agent_handler, correlation_id)
 
+    def _detect_timeout_anomaly(
+        self, metric: PerformanceMetric
+    ) -> dict[str, Any] | None:
+        """
+        Detect timeout anomaly in metric.
+
+        Args:
+            metric: The metric to check
+
+        Returns:
+            Anomaly dict or None if no timeout detected
+        """
+        if metric.timeout:
+            return {
+                "type": "timeout",
+                "pattern": metric.pattern,
+                "content_length": metric.content_length,
+            }
+        return None
+
+    def _detect_slow_execution_anomaly(
+        self, metric: PerformanceMetric
+    ) -> dict[str, Any] | None:
+        """
+        Detect slow execution anomaly in metric.
+
+        Args:
+            metric: The metric to check
+
+        Returns:
+            Anomaly dict or None if execution is not slow
+        """
+        if not metric.timeout and metric.execution_time > self.slow_pattern_threshold:
+            return {
+                "type": "slow_execution",
+                "pattern": metric.pattern,
+                "execution_time": metric.execution_time,
+                "content_length": metric.content_length,
+            }
+        return None
+
+    def _detect_statistical_anomaly(
+        self, metric: PerformanceMetric
+    ) -> dict[str, Any] | None:
+        """
+        Detect statistical anomaly using Z-score analysis.
+
+        Args:
+            metric: The metric to check
+
+        Returns:
+            Anomaly dict or None if no statistical anomaly detected
+        """
+        stats = self.pattern_stats.get(metric.pattern)
+        if not stats or len(stats.recent_times) < 10:
+            return None
+
+        recent_times = list(stats.recent_times)
+        if len(recent_times) <= 1:
+            return None
+
+        avg_time = mean(recent_times)
+        std_time = stdev(recent_times)
+
+        if std_time <= 0:
+            return None
+
+        z_score = (metric.execution_time - avg_time) / std_time
+        if abs(z_score) > self.anomaly_threshold:
+            return {
+                "type": "statistical_anomaly",
+                "pattern": metric.pattern,
+                "execution_time": metric.execution_time,
+                "z_score": z_score,
+                "avg_time": avg_time,
+                "std_time": std_time,
+            }
+        return None
+
+    async def _send_anomaly_event(
+        self,
+        anomaly: dict[str, Any],
+        agent_handler: Any,
+        correlation_id: str | None,
+    ) -> None:
+        """
+        Send anomaly event to agent handler.
+
+        Args:
+            anomaly: The anomaly data
+            agent_handler: Agent handler for event logging
+            correlation_id: Optional correlation ID for request tracking
+        """
+        try:
+            event_data = {
+                "timestamp": datetime.now(timezone.utc),
+                "event_type": f"pattern_anomaly_{anomaly['type']}",
+                "ip_address": "system",
+                "action_taken": "anomaly_detected",
+                "reason": f"Pattern performance anomaly: {anomaly['type']}",
+                "metadata": {
+                    "component": "PerformanceMonitor",
+                    "correlation_id": correlation_id,
+                    **anomaly,
+                },
+            }
+            # Use duck typing to avoid import
+            event = type("SecurityEvent", (), event_data)()
+            await agent_handler.send_event(event)
+        except Exception:
+            # Don't let agent errors affect monitoring
+            pass
+
+    def _sanitize_anomaly_data(self, anomaly: dict[str, Any]) -> dict[str, Any]:
+        """
+        Sanitize anomaly data before passing to callbacks.
+
+        Args:
+            anomaly: The anomaly data to sanitize
+
+        Returns:
+            Sanitized anomaly data with truncated pattern
+        """
+        safe_anomaly = anomaly.copy()
+        if "pattern" in safe_anomaly:
+            # Only expose truncated pattern
+            pattern = str(safe_anomaly["pattern"])
+            safe_anomaly["pattern"] = (
+                pattern[:50] + "..." if len(pattern) > 50 else pattern
+            )
+            safe_anomaly["pattern_hash"] = str(hash(pattern))[:8]
+        return safe_anomaly
+
+    async def _send_callback_error_event(
+        self,
+        error: Exception,
+        safe_anomaly: dict[str, Any],
+        agent_handler: Any,
+        correlation_id: str | None,
+    ) -> None:
+        """
+        Send callback error event to agent handler.
+
+        Args:
+            error: The exception that occurred
+            safe_anomaly: The sanitized anomaly data
+            agent_handler: Agent handler for event logging
+            correlation_id: Optional correlation ID for request tracking
+        """
+        try:
+            event_data = {
+                "timestamp": datetime.now(timezone.utc),
+                "event_type": "detection_engine_callback_error",
+                "ip_address": "system",
+                "action_taken": "logged",
+                "reason": f"Anomaly callback failed: {str(error)}",
+                "metadata": {
+                    "component": "PerformanceMonitor",
+                    "correlation_id": correlation_id,
+                    "callback_error": str(error),
+                    "anomaly_type": safe_anomaly.get("type", "unknown"),
+                },
+            }
+            event = type("SecurityEvent", (), event_data)()
+            await agent_handler.send_event(event)
+        except Exception:
+            # Double failure - silently continue
+            pass
+
+    async def _notify_callbacks(
+        self,
+        anomaly: dict[str, Any],
+        agent_handler: Any,
+        correlation_id: str | None,
+    ) -> None:
+        """
+        Notify all registered callbacks with sanitized anomaly data.
+
+        Args:
+            anomaly: The anomaly data
+            agent_handler: Optional agent handler for error event logging
+            correlation_id: Optional correlation ID for request tracking
+        """
+        safe_anomaly = self._sanitize_anomaly_data(anomaly)
+
+        for callback in self.anomaly_callbacks:
+            try:
+                # Pass sanitized data to callback
+                callback(safe_anomaly)
+            except Exception as e:
+                # Log callback error but continue monitoring
+                if agent_handler:
+                    await self._send_callback_error_event(
+                        e, safe_anomaly, agent_handler, correlation_id
+                    )
+
     async def _check_anomalies(
         self,
         metric: PerformanceMetric,
@@ -160,116 +356,31 @@ class PerformanceMonitor:
             agent_handler: Optional agent handler for event logging
             correlation_id: Optional correlation ID for request tracking
         """
-        anomalies = []
+        anomalies: list[dict[str, Any]] = []
 
-        # Check for timeout
-        if metric.timeout:
-            anomalies.append(
-                {
-                    "type": "timeout",
-                    "pattern": metric.pattern,
-                    "content_length": metric.content_length,
-                }
-            )
-
-        # Check for slow execution
-        elif metric.execution_time > self.slow_pattern_threshold:
-            anomalies.append(
-                {
-                    "type": "slow_execution",
-                    "pattern": metric.pattern,
-                    "execution_time": metric.execution_time,
-                    "content_length": metric.content_length,
-                }
-            )
+        # Detect different types of anomalies
+        timeout_anomaly = self._detect_timeout_anomaly(metric)
+        if timeout_anomaly:
+            anomalies.append(timeout_anomaly)
+        else:
+            # Only check slow execution if no timeout
+            slow_anomaly = self._detect_slow_execution_anomaly(metric)
+            if slow_anomaly:
+                anomalies.append(slow_anomaly)
 
         # Check for statistical anomaly
-        stats = self.pattern_stats.get(metric.pattern)
-        if stats and len(stats.recent_times) >= 10:
-            recent_times = list(stats.recent_times)
-            if len(recent_times) > 1:
-                avg_time = mean(recent_times)
-                std_time = stdev(recent_times)
-                if std_time > 0:
-                    z_score = (metric.execution_time - avg_time) / std_time
-                    if abs(z_score) > self.anomaly_threshold:
-                        anomalies.append(
-                            {
-                                "type": "statistical_anomaly",
-                                "pattern": metric.pattern,
-                                "execution_time": metric.execution_time,
-                                "z_score": z_score,
-                                "avg_time": avg_time,
-                                "std_time": std_time,
-                            }
-                        )
+        statistical_anomaly = self._detect_statistical_anomaly(metric)
+        if statistical_anomaly:
+            anomalies.append(statistical_anomaly)
 
         # Send anomaly events to agent if available
-        if agent_handler and anomalies:
+        if agent_handler:
             for anomaly in anomalies:
-                try:
-                    from datetime import datetime, timezone
-
-                    # Import at runtime to avoid circular dependency
-                    event_data = {
-                        "timestamp": datetime.now(timezone.utc),
-                        "event_type": f"pattern_anomaly_{anomaly['type']}",
-                        "ip_address": "system",
-                        "action_taken": "anomaly_detected",
-                        "reason": f"Pattern performance anomaly: {anomaly['type']}",
-                        "metadata": {
-                            "component": "PerformanceMonitor",
-                            "correlation_id": correlation_id,
-                            **anomaly,
-                        },
-                    }
-                    # Use duck typing to avoid import
-                    event = type("SecurityEvent", (), event_data)()
-                    await agent_handler.send_event(event)
-                except Exception:
-                    # Don't let agent errors affect monitoring
-                    pass
+                await self._send_anomaly_event(anomaly, agent_handler, correlation_id)
 
         # Notify callbacks
         for anomaly in anomalies:
-            # Sanitize anomaly data before passing to callbacks
-            safe_anomaly = anomaly.copy()
-            if "pattern" in safe_anomaly:
-                # Only expose truncated pattern
-                pattern = str(safe_anomaly["pattern"])
-                safe_anomaly["pattern"] = (
-                    pattern[:50] + "..." if len(pattern) > 50 else pattern
-                )
-                safe_anomaly["pattern_hash"] = str(hash(pattern))[:8]
-
-            for callback in self.anomaly_callbacks:
-                try:
-                    # Pass sanitized data to callback
-                    callback(safe_anomaly)
-                except Exception as e:
-                    # Log callback error but continue monitoring
-                    if agent_handler:
-                        try:
-                            from datetime import datetime, timezone
-
-                            event_data = {
-                                "timestamp": datetime.now(timezone.utc),
-                                "event_type": "detection_engine_callback_error",
-                                "ip_address": "system",
-                                "action_taken": "logged",
-                                "reason": f"Anomaly callback failed: {str(e)}",
-                                "metadata": {
-                                    "component": "PerformanceMonitor",
-                                    "correlation_id": correlation_id,
-                                    "callback_error": str(e),
-                                    "anomaly_type": safe_anomaly.get("type", "unknown"),
-                                },
-                            }
-                            event = type("SecurityEvent", (), event_data)()
-                            await agent_handler.send_event(event)
-                        except Exception:
-                            # Double failure - silently continue
-                            pass
+            await self._notify_callbacks(anomaly, agent_handler, correlation_id)
 
     def get_pattern_report(self, pattern: str) -> dict[str, Any] | None:
         """
@@ -367,6 +478,62 @@ class PerformanceMonitor:
 
         return problematic
 
+    def _get_empty_summary(self) -> dict[str, Any]:
+        """
+        Return empty summary dict when no metrics are available.
+
+        Returns:
+            Empty summary statistics dictionary
+        """
+        return {
+            "total_executions": 0,
+            "avg_execution_time": 0.0,
+            "timeout_rate": 0.0,
+            "match_rate": 0.0,
+        }
+
+    def _extract_metric_components(
+        self,
+    ) -> tuple[list[float], int, int]:
+        """
+        Extract times, timeouts, and matches from recent metrics.
+
+        Returns:
+            Tuple of (recent_times, timeouts, matches)
+        """
+        recent_times = [m.execution_time for m in self.recent_metrics if not m.timeout]
+        timeouts = sum(1 for m in self.recent_metrics if m.timeout)
+        matches = sum(1 for m in self.recent_metrics if m.matched)
+        return recent_times, timeouts, matches
+
+    def _build_summary_dict(
+        self,
+        recent_times: list[float],
+        timeouts: int,
+        matches: int,
+    ) -> dict[str, Any]:
+        """
+        Build the final summary dictionary from extracted components.
+
+        Args:
+            recent_times: List of execution times (excluding timeouts)
+            timeouts: Count of timeout occurrences
+            matches: Count of pattern matches
+
+        Returns:
+            Complete summary statistics dictionary
+        """
+        total_metrics = len(self.recent_metrics)
+        return {
+            "total_executions": total_metrics,
+            "avg_execution_time": mean(recent_times) if recent_times else 0.0,
+            "max_execution_time": max(recent_times) if recent_times else 0.0,
+            "min_execution_time": min(recent_times) if recent_times else 0.0,
+            "timeout_rate": timeouts / total_metrics,
+            "match_rate": matches / total_metrics,
+            "total_patterns": len(self.pattern_stats),
+        }
+
     def get_summary_stats(self) -> dict[str, Any]:
         """
         Get overall performance summary.
@@ -375,26 +542,10 @@ class PerformanceMonitor:
             Summary statistics dictionary
         """
         if not self.recent_metrics:
-            return {
-                "total_executions": 0,
-                "avg_execution_time": 0.0,
-                "timeout_rate": 0.0,
-                "match_rate": 0.0,
-            }
+            return self._get_empty_summary()
 
-        recent_times = [m.execution_time for m in self.recent_metrics if not m.timeout]
-        timeouts = sum(1 for m in self.recent_metrics if m.timeout)
-        matches = sum(1 for m in self.recent_metrics if m.matched)
-
-        return {
-            "total_executions": len(self.recent_metrics),
-            "avg_execution_time": mean(recent_times) if recent_times else 0.0,
-            "max_execution_time": max(recent_times) if recent_times else 0.0,
-            "min_execution_time": min(recent_times) if recent_times else 0.0,
-            "timeout_rate": timeouts / len(self.recent_metrics),
-            "match_rate": matches / len(self.recent_metrics),
-            "total_patterns": len(self.pattern_stats),
-        }
+        recent_times, timeouts, matches = self._extract_metric_components()
+        return self._build_summary_dict(recent_times, timeouts, matches)
 
     def register_anomaly_callback(self, callback: Any) -> None:
         """

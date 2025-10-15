@@ -226,6 +226,53 @@ class BehaviorTracker:
             self.logger.error(f"Error checking response pattern: {str(e)}")
             return False
 
+    def _parse_pattern(self, pattern: str) -> tuple[str, str] | None:
+        """
+        Parse pattern into path and expected value.
+
+        Returns:
+            Tuple of (path, expected_value) or None if invalid pattern
+        """
+        if "==" not in pattern:
+            return None
+
+        path, expected = pattern.split("==", 1)
+        path = path.strip()
+        expected = expected.strip().strip("\"'")
+        return path, expected
+
+    def _handle_array_match(self, current: Any, part: str, expected: str) -> bool:
+        """
+        Handle array matching in JSONPath.
+
+        Returns:
+            True if any array item matches expected value
+        """
+        part = part[:-2]  # Remove [] suffix
+
+        if not isinstance(current, dict) or part not in current:
+            return False
+
+        current = current[part]
+        if not isinstance(current, list):
+            return False
+
+        return any(str(item).lower() == expected.lower() for item in current)
+
+    def _traverse_json_path(self, data: Any, path: str) -> Any | None:
+        """
+        Traverse JSON using dot notation path.
+
+        Returns:
+            Value at path or None if path doesn't exist
+        """
+        current = data
+        for part in path.split("."):
+            if not isinstance(current, dict) or part not in current:
+                return None
+            current = current[part]
+        return current
+
     def _match_json_pattern(self, data: Any, pattern: str) -> bool:
         """
         Match JSONPath-like patterns in response data.
@@ -236,41 +283,79 @@ class BehaviorTracker:
         - "items[].type==rare"
         """
         try:
-            if "==" in pattern:
-                path, expected = pattern.split("==", 1)
-                path = path.strip()
-                expected = expected.strip().strip("\"'")
+            # Parse the pattern
+            parsed = self._parse_pattern(pattern)
+            if not parsed:
+                return False
 
-                # Simple dot notation traversal
-                current = data
-                for part in path.split("."):
-                    if part.endswith("[]"):
-                        # Array handling
-                        part = part[:-2]
-                        if isinstance(current, dict) and part in current:
-                            current = current[part]
-                            if isinstance(current, list):
-                                return any(
-                                    str(item).lower() == expected.lower()
-                                    for item in current
-                                )
-                    else:
-                        if isinstance(current, dict) and part in current:
-                            current = current[part]
-                        else:
-                            return False
+            path, expected = parsed
 
-                return str(current).lower() == expected.lower()
+            # Handle array matching
+            current = data
+            for part in path.split("."):
+                if part.endswith("[]"):
+                    return self._handle_array_match(current, part, expected)
 
-            return False
+                # Regular traversal
+                if not isinstance(current, dict) or part not in current:
+                    return False
+                current = current[part]
+
+            # Compare final value
+            return str(current).lower() == expected.lower()
+
         except Exception:
             return False
+
+    def _log_passive_mode_action(
+        self, rule: BehaviorRule, client_ip: str, details: str
+    ) -> None:
+        """Log action that would be taken in passive mode."""
+        prefix = "[PASSIVE MODE] "
+
+        if rule.action == "ban":
+            self.logger.warning(
+                f"{prefix}Would ban IP {client_ip} for behavioral violation: {details}"
+            )
+        elif rule.action == "log":
+            self.logger.warning(f"{prefix}Behavioral anomaly detected: {details}")
+        elif rule.action == "throttle":
+            self.logger.warning(f"{prefix}Would throttle IP {client_ip}: {details}")
+        elif rule.action == "alert":
+            self.logger.critical(f"{prefix}ALERT - Behavioral anomaly: {details}")
+
+    async def _execute_ban_action(self, client_ip: str, details: str) -> None:
+        """Execute IP ban action."""
+        from guard.handlers.ipban_handler import ip_ban_manager
+
+        await ip_ban_manager.ban_ip(client_ip, 3600, "behavioral_violation")
+        self.logger.warning(
+            f"IP {client_ip} banned for behavioral violation: {details}"
+        )
+
+    async def _execute_active_mode_action(
+        self, rule: BehaviorRule, client_ip: str, endpoint_id: str, details: str
+    ) -> None:
+        """Execute action in active mode."""
+        # Custom action takes precedence
+        if rule.custom_action:
+            await rule.custom_action(client_ip, endpoint_id, details)
+            return
+
+        # Built-in actions
+        if rule.action == "ban":
+            await self._execute_ban_action(client_ip, details)
+        elif rule.action == "log":
+            self.logger.warning(f"Behavioral anomaly detected: {details}")
+        elif rule.action == "throttle":
+            self.logger.warning(f"Throttling IP {client_ip}: {details}")
+        elif rule.action == "alert":
+            self.logger.critical(f"ALERT - Behavioral anomaly: {details}")
 
     async def apply_action(
         self, rule: BehaviorRule, client_ip: str, endpoint_id: str, details: str
     ) -> None:
         """Apply the configured action when a rule is violated."""
-
         # Send behavioral violation event to agent
         if self.agent_handler:
             await self._send_behavior_event(
@@ -286,49 +371,13 @@ class BehaviorTracker:
                 window=rule.window,
             )
 
-        # In passive mode, only log, don't take blocking actions
+        # Handle based on mode
         if self.config.passive_mode:
-            prefix = "[PASSIVE MODE] "
-            if rule.action == "ban":
-                self.logger.warning(
-                    f"{prefix}Would ban IP {client_ip} for behavioral "
-                    f"violation: {details}"
-                )
-            elif rule.action == "log":
-                self.logger.warning(f"{prefix}Behavioral anomaly detected: {details}")
-            elif rule.action == "throttle":
-                self.logger.warning(f"{prefix}Would throttle IP {client_ip}: {details}")
-            elif rule.action == "alert":
-                self.logger.critical(f"{prefix}ALERT - Behavioral anomaly: {details}")
-            # Don't execute custom actions in passive mode
-            return
-
-        # Active mode - take actual actions
-        if rule.custom_action:
-            await rule.custom_action(client_ip, endpoint_id, details)
-            return
-
-        if rule.action == "ban":
-            # Import here to avoid circular imports
-            from guard.handlers.ipban_handler import ip_ban_manager
-
-            await ip_ban_manager.ban_ip(
-                client_ip, 3600, "behavioral_violation"
-            )  # 1 hour ban
-            self.logger.warning(
-                f"IP {client_ip} banned for behavioral violation: {details}"
+            self._log_passive_mode_action(rule, client_ip, details)
+        else:
+            await self._execute_active_mode_action(
+                rule, client_ip, endpoint_id, details
             )
-
-        elif rule.action == "log":
-            self.logger.warning(f"Behavioral anomaly detected: {details}")
-
-        elif rule.action == "throttle":
-            # Could implement stricter rate limiting here
-            self.logger.warning(f"Throttling IP {client_ip}: {details}")
-
-        elif rule.action == "alert":
-            # Could send webhook/notification here
-            self.logger.critical(f"ALERT - Behavioral anomaly: {details}")
 
     async def _send_behavior_event(
         self,

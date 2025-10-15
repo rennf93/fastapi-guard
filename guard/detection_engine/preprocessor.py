@@ -233,6 +233,90 @@ class ContentPreprocessor:
 
         return []
 
+    def _extract_and_concatenate_attack_regions(
+        self, content: str, attack_regions: list[tuple[int, int]]
+    ) -> str:
+        """
+        Extract and concatenate attack regions when they exceed max length.
+
+        This method handles the case where attack regions alone exceed
+        the maximum content length, extracting chunks until the limit is reached.
+
+        Args:
+            content: The original content
+            attack_regions: List of (start, end) tuples for attack regions
+
+        Returns:
+            Concatenated attack regions truncated to max_content_length
+        """
+        result = ""
+        remaining = self.max_content_length
+
+        for start, end in attack_regions:
+            chunk_len = min(end - start, remaining)
+            result += content[start : start + chunk_len]
+            remaining -= chunk_len
+            if remaining <= 0:
+                break
+
+        return result
+
+    def _add_non_attack_content(
+        self,
+        content: str,
+        attack_regions: list[tuple[int, int]],
+        result_parts: list[str],
+        remaining: int,
+    ) -> None:
+        """
+        Add non-attack content to fill remaining space in result.
+
+        This method inserts chunks of content between attack regions
+        to utilize available space while maintaining attack signature visibility.
+
+        Args:
+            content: The original content
+            attack_regions: List of (start, end) tuples for attack regions
+            result_parts: List to prepend non-attack content chunks to
+            remaining: Remaining bytes available in result
+        """
+        last_end = 0
+        for start, end in attack_regions:
+            if last_end < start and remaining > 0:
+                chunk_len = min(start - last_end, remaining)
+                result_parts.insert(0, content[last_end : last_end + chunk_len])
+                remaining -= chunk_len
+            last_end = end
+
+    def _build_result_with_attack_regions_and_context(
+        self, content: str, attack_regions: list[tuple[int, int]]
+    ) -> str:
+        """
+        Build result including attack regions and surrounding context.
+
+        This method constructs the final result by including all attack regions
+        and filling remaining space with non-attack content for context.
+
+        Args:
+            content: The original content
+            attack_regions: List of (start, end) tuples for attack regions
+
+        Returns:
+            Content with attack regions and context truncated to max_content_length
+        """
+        attack_length = sum(end - start for start, end in attack_regions)
+        result_parts = []
+        remaining = self.max_content_length - attack_length
+
+        # Add attack regions
+        for start, end in attack_regions:
+            result_parts.append(content[start:end])
+
+        # Add non-attack content to fill remaining space
+        self._add_non_attack_content(content, attack_regions, result_parts, remaining)
+
+        return "".join(result_parts)
+
     def truncate_safely(self, content: str) -> str:
         """
         Truncate content while preserving attack signatures.
@@ -261,34 +345,12 @@ class ContentPreprocessor:
 
         if attack_length >= self.max_content_length:
             # Attack regions exceed max length, concatenate them
-            result = ""
-            remaining = self.max_content_length
-            for start, end in attack_regions:
-                chunk_len = min(end - start, remaining)
-                result += content[start : start + chunk_len]
-                remaining -= chunk_len
-                if remaining <= 0:
-                    break
-            return result
+            return self._extract_and_concatenate_attack_regions(content, attack_regions)
 
         # Include attack regions and fill remaining space
-        result_parts = []
-        remaining = self.max_content_length - attack_length
-
-        # Add attack regions
-        for start, end in attack_regions:
-            result_parts.append(content[start:end])
-
-        # Add non-attack content to fill remaining space
-        last_end = 0
-        for start, end in attack_regions:
-            if last_end < start and remaining > 0:
-                chunk_len = min(start - last_end, remaining)
-                result_parts.insert(0, content[last_end : last_end + chunk_len])
-                remaining -= chunk_len
-            last_end = end
-
-        return "".join(result_parts)
+        return self._build_result_with_attack_regions_and_context(
+            content, attack_regions
+        )
 
     def remove_null_bytes(self, content: str) -> str:
         """

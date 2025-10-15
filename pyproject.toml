@@ -36,8 +36,11 @@ Homepage = "https://github.com/rennf93/fastapi-guard"
 
 [project.optional-dependencies]
 dev = [
+    "bandit[toml]",
+    "deptry",
     "fastapi-guard-agent",
     "httpx",
+    "hypothesis",
     "matplotlib",
     "mkdocs",
     "mkdocstrings",
@@ -45,16 +48,22 @@ dev = [
     "mkdocs-material",
     "mypy",
     "numpy",
+    "pip-audit",
     "pre-commit",
+    "py-spy",
     "pymarkdownlnt",
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
     "pytest-mock",
+    "radon",
     "ruff",
+    "safety",
+    "semgrep",
     "types-cachetools",
     "types-requests",
     "vulture",
+    "xenon",
 ]
 
 [build-system]
@@ -184,3 +193,36 @@ ignore_names = [
     "Field",
 ]
 sort_by_size = true
+
+[tool.bandit]
+skips = ["B101", "B601"]
+exclude_dirs = ["tests", ".venv", "vulture_whitelist.py"]
+severity = "medium"
+
+[tool.radon]
+exclude = "tests/*,.venv/*,vulture_whitelist.py"
+cc_min = "C"
+mi_min = "A"
+no_assert = false
+show_closures = true
+total_average = true
+
+[tool.xenon]
+max_absolute = "B"
+max_modules = "A"
+max_average = "A"
+exclude = ["tests/*", ".venv/*", "vulture_whitelist.py"]
+ignore = []
+
+[tool.deptry]
+exclude = ["tests", ".venv", "vulture_whitelist.py", "examples", "docs"]
+extend_exclude = ["conftest.py", "setup.py"]
+known_first_party = ["guard"]
+
+[tool.hypothesis]
+deadline = 5000
+max_examples = 100
+derandomize = false
+suppress_health_check = ["too_slow", "filter_too_much"]
+database_file = ".hypothesis/examples"
+verbosity = "normal"

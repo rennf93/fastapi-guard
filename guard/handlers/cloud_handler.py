@@ -11,7 +11,9 @@ import requests
 
 def fetch_aws_ip_ranges() -> set[ipaddress.IPv4Network | ipaddress.IPv6Network]:
     try:
-        response = requests.get("https://ip-ranges.amazonaws.com/ip-ranges.json")
+        response = requests.get(
+            "https://ip-ranges.amazonaws.com/ip-ranges.json", timeout=10
+        )
         response.raise_for_status()
         data = response.json()
         return {
@@ -26,7 +28,9 @@ def fetch_aws_ip_ranges() -> set[ipaddress.IPv4Network | ipaddress.IPv6Network]:
 
 def fetch_gcp_ip_ranges() -> set[ipaddress.IPv4Network | ipaddress.IPv6Network]:
     try:
-        response = requests.get("https://www.gstatic.com/ipranges/cloud.json")
+        response = requests.get(
+            "https://www.gstatic.com/ipranges/cloud.json", timeout=10
+        )
         response.raise_for_status()
         data = response.json()
         networks: set[ipaddress.IPv4Network | ipaddress.IPv6Network] = set()
@@ -50,7 +54,7 @@ def fetch_azure_ip_ranges() -> set[ipaddress.IPv4Network | ipaddress.IPv6Network
         }
         route = "/download/details.aspx?id=56519"
         response = requests.get(
-            f"https://www.microsoft.com/en-us{route}", headers=headers
+            f"https://www.microsoft.com/en-us{route}", headers=headers, timeout=10
         )
         response.raise_for_status()
 
@@ -62,7 +66,7 @@ def fetch_azure_ip_ranges() -> set[ipaddress.IPv4Network | ipaddress.IPv6Network
             raise ValueError("Could not find Azure IP ranges download URL")
 
         download_url = match.group(1)
-        response = requests.get(download_url)
+        response = requests.get(download_url, timeout=10)
         response.raise_for_status()
         data = response.json()
 

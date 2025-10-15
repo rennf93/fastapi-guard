@@ -77,6 +77,114 @@ vulture:
 	@uv run vulture vulture_whitelist.py
 	@find . | grep -E "(__pycache__|\.pyc|\.pyo|\.pytest_cache|\.ruff_cache|\.mypy_cache)" | xargs rm -rf
 
+# Security scan with Bandit
+.PHONY: bandit
+bandit:
+	@echo "Running Bandit security scan..."
+	@echo ''
+	@uv run bandit -r guard -ll
+	@find . | grep -E "(__pycache__|\.pyc|\.pyo|\.pytest_cache|\.ruff_cache|\.mypy_cache)" | xargs rm -rf
+
+# Check dependencies with Safety
+.PHONY: safety
+safety:
+	@echo "Checking dependencies with Safety..."
+	@echo ''
+	@uv run safety scan
+	@find . | grep -E "(__pycache__|\.pyc|\.pyo|\.pytest_cache|\.ruff_cache|\.mypy_cache)" | xargs rm -rf
+
+# Audit dependencies with pip-audit
+.PHONY: pip-audit
+pip-audit:
+	@echo "Auditing dependencies with pip-audit..."
+	@echo ''
+	@uv run pip-audit
+	@find . | grep -E "(__pycache__|\.pyc|\.pyo|\.pytest_cache|\.ruff_cache|\.mypy_cache)" | xargs rm -rf
+
+# Analyze code complexity with Radon
+.PHONY: radon
+radon:
+	@echo "Analyzing code complexity with Radon..."
+	@echo ''
+	@echo "Cyclomatic Complexity:"
+	@uv run radon cc guard -nc
+	@echo ''
+	@echo "Maintainability Index:"
+	@uv run radon mi guard -nc
+	@echo ''
+	@echo "Raw Metrics:"
+	@uv run radon raw guard
+	@find . | grep -E "(__pycache__|\.pyc|\.pyo|\.pytest_cache|\.ruff_cache|\.mypy_cache)" | xargs rm -rf
+
+# Check complexity thresholds with Xenon
+.PHONY: xenon
+xenon:
+	@echo "Checking complexity thresholds with Xenon..."
+	@echo ''
+	@uv run xenon guard --max-absolute B --max-modules A --max-average A
+	@find . | grep -E "(__pycache__|\.pyc|\.pyo|\.pytest_cache|\.ruff_cache|\.mypy_cache)" | xargs rm -rf
+
+# Analyze dependencies with Deptry
+.PHONY: deptry
+deptry:
+	@echo "Analyzing dependencies with Deptry..."
+	@echo ''
+	@uv run deptry .
+	@find . | grep -E "(__pycache__|\.pyc|\.pyo|\.pytest_cache|\.ruff_cache|\.mypy_cache)" | xargs rm -rf
+
+# Static analysis with Semgrep
+.PHONY: semgrep
+semgrep:
+	@echo "Running Semgrep static analysis..."
+	@echo ''
+	@uv run semgrep --config=auto guard
+	@find . | grep -E "(__pycache__|\.pyc|\.pyo|\.pytest_cache|\.ruff_cache|\.mypy_cache)" | xargs rm -rf
+
+# Profile with py-spy
+.PHONY: profile
+profile:
+	@echo "Profiling with py-spy (requires running application)..."
+	@echo "Usage: make profile PID=<process_id>"
+	@echo "Or: make profile-record to record a new profile"
+	@[ -n "$(PID)" ] && uv run py-spy top --pid $(PID) || echo "Please provide PID=<process_id>"
+	@find . | grep -E "(__pycache__|\.pyc|\.pyo|\.pytest_cache|\.ruff_cache|\.mypy_cache)" | xargs rm -rf
+
+# Record profile with py-spy
+.PHONY: profile-record
+profile-record:
+	@echo "Recording profile with py-spy..."
+	@echo "This will profile the example application for 30 seconds"
+	@uv run py-spy record -o profile.svg -d 30 -- uv run python examples/main.py &
+	@echo "Profile will be saved to profile.svg"
+	@find . | grep -E "(__pycache__|\.pyc|\.pyo|\.pytest_cache|\.ruff_cache|\.mypy_cache)" | xargs rm -rf
+
+# Run hypothesis tests
+.PHONY: hypothesis
+hypothesis:
+	@COMPOSE_BAKE=true PYTHON_VERSION=$(DEFAULT_PYTHON) docker compose run --rm --build fastapi-guard pytest -v --hypothesis-show-statistics
+	@docker compose down --rmi all --remove-orphans -v
+	@docker system prune -f
+
+# Run all security checks
+.PHONY: security
+security: bandit safety pip-audit
+	@echo "All security checks completed."
+
+# Run all code quality checks
+.PHONY: quality
+quality: lint vulture radon xenon interrogate
+	@echo "All code quality checks completed."
+
+# Run all analysis tools
+.PHONY: analysis
+analysis: deptry semgrep
+	@echo "All analysis tools completed."
+
+# Run all checks (linting, security, quality, and analysis)
+.PHONY: check-all
+check-all: lint security quality analysis
+	@echo "All checks completed."
+
 # Run tests (default Python version)
 .PHONY: test
 test:
@@ -123,12 +231,6 @@ test-3.13:
 	@PYTHON_VERSION=3.13 docker compose run --rm fastapi-guard pytest -v --cov=.
 	@docker compose down --rmi all --remove-orphans -v
 	@docker system prune -f
-
-# Local testing
-.PHONY: local-test
-local-test:
-	@uv run pytest -v --cov=.
-	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
 # Stress Test
 .PHONY: stress-test
@@ -192,6 +294,21 @@ help:
 	@echo "  make lint               	   - Run linting checks"
 	@echo "  make fix                	   - Auto-fix linting issues"
 	@echo "  make vulture            	   - Find dead code with Vulture"
+	@echo "  make bandit             	   - Run Bandit security scan"
+	@echo "  make safety             	   - Check dependencies with Safety"
+	@echo "  make pip-audit          	   - Audit dependencies with pip-audit"
+	@echo "  make radon              	   - Analyze code complexity with Radon"
+	@echo "  make xenon              	   - Check complexity thresholds with Xenon"
+	@echo "  make interrogate        	   - Check docstring coverage with Interrogate"
+	@echo "  make deptry             	   - Analyze dependencies with Deptry"
+	@echo "  make semgrep            	   - Run Semgrep static analysis"
+	@echo "  make profile            	   - Profile running application with py-spy"
+	@echo "  make profile-record     	   - Record profile with py-spy"
+	@echo "  make hypothesis         	   - Run property-based tests with Hypothesis"
+	@echo "  make security           	   - Run all security checks"
+	@echo "  make quality            	   - Run all code quality checks"
+	@echo "  make analysis           	   - Run all analysis tools"
+	@echo "  make check-all          	   - Run all checks (lint, security, quality, analysis)"
 	@echo "  make test               	   - Run tests with Python $(DEFAULT_PYTHON)"
 	@echo "  make test-all           	   - Run tests with all Python versions ($(PYTHON_VERSIONS))"
 	@echo "  make test-<version>     	   - Run tests with specific Python version (e.g., make test-3.10)"
