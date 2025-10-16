@@ -1,6 +1,4 @@
 # guard/core/checks/implementations/user_agent.py
-"""User agent filtering security check."""
-
 from fastapi import Request, Response, status
 
 from guard.core.checks.base import SecurityCheck

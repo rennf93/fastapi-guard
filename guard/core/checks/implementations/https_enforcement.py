@@ -1,6 +1,4 @@
 # guard/core/checks/implementations/https_enforcement.py
-"""HTTPS enforcement security check."""
-
 from fastapi import Request, Response
 
 from guard.core.checks.base import SecurityCheck

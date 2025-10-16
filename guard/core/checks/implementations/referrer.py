@@ -1,6 +1,4 @@
 # guard/core/checks/implementations/referrer.py
-"""Referrer validation security check."""
-
 from fastapi import Request, Response, status
 
 from guard.core.checks.base import SecurityCheck

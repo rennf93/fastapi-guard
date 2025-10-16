@@ -1,6 +1,4 @@
 # guard/core/checks/implementations/route_config.py
-"""Route configuration extraction check."""
-
 from fastapi import Request, Response
 
 from guard.core.checks.base import SecurityCheck

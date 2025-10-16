@@ -1,6 +1,4 @@
 # guard/core/checks/implementations/request_size_content.py
-"""Request size and content type security check."""
-
 from fastapi import Request, Response, status
 
 from guard.core.checks.base import SecurityCheck

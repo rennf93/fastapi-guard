@@ -1,6 +1,4 @@
 # guard/core/checks/implementations/custom_request.py
-"""Custom request check."""
-
 from fastapi import Request, Response
 
 from guard.core.checks.base import SecurityCheck

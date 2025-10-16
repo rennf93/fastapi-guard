@@ -1,6 +1,4 @@
 # guard/core/responses/factory.py
-"""Factory for creating and processing HTTP responses."""
-
 from collections.abc import Awaitable, Callable
 
 from fastapi import Request, Response, status

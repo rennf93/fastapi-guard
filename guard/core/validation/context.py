@@ -1,6 +1,4 @@
 # guard/core/validation/context.py
-"""Context for request validation operations."""
-
 from dataclasses import dataclass
 from logging import Logger
 

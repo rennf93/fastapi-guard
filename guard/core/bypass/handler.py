@@ -1,6 +1,4 @@
 # guard/core/bypass/handler.py
-"""Bypass handler for security check bypassing."""
-
 from collections.abc import Awaitable, Callable
 
 from fastapi import Request, Response

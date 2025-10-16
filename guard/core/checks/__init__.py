@@ -2,7 +2,6 @@
 """Security checks module with modular architecture."""
 
 from guard.core.checks.base import SecurityCheck
-from guard.core.checks.context import CheckContext
 from guard.core.checks.implementations import (
     AuthenticationCheck,
     CloudIpRefreshCheck,
@@ -27,7 +26,6 @@ from guard.core.checks.pipeline import SecurityCheckPipeline
 __all__ = [
     # Base
     "SecurityCheck",
-    "CheckContext",
     "SecurityCheckPipeline",
     # Implementations
     "RouteConfigCheck",

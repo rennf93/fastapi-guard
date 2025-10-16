@@ -1,9 +1,4 @@
-"""Security event bus for middleware events.
-
-This module provides centralized event publishing for middleware security events,
-decoupling event logic from the main middleware class.
-"""
-
+# guard/core/events/middleware_events.py
 import logging
 from datetime import datetime, timezone
 from typing import Any

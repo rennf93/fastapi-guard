@@ -1,6 +1,4 @@
 # guard/core/validation/validator.py
-"""Request validation operations."""
-
 from datetime import datetime, timezone
 from ipaddress import ip_address, ip_network
 

@@ -1,6 +1,4 @@
 # guard/core/checks/implementations/suspicious_activity.py
-"""Suspicious activity and penetration attempt detection check."""
-
 from fastapi import Request, Response, status
 
 from guard.core.checks.base import SecurityCheck

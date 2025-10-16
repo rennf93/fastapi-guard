@@ -1,6 +1,4 @@
 # guard/core/checks/implementations/cloud_ip_refresh.py
-"""Cloud IP refresh check."""
-
 import time
 
 from fastapi import Request, Response

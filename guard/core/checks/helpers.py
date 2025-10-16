@@ -1,12 +1,4 @@
 # guard/core/checks/helpers.py
-"""
-Helper functions for security checks.
-
-This module contains helper functions extracted from middleware.py to support
-the modular security check pipeline architecture. Functions handle IP validation,
-authentication, referrer validation, and suspicious activity detection.
-"""
-
 import re
 from ipaddress import ip_address, ip_network
 from typing import Any

@@ -1,6 +1,4 @@
 # guard/core/checks/implementations/rate_limit.py
-"""Rate limiting security check with three-tier priority system."""
-
 from typing import Any
 
 from fastapi import Request, Response

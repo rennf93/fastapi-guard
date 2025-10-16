@@ -1,6 +1,4 @@
 # guard/core/checks/implementations/cloud_provider.py
-"""Cloud provider blocking security check."""
-
 from fastapi import Request, Response, status
 
 from guard.core.checks.base import SecurityCheck

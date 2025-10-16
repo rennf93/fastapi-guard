@@ -1,10 +1,3 @@
-"""Handler initialization for middleware.
-
-This module provides centralized initialization logic for Redis, Agent,
-and other handler integrations, separating initialization concerns from
-the main middleware class.
-"""
-
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:

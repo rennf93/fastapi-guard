@@ -1,6 +1,4 @@
 # guard/core/checks/implementations/request_logging.py
-"""Request logging check."""
-
 from fastapi import Request, Response
 
 from guard.core.checks.base import SecurityCheck

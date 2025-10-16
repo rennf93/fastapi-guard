@@ -1,6 +1,4 @@
 # guard/core/checks/implementations/time_window.py
-"""Time window restriction security check."""
-
 from datetime import datetime, timezone
 
 from fastapi import Request, Response, status

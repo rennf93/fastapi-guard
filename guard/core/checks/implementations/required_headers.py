@@ -1,6 +1,4 @@
 # guard/core/checks/implementations/required_headers.py
-"""Required headers security check."""
-
 from fastapi import Request, Response, status
 
 from guard.core.checks.base import SecurityCheck

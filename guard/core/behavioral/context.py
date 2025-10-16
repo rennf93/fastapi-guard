@@ -1,6 +1,4 @@
 # guard/core/behavioral/context.py
-"""Context for behavioral rule processing."""
-
 from dataclasses import dataclass
 from logging import Logger
 

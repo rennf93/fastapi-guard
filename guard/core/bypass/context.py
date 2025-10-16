@@ -1,6 +1,4 @@
 # guard/core/bypass/context.py
-"""Context for bypass handler operations."""
-
 from dataclasses import dataclass
 from logging import Logger
 

@@ -1,6 +1,4 @@
 # guard/core/checks/implementations/ip_security.py
-"""IP-based security check (banning, allowlist/blocklist)."""
-
 from fastapi import Request, Response, status
 
 from guard.core.checks.base import SecurityCheck

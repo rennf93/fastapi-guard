@@ -1,9 +1,4 @@
-"""Metrics collection for middleware.
-
-This module provides centralized metrics collection for middleware,
-separating metrics logic from the main middleware class.
-"""
-
+# guard/core/events/metrics.py
 import logging
 from datetime import datetime, timezone
 from typing import Any

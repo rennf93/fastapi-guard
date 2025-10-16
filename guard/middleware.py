@@ -1,4 +1,4 @@
-# fastapi_guard/middleware.py
+# guard/middleware.py
 import time
 from collections.abc import Awaitable, Callable
 from typing import Any
@@ -98,7 +98,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     "Check agent_api_key and other required fields."
                 )
 
-        # Initialize security check pipeline (will be built in initialize())
+        # Initialize security check pipeline (built in initialize())
         self.security_pipeline: SecurityCheckPipeline | None = None
 
         # Initialize event bus and metrics collector

@@ -1,6 +1,4 @@
 # guard/core/routing/resolver.py
-"""Resolver for route configuration and decorator matching."""
-
 from typing import Any
 
 from fastapi import Request

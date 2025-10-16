@@ -1,6 +1,4 @@
 # guard/core/behavioral/processor.py
-"""Behavioral rule processing operations."""
-
 from fastapi import Request, Response
 
 from guard.core.behavioral.context import BehavioralContext
@@ -108,8 +106,8 @@ class BehavioralProcessor:
             route = request.scope["route"]
             if hasattr(route, "endpoint"):
                 # This is an internal identifier for tracking, not returned to users.
-                # Values come from Python introspection (module, qualname), not from
-                # user input.
+                # Values come from Python introspection (module,
+                # qualname), not from user input.
                 # nosemgrep
                 return f"{route.endpoint.__module__}.{route.endpoint.__qualname__}"
         return f"{request.method}:{request.url.path}"
