@@ -407,3 +407,28 @@ async def test_authentication_failures_blocked(auth_decorator_app: FastAPI) -> N
         )
         assert response.status_code == 401
         assert "Authentication required" in response.text
+
+
+async def test_auth_passive_mode(security_config: SecurityConfig) -> None:
+    """Test authentication check in passive mode."""
+    app = FastAPI()
+    security_config.passive_mode = True
+    security_config.trusted_proxies = ["127.0.0.1"]
+
+    decorator = SecurityDecorator(security_config)
+
+    @decorator.require_auth("bearer")
+    @app.get("/auth-test")
+    async def auth_endpoint() -> dict[str, str]:
+        return {"message": "ok"}
+
+    app.add_middleware(SecurityMiddleware, config=security_config)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        # Missing auth - should pass in passive mode
+        response = await client.get(
+            "/auth-test", headers={"X-Forwarded-For": "8.8.8.8"}
+        )
+        assert response.status_code == 200

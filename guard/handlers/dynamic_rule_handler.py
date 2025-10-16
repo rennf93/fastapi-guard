@@ -61,6 +61,45 @@ class DynamicRuleManager:
                 # Wait a bit before retrying
                 await asyncio.sleep(min(60, self.config.dynamic_rule_interval))
 
+    def _should_update_rules(self, rules: DynamicRules) -> bool:
+        """Check if rules should be updated based on version."""
+        if not self.current_rules:
+            return True
+
+        # Only update if rules have changed
+        return not (
+            rules.rule_id == self.current_rules.rule_id
+            and rules.version <= self.current_rules.version
+        )
+
+    async def _send_rule_received_event(self, rules: DynamicRules) -> None:
+        """Send event when new rules are received."""
+        if not self.agent_handler:
+            return
+
+        try:
+            from guard_agent import SecurityEvent
+
+            reason = f"Received updated rules {rules.rule_id} v{rules.version}"
+
+            event = SecurityEvent(
+                timestamp=datetime.now(timezone.utc),
+                event_type="dynamic_rule_updated",
+                ip_address="system",
+                action_taken="rules_received",
+                reason=reason,
+                metadata={
+                    "rule_id": rules.rule_id,
+                    "version": rules.version,
+                    "previous_version": self.current_rules.version
+                    if self.current_rules
+                    else 0,
+                },
+            )
+            await self.agent_handler.send_event(event)
+        except Exception as e:
+            self.logger.error(f"Failed to send rule updated event: {e}")
+
     async def update_rules(self) -> None:
         """Fetch and apply dynamic rules from SaaS platform."""
         if not self.config.enable_dynamic_rules or not self.agent_handler:
@@ -72,88 +111,65 @@ class DynamicRuleManager:
             if not rules:
                 return
 
-            # Check if rules have changed
-            if (
-                self.current_rules
-                and rules.rule_id == self.current_rules.rule_id
-                and rules.version <= self.current_rules.version
-            ):
+            # Check if rules should be updated
+            if not self._should_update_rules(rules):
                 return
 
-            # Send rule updated event
-            if self.agent_handler:
-                try:
-                    from guard_agent import SecurityEvent
+            # Notify that rules were received
+            await self._send_rule_received_event(rules)
 
-                    reason = f"Received updated rules {rules.rule_id} v{rules.version}"
-
-                    event = SecurityEvent(
-                        timestamp=datetime.now(timezone.utc),
-                        event_type="dynamic_rule_updated",
-                        ip_address="system",
-                        action_taken="rules_received",
-                        reason=reason,
-                        metadata={
-                            "rule_id": rules.rule_id,
-                            "version": rules.version,
-                            "previous_version": self.current_rules.version
-                            if self.current_rules
-                            else 0,
-                        },
-                    )
-                    await self.agent_handler.send_event(event)
-                except Exception as e:
-                    self.logger.error(f"Failed to send rule updated event: {e}")
-
+            # Log and apply the rules
             self.logger.info(
                 f"Applying dynamic rules: {rules.rule_id} v{rules.version}"
             )
-
-            # Apply the rules
             await self._apply_rules(rules)
 
             # Cache the rules
             self.current_rules = rules
             self.last_update = time.time()
 
-            # Send event to agent
+            # Send completion event
             await self._send_rule_applied_event(rules)
 
         except Exception as e:
             self.logger.error(f"Failed to update dynamic rules: {e}")
 
+    async def _apply_ip_rules(self, rules: DynamicRules) -> None:
+        """Apply IP-related rules (bans and whitelist)."""
+        if rules.ip_blacklist:
+            await self._apply_ip_bans(rules.ip_blacklist, rules.ip_ban_duration)
+
+        if rules.ip_whitelist:
+            await self._apply_ip_whitelist(rules.ip_whitelist)
+
+    async def _apply_blocking_rules(self, rules: DynamicRules) -> None:
+        """Apply content and access blocking rules."""
+        if rules.blocked_countries or rules.whitelist_countries:
+            await self._apply_country_rules(
+                rules.blocked_countries, rules.whitelist_countries
+            )
+
+        if rules.blocked_cloud_providers:
+            await self._apply_cloud_provider_rules(rules.blocked_cloud_providers)
+
+        if rules.blocked_user_agents:
+            await self._apply_user_agent_rules(rules.blocked_user_agents)
+
+        if rules.suspicious_patterns:
+            await self._apply_pattern_rules(rules.suspicious_patterns)
+
     async def _apply_rules(self, rules: DynamicRules) -> None:
         """Apply dynamic rules to existing handlers."""
         try:
-            # Apply IP bans
-            if rules.ip_blacklist:
-                await self._apply_ip_bans(rules.ip_blacklist, rules.ip_ban_duration)
+            # Apply IP-related rules
+            await self._apply_ip_rules(rules)
 
-            # Apply IP whitelist (remove from bans if present)
-            if rules.ip_whitelist:
-                await self._apply_ip_whitelist(rules.ip_whitelist)
-
-            # Apply country rules
-            if rules.blocked_countries or rules.whitelist_countries:
-                await self._apply_country_rules(
-                    rules.blocked_countries, rules.whitelist_countries
-                )
+            # Apply blocking rules
+            await self._apply_blocking_rules(rules)
 
             # Apply rate limiting rules
             if rules.global_rate_limit or rules.endpoint_rate_limits:
                 await self._apply_rate_limit_rules(rules)
-
-            # Apply cloud provider blocks
-            if rules.blocked_cloud_providers:
-                await self._apply_cloud_provider_rules(rules.blocked_cloud_providers)
-
-            # Apply user agent blocks
-            if rules.blocked_user_agents:
-                await self._apply_user_agent_rules(rules.blocked_user_agents)
-
-            # Apply suspicious patterns
-            if rules.suspicious_patterns:
-                await self._apply_pattern_rules(rules.suspicious_patterns)
 
             # Apply feature toggles
             await self._apply_feature_toggles(rules)

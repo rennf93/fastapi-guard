@@ -79,30 +79,42 @@ class AdvancedMixin(BaseSecurityMixin):
 
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             async def honeypot_validator(request: Request) -> Response | None:
-                try:
-                    if request.method in ["POST", "PUT", "PATCH"]:
-                        # Check form data
-                        if "application/x-www-form-urlencoded" in request.headers.get(
-                            "content-type", ""
-                        ):
-                            form = await request.form()
-                            for field in trap_fields:
-                                if field in form and form[field]:
-                                    return Response("Forbidden", status_code=403)
+                """Main validator that checks for honeypot trap fields."""
 
-                        # Check JSON data
-                        elif "application/json" in request.headers.get(
-                            "content-type", ""
-                        ):
-                            try:
-                                json_data = await request.json()
-                                for field in trap_fields:
-                                    if field in json_data and json_data[field]:
-                                        return Response("Forbidden", status_code=403)
-                            except Exception:
-                                pass
-                except Exception:
-                    pass
+                def _has_trap_field_filled(data: dict[str, Any]) -> bool:
+                    """Check if any trap field is filled in the data."""
+                    return any(field in data and data[field] for field in trap_fields)
+
+                async def _validate_form_data() -> Response | None:
+                    """Validate honeypot fields in form data."""
+                    try:
+                        form = await request.form()
+                        if _has_trap_field_filled(dict(form)):
+                            return Response("Forbidden", status_code=403)
+                    except Exception:
+                        pass
+                    return None
+
+                async def _validate_json_data() -> Response | None:
+                    """Validate honeypot fields in JSON data."""
+                    try:
+                        json_data = await request.json()
+                        if _has_trap_field_filled(json_data):
+                            return Response("Forbidden", status_code=403)
+                    except Exception:
+                        pass
+                    return None
+
+                if request.method not in ["POST", "PUT", "PATCH"]:
+                    return None
+
+                content_type = request.headers.get("content-type", "")
+
+                if "application/x-www-form-urlencoded" in content_type:
+                    return await _validate_form_data()
+                elif "application/json" in content_type:
+                    return await _validate_json_data()
+
                 return None
 
             route_config = self._ensure_route_config(func)

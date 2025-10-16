@@ -120,6 +120,112 @@ class SecurityHeadersManager:
         except Exception as e:
             self.logger.warning(f"Failed to load cached header config: {e}")
 
+    def _configure_csp(self, csp: dict[str, list[str]] | None) -> None:
+        """Configure Content Security Policy with validation."""
+        if not csp:
+            return
+
+        self.csp_config = csp
+        # Warn about unsafe directives
+        for directive, sources in csp.items():
+            if "'unsafe-inline'" in sources or "'unsafe-eval'" in sources:
+                self.logger.warning(
+                    f"CSP directive '{directive}' contains unsafe sources"
+                )
+
+    def _configure_hsts(
+        self,
+        hsts_max_age: int | None,
+        hsts_include_subdomains: bool,
+        hsts_preload: bool,
+    ) -> None:
+        """Configure HSTS with validation."""
+        if hsts_max_age is None:
+            return
+
+        # Validate HSTS preload requirements
+        if hsts_preload:
+            if hsts_max_age < 31536000:
+                self.logger.warning("HSTS preload requires max_age >= 31536000")
+                hsts_preload = False
+            if not hsts_include_subdomains:
+                self.logger.warning("HSTS preload requires includeSubDomains")
+                hsts_include_subdomains = True
+
+        self.hsts_config = {
+            "max_age": hsts_max_age,
+            "include_subdomains": hsts_include_subdomains,
+            "preload": hsts_preload,
+        }
+
+    def _configure_cors(
+        self,
+        cors_origins: list[str] | None,
+        cors_allow_credentials: bool,
+        cors_allow_methods: list[str] | None,
+        cors_allow_headers: list[str] | None,
+    ) -> None:
+        """Configure CORS with security validation."""
+        if not cors_origins:
+            return
+
+        # NOTE: Never allow credentials when using wildcard
+        if "*" in cors_origins and cors_allow_credentials:
+            self.logger.error(
+                "CORS config error: Wildcard origin disallowed with credentials"
+            )
+            cors_allow_credentials = False
+
+        self.cors_config = {
+            "origins": cors_origins,
+            "allow_credentials": cors_allow_credentials,
+            "allow_methods": cors_allow_methods or ["GET", "POST"],
+            "allow_headers": cors_allow_headers or ["*"],
+        }
+
+    def _update_default_headers(
+        self,
+        frame_options: str | None,
+        content_type_options: str | None,
+        xss_protection: str | None,
+        referrer_policy: str | None,
+        permissions_policy: str | None,
+    ) -> None:
+        """Update default security headers with validation."""
+        if frame_options is not None:
+            self.default_headers["X-Frame-Options"] = self._validate_header_value(
+                frame_options
+            )
+        if content_type_options is not None:
+            self.default_headers["X-Content-Type-Options"] = (
+                self._validate_header_value(content_type_options)
+            )
+        if xss_protection is not None:
+            self.default_headers["X-XSS-Protection"] = self._validate_header_value(
+                xss_protection
+            )
+        if referrer_policy is not None:
+            self.default_headers["Referrer-Policy"] = self._validate_header_value(
+                referrer_policy
+            )
+        if permissions_policy != "UNSET":
+            if permissions_policy:
+                self.default_headers["Permissions-Policy"] = (
+                    self._validate_header_value(permissions_policy)
+                )
+            else:
+                # Remove Permissions-Policy only if
+                # explicitly set to None, empty string or False
+                self.default_headers.pop("Permissions-Policy", None)
+
+    def _add_custom_headers(self, custom_headers: dict[str, str] | None) -> None:
+        """Add custom headers with validation."""
+        if not custom_headers:
+            return
+
+        for name, value in custom_headers.items():
+            self.custom_headers[name] = self._validate_header_value(value)
+
     def configure(
         self,
         *,
@@ -161,80 +267,20 @@ class SecurityHeadersManager:
         """
         self.enabled = enabled
 
-        # Configure CSP with validation
-        if csp:
-            self.csp_config = csp
-            # Warn about unsafe directives
-            for directive, sources in csp.items():
-                if "'unsafe-inline'" in sources or "'unsafe-eval'" in sources:
-                    self.logger.warning(
-                        f"CSP directive '{directive}' contains unsafe sources"
-                    )
-
-        # Configure HSTS with validation
-        if hsts_max_age is not None:
-            # Validate HSTS preload requirements
-            if hsts_preload:
-                if hsts_max_age < 31536000:
-                    self.logger.warning("HSTS preload requires max_age >= 31536000")
-                    hsts_preload = False
-                if not hsts_include_subdomains:
-                    self.logger.warning("HSTS preload requires includeSubDomains")
-                    hsts_include_subdomains = True
-
-            self.hsts_config = {
-                "max_age": hsts_max_age,
-                "include_subdomains": hsts_include_subdomains,
-                "preload": hsts_preload,
-            }
-
-        # Configure CORS with security validation
-        if cors_origins:
-            # NOTE: Never allow credentials when using wildcard
-            if "*" in cors_origins and cors_allow_credentials:
-                self.logger.error(
-                    "CORS config error: Wildcard origin disallowed with credentials"
-                )
-                cors_allow_credentials = False
-
-            self.cors_config = {
-                "origins": cors_origins,
-                "allow_credentials": cors_allow_credentials,
-                "allow_methods": cors_allow_methods or ["GET", "POST"],
-                "allow_headers": cors_allow_headers or ["*"],
-            }
-
-        # Update default headers with validation - only update if explicitly provided
-        if frame_options is not None:
-            self.default_headers["X-Frame-Options"] = self._validate_header_value(
-                frame_options
-            )
-        if content_type_options is not None:
-            self.default_headers["X-Content-Type-Options"] = (
-                self._validate_header_value(content_type_options)
-            )
-        if xss_protection is not None:
-            self.default_headers["X-XSS-Protection"] = self._validate_header_value(
-                xss_protection
-            )
-        if referrer_policy is not None:
-            self.default_headers["Referrer-Policy"] = self._validate_header_value(
-                referrer_policy
-            )
-        if permissions_policy != "UNSET":
-            if permissions_policy:
-                self.default_headers["Permissions-Policy"] = (
-                    self._validate_header_value(permissions_policy)
-                )
-            else:
-                # Remove Permissions-Policy only if
-                # explicitly set to None, empty string or False
-                self.default_headers.pop("Permissions-Policy", None)
-
-        # Add custom headers with validation
-        if custom_headers:
-            for name, value in custom_headers.items():
-                self.custom_headers[name] = self._validate_header_value(value)
+        # Configure each component
+        self._configure_csp(csp)
+        self._configure_hsts(hsts_max_age, hsts_include_subdomains, hsts_preload)
+        self._configure_cors(
+            cors_origins, cors_allow_credentials, cors_allow_methods, cors_allow_headers
+        )
+        self._update_default_headers(
+            frame_options,
+            content_type_options,
+            xss_protection,
+            referrer_policy,
+            permissions_policy,
+        )
+        self._add_custom_headers(custom_headers)
 
     async def _cache_configuration(self) -> None:
         """Cache current configuration in Redis for persistence."""
@@ -345,6 +391,65 @@ class SecurityHeadersManager:
 
         return headers
 
+    def _is_wildcard_with_credentials(self, allowed_origins: list[str]) -> bool:
+        """Check if invalid wildcard + credentials configuration."""
+        if "*" not in allowed_origins:
+            return False
+
+        # NOTE: Never allow credentials when using wildcard
+        if self.cors_config and self.cors_config.get("allow_credentials"):
+            self.logger.warning(
+                "Credentials cannot be used with wildcard origin - blocking CORS"
+            )
+            return True
+
+        return False
+
+    def _is_origin_allowed(self, origin: str, allowed_origins: list[str]) -> bool:
+        """Check if origin is in allowed list."""
+        return "*" in allowed_origins or origin in allowed_origins
+
+    def _get_validated_cors_config(self) -> tuple[list[str], list[str]]:
+        """
+        Get validated CORS methods and headers.
+
+        Returns:
+            Tuple of (allow_methods, allow_headers)
+        """
+        if not self.cors_config:
+            return ["GET", "POST"], ["*"]
+
+        allow_methods = self.cors_config.get("allow_methods", ["GET", "POST"])
+        allow_headers = self.cors_config.get("allow_headers", ["*"])
+
+        # Validate types
+        if not isinstance(allow_methods, list):
+            allow_methods = ["GET", "POST"]
+        if not isinstance(allow_headers, list):
+            allow_headers = ["*"]
+
+        return allow_methods, allow_headers
+
+    def _build_cors_headers(
+        self,
+        origin: str,
+        allowed_origins: list[str],
+        allow_methods: list[str],
+        allow_headers: list[str],
+    ) -> dict[str, str]:
+        """Build CORS response headers."""
+        cors_headers = {
+            "Access-Control-Allow-Origin": origin if origin in allowed_origins else "*",
+            "Access-Control-Allow-Methods": ", ".join(allow_methods),
+            "Access-Control-Allow-Headers": ", ".join(allow_headers),
+            "Access-Control-Max-Age": "3600",
+        }
+
+        if self.cors_config and self.cors_config.get("allow_credentials"):
+            cors_headers["Access-Control-Allow-Credentials"] = "true"
+
+        return cors_headers
+
     async def get_cors_headers(self, origin: str) -> dict[str, str]:
         """
         Get CORS headers if origin is allowed.
@@ -362,39 +467,19 @@ class SecurityHeadersManager:
         if not isinstance(allowed_origins, list):
             return {}
 
-        # Check if origin is allowed with security validation
-        if "*" in allowed_origins:
-            # NOTE: Never allow credentials when using wildcard
-            if self.cors_config.get("allow_credentials"):
-                self.logger.warning(
-                    "Credentials cannot be used with wildcard origin - blocking CORS"
-                )
-                return {}
+        # Check for invalid wildcard + credentials configuration
+        if self._is_wildcard_with_credentials(allowed_origins):
+            return {}
 
-        if "*" in allowed_origins or origin in allowed_origins:
-            allow_methods = self.cors_config.get("allow_methods", ["GET", "POST"])
-            allow_headers = self.cors_config.get("allow_headers", ["*"])
+        # Check if origin is allowed
+        if not self._is_origin_allowed(origin, allowed_origins):
+            return {}
 
-            if not isinstance(allow_methods, list):
-                allow_methods = ["GET", "POST"]
-            if not isinstance(allow_headers, list):
-                allow_headers = ["*"]
-
-            cors_headers = {
-                "Access-Control-Allow-Origin": origin
-                if origin in allowed_origins
-                else "*",
-                "Access-Control-Allow-Methods": ", ".join(allow_methods),
-                "Access-Control-Allow-Headers": ", ".join(allow_headers),
-                "Access-Control-Max-Age": "3600",
-            }
-
-            if self.cors_config.get("allow_credentials"):
-                cors_headers["Access-Control-Allow-Credentials"] = "true"
-
-            return cors_headers
-
-        return {}
+        # Get validated config and build headers
+        allow_methods, allow_headers = self._get_validated_cors_config()
+        return self._build_cors_headers(
+            origin, allowed_origins, allow_methods, allow_headers
+        )
 
     async def _send_headers_applied_event(
         self, path: str, headers: dict[str, str]

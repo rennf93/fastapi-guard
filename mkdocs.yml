@@ -78,6 +78,7 @@ nav:
   - API Reference:
     - Overview: api/overview.md
     - SecurityMiddleware: api/security-middleware.md
+    - Core Architecture: api/core-architecture.md
     - SecurityDecorators: api/decorators.md
     - BehaviorManager: api/behavior-manager.md
     - RedisManager: api/redis-manager.md
@@ -86,6 +87,7 @@ nav:
     - RateLimitManager: api/ratelimit-manager.md
     - SusPatternsManager: api/sus-patterns.md
     - CloudManager: api/cloud-manager.md
+    - SecurityHeadersManager: api/security-headers.md
     - Utilities: api/utilities.md
   - Examples:
     - Example App: tutorial/examples/example-app.md

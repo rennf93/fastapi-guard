@@ -1,6 +1,6 @@
 [project]
 name = "fastapi_guard"
-version = "4.1.2"
+version = "4.2.0"
 description = "A security library for FastAPI to control IPs, log requests, and detect penetration attempts."
 authors = [
     {name = "Renzo Franceschini", email = "rennf93@users.noreply.github.com"}
@@ -24,10 +24,12 @@ dependencies = [
     "cachetools",
     "fastapi",
     "httpx",
-    "ipaddress",
     "maxminddb",
+    "pydantic",
     "redis",
     "requests",
+    "starlette",
+    "typing-extensions",
     "uvicorn",
 ]
 
@@ -36,6 +38,9 @@ Homepage = "https://github.com/rennf93/fastapi-guard"
 
 [project.optional-dependencies]
 dev = [
+    "aiohttp",
+    "bandit[toml]",
+    "deptry",
     "fastapi-guard-agent",
     "httpx",
     "matplotlib",
@@ -45,16 +50,21 @@ dev = [
     "mkdocs-material",
     "mypy",
     "numpy",
+    "pip-audit",
     "pre-commit",
     "pymarkdownlnt",
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
     "pytest-mock",
+    "radon",
     "ruff",
+    "safety",
+    "semgrep",
     "types-cachetools",
     "types-requests",
     "vulture",
+    "xenon",
 ]
 
 [build-system]
@@ -154,6 +164,10 @@ enabled = false
 # MD046 - Code block style (disabled - allow any style)
 enabled = false
 
+[tool.pymarkdown.plugins.md029]
+# MD029 - Ordered list item prefix (disabled - allow any style)
+enabled = false
+
 [tool.vulture]
 paths = ["guard", "tests", "vulture_whitelist.py"]
 exclude = ["**/conftest.py", ".venv"]
@@ -184,3 +198,52 @@ ignore_names = [
     "Field",
 ]
 sort_by_size = true
+
+[tool.bandit]
+skips = ["B101", "B601"]
+exclude_dirs = ["tests", ".venv", "vulture_whitelist.py"]
+severity = "medium"
+
+[tool.radon]
+exclude = "tests/*,.venv/*,vulture_whitelist.py"
+cc_min = "C"
+mi_min = "A"
+no_assert = false
+show_closures = true
+total_average = true
+
+[tool.xenon]
+max_absolute = "B"
+max_modules = "A"
+max_average = "A"
+exclude = ["tests/*", ".venv/*", "vulture_whitelist.py"]
+ignore = []
+
+[tool.deptry]
+exclude = ["tests", ".venv", "vulture_whitelist.py", "examples", "docs"]
+extend_exclude = ["conftest.py", "setup.py"]
+known_first_party = ["guard"]
+per_rule_ignores = { "DEP002" = [
+    "bandit",
+    "deptry",
+    "mkdocs",
+    "mkdocstrings",
+    "mkdocstrings-python",
+    "mkdocs-material",
+    "mypy",
+    "pip-audit",
+    "pre-commit",
+    "pymarkdownlnt",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-mock",
+    "radon",
+    "ruff",
+    "safety",
+    "semgrep",
+    "types-cachetools",
+    "types-requests",
+    "vulture",
+    "xenon",
+] }

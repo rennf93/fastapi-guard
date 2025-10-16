@@ -65,6 +65,103 @@ class RateLimitManager:
         """Initialize agent integration."""
         self.agent_handler = agent_handler
 
+    async def _get_redis_request_count(
+        self, client_ip: str, current_time: float, window_start: float
+    ) -> int | None:
+        """
+        Get request count from Redis using atomic operations.
+
+        Returns:
+            Request count or None if Redis fails
+        """
+        if not self.redis_handler:
+            return None
+
+        rate_key = f"rate:{client_ip}"
+        key_name = f"{self.redis_handler.config.redis_prefix}rate_limit:{rate_key}"
+
+        try:
+            # Atomic Lua Script preferred
+            if self.rate_limit_script_sha:
+                async with self.redis_handler.get_connection() as conn:
+                    count = await conn.evalsha(
+                        self.rate_limit_script_sha,
+                        1,  # Number of keys
+                        key_name,  # The key
+                        current_time,  # Current timestamp
+                        self.config.rate_limit_window,  # Window size
+                        self.config.rate_limit,  # Rate limit
+                    )
+                return int(count)
+            else:
+                # Fallback to pipeline
+                async with self.redis_handler.get_connection() as conn:
+                    pipeline = conn.pipeline()
+                    pipeline.zadd(key_name, {str(current_time): current_time})
+                    pipeline.zremrangebyscore(key_name, 0, window_start)
+                    pipeline.zcard(key_name)
+                    pipeline.expire(key_name, self.config.rate_limit_window * 2)
+                    results = await pipeline.execute()
+                    return int(results[2])  # ZCARD operation count
+
+        except RedisError as e:
+            self.logger.error(f"Redis rate limiting error: {str(e)}")
+            self.logger.info("Falling back to in-memory rate limiting")
+        except Exception as e:
+            self.logger.error(f"Unexpected error in rate limiting: {str(e)}")
+
+        return None
+
+    async def _handle_rate_limit_exceeded(
+        self,
+        request: Request,
+        client_ip: str,
+        count: int,
+        create_error_response: Callable[[int, str], Awaitable[Response]],
+    ) -> Response:
+        """Handle rate limit exceeded scenario."""
+        message = "Rate limit exceeded for IP:"
+        detail = f"requests in {self.config.rate_limit_window}s window)"
+        await log_activity(
+            request,
+            self.logger,
+            log_type="suspicious",
+            reason=f"{message} {client_ip} ({count} {detail})",
+            level=self.config.log_suspicious_level,
+            passive_mode=self.config.passive_mode,
+        )
+
+        # Send event to agent
+        if self.agent_handler:
+            await self._send_rate_limit_event(request, client_ip, count)
+
+        return await create_error_response(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            "Too many requests",
+        )
+
+    def _get_in_memory_request_count(
+        self, client_ip: str, window_start: float, current_time: float
+    ) -> int:
+        """
+        Get request count from in-memory store with sliding window cleanup.
+
+        Returns:
+            Current request count (before adding current request)
+        """
+        # Cleanup old requests outside the window
+        while (
+            self.request_timestamps[client_ip]
+            and self.request_timestamps[client_ip][0] <= window_start
+        ):
+            self.request_timestamps[client_ip].popleft()
+
+        # Get count and add current timestamp
+        request_count = len(self.request_timestamps[client_ip])
+        self.request_timestamps[client_ip].append(current_time)
+
+        return request_count
+
     async def check_rate_limit(
         self,
         request: Request,
@@ -89,99 +186,29 @@ class RateLimitManager:
         current_time = time.time()
         window_start = current_time - self.config.rate_limit_window
 
-        # Redis implementation
+        # Try Redis first if enabled
         if self.config.enable_redis and self.redis_handler:
-            rate_key = f"rate:{client_ip}"
-            key_name = f"{self.redis_handler.config.redis_prefix}rate_limit:{rate_key}"
-
-            try:
-                # Atomic Lua Script
-                if self.rate_limit_script_sha:
-                    async with self.redis_handler.get_connection() as conn:
-                        count = await conn.evalsha(
-                            self.rate_limit_script_sha,
-                            1,  # NOTE: Number of keys
-                            key_name,  # NOTE: The key
-                            current_time,  # NOTE: Current timestamp
-                            self.config.rate_limit_window,  # NOTE: Window size
-                            self.config.rate_limit,  # NOTE: Rate limit
-                        )
-                else:
-                    # Fallback to pipeline
-                    async with self.redis_handler.get_connection() as conn:
-                        pipeline = conn.pipeline()
-                        pipeline.zadd(key_name, {str(current_time): current_time})
-                        pipeline.zremrangebyscore(key_name, 0, window_start)
-                        pipeline.zcard(key_name)
-                        pipeline.expire(key_name, self.config.rate_limit_window * 2)
-                        results = await pipeline.execute()
-                        count = results[2]  # NOTE: ZCARD operation count
-
-                # Check exceeded limit
-                if count and count > self.config.rate_limit:
-                    message = "Rate limit exceeded for IP:"
-                    detail = f"requests in {self.config.rate_limit_window}s window)"
-                    await log_activity(
-                        request,
-                        self.logger,
-                        log_type="suspicious",
-                        reason=f"{message} {client_ip} ({count} {detail})",
-                        level=self.config.log_suspicious_level,
-                        passive_mode=self.config.passive_mode,
-                    )
-
-                    # Send event to agent
-                    if self.agent_handler:
-                        await self._send_rate_limit_event(request, client_ip, count)
-
-                    return await create_error_response(
-                        status.HTTP_429_TOO_MANY_REQUESTS,
-                        "Too many requests",
-                    )
-            except RedisError as e:
-                self.logger.error(f"Redis rate limiting error: {str(e)}")
-                self.logger.info("Falling back to in-memory rate limiting")
-                # In-memory fallback
-            except Exception as e:
-                self.logger.error(f"Unexpected error in rate limiting: {str(e)}")
-                # In-memory fallback
-
-            return None
-
-        # In-memory Fallback
-        # Cleanup old requests
-        while (
-            self.request_timestamps[client_ip]
-            and self.request_timestamps[client_ip][0] <= window_start
-        ):
-            self.request_timestamps[client_ip].popleft()
-
-        # Count requests within the window
-        request_count = len(self.request_timestamps[client_ip])
-
-        # Current TS to deque
-        self.request_timestamps[client_ip].append(current_time)
-
-        # Check exceeded limit
-        if request_count >= self.config.rate_limit:
-            message = "Rate limit exceeded for IP:"
-            detail = f"requests in {self.config.rate_limit_window}s window)"
-            await log_activity(
-                request,
-                self.logger,
-                log_type="suspicious",
-                reason=f"{message} {client_ip} ({request_count + 1} {detail})",
-                level=self.config.log_suspicious_level,
-                passive_mode=self.config.passive_mode,
+            count = await self._get_redis_request_count(
+                client_ip, current_time, window_start
             )
 
-            # Send event to agent
-            if self.agent_handler:
-                await self._send_rate_limit_event(request, client_ip, request_count + 1)
+            # If Redis succeeded, check if limit exceeded
+            if count is not None:
+                if count > self.config.rate_limit:
+                    return await self._handle_rate_limit_exceeded(
+                        request, client_ip, count, create_error_response
+                    )
+                return None
 
-            return await create_error_response(
-                status.HTTP_429_TOO_MANY_REQUESTS,
-                "Too many requests",
+        # Fall back to in-memory rate limiting
+        request_count = self._get_in_memory_request_count(
+            client_ip, window_start, current_time
+        )
+
+        # Check if limit exceeded
+        if request_count >= self.config.rate_limit:
+            return await self._handle_rate_limit_exceeded(
+                request, client_ip, request_count + 1, create_error_response
             )
 
         return None

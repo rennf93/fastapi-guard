@@ -169,7 +169,7 @@ async def test_extract_client_ip_with_untrusted_proxy() -> None:
 async def test_extract_client_ip_error_handling(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Test error handling in extract_client_ip."""
+    """Test error handling in extract_client_ip when ip_address validation fails."""
     config = SecurityConfig(trusted_proxies=["127.0.0.1"])
 
     async def receive() -> dict[str, str | bytes]:
@@ -193,7 +193,10 @@ async def test_extract_client_ip_error_handling(
         with patch("guard.utils.ip_address", side_effect=ValueError("Invalid IP")):
             ip = await extract_client_ip(request, config)
             assert ip == "127.0.0.1"
-            assert "Error processing client IP" in caplog.text
+            # When ip_address() raises ValueError,
+            # _is_trusted_proxy catches it and returns False
+            # This triggers the IP spoof attempt warning since forwarded_for is present
+            assert "Potential IP spoof attempt" in caplog.text
 
 
 @pytest.mark.asyncio

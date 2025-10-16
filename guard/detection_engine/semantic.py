@@ -217,6 +217,51 @@ class SemanticAnalyzer:
 
         return layers
 
+    def _calculate_base_score(self, token_set: set[str], keywords: set[str]) -> float:
+        """
+        Calculate base probability score from keyword matches.
+
+        Args:
+            token_set: Set of tokens extracted from content
+            keywords: Set of attack-specific keywords
+
+        Returns:
+            Base score (0.0 to 1.0)
+        """
+        if not keywords:
+            return 0.0
+
+        matches = len(token_set.intersection(keywords))
+        return matches / len(keywords)
+
+    def _get_structural_pattern_boost(self, attack_type: str, content: str) -> float:
+        """
+        Get score boost based on structural patterns for attack type.
+
+        Args:
+            attack_type: The type of attack to check
+            content: The content to analyze
+
+        Returns:
+            Boost value (0.0 to 0.3)
+        """
+        # Mapping of attack types to their structural pattern checks
+        pattern_checks = {
+            "xss": (r"<[^>]+>", 0),
+            "sql": (r"\b(?:union|select|from|where)\b", re.IGNORECASE),
+            "command": (r"[;&|]", 0),
+            "path": (r"\.{2,}[/\\]", 0),
+        }
+
+        if attack_type not in pattern_checks:
+            return 0.0
+
+        pattern, flags = pattern_checks[attack_type]
+        if re.search(pattern, content, flags):
+            return 0.3
+
+        return 0.0
+
     def analyze_attack_probability(self, content: str) -> dict[str, float]:
         """
         Analyze the probability of different attack types.
@@ -232,27 +277,12 @@ class SemanticAnalyzer:
         probabilities = {}
 
         for attack_type, keywords in self.attack_keywords.items():
-            # Count keyword matches
-            matches = len(token_set.intersection(keywords))
-            total_keywords = len(keywords)
+            # Calculate base score from keyword matches
+            base_score = self._calculate_base_score(token_set, keywords)
 
-            # Calculate base score
-            if total_keywords > 0:
-                score = matches / total_keywords
-            else:
-                score = 0.0
-
-            # Boost score based on structural patterns
-            if attack_type == "xss" and re.search(r"<[^>]+>", content):
-                score += 0.3
-            elif attack_type == "sql" and re.search(
-                r"\b(?:union|select|from|where)\b", content, re.IGNORECASE
-            ):
-                score += 0.3
-            elif attack_type == "command" and re.search(r"[;&|]", content):
-                score += 0.3
-            elif attack_type == "path" and re.search(r"\.{2,}[/\\]", content):
-                score += 0.3
+            # Add structural pattern boost
+            pattern_boost = self._get_structural_pattern_boost(attack_type, content)
+            score = base_score + pattern_boost
 
             # Cap at 1.0
             probabilities[attack_type] = min(score, 1.0)
@@ -318,6 +348,129 @@ class SemanticAnalyzer:
 
         return patterns
 
+    def _check_code_pattern_risks(self, content: str) -> float:
+        """
+        Check for code-like pattern risks.
+
+        Examines content for braces, function calls, variable references,
+        and operator patterns that may indicate code injection.
+
+        Args:
+            content: The content to analyze
+
+        Returns:
+            Risk score contribution (0.0 to 0.6)
+        """
+        risk = 0.0
+
+        # Check for code-like patterns (braces)
+        if re.search(r"[\{\}].*[\{\}]", content):
+            risk += 0.2
+
+        # Check for function calls
+        if re.search(r"\w+\s*\([^)]*\)", content):
+            risk += 0.2
+
+        # Check for variable references
+        if re.search(r"[$@]\w+", content):
+            risk += 0.1
+
+        # Check for operators
+        if re.search(r"[=+\-*/]{2,}", content):
+            risk += 0.1
+
+        return risk
+
+    def _check_ast_parsing_risk(self, content: str) -> float:
+        """
+        Check for Python code injection using AST parsing with timeout protection.
+
+        Attempts to parse content as Python code and checks for dangerous
+        AST nodes. Uses timeout to prevent DoS attacks.
+
+        Args:
+            content: The content to analyze
+
+        Returns:
+            Risk score contribution (0.0 to 0.3)
+        """
+        MAX_AST_LENGTH = 1000
+
+        # Content too long for safe parsing
+        if len(content) > MAX_AST_LENGTH:
+            return 0.0
+
+        try:
+            import concurrent.futures
+
+            def _parse_ast() -> bool:
+                try:
+                    # Use mode='eval' to be extra safe - only allows expressions
+                    tree = ast.parse(content, mode="eval")
+                    # Check for dangerous nodes
+                    for node in ast.walk(tree):
+                        # Check for potentially dangerous AST nodes
+                        if isinstance(
+                            node,
+                            ast.Import
+                            | ast.ImportFrom
+                            | ast.FunctionDef
+                            | ast.AsyncFunctionDef
+                            | ast.ClassDef,
+                        ):
+                            # These shouldn't appear in eval mode anyway
+                            return True
+                    return True
+                except SyntaxError:
+                    # Not valid Python - this is normal
+                    return False
+                except Exception:
+                    # Other parsing errors
+                    return False
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(_parse_ast)
+                try:
+                    if future.result(timeout=0.1):  # 100ms timeout
+                        return 0.3
+                except concurrent.futures.TimeoutError:
+                    # Assume dangerous if parsing times out
+                    return 0.2
+
+        except Exception:  # pragma: no cover
+            # AST parsing failed - this is expected for malformed code
+            pass
+
+        return 0.0
+
+    def _check_injection_keywords(self, content: str) -> float:
+        """
+        Check for dangerous Python injection keywords.
+
+        Scans for keywords commonly used in code injection attacks
+        such as eval, exec, compile, __import__, globals, and locals.
+
+        Args:
+            content: The content to analyze
+
+        Returns:
+            Risk score contribution (0.0 or 0.2)
+        """
+        injection_keywords = [
+            "eval",
+            "exec",
+            "compile",
+            "__import__",
+            "globals",
+            "locals",
+        ]
+
+        for keyword in injection_keywords:
+            if re.search(rf"\b{keyword}\b", content, re.IGNORECASE):
+                return 0.2
+
+        return 0.0
+
     def analyze_code_injection_risk(self, content: str) -> float:
         """
         Analyze risk of code injection.
@@ -331,80 +484,13 @@ class SemanticAnalyzer:
         risk_score = 0.0
 
         # Check for code-like patterns
-        if re.search(r"[\{\}].*[\{\}]", content):
-            risk_score += 0.2
-
-        # Check for function calls
-        if re.search(r"\w+\s*\([^)]*\)", content):
-            risk_score += 0.2
-
-        # Check for variable references
-        if re.search(r"[$@]\w+", content):
-            risk_score += 0.1
-
-        # Check for operators
-        if re.search(r"[=+\-*/]{2,}", content):
-            risk_score += 0.1
+        risk_score += self._check_code_pattern_risks(content)
 
         # Try to parse as Python code (catches many injection attempts)
-        # Limit AST parsing to prevent DoS
-        MAX_AST_LENGTH = 1000
-        try:
-            if len(content) <= MAX_AST_LENGTH:
-                # Use timeout for AST parsing
-                import concurrent.futures
-
-                def _parse_ast() -> bool:
-                    try:
-                        # Use mode='eval' to be extra safe - only allows expressions
-                        tree = ast.parse(content, mode="eval")
-                        # Check for dangerous nodes
-                        for node in ast.walk(tree):
-                            # Check for potentially dangerous AST nodes
-                            if isinstance(
-                                node,
-                                ast.Import
-                                | ast.ImportFrom
-                                | ast.FunctionDef
-                                | ast.AsyncFunctionDef
-                                | ast.ClassDef,
-                            ):
-                                # These shouldn't appear in eval mode anyway
-                                return True
-                        return True
-                    except SyntaxError:
-                        # Not valid Python - this is normal
-                        return False
-                    except Exception:
-                        # Other parsing errors
-                        return False
-
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(_parse_ast)
-                    try:
-                        if future.result(timeout=0.1):  # 100ms timeout
-                            risk_score += 0.3
-                    except concurrent.futures.TimeoutError:
-                        # Assume dangerous if parsing times out
-                        risk_score += 0.2
-        except Exception:  # pragma: no cover
-            # AST parsing failed - this is expected for malformed code
-            # There's already the risk score for timeout, so just continue
-            pass
+        risk_score += self._check_ast_parsing_risk(content)
 
         # Check for common injection keywords
-        injection_keywords = [
-            "eval",
-            "exec",
-            "compile",
-            "__import__",
-            "globals",
-            "locals",
-        ]
-        for keyword in injection_keywords:
-            if re.search(rf"\b{keyword}\b", content, re.IGNORECASE):
-                risk_score += 0.2
-                break
+        risk_score += self._check_injection_keywords(content)
 
         return min(risk_score, 1.0)
 

@@ -75,14 +75,15 @@ async def test_time_window_restrictions(
     description: str,
 ) -> None:
     """Test time window restrictions."""
-    with patch(
-        "guard.middleware.SecurityMiddleware._check_time_window"
-    ) as mock_time_check:
-        # Mock the time window check directly
-        if expected_status == 200:
-            mock_time_check.return_value = True
-        else:
-            mock_time_check.return_value = False
+    from datetime import datetime, timezone
+
+    # Mock datetime.now to return a specific hour
+    mock_datetime = datetime(2024, 1, 1, mock_hour, 0, 0, tzinfo=timezone.utc)
+
+    # Patch datetime at both locations where it's used
+    with patch("guard.core.checks.implementations.time_window.datetime") as mock_dt:
+        mock_dt.now.return_value = mock_datetime
+        mock_dt.side_effect = lambda *args, **kw: datetime(*args, **kw)
 
         async with AsyncClient(
             transport=ASGITransport(app=advanced_decorator_app), base_url="http://test"

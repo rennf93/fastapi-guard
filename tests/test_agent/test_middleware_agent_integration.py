@@ -143,19 +143,24 @@ class TestMiddlewareAgentIntegration:
         app = MagicMock(spec=ASGIApp)
         middleware = SecurityMiddleware(app, config=config)
         middleware.agent_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
 
         # Mock request
         request = MagicMock(spec=Request)
         request.url.path = "/api/test"
         request.method = "GET"
         request.headers = {"User-Agent": "test-agent"}
+        request.client = MagicMock()
+        request.client.host = "192.168.1.100"  # Set as string, not MagicMock
 
         # Mock extract_client_ip
         with patch(
             "guard.middleware.extract_client_ip",
             AsyncMock(return_value="192.168.1.100"),
         ):
-            await middleware._send_middleware_event(
+            await middleware.event_bus.send_middleware_event(
                 "decorator_violation", request, "blocked", "test reason", extra="data"
             )
 
@@ -176,7 +181,7 @@ class TestMiddlewareAgentIntegration:
 
         request = MagicMock(spec=Request)
 
-        await middleware._send_middleware_event(
+        await middleware.event_bus.send_middleware_event(
             "decorator_violation", request, "blocked", "test reason"
         )
 
@@ -193,7 +198,7 @@ class TestMiddlewareAgentIntegration:
         request = MagicMock(spec=Request)
 
         # Should not raise any errors
-        await middleware._send_middleware_event(
+        await middleware.event_bus.send_middleware_event(
             "decorator_violation", request, "blocked", "test reason"
         )
 
@@ -205,24 +210,31 @@ class TestMiddlewareAgentIntegration:
         app = MagicMock(spec=ASGIApp)
         middleware = SecurityMiddleware(app, config=config)
         middleware.agent_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
 
         # Mock geo IP handler
         mock_geo_handler = MagicMock()
         mock_geo_handler.get_country.return_value = "US"
         middleware.geo_ip_handler = mock_geo_handler
+        # Update event_bus geo_ip_handler reference
+        middleware.event_bus.geo_ip_handler = mock_geo_handler
 
         # Mock request
         request = MagicMock(spec=Request)
         request.url.path = "/api/test"
         request.method = "POST"
         request.headers = {"User-Agent": "test-agent"}
+        request.client = MagicMock()
+        request.client.host = "192.168.1.100"  # Set as string, not MagicMock
 
         # Mock extract_client_ip
         with patch(
             "guard.middleware.extract_client_ip",
             AsyncMock(return_value="192.168.1.100"),
         ):
-            await middleware._send_middleware_event(
+            await middleware.event_bus.send_middleware_event(
                 "country_blocked", request, "allowed", "from US"
             )
 
@@ -242,6 +254,9 @@ class TestMiddlewareAgentIntegration:
         app = MagicMock(spec=ASGIApp)
         middleware = SecurityMiddleware(app, config=config)
         middleware.agent_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
 
         # Mock geo IP handler that raises exception
         mock_geo_handler = MagicMock()
@@ -253,13 +268,15 @@ class TestMiddlewareAgentIntegration:
         request.url.path = "/api/test"
         request.method = "GET"
         request.headers = {"User-Agent": "test-agent"}
+        request.client = MagicMock()
+        request.client.host = "192.168.1.100"  # Set as string, not MagicMock
 
         # Mock extract_client_ip
         with patch(
             "guard.middleware.extract_client_ip",
             AsyncMock(return_value="192.168.1.100"),
         ):
-            await middleware._send_middleware_event(
+            await middleware.event_bus.send_middleware_event(
                 "decorator_violation", request, "blocked", "test reason"
             )
 
@@ -294,7 +311,7 @@ class TestMiddlewareAgentIntegration:
             "guard.middleware.extract_client_ip",
             AsyncMock(return_value="192.168.1.100"),
         ):
-            await middleware._send_middleware_event(
+            await middleware.event_bus.send_middleware_event(
                 "decorator_violation", request, "blocked", "test reason"
             )
 
@@ -307,8 +324,11 @@ class TestMiddlewareAgentIntegration:
         app = MagicMock(spec=ASGIApp)
         middleware = SecurityMiddleware(app, config=config)
         middleware.agent_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
 
-        await middleware._send_security_metric(
+        await middleware.metrics_collector.send_metric(
             "response_time", 123.45, {"endpoint": "/api/test"}
         )
 
@@ -333,7 +353,7 @@ class TestMiddlewareAgentIntegration:
         middleware = SecurityMiddleware(app, config=config)
         middleware.agent_handler = AsyncMock()
 
-        await middleware._send_security_metric(
+        await middleware.metrics_collector.send_metric(
             "response_time", 123.45, {"endpoint": "/api/test"}
         )
 
@@ -348,7 +368,7 @@ class TestMiddlewareAgentIntegration:
         middleware.agent_handler = None  # No agent
 
         # Should not raise any errors
-        await middleware._send_security_metric(
+        await middleware.metrics_collector.send_metric(
             "response_time", 123.45, {"endpoint": "/api/test"}
         )
 
@@ -360,9 +380,12 @@ class TestMiddlewareAgentIntegration:
         app = MagicMock(spec=ASGIApp)
         middleware = SecurityMiddleware(app, config=config)
         middleware.agent_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
         middleware.agent_handler.send_metric.side_effect = Exception("Network error")
 
-        await middleware._send_security_metric(
+        await middleware.metrics_collector.send_metric(
             "response_time", 123.45, {"endpoint": "/api/test"}
         )
 
@@ -375,8 +398,11 @@ class TestMiddlewareAgentIntegration:
         app = MagicMock(spec=ASGIApp)
         middleware = SecurityMiddleware(app, config=config)
         middleware.agent_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
 
-        await middleware._send_security_metric("request_count", 1.0)
+        await middleware.metrics_collector.send_metric("request_count", 1.0)
 
         # Verify metric was sent to agent handler
         middleware.agent_handler.send_metric.assert_called_once()
@@ -396,11 +422,13 @@ class TestMiddlewareAgentIntegration:
         request.url.path = "/api/test"
         request.method = "GET"
 
-        # Mock _send_security_metric
+        # Mock send_metric
         with patch.object(
-            middleware, "_send_security_metric", AsyncMock()
+            middleware.metrics_collector, "send_metric", AsyncMock()
         ) as mock_send:
-            await middleware._collect_request_metrics(request, 50.5, 200)
+            await middleware.metrics_collector.collect_request_metrics(
+                request, 50.5, 200
+            )
 
             # Should send response_time and request_count metrics
             assert mock_send.call_count == 2
@@ -434,7 +462,7 @@ class TestMiddlewareAgentIntegration:
         request.method = "GET"
 
         # Should return early without sending metrics
-        await middleware._collect_request_metrics(request, 50.5, 200)
+        await middleware.metrics_collector.collect_request_metrics(request, 50.5, 200)
 
         # No metrics should be sent
         middleware.agent_handler.send_metric.assert_not_called()
@@ -453,7 +481,7 @@ class TestMiddlewareAgentIntegration:
         request.method = "GET"
 
         # Should not raise any errors
-        await middleware._collect_request_metrics(request, 50.5, 200)
+        await middleware.metrics_collector.collect_request_metrics(request, 50.5, 200)
 
     @pytest.mark.asyncio
     async def test_collect_request_metrics_different_status_codes(
@@ -468,12 +496,14 @@ class TestMiddlewareAgentIntegration:
         request.url.path = "/api/secure"
         request.method = "POST"
 
-        # Mock _send_security_metric
+        # Mock send_metric
         with patch.object(
-            middleware, "_send_security_metric", AsyncMock()
+            middleware.metrics_collector, "send_metric", AsyncMock()
         ) as mock_send:
             # Test with 403 status
-            await middleware._collect_request_metrics(request, 25.3, 403)
+            await middleware.metrics_collector.collect_request_metrics(
+                request, 25.3, 403
+            )
 
             # Check response_time metric with 403 status
             mock_send.assert_any_call(
@@ -483,7 +513,9 @@ class TestMiddlewareAgentIntegration:
             )
 
             # Test with 500 status
-            await middleware._collect_request_metrics(request, 100.2, 500)
+            await middleware.metrics_collector.collect_request_metrics(
+                request, 100.2, 500
+            )
 
             # Check response_time metric with 500 status
             mock_send.assert_any_call(
@@ -527,6 +559,9 @@ class TestMiddlewareAgentIntegration:
         app = MagicMock(spec=ASGIApp)
         middleware = SecurityMiddleware(app, config=config)
         middleware.agent_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
 
         request = MagicMock(spec=Request)
         request.client = MagicMock(host="10.0.0.1")  # Not in whitelist
@@ -570,9 +605,9 @@ class TestMiddlewareAgentIntegration:
         call_next = AsyncMock(return_value=MagicMock(status_code=200))
 
         with (
-            patch("guard.middleware.log_activity", new_callable=AsyncMock),
+            patch("guard.utils.log_activity", new_callable=AsyncMock),
             patch(
-                "guard.middleware.detect_penetration_attempt",
+                "guard.core.checks.helpers.detect_penetration_attempt",
                 new_callable=AsyncMock,
                 return_value=(False, ""),
             ),
@@ -594,9 +629,12 @@ class TestMiddlewareAgentIntegration:
             app, config=SecurityConfig(enable_agent=True, agent_api_key="test-key")
         )
         middleware.agent_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
 
         with patch.object(
-            middleware, "_get_route_decorator_config", return_value=route_config
+            middleware.route_resolver, "get_route_config", return_value=route_config
         ):
             request = MagicMock(spec=Request)
             request.client = MagicMock(host="127.0.0.1")
@@ -626,9 +664,12 @@ class TestMiddlewareAgentIntegration:
             app, config=SecurityConfig(enable_agent=True, agent_api_key="test-key")
         )
         middleware.agent_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
 
         with patch.object(
-            middleware, "_get_route_decorator_config", return_value=route_config
+            middleware.route_resolver, "get_route_config", return_value=route_config
         ):
             request = MagicMock(spec=Request)
             request.client = MagicMock(host="127.0.0.1")
@@ -659,7 +700,7 @@ class TestMiddlewareAgentIntegration:
         middleware.agent_handler = AsyncMock()
 
         with patch.object(
-            middleware, "_get_route_decorator_config", return_value=route_config
+            middleware.route_resolver, "get_route_config", return_value=route_config
         ):
             with patch("urllib.parse.urlparse", side_effect=Exception("Parse error")):
                 request = MagicMock(spec=Request)
@@ -686,9 +727,12 @@ class TestMiddlewareAgentIntegration:
             app, config=SecurityConfig(enable_agent=True, agent_api_key="test-key")
         )
         middleware.agent_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
 
         with patch.object(
-            middleware, "_get_route_decorator_config", return_value=route_config
+            middleware.route_resolver, "get_route_config", return_value=route_config
         ):
             request = MagicMock(spec=Request)
             request.client = MagicMock(host="127.0.0.1")
@@ -718,9 +762,12 @@ class TestMiddlewareAgentIntegration:
             app, config=SecurityConfig(enable_agent=True, agent_api_key="test-key")
         )
         middleware.agent_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
 
         with patch.object(
-            middleware, "_get_route_decorator_config", return_value=route_config
+            middleware.route_resolver, "get_route_config", return_value=route_config
         ):
             request = MagicMock(spec=Request)
             request.client = MagicMock(host="127.0.0.1")
@@ -758,9 +805,12 @@ class TestMiddlewareAgentIntegration:
         app = MagicMock(spec=ASGIApp)
         middleware = SecurityMiddleware(app, config=config)
         middleware.agent_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
 
         with patch.object(
-            middleware, "_get_route_decorator_config", return_value=route_config
+            middleware.route_resolver, "get_route_config", return_value=route_config
         ):
             request = MagicMock(spec=Request)
             request.client = MagicMock(host="127.0.0.1")
@@ -792,33 +842,55 @@ class TestMiddlewareAgentIntegration:
         app = MagicMock(spec=ASGIApp)
         middleware = SecurityMiddleware(app, config=config)
         middleware.agent_handler = AsyncMock()
-        middleware.redis_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
+
+        # Properly mock redis_handler with async context manager support
+        mock_redis_conn = AsyncMock()
+        mock_redis_conn.script_load = AsyncMock(return_value="mock_sha")
+        mock_redis_context = AsyncMock(
+            __aenter__=AsyncMock(return_value=mock_redis_conn),
+            __aexit__=AsyncMock(return_value=None),
+        )
+        mock_redis_handler = AsyncMock()
+        mock_redis_handler.get_connection = MagicMock(return_value=mock_redis_context)
+        middleware.redis_handler = mock_redis_handler
 
         # Mock rate limit handler to simulate rate limit exceeded
         mock_rate_handler = AsyncMock()
         mock_rate_handler.check_rate_limit = AsyncMock(
             return_value=Response("Rate limit exceeded", status_code=429)
         )
+        mock_rate_handler.initialize_redis = AsyncMock()
 
         with (
-            patch("guard.middleware.RateLimitManager", return_value=mock_rate_handler),
             patch(
-                "guard.middleware.extract_client_ip",
-                AsyncMock(return_value="127.0.0.1"),
+                "guard.core.checks.implementations.rate_limit.RateLimitManager",
+                return_value=mock_rate_handler,
             ),
-            patch("guard.middleware.log_activity", new_callable=AsyncMock),
             patch(
-                "guard.middleware.detect_penetration_attempt",
+                "guard.utils.extract_client_ip",
+                new_callable=AsyncMock,
+                return_value="127.0.0.1",
+            ),
+            patch("guard.utils.log_activity", new_callable=AsyncMock),
+            patch(
+                "guard.core.checks.helpers.detect_penetration_attempt",
                 new_callable=AsyncMock,
                 return_value=(False, ""),
             ),
         ):
             request = MagicMock(spec=Request)
             request.client = MagicMock(host="127.0.0.1")
-            request.url = MagicMock(path="/api/sensitive")
+            # Use proper URL mock with string path attribute
+            request.url = MagicMock()
+            request.url.path = "/api/sensitive"
             request.headers = {}
             request.method = "GET"
             request.scope = {"app": app}
+            # Ensure state exists for checks to set attributes
+            request.state = MagicMock()
 
             call_next = AsyncMock(return_value=Response(status_code=200))
             response = await middleware.dispatch(request, call_next)
@@ -850,36 +922,58 @@ class TestMiddlewareAgentIntegration:
         app = MagicMock(spec=ASGIApp)
         middleware = SecurityMiddleware(app, config=config)
         middleware.agent_handler = AsyncMock()
-        middleware.redis_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
+
+        # Properly mock redis_handler with async context manager support
+        mock_redis_conn = AsyncMock()
+        mock_redis_conn.script_load = AsyncMock(return_value="mock_sha")
+        mock_redis_context = AsyncMock(
+            __aenter__=AsyncMock(return_value=mock_redis_conn),
+            __aexit__=AsyncMock(return_value=None),
+        )
+        mock_redis_handler = AsyncMock()
+        mock_redis_handler.get_connection = MagicMock(return_value=mock_redis_context)
+        middleware.redis_handler = mock_redis_handler
 
         # Mock rate limit handler to simulate rate limit exceeded
         mock_rate_handler = AsyncMock()
         mock_rate_handler.check_rate_limit = AsyncMock(
             return_value=Response("Rate limit exceeded", status_code=429)
         )
+        mock_rate_handler.initialize_redis = AsyncMock()
 
         with (
             patch.object(
-                middleware, "_get_route_decorator_config", return_value=route_config
+                middleware.route_resolver, "get_route_config", return_value=route_config
             ),
-            patch("guard.middleware.RateLimitManager", return_value=mock_rate_handler),
             patch(
-                "guard.middleware.extract_client_ip",
-                AsyncMock(return_value="127.0.0.1"),
+                "guard.core.checks.implementations.rate_limit.RateLimitManager",
+                return_value=mock_rate_handler,
             ),
-            patch("guard.middleware.log_activity", new_callable=AsyncMock),
             patch(
-                "guard.middleware.detect_penetration_attempt",
+                "guard.utils.extract_client_ip",
+                new_callable=AsyncMock,
+                return_value="127.0.0.1",
+            ),
+            patch("guard.utils.log_activity", new_callable=AsyncMock),
+            patch(
+                "guard.core.checks.helpers.detect_penetration_attempt",
                 new_callable=AsyncMock,
                 return_value=(False, ""),
             ),
         ):
             request = MagicMock(spec=Request)
             request.client = MagicMock(host="127.0.0.1")
-            request.url = MagicMock(path="/test")
+            # Use proper URL mock with string path attribute
+            request.url = MagicMock()
+            request.url.path = "/test"
             request.headers = {}
             request.method = "GET"
             request.scope = {"app": app}
+            # Ensure state exists for checks to set attributes
+            request.state = MagicMock()
 
             call_next = AsyncMock(return_value=Response(status_code=200))
             response = await middleware.dispatch(request, call_next)
@@ -904,13 +998,20 @@ class TestMiddlewareAgentIntegration:
         app = MagicMock(spec=ASGIApp)
         middleware = SecurityMiddleware(app, config=config)
         middleware.agent_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
 
         request = MagicMock(spec=Request)
         request.client = MagicMock(host="3.3.3.3")  # Simulated cloud IP
-        request.url = MagicMock(path="/test")
+        # Use proper URL mock with string path attribute
+        request.url = MagicMock()
+        request.url.path = "/test"
         request.headers = {"User-Agent": "Mozilla/5.0"}
         request.method = "GET"
         request.scope = {"app": app}
+        # Ensure state exists for checks to set attributes
+        request.state = MagicMock()
 
         # Mock cloud handler with agent support
         mock_cloud_handler = MagicMock()
@@ -929,15 +1030,22 @@ class TestMiddlewareAgentIntegration:
         mock_time.time.return_value = 9999999999  # Far in the future
 
         with (
-            patch("guard.middleware.cloud_handler", mock_cloud_handler),
-            patch("guard.middleware.time", mock_time),
             patch(
-                "guard.middleware.extract_client_ip",
-                AsyncMock(return_value="3.3.3.3"),
+                "guard.core.checks.implementations.cloud_provider.cloud_handler",
+                mock_cloud_handler,
             ),
-            patch("guard.middleware.log_activity", new_callable=AsyncMock),
             patch(
-                "guard.middleware.detect_penetration_attempt",
+                "guard.core.checks.implementations.cloud_ip_refresh.time",
+                mock_time,
+            ),
+            patch(
+                "guard.utils.extract_client_ip",
+                new_callable=AsyncMock,
+                return_value="3.3.3.3",
+            ),
+            patch("guard.utils.log_activity", new_callable=AsyncMock),
+            patch(
+                "guard.core.checks.helpers.detect_penetration_attempt",
                 new_callable=AsyncMock,
                 return_value=(False, ""),
             ),
@@ -975,66 +1083,40 @@ class TestMiddlewareAgentIntegration:
 
         # Create mocks for all components
         middleware.agent_handler = AsyncMock()
+        # Update event_bus and metrics_collector agent_handler references
+        middleware.event_bus.agent_handler = middleware.agent_handler
+        middleware.metrics_collector.agent_handler = middleware.agent_handler
         middleware.redis_handler = AsyncMock()
         # geo_ip_handler is already set from config
         middleware.guard_decorator = AsyncMock()
         middleware.guard_decorator.initialize_agent = AsyncMock()
 
-        # Mock handlers
-        mock_ip_ban_manager = AsyncMock()
-        mock_rate_limit_handler = AsyncMock()
-        mock_sus_patterns_handler = AsyncMock()
-        mock_cloud_handler = AsyncMock()
-        mock_dynamic_rule_manager = AsyncMock()
+        # Mock the entire initialize_agent_integrations to verify it's called
+        mock_redis_init = AsyncMock()
+        mock_agent_init = AsyncMock()
 
         with (
-            patch("guard.middleware.ip_ban_manager", mock_ip_ban_manager),
-            patch.object(middleware, "rate_limit_handler", mock_rate_limit_handler),
-            patch("guard.middleware.sus_patterns_handler", mock_sus_patterns_handler),
-            patch("guard.middleware.cloud_handler", mock_cloud_handler),
-            patch(
-                "guard.handlers.dynamic_rule_handler.DynamicRuleManager",
-                return_value=mock_dynamic_rule_manager,
+            patch.object(
+                middleware.handler_initializer,
+                "initialize_redis_handlers",
+                mock_redis_init,
+            ),
+            patch.object(
+                middleware.handler_initializer,
+                "initialize_agent_integrations",
+                mock_agent_init,
             ),
         ):
             await middleware.initialize()
 
-        # Verify agent was started
-        middleware.agent_handler.start.assert_called_once()
+        # Verify security pipeline was built
+        assert middleware.security_pipeline is not None
 
-        # Verify agent was connected to Redis
-        middleware.agent_handler.initialize_redis.assert_called_once_with(
-            middleware.redis_handler
-        )
-        middleware.redis_handler.initialize_agent.assert_called_once_with(
-            middleware.agent_handler
-        )
+        # Verify Redis initialization was called
+        mock_redis_init.assert_called_once()
 
-        # Verify agent was initialized in all handlers
-        mock_ip_ban_manager.initialize_agent.assert_called_once_with(
-            middleware.agent_handler
-        )
-        mock_rate_limit_handler.initialize_agent.assert_called_once_with(
-            middleware.agent_handler
-        )
-        mock_sus_patterns_handler.initialize_agent.assert_called_once_with(
-            middleware.agent_handler
-        )
-        mock_cloud_handler.initialize_agent.assert_called_once_with(
-            middleware.agent_handler
-        )
+        # Verify agent integration initialization was called
+        mock_agent_init.assert_called_once()
 
+        # Verify geo_ip_handler exists
         assert middleware.geo_ip_handler is not None
-
-        # Verify agent was initialized in decorator handler
-        middleware.guard_decorator.initialize_agent.assert_called_once_with(
-            middleware.agent_handler
-        )
-
-        # Verify dynamic rule manager was initialized
-        mock_dynamic_rule_manager.initialize_agent.assert_called_once_with(
-            middleware.agent_handler
-        )
-        mock_dynamic_rule_manager.initialize_redis.assert_called_once_with(
-            middleware.redis_handler
-        )
