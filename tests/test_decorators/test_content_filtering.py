@@ -255,3 +255,35 @@ async def test_content_filtering_decorators_unit(
     # Test that the validator returns None
     result = await test_validator(Mock())
     assert result is None
+
+
+async def test_referrer_passive_mode(security_config: SecurityConfig) -> None:
+    """Test referrer check in passive mode."""
+    app = FastAPI()
+    security_config.passive_mode = True
+    security_config.trusted_proxies = ["127.0.0.1"]
+
+    decorator = SecurityDecorator(security_config)
+
+    @decorator.require_referrer(["example.com"])
+    @app.get("/referrer-test")
+    async def referrer_endpoint() -> dict[str, str]:
+        return {"message": "ok"}
+
+    app.add_middleware(SecurityMiddleware, config=security_config)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        # Missing referrer - should pass in passive mode
+        response = await client.get(
+            "/referrer-test", headers={"X-Forwarded-For": "8.8.8.8"}
+        )
+        assert response.status_code == 200
+
+        # Invalid referrer - should pass in passive mode
+        response = await client.get(
+            "/referrer-test",
+            headers={"X-Forwarded-For": "8.8.8.8", "Referer": "https://evil.com"},
+        )
+        assert response.status_code == 200

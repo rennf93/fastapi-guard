@@ -69,8 +69,7 @@ class SecurityCheckPipeline:
                 # Fail-secure: if check errors and fail_secure is enabled, block
                 if hasattr(check.config, "fail_secure") and check.config.fail_secure:
                     self.logger.warning(
-                        "Blocking request due to check error ",
-                        "in fail-secure mode: {check.check_name}",
+                        f"Blocking request due to check error in fail-secure mode: {check.check_name}"  # noqa: E501
                     )
                     return await check.create_error_response(
                         status_code=500,

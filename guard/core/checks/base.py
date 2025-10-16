@@ -40,7 +40,7 @@ class SecurityCheck(ABC):
             Response if the check fails and request should be blocked.
             None if the check passes and request should continue.
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -51,7 +51,7 @@ class SecurityCheck(ABC):
         Returns:
             Human-readable name of the check (e.g., "https_enforcement").
         """
-        pass
+        pass  # pragma: no cover
 
     async def send_event(
         self,

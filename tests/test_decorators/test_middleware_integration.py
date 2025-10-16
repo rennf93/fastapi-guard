@@ -314,7 +314,7 @@ async def test_behavioral_usage_rules_with_decorator() -> None:
 
     # Test when threshold not exceeded
     async def mock_track_usage(*args: Any, **kwargs: Any) -> bool:
-        return False
+        return False  # pragma: no cover
 
     mock_behavior_tracker.track_endpoint_usage = mock_track_usage
 
@@ -325,10 +325,10 @@ async def test_behavioral_usage_rules_with_decorator() -> None:
 
     # Test when threshold exceeded
     async def mock_track_usage_exceeded(*args: Any, **kwargs: Any) -> bool:
-        return True
+        return True  # pragma: no cover
 
     async def mock_apply_action(*args: Any, **kwargs: Any) -> None:
-        return None
+        return None  # pragma: no cover
 
     mock_behavior_tracker.track_endpoint_usage = mock_track_usage_exceeded
     mock_behavior_tracker.apply_action = mock_apply_action
@@ -366,7 +366,7 @@ async def test_behavioral_return_rules_with_decorator() -> None:
 
     # Test when pattern not detected
     async def mock_track_pattern(*args: Any, **kwargs: Any) -> bool:
-        return False
+        return False  # pragma: no cover
 
     mock_behavior_tracker.track_return_pattern = mock_track_pattern
 
@@ -377,10 +377,10 @@ async def test_behavioral_return_rules_with_decorator() -> None:
 
     # Test when pattern detected
     async def mock_track_pattern_detected(*args: Any, **kwargs: Any) -> bool:
-        return True
+        return True  # pragma: no cover
 
     async def mock_apply_action(*args: Any, **kwargs: Any) -> None:
-        return None
+        return None  # pragma: no cover
 
     mock_behavior_tracker.track_return_pattern = mock_track_pattern_detected
     mock_behavior_tracker.apply_action = mock_apply_action

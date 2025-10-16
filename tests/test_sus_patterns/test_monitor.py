@@ -1,7 +1,3 @@
-"""
-Comprehensive tests for the PerformanceMonitor module.
-"""
-
 import asyncio
 from collections import deque
 from datetime import datetime, timezone
@@ -212,6 +208,150 @@ async def test_check_anomalies_statistical() -> None:
     assert len(anomalies_detected) == 1
     assert anomalies_detected[0]["type"] == "statistical_anomaly"
     assert anomalies_detected[0]["z_score"] > 2.0
+
+
+@pytest.mark.asyncio
+async def test_statistical_anomaly_insufficient_data() -> None:
+    """Test statistical anomaly when there's insufficient data (< 10 recent times)."""
+    monitor = PerformanceMonitor(anomaly_threshold=2.0)
+
+    anomalies_detected = []
+
+    def anomaly_callback(anomaly: dict[str, Any]) -> None:
+        anomalies_detected.append(anomaly)  # pragma: no cover
+
+    monitor.register_anomaly_callback(anomaly_callback)
+
+    # Record only 8 metrics (less than 10 required)
+    pattern = "insufficient_pattern"
+    for _ in range(8):
+        await monitor.record_metric(
+            pattern=pattern,
+            execution_time=0.01,
+            content_length=100,
+            matched=False,
+        )
+
+    # No anomalies should be detected due to insufficient data
+    assert len(anomalies_detected) == 0
+
+
+@pytest.mark.asyncio
+async def test_statistical_anomaly_zero_std_dev() -> None:
+    """Test statistical anomaly when std deviation is zero (all same values)."""
+    monitor = PerformanceMonitor(anomaly_threshold=2.0)
+
+    anomalies_detected = []
+
+    def anomaly_callback(anomaly: dict[str, Any]) -> None:
+        anomalies_detected.append(anomaly)  # pragma: no cover
+
+    monitor.register_anomaly_callback(anomaly_callback)
+
+    # Record 15 identical execution times
+    pattern = "zero_std_pattern"
+    for _ in range(15):
+        await monitor.record_metric(
+            pattern=pattern,
+            execution_time=0.01,  # Same value every time
+            content_length=100,
+            matched=False,
+        )
+
+    # No statistical anomaly should be detected (std dev is 0)
+    assert len(anomalies_detected) == 0
+
+
+@pytest.mark.asyncio
+async def test_statistical_anomaly_single_data_point() -> None:
+    """Test statistical anomaly when there's only 1 data point."""
+    from guard.detection_engine.monitor import PatternStats
+
+    monitor = PerformanceMonitor(anomaly_threshold=2.0)
+
+    # Create a pattern with exactly 1 recent_time to trigger
+    pattern = "single_point_pattern"
+    stats = PatternStats(pattern=pattern)
+    stats.recent_times.append(0.01)
+    monitor.pattern_stats[pattern] = stats
+
+    # Create a mock metric
+    from datetime import datetime, timezone
+
+    from guard.detection_engine.monitor import PerformanceMetric
+
+    metric = PerformanceMetric(
+        pattern=pattern,
+        execution_time=0.5,
+        content_length=100,
+        timestamp=datetime.now(timezone.utc),
+        matched=False,
+        timeout=False,
+    )
+
+    # Call _detect_statistical_anomaly directly
+    result = monitor._detect_statistical_anomaly(metric)
+
+    # Should return None because len(recent_times) <= 1
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_statistical_anomaly_within_threshold() -> None:
+    """Test statistical anomaly when z-score is within threshold."""
+    from collections import deque
+    from datetime import datetime, timezone
+
+    from guard.detection_engine.monitor import PatternStats, PerformanceMetric
+
+    monitor = PerformanceMonitor(anomaly_threshold=3.0)  # Higher threshold
+
+    # Create pattern stats with data that will produce low z-score
+    pattern = "within_threshold_pattern"
+    stats = PatternStats(pattern=pattern)
+
+    # Create times with some variance: mean ~0.01, but with enough variance
+    # that a small deviation won't exceed 3 std devs
+    times = [
+        0.008,
+        0.009,
+        0.010,
+        0.011,
+        0.012,
+        0.009,
+        0.010,
+        0.011,
+        0.010,
+        0.009,
+        0.010,
+        0.011,
+        0.012,
+        0.009,
+        0.010,
+        0.011,
+        0.010,
+        0.009,
+        0.010,
+        0.011,
+    ]
+    stats.recent_times = deque(times, maxlen=100)
+    monitor.pattern_stats[pattern] = stats
+
+    # Create a metric with a value slightly above mean but within 3 std devs
+    metric = PerformanceMetric(
+        pattern=pattern,
+        execution_time=0.012,  # Within normal range
+        content_length=100,
+        timestamp=datetime.now(timezone.utc),
+        matched=False,
+        timeout=False,
+    )
+
+    # Call _detect_statistical_anomaly directly
+    result = monitor._detect_statistical_anomaly(metric)
+
+    # Should return None because z-score is below threshold
+    assert result is None
 
 
 @pytest.mark.asyncio

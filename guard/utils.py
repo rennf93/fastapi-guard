@@ -787,10 +787,6 @@ async def detect_penetration_attempt(request: Request) -> tuple[bool, str]:
     # Generate correlation ID for this request
     correlation_id = str(uuid.uuid4())
 
-    async def check_value(value: str, context: str) -> tuple[bool, str]:
-        """Legacy check_value function for backward compatibility."""
-        return await _check_value_enhanced(value, context, client_ip, correlation_id)
-
     # Check query params
     for key, value in request.query_params.items():
         detected, trigger = await _check_request_component(

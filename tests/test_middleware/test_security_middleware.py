@@ -1848,3 +1848,24 @@ async def test_real_ipv6_connection(
 
     response = await middleware.dispatch(request_blocked, mock_call_next)
     assert response.status_code == 403
+
+
+async def test_emergency_mode_passive(security_config: SecurityConfig) -> None:
+    """Test emergency mode in passive mode."""
+    app = FastAPI()
+    security_config.emergency_mode = True
+    security_config.passive_mode = True
+    security_config.trusted_proxies = ["127.0.0.1"]
+
+    @app.get("/test")
+    async def test_endpoint() -> dict[str, str]:
+        return {"message": "ok"}
+
+    app.add_middleware(SecurityMiddleware, config=security_config)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        # Should pass in passive mode
+        response = await client.get("/test", headers={"X-Forwarded-For": "8.8.8.8"})
+        assert response.status_code == 200
