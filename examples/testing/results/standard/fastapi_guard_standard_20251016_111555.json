@@ -1,0 +1,123 @@
+{
+  "timestamp": "2025-10-16T11:15:55.969694",
+  "configuration": {
+    "base_url": "http://fastapi-guard-example:8000",
+    "duration": 120,
+    "concurrency": 50,
+    "ramp_up": 10,
+    "delay": 0.02
+  },
+  "results": {
+    "total_requests": 86374,
+    "requests_per_second": 719.7833333333333,
+    "overall_success_rate": 43.18776483664066,
+    "duration": 120,
+    "security": {
+      "total_blocked": 73324,
+      "security_triggered": 73324,
+      "penetration_attempts": 21763,
+      "penetration_blocked": 21763,
+      "penetration_block_rate": 100.0,
+      "block_rate": 84.89128672980296
+    },
+    "categories": [
+      {
+        "category": "access_control",
+        "total_requests": 8490,
+        "blocked_count": 8490,
+        "passed_count": 0,
+        "error_count": 0,
+        "avg_response_time_ms": 4.558263510219902,
+        "block_rate": 100.0,
+        "status_codes": {
+          "403": 8490
+        }
+      },
+      {
+        "category": "basic",
+        "total_requests": 25995,
+        "blocked_count": 12945,
+        "passed_count": 0,
+        "error_count": 0,
+        "avg_response_time_ms": 6.70206192296889,
+        "block_rate": 49.79803808424697,
+        "status_codes": {
+          "403": 12945,
+          "404": 13050
+        }
+      },
+      {
+        "category": "behavioral",
+        "total_requests": 4354,
+        "blocked_count": 4354,
+        "passed_count": 0,
+        "error_count": 0,
+        "avg_response_time_ms": 8.980352833668574,
+        "block_rate": 100.0,
+        "status_codes": {
+          "403": 4354
+        }
+      },
+      {
+        "category": "bot_detection",
+        "total_requests": 4343,
+        "blocked_count": 4343,
+        "passed_count": 0,
+        "error_count": 0,
+        "avg_response_time_ms": 8.265961597187026,
+        "block_rate": 100.0,
+        "status_codes": {
+          "403": 4343
+        }
+      },
+      {
+        "category": "content_filtering",
+        "total_requests": 1724,
+        "blocked_count": 1724,
+        "passed_count": 0,
+        "error_count": 0,
+        "avg_response_time_ms": 6.336818023513475,
+        "block_rate": 100.0,
+        "status_codes": {
+          "403": 1724
+        }
+      },
+      {
+        "category": "penetration_detection",
+        "total_requests": 21763,
+        "blocked_count": 21763,
+        "passed_count": 0,
+        "error_count": 0,
+        "avg_response_time_ms": 4.617699070219574,
+        "block_rate": 100.0,
+        "status_codes": {
+          "403": 21763
+        }
+      },
+      {
+        "category": "rate_limiting",
+        "total_requests": 17193,
+        "blocked_count": 17193,
+        "passed_count": 0,
+        "error_count": 0,
+        "avg_response_time_ms": 6.4716751521526605,
+        "block_rate": 100.0,
+        "status_codes": {
+          "403": 17193
+        }
+      },
+      {
+        "category": "security_headers",
+        "total_requests": 2512,
+        "blocked_count": 2512,
+        "passed_count": 0,
+        "error_count": 0,
+        "avg_response_time_ms": 6.3974063867216655,
+        "block_rate": 100.0,
+        "status_codes": {
+          "403": 2512
+        }
+      }
+    ]
+  }
+}
