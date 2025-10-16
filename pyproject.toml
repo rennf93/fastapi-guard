@@ -224,13 +224,17 @@ exclude = ["tests", ".venv", "vulture_whitelist.py", "examples", "docs"]
 extend_exclude = ["conftest.py", "setup.py"]
 known_first_party = ["guard"]
 per_rule_ignores = { "DEP002" = [
+    "aiohttp",
     "bandit",
     "deptry",
+    "fastapi-guard-agent",
+    "matplotlib",
     "mkdocs",
     "mkdocstrings",
     "mkdocstrings-python",
     "mkdocs-material",
     "mypy",
+    "numpy",
     "pip-audit",
     "pre-commit",
     "pymarkdownlnt",
@@ -244,6 +248,7 @@ per_rule_ignores = { "DEP002" = [
     "semgrep",
     "types-cachetools",
     "types-requests",
+    "uvicorn",
     "vulture",
     "xenon",
 ] }

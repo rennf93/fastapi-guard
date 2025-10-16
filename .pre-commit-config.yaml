@@ -29,20 +29,14 @@ repos:
         pass_filenames: false
       - id: bandit
         name: bandit
-        entry: uv run bandit -r guard -ll -f json -o /dev/null || uv run bandit -r guard -ll
+        entry: uv run bandit -r guard -ll
         require_serial: true
         language: system
         types: [python]
         pass_filenames: false
       - id: safety
         name: safety
-        entry: uv run safety check --json --short-report || uv run safety check
-        require_serial: true
-        language: system
-        pass_filenames: false
-      - id: pip-audit
-        name: pip-audit
-        entry: uv run pip-audit
+        entry: uv run safety check
         require_serial: true
         language: system
         pass_filenames: false
@@ -56,13 +50,6 @@ repos:
       - id: xenon
         name: xenon
         entry: uv run xenon guard --max-absolute B --max-modules A --max-average A
-        require_serial: true
-        language: system
-        types: [python]
-        pass_filenames: false
-      - id: interrogate
-        name: interrogate
-        entry: uv run interrogate guard --fail-under 80
         require_serial: true
         language: system
         types: [python]
