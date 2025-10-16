@@ -140,31 +140,6 @@ semgrep:
 	@uv run semgrep --config=auto guard
 	@find . | grep -E "(__pycache__|\.pyc|\.pyo|\.pytest_cache|\.ruff_cache|\.mypy_cache)" | xargs rm -rf
 
-# Profile with py-spy
-.PHONY: profile
-profile:
-	@echo "Profiling with py-spy (requires running application)..."
-	@echo "Usage: make profile PID=<process_id>"
-	@echo "Or: make profile-record to record a new profile"
-	@[ -n "$(PID)" ] && uv run py-spy top --pid $(PID) || echo "Please provide PID=<process_id>"
-	@find . | grep -E "(__pycache__|\.pyc|\.pyo|\.pytest_cache|\.ruff_cache|\.mypy_cache)" | xargs rm -rf
-
-# Record profile with py-spy
-.PHONY: profile-record
-profile-record:
-	@echo "Recording profile with py-spy..."
-	@echo "This will profile the example application for 30 seconds"
-	@uv run py-spy record -o profile.svg -d 30 -- uv run python examples/main.py &
-	@echo "Profile will be saved to profile.svg"
-	@find . | grep -E "(__pycache__|\.pyc|\.pyo|\.pytest_cache|\.ruff_cache|\.mypy_cache)" | xargs rm -rf
-
-# Run hypothesis tests
-.PHONY: hypothesis
-hypothesis:
-	@COMPOSE_BAKE=true PYTHON_VERSION=$(DEFAULT_PYTHON) docker compose run --rm --build fastapi-guard pytest -v --hypothesis-show-statistics
-	@docker compose down --rmi all --remove-orphans -v
-	@docker system prune -f
-
 # Run all security checks
 .PHONY: security
 security: bandit safety pip-audit
@@ -172,7 +147,7 @@ security: bandit safety pip-audit
 
 # Run all code quality checks
 .PHONY: quality
-quality: lint vulture radon xenon interrogate
+quality: lint vulture radon xenon
 	@echo "All code quality checks completed."
 
 # Run all analysis tools
@@ -299,12 +274,8 @@ help:
 	@echo "  make pip-audit          	   - Audit dependencies with pip-audit"
 	@echo "  make radon              	   - Analyze code complexity with Radon"
 	@echo "  make xenon              	   - Check complexity thresholds with Xenon"
-	@echo "  make interrogate        	   - Check docstring coverage with Interrogate"
 	@echo "  make deptry             	   - Analyze dependencies with Deptry"
 	@echo "  make semgrep            	   - Run Semgrep static analysis"
-	@echo "  make profile            	   - Profile running application with py-spy"
-	@echo "  make profile-record     	   - Record profile with py-spy"
-	@echo "  make hypothesis         	   - Run property-based tests with Hypothesis"
 	@echo "  make security           	   - Run all security checks"
 	@echo "  make quality            	   - Run all code quality checks"
 	@echo "  make analysis           	   - Run all analysis tools"

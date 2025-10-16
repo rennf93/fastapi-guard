@@ -201,7 +201,7 @@ security_config = SecurityConfig(
     trusted_proxies=["127.0.0.1", "10.0.0.0/8"],
     trusted_proxy_depth=2,
     trust_x_forwarded_proto=True,
-    # Geographical Filtering (requires ipinfo_token)
+    # Geographical Filtering (requires ipinfo_token OR custom implementation)
     # geo_ip_handler=IPInfoManager("your_token_here"),  # Replace with actual token
     # blocked_countries=["XX"],  # Example: block country code XX
     # whitelist_countries=[],  # Allow all countries by default

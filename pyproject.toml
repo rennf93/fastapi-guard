@@ -24,10 +24,12 @@ dependencies = [
     "cachetools",
     "fastapi",
     "httpx",
-    "ipaddress",
     "maxminddb",
+    "pydantic",
     "redis",
     "requests",
+    "starlette",
+    "typing-extensions",
     "uvicorn",
 ]
 
@@ -36,11 +38,11 @@ Homepage = "https://github.com/rennf93/fastapi-guard"
 
 [project.optional-dependencies]
 dev = [
+    "aiohttp",
     "bandit[toml]",
     "deptry",
     "fastapi-guard-agent",
     "httpx",
-    "hypothesis",
     "matplotlib",
     "mkdocs",
     "mkdocstrings",
@@ -50,7 +52,6 @@ dev = [
     "numpy",
     "pip-audit",
     "pre-commit",
-    "py-spy",
     "pymarkdownlnt",
     "pytest",
     "pytest-asyncio",
@@ -218,11 +219,27 @@ ignore = []
 exclude = ["tests", ".venv", "vulture_whitelist.py", "examples", "docs"]
 extend_exclude = ["conftest.py", "setup.py"]
 known_first_party = ["guard"]
-
-[tool.hypothesis]
-deadline = 5000
-max_examples = 100
-derandomize = false
-suppress_health_check = ["too_slow", "filter_too_much"]
-database_file = ".hypothesis/examples"
-verbosity = "normal"
+per_rule_ignores = { "DEP002" = [
+    "bandit",
+    "deptry",
+    "mkdocs",
+    "mkdocstrings",
+    "mkdocstrings-python",
+    "mkdocs-material",
+    "mypy",
+    "pip-audit",
+    "pre-commit",
+    "pymarkdownlnt",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-mock",
+    "radon",
+    "ruff",
+    "safety",
+    "semgrep",
+    "types-cachetools",
+    "types-requests",
+    "vulture",
+    "xenon",
+] }

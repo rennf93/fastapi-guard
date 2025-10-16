@@ -107,5 +107,9 @@ class BehavioralProcessor:
         if hasattr(request, "scope") and "route" in request.scope:
             route = request.scope["route"]
             if hasattr(route, "endpoint"):
+                # This is an internal identifier for tracking, not returned to users.
+                # Values come from Python introspection (module, qualname), not from
+                # user input.
+                # nosemgrep
                 return f"{route.endpoint.__module__}.{route.endpoint.__qualname__}"
         return f"{request.method}:{request.url.path}"

@@ -13,6 +13,31 @@ from guard.models import GeoIPHandler, SecurityConfig
 from guard.protocols.agent_protocol import AgentHandlerProtocol
 
 
+def _sanitize_for_log(value: str) -> str:
+    """
+    Sanitize user-controlled values for safe logging.
+
+    Removes or replaces newlines, carriage returns, and control characters
+    that could be used for log injection attacks.
+
+    Args:
+        value: The string to sanitize
+
+    Returns:
+        Sanitized string safe for logging
+    """
+    if not value:
+        return value
+    # Replace newlines, carriage returns, and other control characters
+    sanitized = value.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
+    # Remove other control characters (ASCII 0-31 except tab, newline, carriage return)
+    sanitized = "".join(
+        char if ord(char) >= 32 or char in "\t\n\r" else f"\\x{ord(char):02x}"
+        for char in sanitized
+    )
+    return sanitized
+
+
 async def send_agent_event(
     agent_handler: AgentHandlerProtocol | None,
     event_type: str,
@@ -113,8 +138,7 @@ def setup_custom_logging(log_file: str | None = None) -> logging.Logger:
             logger.warning(f"Failed to create log file {log_file}: {e}")
 
     logger.setLevel(logging.INFO)
-    # Allow propagation so tests can capture logs
-    # Users won't see duplicates because we use a specific namespace
+    # Allow propagation so tests can capture logs (pytest-cov)
 
     return logger
 
@@ -128,9 +152,11 @@ async def _check_ip_spoofing(
 ) -> None:
     """Check and log potential IP spoofing attempts."""
     if forwarded_for and not config.trusted_proxies:
+        # Sanitize user-controlled header value before logging to prevent log injection
+        safe_forwarded_for = _sanitize_for_log(forwarded_for)
         logging.warning(
-            f"Potential IP spoof attempt: X-Forwarded-For header "
-            f"({forwarded_for}) received from untrusted IP {connecting_ip}"
+            f"Potential IP spoof attempt: X-Forwarded-For header "  # nosemgrep
+            f"({safe_forwarded_for}) received from untrusted IP {connecting_ip}"
         )
         # Send agent event for IP spoofing attempt
         await send_agent_event(
@@ -228,9 +254,12 @@ async def extract_client_ip(
 
     if not is_trusted:
         if forwarded_for:
+            # Sanitize user-controlled header value
+            # before logging to prevent log injection
+            safe_forwarded_for = _sanitize_for_log(forwarded_for)
             logging.warning(
-                f"Potential IP spoof attempt: X-Forwarded-For header "
-                f"({forwarded_for}) received from untrusted IP {connecting_ip}"
+                f"Potential IP spoof attempt: X-Forwarded-For header "  # nosemgrep
+                f"({safe_forwarded_for}) received from untrusted IP {connecting_ip}"
             )
             # Send agent event for IP spoofing attempt from untrusted proxy
             await send_agent_event(
