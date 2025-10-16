@@ -8,6 +8,9 @@ keywords: fastapi guard api, security middleware api, python api reference
 API Reference Overview
 ======================
 
+!!! info "Architecture Update (v4.2.0)"
+    FastAPI Guard v4.2.0 introduced a modular core architecture. While the public API remains unchanged, the internal implementation is now organized into specialized modules in `guard/core/`. See [Core Architecture](core-architecture.md) for details.
+
 ___
 
 Core Components
@@ -16,25 +19,45 @@ Core Components
 Middleware & Configuration
 ----------------------------
 
-- **SecurityMiddleware**: The main middleware that handles all security features
-- **SecurityConfig**: Configuration class for all security settings
-- **SecurityDecorator**: Route-level security decorator system
+- **[SecurityMiddleware](security-middleware.md)**: The main middleware that handles all security features
+- **[SecurityConfig](../tutorial/configuration/security-config.md)**: Configuration class for all security settings
+- **[SecurityDecorator](decorators.md)**: Route-level security decorator system
+
+Internal Core Modules (v4.2.0+)
+--------------------------------
+
+!!! warning "Internal Implementation"
+    These modules are internal implementation details. Always use the public API (`SecurityMiddleware`, `SecurityConfig`, `SecurityDecorator`).
+
+    Documentation provided for contributors and advanced users.
+
+- **[Core Architecture](core-architecture.md)**: Complete internal architecture documentation
+  - **SecurityCheckPipeline**: Chain of Responsibility pattern for security checks
+  - **SecurityEventBus**: Centralized event dispatching
+  - **MetricsCollector**: Request/response metrics collection
+  - **HandlerInitializer**: Handler initialization logic
+  - **ErrorResponseFactory**: Response creation and processing
+  - **RouteConfigResolver**: Route configuration resolution
+  - **RequestValidator**: Request validation utilities
+  - **BypassHandler**: Security bypass handling
+  - **BehavioralProcessor**: Behavioral rule processing
 
 Handler Components
 ------------------
 
-- **IPBanManager**: Manages IP banning functionality
-- **IPInfoManager**: Handles IP geolocation using IPInfo's database
-- **SusPatternsManager**: Manages suspicious patterns for threat detection
-- **CloudManager**: Handles cloud provider IP range detection
-- **RateLimitManager**: Handles rate limiting functionality
-- **RedisManager**: Handles Redis connections and atomic operations
-- **BehaviorTracker**: Handles behavioral analysis and monitoring
+- **[IPBanManager](ipban-manager.md)**: Manages IP banning functionality
+- **[IPInfoManager](ipinfo-manager.md)**: Handles IP geolocation using IPInfo's database
+- **[SusPatternsManager](sus-patterns.md)**: Manages suspicious patterns for threat detection
+- **[CloudManager](cloud-manager.md)**: Handles cloud provider IP range detection
+- **[RateLimitManager](ratelimit-manager.md)**: Handles rate limiting functionality
+- **[RedisManager](redis-manager.md)**: Handles Redis connections and atomic operations
+- **[BehaviorTracker](behavior-manager.md)**: Handles behavioral analysis and monitoring
+- **[SecurityHeadersManager](security-headers.md)**: Manages security headers
 
 Utilities
 ---------
 
-- **Utilities**: Helper functions for logging and request analysis
+- **[Utilities](utilities.md)**: Helper functions for logging and request analysis
 
 ___
 

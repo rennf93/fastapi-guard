@@ -1,6 +1,6 @@
 [project]
 name = "fastapi_guard"
-version = "4.1.2"
+version = "4.2.0"
 description = "A security library for FastAPI to control IPs, log requests, and detect penetration attempts."
 authors = [
     {name = "Renzo Franceschini", email = "rennf93@users.noreply.github.com"}
@@ -162,6 +162,10 @@ enabled = false
 
 [tool.pymarkdown.plugins.md046]
 # MD046 - Code block style (disabled - allow any style)
+enabled = false
+
+[tool.pymarkdown.plugins.md029]
+# MD029 - Ordered list item prefix (disabled - allow any style)
 enabled = false
 
 [tool.vulture]
