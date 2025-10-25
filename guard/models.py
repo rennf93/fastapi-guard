@@ -543,6 +543,16 @@ class SecurityConfig(BaseModel):
         Number of retry attempts for failed requests to the SaaS platform.
     """
 
+    agent_project_encryption_key: str | None = Field(
+        default=None,
+        description="Project-specific encryption key for secure telemetry transmission",
+    )
+    """
+    str | None:
+        Project-specific encryption key for end-to-end encryption of telemetry data
+        using AES-256-GCM. If not provided, telemetry is sent without encryption.
+    """
+
     enable_dynamic_rules: bool = Field(
         default=False, description="Enable dynamic rule updates from SaaS platform"
     )
@@ -802,6 +812,7 @@ class SecurityConfig(BaseModel):
                 enable_metrics=self.agent_enable_metrics,
                 timeout=self.agent_timeout,
                 retry_attempts=self.agent_retry_attempts,
+                project_encryption_key=self.agent_project_encryption_key,
             )
         except ImportError:
             # guard_agent is not installed
