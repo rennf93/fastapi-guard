@@ -1,6 +1,4 @@
 # guard/core/checks/implementations/__init__.py
-"""Security check implementations - one file per check."""
-
 from guard.core.checks.implementations.authentication import (
     AuthenticationCheck,
 )
@@ -24,6 +22,9 @@ from guard.core.checks.implementations.https_enforcement import (
 )
 from guard.core.checks.implementations.ip_security import (
     IpSecurityCheck,
+)
+from guard.core.checks.implementations.prompt_injection import (
+    PromptInjectionCheck,
 )
 from guard.core.checks.implementations.rate_limit import RateLimitCheck
 from guard.core.checks.implementations.referrer import ReferrerCheck
@@ -56,6 +57,7 @@ __all__ = [
     "EmergencyModeCheck",
     "HttpsEnforcementCheck",
     "IpSecurityCheck",
+    "PromptInjectionCheck",
     "RateLimitCheck",
     "ReferrerCheck",
     "RequestLoggingCheck",

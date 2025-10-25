@@ -174,6 +174,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             EmergencyModeCheck,
             HttpsEnforcementCheck,
             IpSecurityCheck,
+            PromptInjectionCheck,
             RateLimitCheck,
             ReferrerCheck,
             RequestLoggingCheck,
@@ -212,6 +213,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             RateLimitCheck(self),
             # Threat detection
             SuspiciousActivityCheck(self),
+            # Prompt injection defense (before custom checks)
+            PromptInjectionCheck(self),
             # Custom checks
             CustomRequestCheck(self),
         ]

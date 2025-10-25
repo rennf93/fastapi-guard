@@ -1,6 +1,4 @@
 # guard/core/checks/__init__.py
-"""Security checks module with modular architecture."""
-
 from guard.core.checks.base import SecurityCheck
 from guard.core.checks.implementations import (
     AuthenticationCheck,
@@ -11,6 +9,7 @@ from guard.core.checks.implementations import (
     EmergencyModeCheck,
     HttpsEnforcementCheck,
     IpSecurityCheck,
+    PromptInjectionCheck,
     RateLimitCheck,
     ReferrerCheck,
     RequestLoggingCheck,
@@ -44,5 +43,6 @@ __all__ = [
     "UserAgentCheck",
     "RateLimitCheck",
     "SuspiciousActivityCheck",
+    "PromptInjectionCheck",
     "CustomRequestCheck",
 ]

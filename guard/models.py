@@ -698,6 +698,95 @@ class SecurityConfig(BaseModel):
         Must be between 100 and 5000. Default is 1000.
     """
 
+    # Prompt injection protection configuration
+    enable_prompt_injection_defense: bool = Field(
+        default=False,
+        description="Enable prompt injection defense for LLM-integrated endpoints",
+    )
+    """
+    bool:
+        Whether to enable prompt injection defense capabilities.
+        When enabled, it provides multiple layers of protection against
+        prompt manipulation.
+    """
+
+    prompt_injection_protection_level: Literal[
+        "basic", "standard", "strict", "paranoid"
+    ] = Field(
+        default="standard",
+        description="Protection level for prompt injection defense",
+    )
+    """
+    Literal["basic", "standard", "strict", "paranoid"]:
+        Protection level for prompt injection defense.
+        - basic: Pattern detection only
+        - standard: Pattern + format manipulation (recommended)
+        - strict: All above + canary tokens
+        - paranoid: All above + statistical anomaly detection
+    """
+
+    prompt_injection_format_strategy: Literal[
+        "repr", "code_block", "byte_string", "xml_tags", "json_escape"
+    ] = Field(
+        default="repr",
+        description="Format manipulation strategy for input sanitization",
+    )
+    """
+    Literal["repr", "code_block", "byte_string", "xml_tags", "json_escape"]:
+        Format manipulation strategy to neutralize injection attempts.
+        - repr: Python repr() wrapping (recommended for most use cases)
+        - code_block: Markdown code block isolation
+        - byte_string: Byte string conversion (breaks special characters)
+        - xml_tags: Custom XML-like tags
+        - json_escape: JSON string escaping
+    """
+
+    prompt_injection_pattern_sensitivity: float = Field(
+        default=0.7,
+        description="Sensitivity for pattern detection (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+    """
+    float:
+        Sensitivity threshold for pattern-based detection.
+        Lower values = more strict (more false positives).
+        Higher values = more permissive (more false negatives).
+        Must be between 0.0 and 1.0. Default is 0.7.
+    """
+
+    prompt_injection_enable_canary: bool = Field(
+        default=True,
+        description="Enable canary token injection for strict+ protection levels",
+    )
+    """
+    bool:
+        Whether to inject canary tokens into prompts.
+        Only applies when protection_level is 'strict' or 'paranoid'.
+        Canaries are unique markers that should never appear in outputs.
+    """
+
+    prompt_injection_store_canaries_redis: bool = Field(
+        default=True,
+        description="Store canary tokens in Redis for distributed systems",
+    )
+    """
+    bool:
+        Whether to store canary tokens in Redis.
+        If False, canaries are kept in-memory (faster but instance-specific).
+        Only applies when enable_redis is True.
+    """
+
+    prompt_injection_custom_patterns: list[str] = Field(
+        default_factory=list,
+        description="Additional custom regex patterns for injection detection",
+    )
+    """
+    list[str]:
+        Custom regex patterns to detect application-specific injection attempts.
+        These are added to the built-in pattern library.
+    """
+
     # TODO: Add type hints to the decorator
     @field_validator("whitelist", "blacklist")  # type: ignore
     def validate_ip_lists(cls, v: list[str] | None) -> list[str] | None:
