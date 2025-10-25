@@ -261,3 +261,25 @@ class TestPromptGuardEdgeCases:
         # Test upper bound
         guard2 = PromptGuard(pattern_sensitivity=2.0)
         assert guard2.pattern_sensitivity == 1.0
+
+    def test_inject_system_canary_when_disabled(self) -> None:
+        """Test inject_system_canary returns prompt unchanged when canary disabled."""
+        guard = PromptGuard(enable_canary=False)
+
+        system_prompt = "You are a helpful assistant."
+        result = guard.inject_system_canary(system_prompt)
+
+        # Should return unchanged when canary is disabled
+        assert result == system_prompt
+
+    def test_inject_system_canary_no_current_canary(self) -> None:
+        """Test inject_system_canary when no current canary exists."""
+        guard = PromptGuard(enable_canary=True)
+        # Don't call protect_input, so no canary is generated
+        guard._current_canary = None
+
+        system_prompt = "You are a helpful assistant."
+        result = guard.inject_system_canary(system_prompt)
+
+        # Should return unchanged when no canary exists
+        assert result == system_prompt

@@ -224,3 +224,31 @@ class TestStrategyEffectiveness:
 
         # Original content should be recoverable (though possibly escaped)
         assert "Legitimate" in result or "legitimate" in result.lower()
+
+    def test_register_custom_strategy(self) -> None:
+        """Test registering a custom format strategy."""
+        from guard.core.prompt_injection.format_strategies import FormatStrategy
+
+        class CustomStrategy(FormatStrategy):
+            """Custom test strategy."""
+
+            @property
+            def strategy_name(self) -> str:
+                return "custom"
+
+            def apply(self, text: str) -> str:
+                return f"[CUSTOM]{text}[/CUSTOM]"
+
+        # Register the custom strategy
+        FormatStrategyFactory.register_strategy("custom", CustomStrategy)
+
+        # Should be able to get it back
+        strategy = FormatStrategyFactory.get_strategy("custom")
+        assert isinstance(strategy, CustomStrategy)
+
+        # Verify strategy_name property
+        assert strategy.strategy_name == "custom"
+
+        # Should work correctly
+        result = strategy.apply("test")
+        assert result == "[CUSTOM]test[/CUSTOM]"

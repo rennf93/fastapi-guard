@@ -209,3 +209,107 @@ class TestCanaryManagerIntegration:
         # Canary should be at the start
         assert injected.startswith("\n\nIMPORTANT SECURITY MARKER:")
         assert canary in injected.split(prompt)[0]
+
+
+class TestCanaryManagerRedis:
+    """Test Redis-based canary storage."""
+
+    def test_generate_canary_with_redis(self) -> None:
+        """Test canary generation with Redis storage."""
+        from unittest.mock import Mock
+
+        redis_manager = Mock()
+        redis_manager.redis_client = Mock()
+        redis_manager.redis_client.setex = Mock()
+
+        manager = CanaryManager(redis_manager=redis_manager, use_redis=True)
+        canary = manager.generate_canary(session_id="test-session")
+
+        # Verify Redis storage was called
+        redis_manager.redis_client.setex.assert_called_once()
+        call_args = redis_manager.redis_client.setex.call_args
+        assert call_args[0][0].startswith("canary:GUARD_CANARY_")
+        assert call_args[0][1] == 3600  # TTL
+        assert call_args[0][2] == "test-session"
+
+    def test_is_canary_valid_redis_exists(self) -> None:
+        """Test canary validation when it exists in Redis."""
+        from unittest.mock import Mock
+
+        redis_manager = Mock()
+        redis_manager.redis_client = Mock()
+        redis_manager.redis_client.exists = Mock(return_value=1)
+
+        manager = CanaryManager(redis_manager=redis_manager, use_redis=True)
+        result = manager.is_canary_valid("GUARD_CANARY_test123")
+
+        assert result is True
+        redis_manager.redis_client.exists.assert_called_once_with(
+            "canary:GUARD_CANARY_test123"
+        )
+
+    def test_is_canary_valid_redis_not_exists(self) -> None:
+        """Test canary validation when it doesn't exist in Redis."""
+        from unittest.mock import Mock
+
+        redis_manager = Mock()
+        redis_manager.redis_client = Mock()
+        redis_manager.redis_client.exists = Mock(return_value=0)
+
+        manager = CanaryManager(redis_manager=redis_manager, use_redis=True)
+        result = manager.is_canary_valid("GUARD_CANARY_test123")
+
+        assert result is False
+
+    def test_is_canary_valid_redis_no_client(self) -> None:
+        """Test canary validation when Redis client is None."""
+        from unittest.mock import Mock
+
+        redis_manager = Mock()
+        redis_manager.redis_client = None
+
+        manager = CanaryManager(redis_manager=redis_manager, use_redis=True)
+        result = manager.is_canary_valid("GUARD_CANARY_test123")
+
+        assert result is False
+
+    def test_cleanup_expired_with_redis(self) -> None:
+        """Test cleanup with Redis returns 0 (Redis handles expiration)."""
+        from unittest.mock import Mock
+
+        redis_manager = Mock()
+        redis_manager.redis_client = Mock()
+
+        manager = CanaryManager(redis_manager=redis_manager, use_redis=True)
+        result = manager.cleanup_expired()
+
+        assert result == 0
+
+    def test_is_canary_expired_in_memory(self) -> None:
+        """Test expired canary is removed during validation."""
+        manager = CanaryManager(use_redis=False, ttl_seconds=1)
+
+        # Generate canary
+        canary = manager.generate_canary()
+
+        # Should be valid initially
+        assert manager.is_canary_valid(canary) is True
+
+        # Wait for expiration
+        time.sleep(1.1)
+
+        # Should be invalid and removed
+        result = manager.is_canary_valid(canary)
+        assert result is False
+        assert canary not in manager._memory_canaries
+
+    def test_store_in_redis_no_client(self) -> None:
+        """Test _store_in_redis with no Redis client."""
+        from unittest.mock import Mock
+
+        redis_manager = Mock()
+        redis_manager.redis_client = None
+
+        manager = CanaryManager(redis_manager=redis_manager, use_redis=True)
+        # Should not raise error
+        manager._store_in_redis("GUARD_CANARY_test", "session1")
