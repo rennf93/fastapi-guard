@@ -1,0 +1,11 @@
+Contact: https://github.com/rennf93/fastapi-guard/issues
+Contact: https://github.com/rennf93/fastapi-guard/security
+Expires: 2026-12-31T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://rennf93.github.io/fastapi-guard/.well-known/security.txt
+Policy: https://github.com/rennf93/fastapi-guard/security/policy
+Acknowledgments: https://github.com/rennf93/fastapi-guard#contributors
+
+# FastAPI Guard Documentation Security Contact
+# For security vulnerabilities in FastAPI Guard, please report via GitHub Security Advisories
+# For documentation issues, use GitHub Issues

@@ -6,6 +6,7 @@ from fastapi import Request, Response
 
 from guard.core.checks.base import SecurityCheck
 from guard.core.prompt_injection import PromptGuard, PromptInjectionAttempt
+from guard.utils import log_activity
 
 if TYPE_CHECKING:
     from guard.middleware import SecurityMiddleware
@@ -36,15 +37,37 @@ class PromptInjectionCheck(SecurityCheck):
                 format_strategy=self.config.prompt_injection_format_strategy,
                 pattern_sensitivity=self.config.prompt_injection_pattern_sensitivity,
                 custom_patterns=self.config.prompt_injection_custom_patterns,
-                enable_canary=self.config.prompt_injection_enable_canary,
                 redis_manager=(
-                    self.middleware.redis_handler
-                    if self.config.enable_redis
-                    else None
+                    self.middleware.redis_handler if self.config.enable_redis else None
                 ),
-                use_redis_for_canaries=(
-                    self.config.prompt_injection_store_canaries_redis
-                ),
+                enable_canary=self.config.prompt_injection_enable_canary,
+                use_redis_for_canaries=self.config.prompt_injection_store_canaries_redis,
+                # Semantic matching
+                semantic_fuzzy_threshold=self.config.prompt_injection_semantic_fuzzy_threshold,
+                semantic_proximity_window=self.config.prompt_injection_semantic_proximity_window,
+                semantic_enable_synonym=self.config.prompt_injection_semantic_enable_synonym,
+                semantic_enable_fuzzy=self.config.prompt_injection_semantic_enable_fuzzy,
+                semantic_enable_proximity=self.config.prompt_injection_semantic_enable_proximity,
+                # Semantic detection
+                enable_embedding_detection=self.config.prompt_injection_enable_embedding_detection,
+                enable_transformer_detection=self.config.prompt_injection_enable_transformer_detection,
+                embedding_model=self.config.prompt_injection_embedding_model,
+                embedding_threshold=self.config.prompt_injection_embedding_threshold,
+                transformer_model=self.config.prompt_injection_transformer_model,
+                transformer_threshold=self.config.prompt_injection_transformer_threshold,
+                # Statistical detection
+                enable_statistical_detection=self.config.prompt_injection_enable_statistical_detection,
+                statistical_entropy_weight=self.config.prompt_injection_statistical_entropy_weight,
+                statistical_char_dist_weight=self.config.prompt_injection_statistical_char_dist_weight,
+                statistical_complexity_weight=self.config.prompt_injection_statistical_complexity_weight,
+                statistical_delimiter_weight=self.config.prompt_injection_statistical_delimiter_weight,
+                # Context detection
+                context_max_history=self.config.prompt_injection_context_max_history,
+                # Injection scorer
+                scorer_pattern_weight=self.config.prompt_injection_scorer_pattern_weight,
+                scorer_statistical_weight=self.config.prompt_injection_scorer_statistical_weight,
+                scorer_context_weight=self.config.prompt_injection_scorer_context_weight,
+                scorer_detection_threshold=self.config.prompt_injection_scorer_detection_threshold,
             )
 
     @property
@@ -93,7 +116,15 @@ class PromptInjectionCheck(SecurityCheck):
             request.state.prompt_guard_sanitized = sanitized
             request.state.prompt_guard_session_id = session_id
 
-            # If canary is enabled, store system prompt helper
+            # Store system prompt helpers for LLM integration
+            request.state.prompt_guard_get_system_instruction = (
+                self.prompt_guard.get_system_instruction
+            )
+            request.state.prompt_guard_prepare_system_prompt = (
+                self.prompt_guard.prepare_system_prompt
+            )
+
+            # Canary system
             if self.prompt_guard.enable_canary:
                 request.state.prompt_guard_inject_canary = (
                     self.prompt_guard.inject_system_canary
@@ -105,20 +136,46 @@ class PromptInjectionCheck(SecurityCheck):
             return None  # Check passed
 
         except PromptInjectionAttempt as e:
-            # Log the attempt
-            client_host = request.client.host if request.client else "unknown"
-            self.logger.warning(
-                f"Prompt injection attempt detected from {client_host}: "
-                f"{str(e)} - Patterns: {e.matched_patterns}"
+            # Get client info
+            client_ip = getattr(request.state, "client_ip", "unknown")
+            detection_details = e.to_dict()
+
+            # Log using standard log_activity helper (consistent with other checks)
+            trigger_info = (
+                f"Layer: {e.detection_layer}, "
+                f"Score: {e.threat_score}, "
+                f"Patterns: {e.matched_patterns}"
             )
 
-            # Send security event
+            await log_activity(
+                request,
+                self.logger,
+                log_type="suspicious",
+                reason=f"Prompt injection detected from {client_ip}",
+                trigger_info=trigger_info,
+                level=self.config.log_suspicious_level,
+            )
+
+            # Store detection info for LLM to explain rejection
+            # Users can access this via: request.state.prompt_guard_detection_info
+            request.state.prompt_guard_detection_info = detection_details
+
+            # The LLM can use this to explain what triggered the block:
+            # system_prompt = request.state.prompt_guard_prepare_system_prompt(
+            #     base_prompt,
+            #     detection_info=request.state.prompt_guard_detection_info
+            # )
+
+            # Send security event with full details (ready for guard-agent)
             await self.send_event(
                 event_type="prompt_injection_attempt",
                 request=request,
                 action_taken="blocked",
-                reason=f"Prompt injection patterns detected: {e.matched_patterns}",
+                reason=str(e),
                 matched_patterns=e.matched_patterns,
+                detection_layer=e.detection_layer,
+                threat_score=e.threat_score,
+                detection_metadata=e.detection_metadata,
             )
 
             # Return error response

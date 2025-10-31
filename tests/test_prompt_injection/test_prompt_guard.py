@@ -195,7 +195,10 @@ class TestPromptGuardProtectionInfo:
         assert info["pattern_detection"] is True
         assert info["format_manipulation"] is False
         assert info["canary_tokens"] is False
-        assert info["statistical_analysis"] is False
+        # Advanced detection features should be disabled
+        assert info["statistical_detection"] is False
+        assert info["context_awareness"] is False
+        assert info["multi_layer_scoring"] is False
 
     def test_protection_info_standard(self) -> None:
         """Test protection info for standard level."""
@@ -207,7 +210,10 @@ class TestPromptGuardProtectionInfo:
         assert info["format_manipulation"] is True
         assert info["format_strategy"] == "repr"
         assert info["canary_tokens"] is False
-        assert info["statistical_analysis"] is False
+        # Advanced detection features should be disabled
+        assert info["statistical_detection"] is False
+        assert info["context_awareness"] is False
+        assert info["multi_layer_scoring"] is False
 
     def test_protection_info_strict(self) -> None:
         """Test protection info for strict level."""
@@ -218,7 +224,10 @@ class TestPromptGuardProtectionInfo:
         assert info["pattern_detection"] is True
         assert info["format_manipulation"] is True
         assert info["canary_tokens"] is True
-        assert info["statistical_analysis"] is False
+        # Advanced detection features should be disabled
+        assert info["statistical_detection"] is False
+        assert info["context_awareness"] is False
+        assert info["multi_layer_scoring"] is False
 
     def test_protection_info_paranoid(self) -> None:
         """Test protection info for paranoid level."""
@@ -229,7 +238,10 @@ class TestPromptGuardProtectionInfo:
         assert info["pattern_detection"] is True
         assert info["format_manipulation"] is True
         assert info["canary_tokens"] is True
-        assert info["statistical_analysis"] is True
+        # Advanced detection features should be enabled for paranoid mode
+        assert info["statistical_detection"] is True
+        assert info["context_awareness"] is True
+        assert info["multi_layer_scoring"] is True
 
 
 class TestPromptGuardEdgeCases:

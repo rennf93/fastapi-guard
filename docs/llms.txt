@@ -1,0 +1,317 @@
+# FastAPI Guard Documentation - LLMs.txt
+# For LLM Crawlers and AI Assistants
+# Documentation Site: https://rennf93.github.io/fastapi-guard
+
+## Overview
+FastAPI Guard is a comprehensive security middleware for FastAPI applications, providing enterprise-grade protection with minimal configuration. This documentation site provides complete technical guides, API references, tutorials, and examples.
+
+## Documentation Structure
+
+### Getting Started
+- **Home**: https://rennf93.github.io/fastapi-guard/latest/
+- **Installation**: https://rennf93.github.io/fastapi-guard/latest/installation/
+- **First Steps**: https://rennf93.github.io/fastapi-guard/latest/tutorial/first-steps/
+
+### Core Features Documentation
+
+#### IP Management
+- **IP Banning**: Automatic and manual IP banning with threshold-based blocking
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/ip-management/banning/
+- **Geolocation**: Country-based access control using IP geolocation
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/ip-management/geolocation/
+- **Cloud Providers**: Block requests from AWS, GCP, Azure IP ranges
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/ip-management/cloud-providers/
+- **Rate Limiting**: Multiple strategies (fixed window, sliding window, token bucket)
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/ip-management/rate-limiter/
+
+#### Security Decorators
+- **Overview**: Route-level security with Python decorators
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/decorators/overview/
+- **Access Control**: IP whitelisting, blacklisting, country restrictions
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/decorators/access-control/
+- **Authentication**: Bearer, Basic, API Key header validation
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/decorators/authentication/
+- **Rate Limiting Decorators**: Per-route rate limits
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/decorators/rate-limiting/
+- **Behavioral Analysis**: Usage monitoring, return value monitoring
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/decorators/behavioral/
+- **Content Filtering**: Request/response content validation
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/decorators/content-filtering/
+- **Advanced Decorators**: Combined security features
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/decorators/advanced/
+
+#### Security Features
+- **Penetration Detection**: SQL injection, XSS, command injection detection
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/security/penetration-detection/
+- **Detection Engine**: Advanced pattern matching and threat detection
+  - Overview: https://rennf93.github.io/fastapi-guard/latest/tutorial/security/detection-engine/overview/
+  - Architecture: https://rennf93.github.io/fastapi-guard/latest/tutorial/security/detection-engine/architecture/
+  - Components: https://rennf93.github.io/fastapi-guard/latest/tutorial/security/detection-engine/components/
+  - Configuration: https://rennf93.github.io/fastapi-guard/latest/tutorial/security/detection-engine/configuration/
+  - Performance: https://rennf93.github.io/fastapi-guard/latest/tutorial/security/detection-engine/performance-tuning/
+- **Proxy Security**: Trusted proxy handling, X-Forwarded-For validation
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/security/proxy-security/
+- **Custom Patterns**: Define custom attack patterns
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/security/custom-patterns/
+- **Security Monitoring**: Event tracking and analytics
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/security/monitoring/
+
+#### Configuration
+- **Security Config**: Complete configuration reference
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/configuration/security-config/
+- **CORS**: Cross-Origin Resource Sharing setup
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/configuration/cors/
+- **Logging**: Security event logging configuration
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/configuration/logging/
+
+#### Redis Integration
+- **Distributed State**: Redis for multi-instance deployments
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/redis-integration/caching/
+
+#### Advanced Topics
+- **Advanced Customizations**: Custom request checks, response modifiers
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/advanced-customizations/
+- **Example Application**: Complete working example
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/examples/example-app/
+
+### API Reference
+
+Complete API documentation for all classes and functions:
+
+- **Overview**: https://rennf93.github.io/fastapi-guard/latest/api/overview/
+- **SecurityMiddleware**: Main middleware class
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/api/security-middleware/
+- **Core Architecture**: Internal architecture and design
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/api/core-architecture/
+- **SecurityDecorators**: All decorator functions
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/api/decorators/
+- **BehaviorManager**: Behavioral analysis manager
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/api/behavior-manager/
+- **RedisManager**: Redis state management
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/api/redis-manager/
+- **IPBanManager**: IP banning logic
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/api/ipban-manager/
+- **IPInfoManager**: IP geolocation
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/api/ipinfo-manager/
+- **RateLimitManager**: Rate limiting algorithms
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/api/ratelimit-manager/
+- **SusPatternsManager**: Suspicious pattern detection
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/api/sus-patterns/
+- **CloudManager**: Cloud provider IP management
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/api/cloud-manager/
+- **SecurityHeadersManager**: HTTP security headers
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/api/security-headers/
+- **Utilities**: Helper functions and utilities
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/api/utilities/
+
+### Release Notes
+- **Changelog**: All version history and updates
+  - Docs: https://rennf93.github.io/fastapi-guard/latest/release-notes/
+
+## Key Features Explained
+
+### Rate Limiting Strategies
+1. **Fixed Window**: Simple time-based windows
+2. **Sliding Window**: Smooth rate limiting across time
+3. **Token Bucket**: Burst handling with gradual refill
+4. **Leaky Bucket**: Smooth traffic shaping
+
+### Attack Detection Patterns
+- SQL Injection (UNION, SELECT, DROP, etc.)
+- Cross-Site Scripting (XSS) via script tags and event handlers
+- Command Injection (shell commands, pipe operators)
+- Path Traversal (../, directory escaping)
+- LDAP Injection
+- XML/XXE Injection
+- Server-Side Request Forgery (SSRF)
+- NoSQL Injection
+
+### Prompt Injection Defense (LLM Security)
+- **Basic Level**: Simple pattern detection
+- **Standard Level**: Format manipulation detection
+- **Strict Level**: Canary token verification
+- **Paranoid Level**: Maximum protection with zero-trust approach
+
+### Security Headers Managed
+- Content-Security-Policy (CSP)
+- Strict-Transport-Security (HSTS)
+- X-Frame-Options (Clickjacking protection)
+- X-Content-Type-Options (MIME sniffing)
+- X-XSS-Protection
+- Referrer-Policy
+- Permissions-Policy
+- Cross-Origin-Embedder-Policy (COEP)
+- Cross-Origin-Opener-Policy (COOP)
+- Cross-Origin-Resource-Policy (CORP)
+
+## Installation
+
+```bash
+# Basic installation
+pip install fastapi-guard
+```
+
+## Quick Start Example
+
+```python
+from fastapi import FastAPI
+from guard.middleware import SecurityMiddleware
+from guard.models import SecurityConfig
+
+app = FastAPI()
+
+# Basic configuration
+config = SecurityConfig(
+    whitelist=["192.168.1.1"],
+    blacklist=["10.0.0.1"],
+    rate_limit=100,  # requests per minute
+    auto_ban_threshold=5,  # ban after 5 suspicious requests
+    block_cloud_providers={"AWS", "GCP", "AZURE"},
+    allowed_countries=["US", "CA", "GB"],
+    enable_security_headers=True,
+)
+
+app.add_middleware(SecurityMiddleware, config=config)
+```
+
+## Use Cases
+
+### API Protection
+- Public REST APIs
+- GraphQL endpoints
+- Microservices communication
+- Webhook receivers
+
+### Web Application Security
+- SaaS platforms
+- E-commerce sites
+- Content management systems
+- Admin panels
+
+### LLM Application Security
+- Chatbot APIs
+- AI-powered services
+- Content generation APIs
+- Prompt-based applications
+
+### Enterprise Deployments
+- Multi-tenant applications
+- High-traffic services
+- Distributed systems (with Redis)
+- Compliance requirements (GDPR, HIPAA)
+
+## Technology Stack
+
+- **Python**: 3.10, 3.11, 3.12, 3.13
+- **FastAPI**: ASGI web framework
+- **Starlette**: ASGI toolkit
+- **Pydantic**: Data validation
+- **Redis**: Optional distributed state (redis-py)
+- **HTTPx**: Async HTTP client
+- **MaxMindDB**: IP geolocation data
+- **Pytest**: Testing framework
+
+## Integration Patterns
+
+### Middleware (Global)
+Apply security to all routes automatically via middleware.
+
+### Decorators (Route-Level)
+Apply security to specific endpoints using Python decorators.
+
+### Hybrid Approach
+Combine middleware for baseline security with decorators for enhanced route-specific protection.
+
+## Performance Considerations
+
+### Optimization Techniques
+- In-memory caching for IP ranges
+- Lazy loading of geolocation databases
+- Efficient regex pattern matching
+- Redis for distributed deployments
+- Configurable detection sensitivity
+
+### Benchmarks
+- Middleware overhead: ~1-2ms per request
+- Rate limiting: Sub-millisecond with in-memory, ~2-3ms with Redis
+- Pattern detection: ~0.5-1ms for basic patterns
+- IP geolocation: ~0.1-0.5ms (cached)
+
+## Configuration Best Practices
+
+### Development
+- Lenient rate limits for testing
+- Whitelist development IPs
+- Enable verbose logging
+- Disable auto-banning
+
+### Staging
+- Production-like security settings
+- Monitor false positives
+- Test auto-ban thresholds
+- Validate geolocation rules
+
+### Production
+- Strict rate limits
+- Enable auto-banning
+- Production logging (errors + security events)
+- Redis for distributed state
+- Regular security pattern updates
+
+## Related Resources
+
+### Official Sites
+- **Main Website**: https://fastapi-guard.com
+- **Playground**: https://playground.fastapi-guard.com (Interactive demos)
+- **Documentation**: https://rennf93.github.io/fastapi-guard/latest/
+- **GitHub**: https://github.com/rennf93/fastapi-guard
+- **PyPI**: https://pypi.org/project/fastapi-guard/
+
+### Community
+- **Issues**: https://github.com/rennf93/fastapi-guard/issues
+- **Discussions**: https://github.com/rennf93/fastapi-guard/discussions
+- **Contributing**: https://github.com/rennf93/fastapi-guard/blob/main/CONTRIBUTING.md
+- **Security Policy**: https://github.com/rennf93/fastapi-guard/security/policy
+
+### FastAPI Resources
+- **FastAPI Docs**: https://fastapi.tiangolo.com
+- **FastAPI GitHub**: https://github.com/tiangolo/fastapi
+- **Starlette Docs**: https://www.starlette.io
+
+## Documentation Features
+
+### Search
+Full-text search across all documentation pages.
+
+### Code Examples
+Syntax-highlighted code blocks with copy functionality.
+
+### Dark/Light Mode
+Theme switcher for comfortable reading.
+
+### Versioning
+Documentation for all versions (managed with Mike).
+
+### Feedback
+Rate documentation helpfulness on each page.
+
+### API Auto-Documentation
+API reference auto-generated from Python docstrings using mkdocstrings.
+
+## Contact & Support
+
+- **GitHub Issues**: Bug reports and feature requests
+- **GitHub Discussions**: Questions and community support
+- **Security Issues**: Report via GitHub Security Advisories
+- **Author**: Renzo Franceschini (rennf93)
+
+## License
+MIT License - Free for commercial and personal use.
+
+## Version Information
+
+This documentation covers all versions of FastAPI Guard. Use the version selector to view docs for specific versions. Latest stable version is always recommended for production use.
+
+Default version: latest (stable)
+Provider: Mike (MkDocs versioning)
+Versions JSON: https://rennf93.github.io/fastapi-guard/versions.json

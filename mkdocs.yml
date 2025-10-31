@@ -154,16 +154,43 @@ extra:
 
   generator: false
   meta:
+    # Open Graph / Facebook / LinkedIn
     - property: og:type
       content: website
     - property: og:title
-      content: FastAPI Guard - Security Middleware for FastAPI
+      content: FastAPI Guard - Enterprise Security Middleware Documentation
     - property: og:description
-      content: Comprehensive security library for FastAPI applications providing IP control, request logging, and penetration detection
+      content: Complete documentation for FastAPI Guard security middleware. Features rate limiting, IP filtering, geo-blocking, penetration detection, prompt injection defense, cloud provider blocking, and distributed state management with Redis.
     - property: og:image
-      content: https://rennf93.github.io/fastapi-guard/assets/big_logo.svg
+      content: https://rennf93.github.io/fastapi-guard/latest/og-image.png
+    - property: og:url
+      content: https://rennf93.github.io/fastapi-guard/latest/
+    - property: og:site_name
+      content: FastAPI Guard Documentation
+
+    # Twitter Cards
+    - name: twitter:card
+      content: summary_large_image
+    - name: twitter:title
+      content: FastAPI Guard - Enterprise Security Middleware Documentation
+    - name: twitter:description
+      content: Complete documentation for FastAPI Guard security middleware. Features rate limiting, IP filtering, geo-blocking, penetration detection, prompt injection defense, cloud provider blocking, and distributed state management with Redis.
+    - name: twitter:image
+      content: https://rennf93.github.io/fastapi-guard/latest/og-image.png
+
+    # SEO Meta Tags
+    - name: description
+      content: Complete documentation for FastAPI Guard, an enterprise-grade security middleware for FastAPI. Includes tutorials, API reference, examples, and best practices for rate limiting, IP management, attack detection, and more.
     - name: keywords
-      content: fastapi, security, middleware, python, ip control, rate limiting, penetration detection
+      content: fastapi, security, middleware, python, rate limiting, ip filtering, geo-blocking, penetration detection, prompt injection, cloud provider blocking, ddos protection, api security, redis, distributed systems, tutorial, documentation
+    - name: author
+      content: Renzo Franceschini
+    - name: robots
+      content: index, follow
+
+    # Theme Color
+    - name: theme-color
+      content: "#1e293b"
 
   version:
     provider: mike

@@ -706,23 +706,28 @@ class SecurityConfig(BaseModel):
     """
     bool:
         Whether to enable prompt injection defense capabilities.
-        When enabled, it provides multiple layers of protection against
-        prompt manipulation.
+        When enabled, protects against prompt manipulation attacks.
     """
 
-    prompt_injection_protection_level: Literal[
-        "basic", "standard", "strict", "paranoid"
-    ] = Field(
-        default="standard",
-        description="Protection level for prompt injection defense",
+    prompt_injection_protection_level: Literal["disabled", "enabled"] = Field(
+        default="disabled",
+        description="Enable or disable prompt injection defense",
     )
     """
-    Literal["basic", "standard", "strict", "paranoid"]:
-        Protection level for prompt injection defense.
-        - basic: Pattern detection only
-        - standard: Pattern + format manipulation (recommended)
-        - strict: All above + canary tokens
-        - paranoid: All above + statistical anomaly detection
+    Literal["disabled", "enabled"]:
+        Enable or disable prompt injection defense.
+        - disabled: No protection (all checks bypassed)
+        - enabled: Full ML-powered detection with all layers active
+          (~100-200ms, requires semantic dependencies)
+
+        When enabled, uses multi-layer detection:
+        - Pattern matching (regex-based)
+        - Statistical analysis (entropy, character distribution)
+        - Semantic embeddings (similarity to known attacks)
+        - Transformer model (ML classification)
+        - Multi-layer scoring (combines all signals)
+
+        Requires: pip install fastapi-guard[semantic]
     """
 
     prompt_injection_format_strategy: Literal[
@@ -741,28 +746,23 @@ class SecurityConfig(BaseModel):
         - json_escape: JSON string escaping
     """
 
-    prompt_injection_pattern_sensitivity: float = Field(
-        default=0.7,
-        description="Sensitivity for pattern detection (0.0-1.0)",
-        ge=0.0,
-        le=1.0,
+    prompt_injection_custom_patterns: list[str] = Field(
+        default_factory=list,
+        description="Additional custom regex patterns for injection detection",
     )
     """
-    float:
-        Sensitivity threshold for pattern-based detection.
-        Lower values = more strict (more false positives).
-        Higher values = more permissive (more false negatives).
-        Must be between 0.0 and 1.0. Default is 0.7.
+    list[str]:
+        Custom regex patterns to detect application-specific injection attempts.
+        These are added to the built-in pattern library.
     """
 
     prompt_injection_enable_canary: bool = Field(
         default=True,
-        description="Enable canary token injection for strict+ protection levels",
+        description="Enable canary token injection",
     )
     """
     bool:
         Whether to inject canary tokens into prompts.
-        Only applies when protection_level is 'strict' or 'paranoid'.
         Canaries are unique markers that should never appear in outputs.
     """
 
@@ -777,14 +777,280 @@ class SecurityConfig(BaseModel):
         Only applies when enable_redis is True.
     """
 
-    prompt_injection_custom_patterns: list[str] = Field(
-        default_factory=list,
-        description="Additional custom regex patterns for injection detection",
+    prompt_injection_pattern_sensitivity: float = Field(
+        default=0.7,
+        description="Sensitivity for pattern detection (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
     )
     """
-    list[str]:
-        Custom regex patterns to detect application-specific injection attempts.
-        These are added to the built-in pattern library.
+    float:
+        Sensitivity threshold for pattern-based detection.
+        Lower values = more strict (more false positives).
+        Higher values = more permissive (more false negatives).
+        Must be between 0.0 and 1.0. Default is 0.7.
+    """
+
+    # Semantic detection
+    prompt_injection_enable_embedding_detection: bool = Field(
+        default=False,
+        description="Enable embedding-based semantic detection",
+    )
+    """
+    bool:
+        Whether to enable embedding-based semantic detection.
+        Uses sentence transformers for semantic similarity analysis.
+    """
+
+    prompt_injection_embedding_model: str = Field(
+        default="sentence-transformers/all-MiniLM-L6-v2",
+        description="HuggingFace model for embedding detection",
+    )
+    """
+    str:
+        HuggingFace model identifier for embedding-based detection.
+        Default uses sentence-transformers all-MiniLM-L6-v2 (~22MB).
+    """
+
+    prompt_injection_embedding_threshold: float = Field(
+        default=0.75,
+        description="Similarity threshold for embedding detection (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+    """
+    float:
+        Similarity threshold for embedding-based detection.
+        Lower values = more aggressive (more false positives).
+        Higher values = more permissive (more false negatives).
+        Must be between 0.0 and 1.0. Default is 0.75.
+    """
+
+    prompt_injection_enable_transformer_detection: bool = Field(
+        default=False,
+        description="Enable transformer-based ML detection",
+    )
+    """
+    bool:
+        Whether to enable transformer-based detection.
+        Uses pre-trained classification model for high-accuracy detection.
+    """
+
+    prompt_injection_transformer_threshold: float = Field(
+        default=0.50,
+        description="ML model confidence threshold for standard mode (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+    """
+    float:
+        Confidence threshold for transformer model detection (standard mode only).
+        Lower values = more aggressive (more false positives).
+        Higher values = more permissive (more false negatives).
+        Must be between 0.0 and 1.0. Default is 0.50.
+    """
+
+    prompt_injection_transformer_model: str = Field(
+        default="protectai/deberta-v3-base-prompt-injection",
+        description="HuggingFace model for ML detection (standard mode)",
+    )
+    """
+    str:
+        HuggingFace model identifier for transformer-based detection.
+        Default uses ProtectAI's DeBERTa model (~180MB).
+        Only used when protection_level='standard'.
+    """
+
+    # Statistical detection
+    prompt_injection_enable_statistical_detection: bool = Field(
+        default=False,
+        description="Enable statistical anomaly detection",
+    )
+    """
+    bool:
+        Whether to enable statistical anomaly detection.
+        Analyzes entropy, character distribution, and structural patterns.
+    """
+
+    prompt_injection_statistical_entropy_weight: float = Field(
+        default=0.3,
+        description="Weight for entropy score in statistical analysis (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+    """
+    float:
+        Weight for Shannon entropy score in statistical detection.
+        Entropy measures randomness/unpredictability of text.
+        Higher weight = more emphasis on entropy in threat scoring.
+        Must be between 0.0 and 1.0. Default is 0.3.
+    """
+
+    prompt_injection_statistical_char_dist_weight: float = Field(
+        default=0.2,
+        description="Weight for character distribution score (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+    """
+    float:
+        Weight for character distribution analysis in statistical detection.
+        Measures unusual character patterns (excessive special chars, etc.).
+        Higher weight = more emphasis on character patterns in threat scoring.
+        Must be between 0.0 and 1.0. Default is 0.2.
+    """
+
+    prompt_injection_statistical_complexity_weight: float = Field(
+        default=0.2,
+        description="Weight for token complexity score (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+    """
+    float:
+        Weight for token complexity analysis in statistical detection.
+        Measures unusual tokenization patterns and word boundaries.
+        Higher weight = more emphasis on complexity in threat scoring.
+        Must be between 0.0 and 1.0. Default is 0.2.
+    """
+
+    prompt_injection_statistical_delimiter_weight: float = Field(
+        default=0.3,
+        description="Weight for delimiter imbalance score (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+    """
+    float:
+        Weight for delimiter imbalance detection (unmatched quotes, brackets, etc.).
+        Measures structural anomalies that may indicate injection attempts.
+        Higher weight = more emphasis on delimiters in threat scoring.
+        Must be between 0.0 and 1.0. Default is 0.3.
+    """
+
+    # Semantic matching configuration
+    prompt_injection_semantic_fuzzy_threshold: float = Field(
+        default=0.85,
+        description="Fuzzy matching similarity threshold (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+    """
+    float:
+        Threshold for fuzzy string matching in semantic analysis.
+        Lower values = more strict matching. Higher values = more permissive.
+        Must be between 0.0 and 1.0. Default is 0.85.
+    """
+
+    prompt_injection_semantic_proximity_window: int = Field(
+        default=5,
+        description="Word proximity window for semantic matching",
+        ge=1,
+        le=20,
+    )
+    """
+    int:
+        Number of words to consider for proximity-based pattern matching.
+        Larger windows catch more dispersed patterns but may increase false positives.
+        Must be between 1 and 20. Default is 5.
+    """
+
+    prompt_injection_semantic_enable_synonym: bool = Field(
+        default=True,
+        description="Enable synonym expansion in semantic matching",
+    )
+    """
+    bool:
+        Whether to expand patterns using synonyms during semantic matching.
+        Helps catch variations like 'ignore' vs 'disregard'.
+    """
+
+    prompt_injection_semantic_enable_fuzzy: bool = Field(
+        default=True,
+        description="Enable fuzzy string matching",
+    )
+    """
+    bool:
+        Whether to use fuzzy matching to catch typos and minor variations.
+        Helps detect 'ignor' as similar to 'ignore'.
+    """
+
+    prompt_injection_semantic_enable_proximity: bool = Field(
+        default=True,
+        description="Enable proximity-based pattern matching",
+    )
+    """
+    bool:
+        Whether to match patterns where keywords appear near each other.
+        Helps catch 'ignore the previous instructions' with words separated.
+    """
+
+    # Context detection configuration
+    prompt_injection_context_max_history: int = Field(
+        default=50,
+        description="Maximum number of user interactions to track",
+        ge=10,
+        le=1000,
+    )
+    """
+    int:
+        Maximum number of historical user interactions to keep for context analysis.
+        Larger values provide better behavioral analysis but use more memory.
+        Must be between 10 and 1000. Default is 50.
+    """
+
+    # Injection scorer configuration
+    prompt_injection_scorer_pattern_weight: float = Field(
+        default=0.5,
+        description="Weight for pattern detection in threat score (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+    """
+    float:
+        Weight assigned to pattern detection signals in final threat score.
+        Higher weight = more emphasis on regex pattern matches.
+        Must be between 0.0 and 1.0. Default is 0.5.
+    """
+
+    prompt_injection_scorer_statistical_weight: float = Field(
+        default=0.25,
+        description="Weight for statistical analysis in threat score (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+    """
+    float:
+        Weight assigned to statistical analysis signals in final threat score.
+        Higher weight = more emphasis on entropy/character distribution anomalies.
+        Must be between 0.0 and 1.0. Default is 0.25.
+    """
+
+    prompt_injection_scorer_context_weight: float = Field(
+        default=0.25,
+        description="Weight for context analysis in threat score (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+    """
+    float:
+        Weight assigned to context/behavioral signals in final threat score.
+        Higher weight = more emphasis on user behavior anomalies.
+        Must be between 0.0 and 1.0. Default is 0.25.
+    """
+
+    prompt_injection_scorer_detection_threshold: float = Field(
+        default=0.6,
+        description="Threat score threshold for blocking (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+    """
+    float:
+        Combined threat score threshold above which input is blocked.
+        Lower values = more aggressive (more false positives).
+        Higher values = more permissive (more false negatives).
+        Must be between 0.0 and 1.0. Default is 0.6.
     """
 
     # TODO: Add type hints to the decorator

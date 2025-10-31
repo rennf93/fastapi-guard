@@ -8,8 +8,9 @@ class TestPatternDetector:
     def test_basic_initialization(self) -> None:
         """Test detector initialization with default settings."""
         detector = PatternDetector()
-        assert detector.sensitivity == 0.7
-        assert len(detector._compiled_patterns) > 0
+        assert detector.sensitivity == 0.5  # Changed default from 0.7 to 0.5
+        assert detector.pattern_manager is not None
+        assert len(detector.pattern_manager.get_all_patterns()) > 0
 
     def test_custom_sensitivity(self) -> None:
         """Test detector with custom sensitivity."""
@@ -20,9 +21,14 @@ class TestPatternDetector:
         """Test detector with additional custom patterns."""
         custom = [r"custom_pattern_\d+"]
         detector = PatternDetector(custom_patterns=custom)
-        assert len(detector._compiled_patterns) > len(
-            PatternDetector.SUSPICIOUS_PATTERNS
-        )
+        # Check that custom patterns were added to PatternManager
+        all_patterns = detector.pattern_manager.get_all_patterns()
+        custom_pattern_ids = [
+            p.pattern_id
+            for p in all_patterns
+            if p.pattern_id.startswith("custom_pattern_")
+        ]
+        assert len(custom_pattern_ids) == len(custom)
 
     def test_ignore_previous_instructions(self) -> None:
         """Test detection of 'ignore previous instructions' pattern."""
@@ -129,23 +135,24 @@ class TestPatternDetector:
         """Test adding custom patterns at runtime."""
         # Use strict sensitivity so single pattern match triggers
         detector = PatternDetector(sensitivity=0.4)
-        initial_count = len(detector._compiled_patterns)
+        initial_count = len(detector.pattern_manager.get_all_patterns())
 
         detector.add_custom_pattern(r"secret_backdoor_\d+")
 
-        assert len(detector._compiled_patterns) == initial_count + 1
+        assert len(detector.pattern_manager.get_all_patterns()) == initial_count + 1
         assert detector.is_suspicious("secret_backdoor_123")
 
     def test_invalid_pattern_handling(self) -> None:
         """Test that invalid regex patterns are handled gracefully."""
         detector = PatternDetector()
-        initial_count = len(detector._compiled_patterns)
+        initial_count = len(detector.pattern_manager.get_all_patterns())
 
         # Add invalid pattern (should be skipped)
-        detector.add_custom_pattern(r"[invalid(regex")
+        result = detector.add_custom_pattern(r"[invalid(regex")
 
-        # Count should not increase
-        assert len(detector._compiled_patterns) == initial_count
+        # Should return False and count should not increase
+        assert result is False
+        assert len(detector.pattern_manager.get_all_patterns()) == initial_count
 
     def test_sensitivity_threshold_behavior(self) -> None:
         """Test that sensitivity affects detection threshold."""

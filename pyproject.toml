@@ -37,6 +37,12 @@ dependencies = [
 Homepage = "https://github.com/rennf93/fastapi-guard"
 
 [project.optional-dependencies]
+semantic = [
+    "datasets",
+    "sentence-transformers",
+    "torch",
+    "transformers",
+]
 dev = [
     "aiohttp",
     "bandit[toml]",
@@ -127,6 +133,18 @@ follow_imports = "skip"
 
 [[tool.mypy.overrides]]
 module = "redis.*"
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "sentence_transformers.*"
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "transformers.*"
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "torch.*"
 follow_imports = "skip"
 
 [tool.pymarkdown.plugins.md007]
@@ -246,6 +264,9 @@ per_rule_ignores = { "DEP002" = [
     "ruff",
     "safety",
     "semgrep",
+    "sentence-transformers",
+    "torch",
+    "transformers",
     "types-cachetools",
     "types-requests",
     "uvicorn",
