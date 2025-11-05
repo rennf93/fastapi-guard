@@ -13,71 +13,14 @@ class PatternDetector:
 
     Uses PatternManager for flexible pattern management with categorization,
     weights, and runtime control.
+
+    IMPORTANT: All patterns are defined in pattern_library.py via get_default_patterns().
+    To add new patterns, edit pattern_library.py, NOT this file.
     """
-
-    # Default prompt injection detection patterns (raw regex strings)
-    # These are used to populate the default PatternManager on initialization
-    PROMPT_INJECTION_PATTERNS: list[str] = [
-        # Instruction manipulation - expanded with synonyms
-        r"\b(?:ignore|disregard|skip|bypass|omit|neglect|overlook|dismiss|forget|leave\s+out|pass\s+over|pay\s+no\s+attention)\s+"
-        r"(?:all\s+|any\s+|the\s+|everything\s+)?(?:previous|prior|above|earlier|preceding|former|past|old|original|initial|existing)?\s*"
-        r"(?:instructions|prompts|rules|commands|directives|guidelines|context|documents?|information|requirements|constraints|parameters|you\s+were\s+told)",
-
-        # Override/replace attempts
-        r"\b(?:override|replace|supersede|overrule|change|modify|alter|update|revise|rewrite)s?\s+"
-        r"(?:all\s+|any\s+|the\s+)?(?:previous|prior|above|earlier)?\s*"
-        r"(?:instructions|prompts|rules|context|commands)",
-        # Temporal instruction changes
-        r"(?:from\s+now\s+on|starting\s+now|going\s+forward|from\s+this\s+point|henceforth|hereafter|as\s+of\s+now|effective\s+immediately|beginning\s+now)",
-
-        # Context reset attempts
-        r"(?:new\s+(?:instructions|context|rules|task)|let'?s\s+(?:start|begin)\s+(?:over|fresh|again|anew)|fresh\s+start|clean\s+slate|reset|restart)",
-
-        # Indirect instruction manipulation
-        r"(?:move\s+past|beyond|past)\s+(?:what|everything|all)\s+(?:was\s+said|came\s+before|mentioned\s+earlier)",
-        r"(?:no\s+longer|not\s+anymore|stop\s+being)\s+(?:bound|constrained|limited)\s+by",
-        r"(?:the\s+)?(?:above|earlier)\s+(?:is|are)?\s*(?:no\s+longer|not)\s+(?:relevant|applicable|valid)",
-
-        # Role switching attempts - expanded
-        r"(?:system|assistant|ai|bot):\s*$",
-        r"(?:^|\n)\s*(?:system|assistant|ai):",
-        r"\b(?:you\s+are|you're|you\s+will\s+be|you\s+must\s+be|you\s+have\s+become|you\s+shall\s+be)\s+(?:now|currently|henceforth)?\s*(?:a|an|the)?\s*\w+",
-        r"\b(?:act|behave|function|operate|work|respond)\s+(?:as|like)\s+(?:a|an|the)?\s*\w+",
-        r"\b(?:pretend|imagine|suppose|assume)\s+(?:to\s+be|you\s+are|you're|that\s+you\s+are)",
-        r"\broleplay\s+as\s+(?:a|an)?\s*\w+",
-        # Context breaking with special markers
-        r"###\s*(?:system|instruction|new|override)",
-        r"---\s*(?:system|instruction|new|override)",
-        r"====+\s*(?:system|instruction|new|override)",
-        # XML/HTML tag manipulation
-        r"</?(?:system|user|assistant|instruction|prompt)>",
-        r"\[(?:system|instruction|override)\]",
-        # Prompt leakage attempts (more flexible)
-        r"\b(?:show|reveal|display|print|output)\s+(?:me\s+)?(?:your|the)\s+(?:instructions|prompt|rules|guidelines|system)",
-        r"\bwhat\s+(?:are|were)\s+your\s+(?:instructions|rules|guidelines)",
-        r"\brepeat\s+(?:your|the)?\s*(?:instructions|prompt|system\s+message)",
-        # Jailbreak patterns - expanded
-        r"(?:developer|dev|debug|admin|root|sudo|superuser|god)\s*(?:mode|access|privileges|permissions|rights)",
-        r"\b(?:DAN|jailbreak|jailbroken|unrestricted|unlimited|uncensored|unfiltered)\b",
-        r"\bunlock\s+(?:all|full|your|complete)?\s*(?:capabilities|features|potential|powers)",
-        r"\bdo\s+anything\s+now\b",
-        r"(?:bypass|circumvent|evade|avoid)\s+(?:all|any|your)?\s*(?:restrictions|limitations|filters|guards|safety)",
-        r"(?:disable|turn\s+off|deactivate)\s+(?:all|any|your)?\s*(?:safety|filters|protections|guards)",
-        # Encoding/obfuscation attempts
-        r"base64\s*[:=]",
-        r"rot13\s*[:=]",
-        r"\\x[0-9a-fA-F]{2}",  # Hex encoding
-        # Delimiter confusion
-        r'"""[\s\S]*"""',  # Triple quotes
-        r"```[\s\S]*```",  # Code blocks used maliciously
-        # Command injection style
-        r";\s*(?:rm|del|drop|delete|exec|eval)",
-        r"\|\s*(?:curl|wget|nc|netcat)",
-    ]
 
     def __init__(
         self,
-        sensitivity: float = 0.5,  # Changed from 0.7 to 0.5 (stricter default)
+        sensitivity: float = 0.5,  # Default 0.5 = strict mode (block on any match)
         custom_patterns: list[str] | None = None,
         pattern_manager: "PatternManager | None" = None,
     ) -> None:
@@ -88,11 +31,11 @@ class PatternDetector:
             sensitivity: Detection sensitivity (0.0-1.0).
                         Lower = more strict (more false positives).
                         Higher = more permissive (more false negatives).
-                        Default 0.5 = strict mode.
-            custom_patterns: Additional regex patterns to check (appended to defaults).
-            pattern_manager: Optional PatternManager. If not provided, creates one
-                           automatically using PROMPT_INJECTION_PATTERNS + custom_patterns.
-        """  # noqa: E501
+                        Default 0.5 = strict mode (block on ANY pattern match).
+            custom_patterns: Additional regex patterns to add to defaults.
+            pattern_manager: Optional PatternManager. If not provided, loads
+                           patterns from pattern_library.get_default_patterns().
+        """
         self.sensitivity = max(0.0, min(1.0, sensitivity))
         self.custom_patterns = custom_patterns or []
 
@@ -100,15 +43,15 @@ class PatternDetector:
         if pattern_manager:
             self.pattern_manager = pattern_manager
         else:
-            # Create default PatternManager from PROMPT_INJECTION_PATTERNS
+            # Load patterns from pattern_library.py (single source of truth)
             self.pattern_manager = self._create_default_pattern_manager()
 
     def _create_default_pattern_manager(self) -> "PatternManager":
         """
-        Create a PatternManager with default patterns.
+        Create a PatternManager with default patterns from pattern_library.py.
 
-        This converts the raw PROMPT_INJECTION_PATTERNS strings into
-        a structured PatternManager for consistent detection behavior.
+        Loads all patterns defined in pattern_library.get_default_patterns()
+        and adds any custom patterns provided during initialization.
         """
         from guard.core.prompt_injection.pattern_library import (
             create_default_pattern_manager,
@@ -118,7 +61,7 @@ class PatternDetector:
             PatternCategory,
         )
 
-        # Start with the library's default patterns
+        # Load default patterns from pattern_library.py (single source of truth)
         manager = create_default_pattern_manager()
 
         # Add any custom patterns provided during initialization
@@ -211,15 +154,15 @@ class PatternDetector:
         if not text:
             return []
 
-        matched = []
+        matched: list[str] = []
         patterns = self.pattern_manager.get_all_patterns(enabled_only=True)
 
         for pattern in patterns:
             if pattern.match(text):
                 # Return pattern ID and description for better logging
-                desc = (
+                desc: str = (
                     f"{pattern.pattern_id}: {pattern.description}"
-                    if pattern.description
+                    if pattern.description is not None
                     else pattern.pattern_id
                 )
                 matched.append(desc)
@@ -295,15 +238,14 @@ class PatternDetector:
 
     def get_pattern_count(self) -> dict[str, int]:
         """
-        Get count of patterns.
+        Get count of patterns currently loaded in the PatternManager.
 
         Returns:
-            Dictionary with default, custom, and total pattern counts.
+            Dictionary with pattern counts from PatternManager.
         """
         stats = self.pattern_manager.get_pattern_stats()
         return {
-            "default_patterns": len(self.PROMPT_INJECTION_PATTERNS),
-            "custom_patterns": len(self.custom_patterns),
             "total_patterns": stats["total_patterns"],
             "enabled_patterns": stats["enabled_patterns"],
+            "custom_patterns_added": len(self.custom_patterns),
         }

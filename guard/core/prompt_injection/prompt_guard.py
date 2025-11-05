@@ -88,7 +88,7 @@ class PromptGuard:
         format_strategy: Literal[
             "repr", "code_block", "byte_string", "xml_tags", "json_escape"
         ] = "repr",
-        pattern_sensitivity: float = 0.7,
+        pattern_sensitivity: float = 0.5,
         custom_patterns: list[str] | None = None,
         redis_manager: Any | None = None,
         # Canary system
@@ -104,7 +104,7 @@ class PromptGuard:
         enable_embedding_detection: bool = False,
         enable_transformer_detection: bool = False,
         embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
-        embedding_threshold: float = 0.75,
+        embedding_threshold: float = 0.50,
         transformer_model: str = "protectai/deberta-v3-base-prompt-injection",
         transformer_threshold: float = 0.50,
         # Statistical detection
@@ -247,6 +247,7 @@ class PromptGuard:
                 statistical_weight=scorer_statistical_weight,
                 context_weight=scorer_context_weight,
                 detection_threshold=scorer_detection_threshold,
+                # Cascade optimization always enabled (no parameter needed)
             )
 
     def protect_input(self, user_input: str, session_id: str | None = None) -> str:
