@@ -127,7 +127,7 @@ class IPInfoManager:
         async with httpx.AsyncClient() as session:
             for attempt in range(retries):
                 try:
-                    response = await session.get(url)
+                    response = await session.get(url, follow_redirects=True)
                     response.raise_for_status()
                     with open(self.db_path, "wb") as f:
                         f.write(response.content)
