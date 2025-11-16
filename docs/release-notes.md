@@ -10,6 +10,16 @@ Release Notes
 
 ___
 
+v4.2.1 (2025-11-05)
+-------------------
+
+Bug Fixes (v4.2.1)
+------------
+
+- **IPInfo redirect URLs**: IPInfo API sometimes responds with 302 code, and by not handling the redirect, the database would not be downloaded. Now, `IPInfoManager` class follows redirects.
+
+___
+
 v4.2.0 (2025-10-16)
 -------------------
 

@@ -298,3 +298,41 @@ async def test_get_country_result_without_country(tmp_path: Path) -> None:
 def test_ipinfo_not_initialized() -> None:
     db = IPInfoManager(token="test")
     assert db.is_initialized is False
+
+
+@pytest.mark.asyncio
+async def test_redirect_handling(tmp_path: Path) -> None:
+    """Test that redirects are properly followed during download"""
+    db = IPInfoManager(token="test", db_path=tmp_path / "test.mmdb")
+
+    # Create mock redirect response (302)
+    redirect_response = Mock()
+    redirect_response.status_code = 302
+    redirect_response.headers = {
+        "Location": "https://ipinfo.io/data/free/country_asn.mmdb"
+    }
+
+    # Create final response after redirect
+    final_response = Mock()
+    final_response.raise_for_status = Mock()
+    final_response.content = b"valid_db_content"
+    final_response.status_code = 200
+    # httpx tracks redirect history
+    final_response.history = [redirect_response]
+
+    with patch("httpx.AsyncClient.get", return_value=final_response) as mock_get:
+        await db._download_database()
+
+        # Verify the file was written with final response content
+        assert db.db_path.exists()
+        with open(db.db_path, "rb") as f:
+            assert f.read() == b"valid_db_content"
+
+        # Verify follow_redirects=True was used (which enables redirect handling)
+        mock_get.assert_called_once()
+        call_kwargs = mock_get.call_args[1]
+        assert call_kwargs.get("follow_redirects") is True
+
+        # Verify the response has redirect history
+        assert len(final_response.history) == 1
+        assert final_response.history[0].status_code == 302
