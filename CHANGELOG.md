@@ -3,6 +3,16 @@ Release Notes
 
 ___
 
+v4.2.2 (2025-12-02)
+-------------------
+
+Support/Compatibility (v4.2.2)
+------------
+
+- **Python 3.14**: Added support for Python 3.14.
+
+___
+
 v4.2.1 (2025-11-05)
 -------------------
 
