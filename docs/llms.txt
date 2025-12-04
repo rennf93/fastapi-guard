@@ -202,7 +202,7 @@ app.add_middleware(SecurityMiddleware, config=config)
 
 ## Technology Stack
 
-- **Python**: 3.10, 3.11, 3.12, 3.13
+- **Python**: 3.10, 3.11, 3.12, 3.13, 3.14
 - **FastAPI**: ASGI web framework
 - **Starlette**: ASGI toolkit
 - **Pydantic**: Data validation

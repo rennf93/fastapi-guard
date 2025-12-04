@@ -169,7 +169,7 @@ test:
 
 # Run All Python versions
 .PHONY: test-all
-test-all: test-3.10 test-3.11 test-3.12 test-3.13
+test-all: test-3.10 test-3.11 test-3.12 test-3.13 test-3.14
 
 # Python 3.10
 .PHONY: test-3.10
@@ -204,6 +204,15 @@ test-3.13:
 	@docker compose down -v fastapi-guard
 	@COMPOSE_BAKE=true PYTHON_VERSION=3.13 docker compose build fastapi-guard
 	@PYTHON_VERSION=3.13 docker compose run --rm fastapi-guard pytest -v --cov=.
+	@docker compose down --rmi all --remove-orphans -v
+	@docker system prune -f
+
+# Python 3.14
+.PHONY: test-3.14
+test-3.14:
+	@docker compose down -v fastapi-guard
+	@COMPOSE_BAKE=true PYTHON_VERSION=3.14 docker compose build fastapi-guard
+	@PYTHON_VERSION=3.14 docker compose run --rm fastapi-guard pytest -v --cov=.
 	@docker compose down --rmi all --remove-orphans -v
 	@docker system prune -f
 
