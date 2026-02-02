@@ -52,21 +52,7 @@ jobs:
 
       - name: Run pre-commit checks
         id: precommit
-        run: |
-          uv run pre-commit run --all-files > precommit_output.txt 2>&1
-          EXIT_CODE=$?
-
-          OUTPUT=$(cat precommit_output.txt)
-          echo "output<<EOF" >> $GITHUB_OUTPUT
-          echo "$OUTPUT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-          if [ $EXIT_CODE -eq 0 ]; then
-            echo "status=success" >> $GITHUB_OUTPUT
-          else
-            echo "status=failed" >> $GITHUB_OUTPUT
-            exit 1
-          fi
+        run: uv run pre-commit run --all-files
 
       - name: Notify Success on Slack Channel
         uses: rennf93/good-comms@master
@@ -83,10 +69,6 @@ jobs:
           MESSAGE: |
             .
             **All checks passed!**
-
-            ```
-            ${{ steps.precommit.outputs.output }}
-            ```
             .
           COLOR: good
           SLACK_THREAD_TS: ${{ steps.send_initial_slack_lint.outputs.SLACK_THREAD_TS }}
@@ -107,10 +89,6 @@ jobs:
           MESSAGE: |
             .
             **MYPY AND RUFF ARE OUTDATED!**
-
-            ```
-            ${{ steps.precommit.outputs.output }}
-            ```
 
             Run `make fix` | `make lint` to try, check and resolve.
             .
