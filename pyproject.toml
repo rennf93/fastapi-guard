@@ -129,23 +129,13 @@ warn_unreachable = true
 exclude = ["vulture_whitelist.py", ".venv"]
 
 [[tool.mypy.overrides]]
-module = "pydantic.*"
-follow_imports = "skip"
-
-[[tool.mypy.overrides]]
-module = "redis.*"
-follow_imports = "skip"
-
-[[tool.mypy.overrides]]
-module = "sentence_transformers.*"
-follow_imports = "skip"
-
-[[tool.mypy.overrides]]
-module = "transformers.*"
-follow_imports = "skip"
-
-[[tool.mypy.overrides]]
-module = "torch.*"
+module = [
+    "pydantic.*",
+    "redis.*",
+    "sentence_transformers.*",
+    "transformers.*",
+    "torch.*",
+]
 follow_imports = "skip"
 
 [tool.pymarkdown.plugins.md007]
