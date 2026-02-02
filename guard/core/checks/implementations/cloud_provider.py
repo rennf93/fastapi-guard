@@ -15,6 +15,9 @@ class CloudProviderCheck(SecurityCheck):
 
     async def check(self, request: Request) -> Response | None:
         """Check cloud provider blocking."""
+        if getattr(request.state, "is_whitelisted", False):
+          return None
+        
         client_ip = getattr(request.state, "client_ip", None)
         route_config = getattr(request.state, "route_config", None)
         if not client_ip:
