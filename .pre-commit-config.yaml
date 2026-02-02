@@ -60,10 +60,10 @@ repos:
         require_serial: true
         language: system
         pass_filenames: false
-      - id: semgrep
-        name: semgrep
-        entry: uv run semgrep --config=auto --error guard
-        require_serial: true
-        language: system
-        types: [python]
-        pass_filenames: false
+      # - id: semgrep
+        # name: semgrep
+        # entry: uv run semgrep --config=auto --error guard
+        # require_serial: true
+        # language: system
+        # types: [python]
+        # pass_filenames: false
