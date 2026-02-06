@@ -32,7 +32,7 @@ class RouteConfig:
         self.max_request_size: int | None = None
         self.allowed_content_types: list[str] | None = None
         self.time_restrictions: dict[str, str] | None = None
-        self.enable_suspicious_detection: bool = True
+        self.enable_suspicious_detection: bool | None = None
         self.require_referrer: list[str] | None = None
         self.api_key_required: bool = False
         self.session_limits: dict[str, int] | None = None
