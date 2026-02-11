@@ -66,6 +66,7 @@ dev = [
     "types-requests",
     "vulture",
     "xenon",
+    "pyyaml"
 ]
 
 [build-system]
