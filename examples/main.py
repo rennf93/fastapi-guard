@@ -54,7 +54,7 @@ from guard import SecurityConfig, SecurityMiddleware
 from guard.decorators import SecurityDecorator
 from guard.handlers.behavior_handler import BehaviorRule
 
-# TODO: Uncomment this when IPInfoManager is implemented
+# NOTE: Uncomment this IF IPInfoManager is implemented
 # from guard.handlers.ipinfo_handler import IPInfoManager
 
 # Configure logging

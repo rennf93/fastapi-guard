@@ -432,7 +432,7 @@ class SecurityConfig(BaseModel):
         default=None,
         description="IPInfo API token for IP geolocation. Deprecated. "
         "Create a custom `geo_ip_handler` instead.",
-        # TODO: deprecated=True,
+        # NOTE: deprecated=True,
     )
     """
     str | None:
@@ -446,7 +446,7 @@ class SecurityConfig(BaseModel):
         default=Path("data/ipinfo/country_asn.mmdb"),
         description="Path to the IPInfo database file. Deprecated. "
         "Create a custom `geo_ip_handler` instead.",
-        # TODO: deprecated=True,
+        # NOTE: deprecated=True,
     )
     """
     Path | None:

@@ -9,19 +9,22 @@ assignees: ''
 
 Documentation Issue
 ===================
+
 Describe the issue or improvement needed for the documentation.
 
 ___
 
 Current Documentation
-=====================
+---------------------
+
 Link to the current documentation page or section that needs improvement:
-[Link it here]()
+[Link it here](https://example.com)
 
 ___
 
 Suggested Changes
-=================
+-----------------
+
 Describe what changes you suggest:
 
 - [ ] Clarify existing content
@@ -34,7 +37,8 @@ Describe what changes you suggest:
 ___
 
 Proposed Text
-=============
+-------------
+
 If you have a specific suggestion for new text, please provide it here:
 
 ```markdown
@@ -44,5 +48,6 @@ If you have a specific suggestion for new text, please provide it here:
 ___
 
 Additional Context
-==================
+------------------
+
 Any other information or screenshots about the documentation issue.
