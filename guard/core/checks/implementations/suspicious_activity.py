@@ -129,8 +129,8 @@ class SuspiciousActivityCheck(SecurityCheck):
             Response if suspicious activity detected and blocked, None otherwise
         """
         if getattr(request.state, "is_whitelisted", False):
-          return None
-        
+            return None
+
         client_ip = getattr(request.state, "client_ip", None)
         route_config = getattr(request.state, "route_config", None)
 

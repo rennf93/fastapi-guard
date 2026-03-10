@@ -16,8 +16,8 @@ class UserAgentCheck(SecurityCheck):
     async def check(self, request: Request) -> Response | None:
         """Check user agent restrictions."""
         if getattr(request.state, "is_whitelisted", False):
-          return None
-        
+            return None
+
         route_config = getattr(request.state, "route_config", None)
         user_agent = request.headers.get("User-Agent", "")
 
