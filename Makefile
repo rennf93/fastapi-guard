@@ -264,6 +264,12 @@ prune:
 clean:
 	@find . | grep -E "(__pycache__|\\.pyc|\\.pyo|\\.pytest_cache|\\.ruff_cache|\\.mypy_cache)" | xargs rm -rf
 
+# Version Management
+.PHONY: bump-version
+bump-version:
+	@if [ -z "$(VERSION)" ]; then echo "Usage: make bump-version VERSION=x.y.z"; exit 1; fi
+	@uv run python .github/scripts/bump_version.py $(VERSION)
+
 # Help
 .PHONY: help
 help: ## Show available commands

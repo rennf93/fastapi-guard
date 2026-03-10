@@ -10,6 +10,27 @@ Release Notes
 
 ___
 
+v4.3.0 (2026-03-10)
+-------------------
+
+Bug Fixes (v4.3.0)
+------------
+
+- **Whitelisted IP bypass**: Whitelisted IPs now correctly bypass rate limiting, cloud provider blocking, user agent filtering, and suspicious activity detection checks. Previously, the whitelist flag was only checked during IP security validation but not propagated to downstream security checks.
+
+Enhancements (v4.3.0)
+------------
+
+- **Version bump helper**: Added `make bump-version VERSION=x.y.z` command and `.github/scripts/bump_version.py` script to automate version updates across all project files (pyproject.toml, .mike.yml, versions.json, docs/index.md, changelogs).
+
+CI/CD (v4.3.0)
+------------
+
+- **Docker actions**: Bumped `docker/login-action` from 3 to 4 and `docker/setup-compose-action` from 1 to 2.
+- **Pre-commit**: Simplified pre-commit checks in scheduled lint workflow and disabled semgrep in pre-commit configuration.
+
+___
+
 v4.2.2 (2025-12-02)
 -------------------
 
