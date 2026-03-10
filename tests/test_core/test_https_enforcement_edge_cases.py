@@ -409,6 +409,7 @@ class TestSuspiciousActivityCheckPassiveModeUnit:
         request.state = Mock()
         request.state.route_config = None
         request.state.client_ip = None  # No client IP
+        request.state.is_whitelisted = False
 
         result = await check.check(request)
         assert result is None
@@ -436,6 +437,7 @@ class TestSuspiciousActivityCheckPassiveModeUnit:
         request.state = Mock()
         request.state.route_config = None
         request.state.client_ip = "1.2.3.4"
+        request.state.is_whitelisted = False
 
         with patch(
             "guard.core.checks.implementations.suspicious_activity.detect_penetration_patterns",

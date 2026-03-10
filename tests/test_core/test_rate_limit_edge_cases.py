@@ -46,6 +46,7 @@ def mock_request() -> Mock:
     request.state = Mock()
     request.state.client_ip = "1.2.3.4"
     request.state.route_config = None
+    request.state.is_whitelisted = False
     request.url = Mock()
     request.url.path = "/api/test"
     return request

@@ -853,7 +853,7 @@ async def test_cloud_ip_blocking_with_logging() -> None:
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
         block_cloud_providers={"AWS", "GCP", "Azure"},
-        whitelist=["13.59.255.255"],  # Whitelist so IP security doesn't block it first
+        whitelist=[],  # IP passes via patched is_ip_allowed
         blacklist=[],  # Empty blacklist
         trusted_proxies=["13.59.255.255"],  # Trust the IP as proxy
         enable_penetration_detection=False,
@@ -1109,7 +1109,8 @@ async def test_rate_limiting_with_redis(security_config_redis: SecurityConfig) -
 
     app = FastAPI()
     security_config_redis.rate_limit = 2
-    security_config_redis.rate_limit_window = 1
+    security_config_redis.rate_limit_window = 10
+    security_config_redis.whitelist = []
 
     rate_handler = rate_limit_handler(security_config_redis)
     await rate_handler.reset()
@@ -1788,9 +1789,11 @@ async def test_real_ipv6_connection(
     """
     config = security_config_redis
     config.rate_limit = 3
-    config.rate_limit_window = 2
+    config.rate_limit_window = 10
     config.enable_rate_limiting = True
-    config.whitelist = ["2001:db8::1"]
+    config.whitelist = []
+    config.blacklist = ["2001:db8::2"]
+    config.blocked_countries = []
     config.enable_penetration_detection = False
 
     middleware = SecurityMiddleware(app=Mock(), config=config)
@@ -1801,7 +1804,7 @@ async def test_real_ipv6_connection(
     async def receive() -> dict[str, str | bytes | bool]:
         return {"type": "http.request", "body": b"", "more_body": False}
 
-    # IPv6 client (whitelisted)
+    # IPv6 client (allowed, not blacklisted)
     request = Request(
         scope={
             "type": "http",
@@ -1828,7 +1831,7 @@ async def test_real_ipv6_connection(
     response = await middleware.dispatch(request, mock_call_next)
     assert response.status_code == 429
 
-    # Blocked IPv6 client
+    # Blacklisted IPv6 client
     request_blocked = Request(
         scope={
             "type": "http",
@@ -1836,7 +1839,7 @@ async def test_real_ipv6_connection(
             "path": "/",
             "headers": [],
             "query_string": b"",
-            "client": ("2001:db8::2", 12345),  # NOTE: Different IPv6 client
+            "client": ("2001:db8::2", 12345),  # NOTE: Blacklisted IPv6 client
             "server": ("testserver", 80),
             "scheme": "http",
         },

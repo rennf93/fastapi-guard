@@ -450,6 +450,8 @@ def test_setup_custom_logging_file_handler_exception(
     """
     Test that setup_custom_logging handles exceptions when creating file handler.
     """
+    # Mock os.path.exists to return True so os.makedirs is skipped
+    mocker.patch("os.path.exists", return_value=True)
     # Mock FileHandler to raise an exception
     mocker.patch(
         "guard.utils.logging.FileHandler",

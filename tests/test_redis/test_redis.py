@@ -166,6 +166,12 @@ async def test_redis_increment_operations(
     handler = redis_handler(security_config_redis)
     await handler.initialize()
 
+    # Clean up stale keys from previous test runs
+    async with handler.get_connection() as conn:
+        prefix = security_config_redis.redis_prefix
+        await conn.delete(f"{prefix}test:counter")
+        await conn.delete(f"{prefix}test:ttl_counter")
+
     @app.get("/")
     async def read_root() -> dict[str, str]:
         # Test increment without TTL

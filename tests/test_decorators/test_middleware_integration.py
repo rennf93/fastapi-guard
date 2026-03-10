@@ -611,6 +611,7 @@ async def test_route_specific_rate_limit_with_redis() -> None:
     mock_request.url.path = "/test"
     mock_request.headers = {}
     mock_request.query_params = {}
+    mock_request.state.is_whitelisted = False
 
     async def mock_call_next(request: Request) -> Response:
         return Response("ok", status_code=200)

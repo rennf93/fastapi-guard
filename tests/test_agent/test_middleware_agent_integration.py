@@ -775,6 +775,7 @@ class TestMiddlewareAgentIntegration:
             request.headers = {"User-Agent": "BadBot/1.0"}
             request.method = "GET"
             request.scope = {"app": app}
+            request.state.is_whitelisted = False
 
             call_next = AsyncMock(return_value=Response(status_code=200))
             response = await middleware.dispatch(request, call_next)
@@ -818,6 +819,7 @@ class TestMiddlewareAgentIntegration:
             request.headers = {}
             request.method = "GET"
             request.scope = {"app": app}
+            request.state.is_whitelisted = False
 
             call_next = AsyncMock(return_value=MagicMock(status_code=200))
             await middleware.dispatch(request, call_next)
@@ -974,6 +976,7 @@ class TestMiddlewareAgentIntegration:
             request.scope = {"app": app}
             # Ensure state exists for checks to set attributes
             request.state = MagicMock()
+            request.state.is_whitelisted = False
 
             call_next = AsyncMock(return_value=Response(status_code=200))
             response = await middleware.dispatch(request, call_next)
