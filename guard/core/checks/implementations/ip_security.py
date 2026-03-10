@@ -89,8 +89,13 @@ class IpSecurityCheck(SecurityCheck):
         self, request: Request, client_ip: str
     ) -> Response | None:
         """Check global IP allowlist/blocklist."""
-        if await is_ip_allowed(client_ip, self.config, self.middleware.geo_ip_handler):
-            return None
+        is_allowed = await is_ip_allowed(client_ip, self.config, self.middleware.geo_ip_handler)                                                                                       
+                                                                                                                                                                                     
+        # Set whitelist flag for other checks to use                                                                                                                                   
+        request.state.is_whitelisted = is_allowed and bool(self.config.whitelist)                                                                                                      
+                                                                                                                                                                                     
+        if is_allowed:                                                                                                                                                                 
+            return None 
 
         # Log blocked IP
         await log_activity(

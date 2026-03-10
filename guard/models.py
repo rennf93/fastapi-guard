@@ -333,7 +333,7 @@ class SecurityConfig(BaseModel):
     """
 
     cors_allow_methods: list[str] = Field(
-        default_factory=lambda: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        default_factory=lambda: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         description="Methods allowed in CORS requests",
     )
     """
