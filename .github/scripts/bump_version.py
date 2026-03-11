@@ -114,9 +114,7 @@ def update_mike_yml(version: str) -> bool:
         print(f"  .mike.yml: version {version} already present")
     else:
         # Build new versions list: semver versions sorted descending, then "latest"
-        semver_versions = [
-            v for v in existing_versions if v != "latest"
-        ]
+        semver_versions = [v for v in existing_versions if v != "latest"]
         semver_versions.append(version)
         sorted_versions = sorted_versions_descending(semver_versions)
         if "latest" in existing_versions:
@@ -125,34 +123,22 @@ def update_mike_yml(version: str) -> bool:
         # Rebuild the versions block
         new_version_lines = [f"  - {v}" for v in sorted_versions]
         lines = (
-            lines[: versions_start + 1]
-            + new_version_lines
-            + lines[versions_end + 1 :]
+            lines[: versions_start + 1] + new_version_lines + lines[versions_end + 1 :]
         )
         print(f"  .mike.yml: added version {version}")
 
     # Update the latest alias if this is the newest version
-    semver_only = [
-        v
-        for v in existing_versions + [version]
-        if v != "latest"
-    ]
+    semver_only = [v for v in existing_versions + [version] if v != "latest"]
     if is_latest(version, semver_only):
         alias_pattern = re.compile(r"^(\s*latest:\s*).+$")
         for i, line in enumerate(lines):
             match = alias_pattern.match(line)
             if match:
                 if line.strip() == f"latest: {version}":
-                    print(
-                        f"  .mike.yml: latest alias already"
-                        f" points to {version}"
-                    )
+                    print(f"  .mike.yml: latest alias already points to {version}")
                 else:
                     lines[i] = f"  latest: {version}"
-                    print(
-                        f"  .mike.yml: updated latest alias"
-                        f" to {version}"
-                    )
+                    print(f"  .mike.yml: updated latest alias to {version}")
                 break
 
     path.write_text("\n".join(lines) + "\n")
@@ -208,10 +194,7 @@ def update_index_md(version: str) -> bool:
     )
     match = pattern.search(content)
     if not match:
-        print(
-            "  docs/index.md: no docker pull version tag found,"
-            " skipping"
-        )
+        print("  docs/index.md: no docker pull version tag found, skipping")
         return True
 
     current_version = match.group(0).split(":v")[-1]
@@ -226,16 +209,11 @@ def update_index_md(version: str) -> bool:
     pyproject_match = re.search(
         r'^version\s*=\s*"([^"]*)"', pyproject_content, re.MULTILINE
     )
-    existing_versions = (
-        [pyproject_match.group(1)] if pyproject_match else []
-    )
+    existing_versions = [pyproject_match.group(1)] if pyproject_match else []
     existing_versions.append(current_version)
 
     if not is_latest(version, existing_versions):
-        print(
-            f"  docs/index.md: {version} is not latest,"
-            " skipping docker tag update"
-        )
+        print(f"  docs/index.md: {version} is not latest, skipping docker tag update")
         return True
 
     new_content = pattern.sub(f"\\g<1>{version}", content)
@@ -244,9 +222,7 @@ def update_index_md(version: str) -> bool:
     return True
 
 
-def _insert_changelog_scaffold(
-    path: Path, version: str, label: str
-) -> bool:
+def _insert_changelog_scaffold(path: Path, version: str, label: str) -> bool:
     """Insert a version scaffold block into a changelog file."""
     content = path.read_text()
     today = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
@@ -291,12 +267,11 @@ def update_changelogs(version: str) -> bool:
     release_notes = PROJECT_ROOT / "docs" / "release-notes.md"
 
     ok = True
-    ok = _insert_changelog_scaffold(
-        changelog, version, "CHANGELOG.md"
-    ) and ok
-    ok = _insert_changelog_scaffold(
-        release_notes, version, "docs/release-notes.md"
-    ) and ok
+    ok = _insert_changelog_scaffold(changelog, version, "CHANGELOG.md") and ok
+    ok = (
+        _insert_changelog_scaffold(release_notes, version, "docs/release-notes.md")
+        and ok
+    )
     return ok
 
 
@@ -309,10 +284,7 @@ def main() -> int:
     version = sys.argv[1]
 
     if not VERSION_PATTERN.match(version):
-        print(
-            f"Error: '{version}' is not a valid version."
-            " Expected format: X.Y.Z"
-        )
+        print(f"Error: '{version}' is not a valid version. Expected format: X.Y.Z")
         return 1
 
     print(f"Bumping version to {version}...\n")

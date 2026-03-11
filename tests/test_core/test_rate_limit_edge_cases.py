@@ -255,7 +255,9 @@ class TestRateLimitEdgeCases:
         mock_request: Mock,
         security_config: SecurityConfig,
     ) -> None:
-        """Test _check_geo_rate_limit falls back to wildcard when country not in limits."""
+        """
+        Test _check_geo_rate_limit falls back to wildcard when country not in limits.
+        """
         geo_handler = Mock()
         geo_handler.get_country.return_value = "FR"
         security_config.geo_ip_handler = geo_handler
