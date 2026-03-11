@@ -84,10 +84,10 @@ async def test_geo_rate_limit_decorator_applied(
             route_config = decorator.get_route_config(route_id)
 
             assert route_config is not None, "geo_rate_limit should have route config"
-            expected_limits = "{'US': (100, 3600), 'CN': (10, 3600), '*': (50, 3600)}"
-            assert (
-                route_config.required_headers["geo_rate_limits"] == expected_limits
-            ), "geo_rate_limit should store limits in required_headers"
+            expected_limits = {"US": (100, 3600), "CN": (10, 3600), "*": (50, 3600)}
+            assert route_config.geo_rate_limits == expected_limits, (
+                "geo_rate_limit should store limits in geo_rate_limits"
+            )
 
 
 @pytest.mark.parametrize(
@@ -147,4 +147,4 @@ async def test_rate_limiting_decorators_unit(security_config: SecurityConfig) ->
     route_id2 = decorated_func2._guard_route_id  # type: ignore[attr-defined]
     route_config2 = decorator.get_route_config(route_id2)
     assert route_config2 is not None
-    assert route_config2.required_headers["geo_rate_limits"] == str(limits)
+    assert route_config2.geo_rate_limits == limits

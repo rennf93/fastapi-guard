@@ -1,5 +1,6 @@
 # guard/core/checks/implementations/time_window.py
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from fastapi import Request, Response, status
 
@@ -20,10 +21,12 @@ class TimeWindowCheck(SecurityCheck):
             start_time = time_restrictions["start"]
             end_time = time_restrictions["end"]
 
-            # TODO: For simplicity, we'll use UTC for now
-            # Production would need proper timezone handling
-            # timezone_str = time_restrictions.get("timezone", "UTC")
-            current_time = datetime.now(timezone.utc)
+            timezone_str = time_restrictions.get("timezone", "UTC")
+            try:
+                tz: ZoneInfo | timezone = ZoneInfo(timezone_str)
+            except (KeyError, Exception):
+                tz = timezone.utc
+            current_time = datetime.now(tz)
             current_hour_minute = current_time.strftime("%H:%M")
 
             # Handle overnight time windows (e.g., 22:00 to 06:00)

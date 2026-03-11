@@ -230,6 +230,30 @@ class TestIPInfoManagerAgentIntegration:
         mock_agent.send_event.assert_not_called()
 
     @pytest.mark.asyncio
+    async def test_check_country_access_no_country_with_whitelist(
+        self, cleanup_ipinfo_singleton: None
+    ) -> None:
+        """Test check_country_access blocks unknown country when whitelist is set."""
+        manager = IPInfoManager(token="test-token")
+        mock_agent = AsyncMock()
+        manager.agent_handler = mock_agent
+
+        # Mock reader to return None (no country found)
+        mock_reader = MagicMock()
+        mock_reader.get.return_value = None
+        manager.reader = mock_reader
+
+        result, country = await manager.check_country_access(
+            "192.168.1.100",
+            blocked_countries=["CN", "RU"],
+            whitelist_countries=["US", "GB"],
+        )
+
+        # Fail-closed: unknown country blocked by whitelist
+        assert result is False
+        assert country is None
+
+    @pytest.mark.asyncio
     async def test_check_country_access_whitelist_not_in_list(
         self, cleanup_ipinfo_singleton: None
     ) -> None:

@@ -209,8 +209,9 @@ class IPInfoManager:
         country = self.get_country(ip)
 
         if not country:
-            # TODO: Review this
-            return True, None  # Allow if country cannot be determined
+            if whitelist_countries:
+                return False, None  # Fail-closed: unknown country blocked by whitelist
+            return True, None  # Fail-open: allow for blacklist-only configs
 
         # Check whitelist first
         if whitelist_countries and country not in whitelist_countries:

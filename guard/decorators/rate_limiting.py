@@ -41,10 +41,8 @@ class RateLimitingMixin(BaseSecurityMixin):
         """
 
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-            # TODO: This would need integration with existing geo IP handler
-            # For now, store the configuration
             route_config = self._ensure_route_config(func)
-            route_config.required_headers["geo_rate_limits"] = str(limits)
+            route_config.geo_rate_limits = limits
             return self._apply_route_config(func)
 
         return decorator

@@ -76,3 +76,19 @@ class TestTimeWindowEdgeCases:
         assert result is True
         # Verify logger.error was called - cast for mypy
         cast(MagicMock, time_window_check.logger.error).assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_check_time_window_invalid_timezone_fallback(
+        self, time_window_check: TimeWindowCheck
+    ) -> None:
+        """Test _check_time_window falls back to UTC for invalid timezone."""
+        restrictions = {
+            "start": "00:00",
+            "end": "23:59",
+            "timezone": "Invalid/Timezone",
+        }
+
+        result = await time_window_check._check_time_window(restrictions)
+
+        # Should succeed with UTC fallback and allow access (00:00-23:59 covers all day)
+        assert result is True

@@ -204,3 +204,146 @@ class TestRateLimitEdgeCases:
                 {"reason": "test"},
             )
             assert result is None
+
+    @pytest.mark.asyncio
+    async def test_check_geo_rate_limit_no_geo_handler(
+        self,
+        rate_limit_check: RateLimitCheck,
+        mock_request: Mock,
+        security_config: SecurityConfig,
+    ) -> None:
+        """Test _check_geo_rate_limit returns None when geo_handler is None."""
+        security_config.geo_ip_handler = None
+        route_config = Mock()
+        route_config.geo_rate_limits = {"US": (10, 60)}
+
+        result = await rate_limit_check._check_geo_rate_limit(
+            mock_request, "1.2.3.4", route_config
+        )
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_check_geo_rate_limit_country_match(
+        self,
+        rate_limit_check: RateLimitCheck,
+        mock_request: Mock,
+        security_config: SecurityConfig,
+    ) -> None:
+        """Test _check_geo_rate_limit when country matches geo limits."""
+        geo_handler = Mock()
+        geo_handler.get_country.return_value = "US"
+        security_config.geo_ip_handler = geo_handler
+
+        route_config = Mock()
+        route_config.geo_rate_limits = {"US": (10, 60)}
+
+        response = Response(status_code=429)
+        with patch.object(
+            rate_limit_check, "_apply_rate_limit_check", new_callable=AsyncMock
+        ) as mock_apply:
+            mock_apply.return_value = response
+            result = await rate_limit_check._check_geo_rate_limit(
+                mock_request, "1.2.3.4", route_config
+            )
+            assert result == response
+            mock_apply.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_check_geo_rate_limit_wildcard_match(
+        self,
+        rate_limit_check: RateLimitCheck,
+        mock_request: Mock,
+        security_config: SecurityConfig,
+    ) -> None:
+        """Test _check_geo_rate_limit falls back to wildcard when country not in limits."""
+        geo_handler = Mock()
+        geo_handler.get_country.return_value = "FR"
+        security_config.geo_ip_handler = geo_handler
+
+        route_config = Mock()
+        route_config.geo_rate_limits = {"US": (10, 60), "*": (5, 30)}
+
+        response = Response(status_code=429)
+        with patch.object(
+            rate_limit_check, "_apply_rate_limit_check", new_callable=AsyncMock
+        ) as mock_apply:
+            mock_apply.return_value = response
+            result = await rate_limit_check._check_geo_rate_limit(
+                mock_request, "1.2.3.4", route_config
+            )
+            assert result == response
+            # Verify wildcard limits were used
+            call_args = mock_apply.call_args
+            assert call_args[0][2] == 5  # rate_limit
+            assert call_args[0][3] == 30  # window
+
+    @pytest.mark.asyncio
+    async def test_check_geo_rate_limit_no_match(
+        self,
+        rate_limit_check: RateLimitCheck,
+        mock_request: Mock,
+        security_config: SecurityConfig,
+    ) -> None:
+        """Test _check_geo_rate_limit returns None when no country or wildcard match."""
+        geo_handler = Mock()
+        geo_handler.get_country.return_value = "FR"
+        security_config.geo_ip_handler = geo_handler
+
+        route_config = Mock()
+        route_config.geo_rate_limits = {"US": (10, 60)}
+
+        result = await rate_limit_check._check_geo_rate_limit(
+            mock_request, "1.2.3.4", route_config
+        )
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_check_geo_rate_limit_no_country(
+        self,
+        rate_limit_check: RateLimitCheck,
+        mock_request: Mock,
+        security_config: SecurityConfig,
+    ) -> None:
+        """Test _check_geo_rate_limit with wildcard when country is None."""
+        geo_handler = Mock()
+        geo_handler.get_country.return_value = None
+        security_config.geo_ip_handler = geo_handler
+
+        route_config = Mock()
+        route_config.geo_rate_limits = {"*": (5, 30)}
+
+        response = Response(status_code=429)
+        with patch.object(
+            rate_limit_check, "_apply_rate_limit_check", new_callable=AsyncMock
+        ) as mock_apply:
+            mock_apply.return_value = response
+            result = await rate_limit_check._check_geo_rate_limit(
+                mock_request, "1.2.3.4", route_config
+            )
+            assert result == response
+
+    @pytest.mark.asyncio
+    async def test_check_returns_geo_rate_limit_response(
+        self,
+        rate_limit_check: RateLimitCheck,
+        mock_request: Mock,
+        security_config: SecurityConfig,
+    ) -> None:
+        """Test check() returns geo rate limit response at priority 3."""
+        # Set up request state with route_config
+        route_config = Mock()
+        route_config.geo_rate_limits = {"US": (10, 60)}
+        route_config.rate_limit = None  # No route rate limit (priority 2 passes)
+        mock_request.state.route_config = route_config
+        mock_request.state.is_whitelisted = False
+
+        # No endpoint rate limit match (priority 1 passes)
+        security_config.endpoint_rate_limits = {}
+
+        geo_response = Response(status_code=429)
+        with patch.object(
+            rate_limit_check, "_check_geo_rate_limit", new_callable=AsyncMock
+        ) as mock_geo:
+            mock_geo.return_value = geo_response
+            result = await rate_limit_check.check(mock_request)
+            assert result == geo_response

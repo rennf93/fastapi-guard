@@ -131,6 +131,45 @@ class RateLimitCheck(SecurityCheck):
             },
         )
 
+    async def _check_geo_rate_limit(
+        self, request: Request, client_ip: str, route_config: Any
+    ) -> Response | None:
+        """Check geo-based rate limits using the geo IP handler."""
+        if not route_config or not route_config.geo_rate_limits:
+            return None
+
+        geo_handler = self.config.geo_ip_handler
+        if not geo_handler:
+            return None
+
+        country = geo_handler.get_country(client_ip)
+        limits = route_config.geo_rate_limits
+
+        if country and country in limits:
+            rate_limit, window = limits[country]
+        elif "*" in limits:
+            rate_limit, window = limits["*"]
+        else:
+            return None
+
+        return await self._apply_rate_limit_check(
+            request,
+            client_ip,
+            rate_limit,
+            window,
+            "decorator_violation",
+            {
+                "reason": (
+                    f"Geo rate limit exceeded for {country or 'unknown'}: "
+                    f"{rate_limit} requests per {window}s"
+                ),
+                "decorator_type": "geo_rate_limiting",
+                "violation_type": "geo_rate_limit",
+                "rate_limit": rate_limit,
+                "window": window,
+            },
+        )
+
     async def _check_global_rate_limit(
         self, request: Request, client_ip: str
     ) -> Response | None:
@@ -180,5 +219,11 @@ class RateLimitCheck(SecurityCheck):
         ):
             return response
 
-        # Priority 3: Global rate limiting
+        # Priority 3: Geo-based rate limit
+        if response := await self._check_geo_rate_limit(
+            request, client_ip, route_config
+        ):
+            return response
+
+        # Priority 4: Global rate limiting
         return await self._check_global_rate_limit(request, client_ip)

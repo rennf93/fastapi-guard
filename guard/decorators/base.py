@@ -36,6 +36,7 @@ class RouteConfig:
         self.require_referrer: list[str] | None = None
         self.api_key_required: bool = False
         self.session_limits: dict[str, int] | None = None
+        self.geo_rate_limits: dict[str, tuple[int, int]] | None = None
 
 
 class BaseSecurityMixin:
@@ -81,7 +82,7 @@ class BaseSecurityDecorator:
     def _apply_route_config(self, func: Callable[..., Any]) -> Callable[..., Any]:
         """Apply route configuration to a function."""
         route_id = self._get_route_id(func)
-        # TODO: Find a proper way to define the type of the function
+        # NOTE: Setting metadata attribute on function object — inherently untyped
         func._guard_route_id = route_id  # type: ignore[attr-defined]
         return func
 

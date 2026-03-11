@@ -61,7 +61,6 @@ dev = [
     "radon",
     "ruff",
     "safety",
-    # "semgrep",
     "types-cachetools",
     "types-requests",
     "vulture",
