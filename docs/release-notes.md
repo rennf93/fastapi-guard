@@ -10,6 +10,24 @@ Release Notes
 
 ___
 
+v4.3.1 (2026-03-11)
+-------------------
+
+Bug Fixes (v4.3.1)
+------------
+
+- **Geographic rate limit check**: Fixed geo-based rate limiting by implementing the missing `_check_geo_rate_limit` method in `RateLimitCheck`. Previously, geo rate limits configured via the `@security.geo_rate_limit` decorator were stored but never enforced. The rate limit pipeline now correctly evaluates geo-based limits at priority 3 (after endpoint-specific and route-specific limits).
+- **Geo rate limit decorator**: Fixed `RateLimitingMixin.geo_rate_limit` decorator to store limits on `route_config.geo_rate_limits` instead of incorrectly serializing them into `required_headers`.
+- **IPInfo country whitelist fail-closed**: When `whitelist_countries` is configured and a client's country cannot be determined, `IPInfoManager.check_country_access` now correctly blocks the request (fail-closed) instead of allowing it through.
+
+Enhancements (v4.3.1)
+------------
+
+- **Timezone-aware time windows**: Time window restrictions now support configurable timezones via the `timezone` field in `time_restrictions`. Uses `ZoneInfo` for proper timezone handling with a safe fallback to UTC for invalid timezone strings.
+- **Geo rate limit RouteConfig support**: Added `geo_rate_limits` attribute to `RouteConfig` for proper type-safe storage of geographic rate limit configurations.
+
+___
+
 v4.3.0 (2026-03-10)
 -------------------
 
