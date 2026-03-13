@@ -119,6 +119,22 @@ class SusPatternsManager:
         r"\{\%\s*[^\%]+(?:system|exec|popen|eval|require|include)\s*\%\}",
         # HTTP Response Splitting
         r"[\r\n]\s*(?:HTTP\/[0-9.]+|Location:|Set-Cookie:)",
+        # Sensitive File Probing
+        r"(?:^|/)\.env(?:\.\w+)?(?:\?|$|/)",
+        r"(?:^|/)[\w-]*config[\w-]*\."
+        r"(?:env|yml|yaml|json|toml|ini|xml|conf)(?:\?|$)",
+        r"(?:^|/)[\w./-]*\.map(?:\?|$)",
+        r"(?:^|/)[\w./-]*\."
+        r"(?:ts|tsx|jsx|py|rb|java|go|rs|php|pl|sh|sql)(?:\?|$)",
+        r"(?:^|/)\.(?:git|svn|hg|bzr)(?:/|$)",
+        # CMS & Server Probing
+        r"(?:^|/)(?:wp-(?:admin|login|content|includes|config)"
+        r"|administrator|xmlrpc)\.?(?:php)?(?:/|$|\?)",
+        r"(?:^|/)(?:phpinfo|info|test|php_info)\.php(?:\?|$)",
+        r"(?:^|/)[\w./-]*\."
+        r"(?:bak|backup|old|orig|save|swp|swo|tmp|temp)(?:\?|$)",
+        r"(?:^|/)(?:\.htaccess|\.htpasswd|\.DS_Store|Thumbs\.db"
+        r"|\.npmrc|\.dockerenv|web\.config)(?:\?|$)",
     ]
 
     custom_patterns: set[str]

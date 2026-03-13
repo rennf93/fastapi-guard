@@ -749,3 +749,229 @@ async def test_get_component_status() -> None:
     finally:
         # Restore original instance
         SusPatternsManager._instance = original_instance
+
+
+_SENSITIVE_FILE_PATTERNS = [
+    r"(?:^|/)\.env(?:\.\w+)?(?:\?|$|/)",
+    r"(?:^|/)[\w-]*config[\w-]*\."
+    r"(?:env|yml|yaml|json|toml|ini|xml|conf)(?:\?|$)",
+    r"(?:^|/)[\w./-]*\.map(?:\?|$)",
+    r"(?:^|/)[\w./-]*\."
+    r"(?:ts|tsx|jsx|py|rb|java|go|rs|php|pl|sh|sql)(?:\?|$)",
+    r"(?:^|/)\.(?:git|svn|hg|bzr)(?:/|$)",
+    r"(?:^|/)(?:wp-(?:admin|login|content|includes|config)"
+    r"|administrator|xmlrpc)\.?(?:php)?(?:/|$|\?)",
+    r"(?:^|/)(?:phpinfo|info|test|php_info)\.php(?:\?|$)",
+    r"(?:^|/)[\w./-]*\."
+    r"(?:bak|backup|old|orig|save|swp|swo|tmp|temp)(?:\?|$)",
+    r"(?:^|/)(?:\.htaccess|\.htpasswd|\.DS_Store|Thumbs\.db"
+    r"|\.npmrc|\.dockerenv|web\.config)(?:\?|$)",
+]
+
+_COMPILED_SENSITIVE_PATTERNS = [
+    re.compile(p, re.IGNORECASE | re.MULTILINE) for p in _SENSITIVE_FILE_PATTERNS
+]
+
+
+def _matches_sensitive_pattern(path: str) -> bool:
+    """Check if a path matches any of the sensitive file probing patterns."""
+    return any(p.search(path) for p in _COMPILED_SENSITIVE_PATTERNS)
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/.env",
+        "/.env.local",
+        "/.env.production",
+        "/.env.backup",
+        "/app/.env",
+        "/app/.env.dev",
+    ],
+    ids=lambda p: f"dotenv:{p}",
+)
+def test_sensitive_pattern_dotenv(path: str) -> None:
+    """Dotenv file probing paths must be detected."""
+    assert _matches_sensitive_pattern(path), f"Expected match for dotenv path: {path}"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/config.yml",
+        "/config.yaml",
+        "/config.json",
+        "/config.toml",
+        "/config.ini",
+        "/config.xml",
+        "/config.conf",
+        "/config.env",
+        "/app-config.yml",
+        "/db-config.json",
+        "/server-config.toml",
+    ],
+    ids=lambda p: f"config:{p}",
+)
+def test_sensitive_pattern_config_files(path: str) -> None:
+    """Config file probing paths must be detected."""
+    assert _matches_sensitive_pattern(path), f"Expected match for config path: {path}"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/main.js.map",
+        "/app.css.map",
+        "/vendor.js.map",
+        "/static/js/main.abc123.js.map",
+    ],
+    ids=lambda p: f"sourcemap:{p}",
+)
+def test_sensitive_pattern_source_maps(path: str) -> None:
+    """Source map probing paths must be detected."""
+    assert _matches_sensitive_pattern(path), f"Expected match for source map: {path}"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/app.py",
+        "/main.ts",
+        "/component.tsx",
+        "/handler.go",
+        "/server.rb",
+        "/index.php",
+        "/script.sh",
+        "/dump.sql",
+        "/Main.java",
+        "/lib.rs",
+    ],
+    ids=lambda p: f"source:{p}",
+)
+def test_sensitive_pattern_source_code(path: str) -> None:
+    """Source code file probing paths must be detected."""
+    assert _matches_sensitive_pattern(path), f"Expected match for source code: {path}"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/.git/config",
+        "/.git/HEAD",
+        "/.svn/entries",
+        "/.hg/store",
+        "/.bzr/README",
+    ],
+    ids=lambda p: f"vcs:{p}",
+)
+def test_sensitive_pattern_vcs_metadata(path: str) -> None:
+    """VCS metadata probing paths must be detected."""
+    assert _matches_sensitive_pattern(path), f"Expected match for VCS path: {path}"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/wp-admin/",
+        "/wp-login.php",
+        "/wp-content/uploads/",
+        "/wp-includes/",
+        "/wp-config.php",
+        "/administrator/",
+        "/xmlrpc.php",
+    ],
+    ids=lambda p: f"cms:{p}",
+)
+def test_sensitive_pattern_cms_probing(path: str) -> None:
+    """CMS probing paths must be detected."""
+    assert _matches_sensitive_pattern(path), f"Expected match for CMS path: {path}"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/phpinfo.php",
+        "/info.php",
+        "/test.php",
+        "/php_info.php",
+    ],
+    ids=lambda p: f"phpinfo:{p}",
+)
+def test_sensitive_pattern_php_info(path: str) -> None:
+    """PHP info probing paths must be detected."""
+    assert _matches_sensitive_pattern(path), f"Expected match for PHP info: {path}"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/config.bak",
+        "/database.backup",
+        "/main.py.old",
+        "/settings.orig",
+        "/app.save",
+        "/index.swp",
+        "/data.tmp",
+        "/backup.temp",
+    ],
+    ids=lambda p: f"backup:{p}",
+)
+def test_sensitive_pattern_backup_files(path: str) -> None:
+    """Backup file probing paths must be detected."""
+    assert _matches_sensitive_pattern(path), f"Expected match for backup: {path}"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/.htaccess",
+        "/.htpasswd",
+        "/.DS_Store",
+        "/Thumbs.db",
+        "/.npmrc",
+        "/.dockerenv",
+        "/web.config",
+    ],
+    ids=lambda p: f"serverconfig:{p}",
+)
+def test_sensitive_pattern_server_configs(path: str) -> None:
+    """Server config probing paths must be detected."""
+    assert _matches_sensitive_pattern(path), f"Expected match for server config: {path}"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/config",
+        "/settings",
+        "/health",
+        "/api/v1/users",
+        "/map",
+        "/environment",
+        "/v1/config",
+        "/blocking/config",
+        "/stripe/config",
+        "/payment/config",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+        "/ip",
+        "/custom-metrics",
+        "/auth/jwt/login",
+        "/patterns",
+        "/patterns/add",
+        "/project-stats",
+        "/basic",
+        "/quick-test",
+        "/metrics",
+        "/api/domains",
+        "/api/search",
+        "/api/changes",
+    ],
+    ids=lambda p: f"legitimate:{p}",
+)
+def test_sensitive_pattern_no_false_positives(path: str) -> None:
+    """Legitimate API paths must NOT be matched by sensitive file probing patterns."""
+    assert not _matches_sensitive_pattern(path), (
+        f"False positive: legitimate path matched: {path}"
+    )

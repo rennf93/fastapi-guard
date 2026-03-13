@@ -820,6 +820,7 @@ class DynamicRules(BaseModel):
     expires_at: datetime | None = Field(
         default=None, description="Rule expiration time"
     )
+    ttl: int = Field(default=300, description="Cache TTL in seconds")
 
     # IP management rules
     ip_blacklist: list[str] = Field(default_factory=list, description="IPs to ban")
