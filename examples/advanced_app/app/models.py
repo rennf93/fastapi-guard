@@ -19,6 +19,28 @@ class IPInfoResponse(BaseModel):
     cloud_provider: str | None = None
 
 
+class HealthResponse(BaseModel):
+    status: str
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ReadinessResponse(BaseModel):
+    status: str
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class BasicHealthResponse(BaseModel):
+    status: str
+
+
+class RootResponse(BaseModel):
+    message: str
+    version: str
+    infrastructure: dict[str, str]
+    documentation: str
+    routes: dict[str, str]
+
+
 class StatsResponse(BaseModel):
     total_requests: int
     blocked_requests: int
@@ -41,11 +63,25 @@ class AuthResponse(BaseModel):
     permissions: list[str] = Field(default_factory=list)
 
 
+class CSPViolation(BaseModel):
+    violated_directive: str | None = Field(None, alias="violated-directive")
+    blocked_uri: str | None = Field(None, alias="blocked-uri")
+    document_uri: str | None = Field(None, alias="document-uri")
+    source_file: str | None = Field(None, alias="source-file")
+    line_number: int | None = Field(None, alias="line-number")
+
+    model_config = {"populate_by_name": True}
+
+
+class CSPReportRequest(BaseModel):
+    csp_report: CSPViolation = Field(alias="csp-report")
+
+    model_config = {"populate_by_name": True}
+
+
 class TestPayload(BaseModel):
-    input: str | None = Field(None, description="Test input for XSS detection")
-    query: str | None = Field(None, description="Test query for SQL injection")
-    path: str | None = Field(None, description="Test path for traversal attacks")
-    cmd: str | None = Field(None, description="Test command for injection")
-    honeypot_field: str | None = Field(
-        None, description="Hidden field for bot detection"
-    )
+    input: str | None = None
+    query: str | None = None
+    path: str | None = None
+    cmd: str | None = None
+    honeypot_field: str | None = None

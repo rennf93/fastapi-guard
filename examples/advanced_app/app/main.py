@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from app.models import ErrorResponse
+from app.models import ErrorResponse, RootResponse
 from app.routes import (
     access_router,
     admin_router,
@@ -71,7 +71,16 @@ app.include_router(admin_router)
 app.include_router(test_router)
 
 
-@app.get("/")
+@app.get(
+    "/",
+    response_model=RootResponse,
+    status_code=200,
+    summary="API Root",
+    description=(
+        "Returns API metadata including version, infrastructure details, and available"
+        "route groups."
+    ),
+)
 async def root() -> dict[str, Any]:
     return {
         "message": "FastAPI Guard Advanced Example API",

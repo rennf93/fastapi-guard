@@ -1,17 +1,25 @@
 import logging
-from typing import Any
 
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
-from app.models import MessageResponse
+from app.models import CSPReportRequest, MessageResponse
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/headers", tags=["Security Headers"])
 
 
-@router.get("/", response_model=MessageResponse)
+@router.get(
+    "/",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Security Headers Overview",
+    description=(
+        "Lists all security headers applied to responses by the middleware, including"
+        "HSTS, CSP, X-Frame-Options, and custom headers."
+    ),
+)
 async def security_headers_info() -> MessageResponse:
     return MessageResponse(
         message="All responses include comprehensive security headers",
@@ -32,7 +40,16 @@ async def security_headers_info() -> MessageResponse:
     )
 
 
-@router.get("/test-page", response_class=HTMLResponse)
+@router.get(
+    "/test-page",
+    response_class=HTMLResponse,
+    status_code=200,
+    summary="CSP Test Page",
+    description=(
+        "Serves an HTML page that tests Content Security Policy enforcement. Includes"
+        "inline scripts and styles to verify CSP restrictions are applied correctly."
+    ),
+)
 async def security_headers_test_page() -> str:
     return """
     <!DOCTYPE html>
@@ -79,26 +96,45 @@ async def security_headers_test_page() -> str:
     """  # noqa: E501
 
 
-@router.post("/csp-report", response_model=MessageResponse)
-async def receive_csp_report(report: dict[str, Any]) -> MessageResponse:
-    violation = report.get("csp-report", {})
+@router.post(
+    "/csp-report",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="CSP Violation Report Receiver",
+    description=(
+        "Receives Content Security Policy violation reports sent by browsers. Logs the"
+        "violated directive, blocked URI, and source file for security monitoring."
+    ),
+)
+async def receive_csp_report(report: CSPReportRequest) -> MessageResponse:
+    violation = report.csp_report
     logger.warning(
-        f"CSP Violation: {violation.get('violated-directive', 'unknown')} "
-        f"blocked {violation.get('blocked-uri', 'unknown')} "
-        f"on {violation.get('document-uri', 'unknown')}"
+        f"CSP Violation: {violation.violated_directive or 'unknown'} "
+        f"blocked {violation.blocked_uri or 'unknown'} "
+        f"on {violation.document_uri or 'unknown'}"
     )
     return MessageResponse(
         message="CSP violation report received",
         details={
-            "violated_directive": violation.get("violated-directive"),
-            "blocked_uri": violation.get("blocked-uri"),
-            "source_file": violation.get("source-file"),
-            "line_number": violation.get("line-number"),
+            "violated_directive": violation.violated_directive,
+            "blocked_uri": violation.blocked_uri,
+            "source_file": violation.source_file,
+            "line_number": violation.line_number,
         },
     )
 
 
-@router.get("/frame-test", response_class=HTMLResponse)
+@router.get(
+    "/frame-test",
+    response_class=HTMLResponse,
+    status_code=200,
+    summary="X-Frame-Options Test Page",
+    description=(
+        "Serves an HTML page with X-Frame-Options: SAMEORIGIN header. Can be embedded"
+        " in"
+        "iframes from the same origin but not from external sites."
+    ),
+)
 async def frame_test() -> str:
     return """
     <!DOCTYPE html>
@@ -113,7 +149,16 @@ async def frame_test() -> str:
     """  # noqa: E501
 
 
-@router.get("/hsts-info", response_model=MessageResponse)
+@router.get(
+    "/hsts-info",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="HSTS Information",
+    description=(
+        "Returns the current HSTS (HTTP Strict Transport Security) configuration"
+        "including max-age, includeSubDomains, and preload status."
+    ),
+)
 async def hsts_info() -> MessageResponse:
     return MessageResponse(
         message="HSTS (HTTP Strict Transport Security) is active",
@@ -127,7 +172,16 @@ async def hsts_info() -> MessageResponse:
     )
 
 
-@router.get("/security-analysis", response_model=MessageResponse)
+@router.get(
+    "/security-analysis",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Request Security Analysis",
+    description=(
+        "Analyzes the current request's security-relevant headers and returns a summary"
+        "of applied security features with recommendations."
+    ),
+)
 async def security_analysis(request: Request) -> MessageResponse:
     return MessageResponse(
         message="Security analysis of current request",

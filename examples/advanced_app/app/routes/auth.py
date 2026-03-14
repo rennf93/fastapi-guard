@@ -8,7 +8,17 @@ from app.security import guard
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.get("/https-only", response_model=MessageResponse)
+@router.get(
+    "/https-only",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="HTTPS Enforcement",
+    description=(
+        "Requires HTTPS connection. HTTP requests are redirected to HTTPS with a 301"
+        "status. Supports X-Forwarded-Proto detection behind trusted proxies."
+    ),
+    responses={301: {"description": "Redirected to HTTPS"}},
+)
 @guard.require_https()
 async def https_required_endpoint(request: Request) -> MessageResponse:
     return MessageResponse(
@@ -17,7 +27,17 @@ async def https_required_endpoint(request: Request) -> MessageResponse:
     )
 
 
-@router.get("/bearer-auth", response_model=AuthResponse)
+@router.get(
+    "/bearer-auth",
+    response_model=AuthResponse,
+    status_code=200,
+    summary="Bearer Token Authentication",
+    description=(
+        "Requires a valid Bearer token in the Authorization header. Rejects requests"
+        "without the header or with an invalid format."
+    ),
+    responses={401: {"description": "Missing or invalid Bearer token"}},
+)
 @guard.require_auth(type="bearer")
 async def bearer_authentication(
     authorization: Annotated[str | None, Header()] = None,
@@ -30,7 +50,17 @@ async def bearer_authentication(
     )
 
 
-@router.get("/api-key", response_model=AuthResponse)
+@router.get(
+    "/api-key",
+    response_model=AuthResponse,
+    status_code=200,
+    summary="API Key Authentication",
+    description=(
+        "Requires a valid API key in the X-API-Key header. Rejects requests without the"
+        "header."
+    ),
+    responses={401: {"description": "Missing or invalid API key"}},
+)
 @guard.api_key_auth(header_name="X-API-Key")
 async def api_key_authentication(
     x_api_key: Annotated[str | None, Header()] = None,
@@ -43,7 +73,18 @@ async def api_key_authentication(
     )
 
 
-@router.get("/custom-headers", response_model=MessageResponse)
+@router.get(
+    "/custom-headers",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Required Custom Headers",
+    description=(
+        "Enforces the presence of specific custom headers with required values."
+        " Requests"
+        "missing any required header are rejected."
+    ),
+    responses={403: {"description": "Missing required headers"}},
+)
 @guard.require_headers(
     {"X-Custom-Header": "required-value", "X-Client-ID": "required-value"}
 )

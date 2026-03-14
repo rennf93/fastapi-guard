@@ -11,10 +11,20 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin", tags=["Admin & Utilities"])
 
 
-@router.post("/unban-ip", response_model=MessageResponse)
+@router.post(
+    "/unban-ip",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Unban IP Address",
+    description=(
+        "Removes an IP address from the ban list. Restricted to requests from localhost"
+        "only."
+    ),
+    responses={403: {"description": "Not authorized (non-localhost IP)"}},
+)
 @guard.require_ip(whitelist=["127.0.0.1"])
 async def unban_ip_address(
-    ip: str = Body(..., description="IP address to unban"),
+    ip: str = Body(...),
     background_tasks: BackgroundTasks = BackgroundTasks(),  # noqa: B008
 ) -> MessageResponse:
     background_tasks.add_task(logger.info, f"Unbanning IP: {ip}")
@@ -24,7 +34,17 @@ async def unban_ip_address(
     )
 
 
-@router.get("/stats", response_model=StatsResponse)
+@router.get(
+    "/stats",
+    response_model=StatsResponse,
+    status_code=200,
+    summary="Security Statistics",
+    description=(
+        "Returns security statistics including total requests, blocked requests, banned"
+        "IPs, rate-limited IPs, and active rules. Restricted to localhost."
+    ),
+    responses={403: {"description": "Not authorized (non-localhost IP)"}},
+)
 @guard.require_ip(whitelist=["127.0.0.1"])
 async def get_security_stats() -> StatsResponse:
     return StatsResponse(
@@ -54,7 +74,18 @@ async def get_security_stats() -> StatsResponse:
     )
 
 
-@router.post("/clear-cache", response_model=MessageResponse)
+@router.post(
+    "/clear-cache",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Clear Security Caches",
+    description=(
+        "Clears all security-related caches including rate limit counters, IP ban"
+        " lists,"
+        "and geo lookup cache. Restricted to localhost."
+    ),
+    responses={403: {"description": "Not authorized (non-localhost IP)"}},
+)
 @guard.require_ip(whitelist=["127.0.0.1"])
 async def clear_security_cache() -> MessageResponse:
     return MessageResponse(
@@ -63,10 +94,20 @@ async def clear_security_cache() -> MessageResponse:
     )
 
 
-@router.put("/emergency-mode", response_model=MessageResponse)
+@router.put(
+    "/emergency-mode",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Toggle Emergency Mode",
+    description=(
+        "Enables or disables emergency lockdown mode. When active, all non-whitelisted"
+        "traffic is blocked. Restricted to localhost."
+    ),
+    responses={403: {"description": "Not authorized (non-localhost IP)"}},
+)
 @guard.require_ip(whitelist=["127.0.0.1"])
 async def toggle_emergency_mode(
-    enable: bool = Body(..., description="Enable or disable emergency mode"),
+    enable: bool = Body(...),
 ) -> MessageResponse:
     mode = "enabled" if enable else "disabled"
     return MessageResponse(
