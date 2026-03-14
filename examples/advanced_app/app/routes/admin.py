@@ -4,7 +4,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, BackgroundTasks, Body
 
 from app.models import MessageResponse, StatsResponse
-from app.security import guard
+from app.security import guard, security_config
+from guard.handlers.cloud_handler import cloud_handler
 
 logger = logging.getLogger(__name__)
 
@@ -113,4 +114,29 @@ async def toggle_emergency_mode(
     return MessageResponse(
         message=f"Emergency mode {mode}",
         details={"emergency_mode": enable, "timestamp": datetime.now(timezone.utc)},
+    )
+
+
+@router.get(
+    "/cloud-status",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Cloud Provider IP Range Status",
+    description=(
+        "Returns per-provider cloud IP range refresh status including the configured"
+        "refresh interval and last update timestamps for each provider."
+    ),
+    responses={403: {"description": "Not authorized (non-localhost IP)"}},
+)
+@guard.require_ip(whitelist=["127.0.0.1"])
+async def cloud_provider_status() -> MessageResponse:
+    last_updated = {}
+    for provider, dt in cloud_handler.last_updated.items():
+        last_updated[provider] = dt.isoformat() if dt else None
+    return MessageResponse(
+        message="Cloud provider IP range status",
+        details={
+            "refresh_interval": security_config.cloud_ip_refresh_interval,
+            "providers": last_updated,
+        },
     )

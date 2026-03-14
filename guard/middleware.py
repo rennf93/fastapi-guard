@@ -54,7 +54,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.app = app
         self.config = config
-        self.logger = setup_custom_logging(config.custom_log_file)
+        self.logger = setup_custom_logging(
+            config.custom_log_file, log_format=config.log_format
+        )
         self.last_cloud_ip_refresh = 0
         self.suspicious_request_counts: dict[str, int] = {}
         self.last_cleanup = time.time()
@@ -413,7 +415,10 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             return
 
         if self.config.enable_redis and self.redis_handler:
-            await cloud_handler.refresh_async(self.config.block_cloud_providers)
+            await cloud_handler.refresh_async(
+                self.config.block_cloud_providers,
+                ttl=self.config.cloud_ip_refresh_interval,
+            )
         else:
             cloud_handler.refresh(self.config.block_cloud_providers)
         self.last_cloud_ip_refresh = int(time.time())

@@ -18,9 +18,11 @@ Class Definition
 ```python
 class CloudManager:
     _instance = None
-    ip_ranges: dict[str, set[ipaddress.IPv4Network]]
+    ip_ranges: dict[str, set[ipaddress.IPv4Network | ipaddress.IPv6Network]]
     redis_handler: Any = None
+    agent_handler: Any = None
     logger: logging.Logger
+    last_updated: dict[str, datetime | None]
 
     def __new__(cls: type["CloudManager"]) -> "CloudManager":
         if cls._instance is None:
@@ -30,9 +32,12 @@ class CloudManager:
                 "GCP": set(),
                 "Azure": set(),
             }
+            cls._instance.last_updated = {
+                "AWS": None, "GCP": None, "Azure": None,
+            }
             cls._instance.redis_handler = None
+            cls._instance.agent_handler = None
             cls._instance.logger = logging.getLogger("fastapi_guard.handlers.cloud")
-            # IP ranges are loaded on-demand, not at initialization
         return cls._instance
 ```
 
@@ -43,7 +48,7 @@ Redis Integration
 
 When Redis is enabled, CloudManager automatically:
 
-- Caches cloud IP ranges in Redis with 1-hour TTL
+- Caches cloud IP ranges in Redis with configurable TTL (default: 1 hour, set via `cloud_ip_refresh_interval`)
 - Uses cached ranges if available
 - Synchronizes ranges across instances
 
@@ -56,9 +61,64 @@ refresh
 -------
 
 ```python
-def refresh(self):
+def refresh(self, providers: set[str] = _ALL_PROVIDERS):
     """
-    Refresh IP ranges from all cloud providers.
+    Synchronous refresh of IP ranges from cloud providers.
+    Only available when Redis is not enabled.
+    """
+```
+
+refresh_async
+-------------
+
+```python
+async def refresh_async(
+    self,
+    providers: set[str] = _ALL_PROVIDERS,
+    ttl: int = 3600
+):
+    """
+    Async refresh of IP ranges with Redis caching.
+
+    Args:
+        providers: Set of provider names to refresh
+        ttl: Redis cache TTL in seconds (default: 3600)
+    """
+```
+
+initialize_redis
+----------------
+
+```python
+async def initialize_redis(
+    self,
+    redis_handler: Any,
+    providers: set[str] = _ALL_PROVIDERS,
+    ttl: int = 3600
+):
+    """
+    Initialize Redis integration and load IP ranges.
+
+    Args:
+        redis_handler: Redis handler instance
+        providers: Set of provider names to load
+        ttl: Redis cache TTL in seconds (default: 3600)
+    """
+```
+
+_log_range_changes
+------------------
+
+```python
+def _log_range_changes(
+    self,
+    provider: str,
+    old_ranges: set[ipaddress.IPv4Network | ipaddress.IPv6Network],
+    new_ranges: set[ipaddress.IPv4Network | ipaddress.IPv6Network],
+) -> None:
+    """
+    Log additions and removals when IP ranges change for a provider.
+    Called automatically during refresh operations.
     """
 ```
 
@@ -102,4 +162,9 @@ is_cloud = cloud_handler.is_cloud_ip(
 # Refresh IP ranges manually if needed
 cloud_handler.refresh()  # Synchronous refresh
 await cloud_handler.refresh_async()  # Asynchronous with Redis
+
+# Check when a provider was last refreshed
+aws_updated = cloud_handler.last_updated["AWS"]
+if aws_updated:
+    print(f"AWS ranges last refreshed: {aws_updated.isoformat()}")
 ```

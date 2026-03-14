@@ -38,6 +38,10 @@ When enabled, provides heuristic-based detection:
 - Returns probability scores and detected attack types
 - Must be explicitly enabled in configuration
 
+### 5. Context-Aware Pattern Filtering
+
+Patterns are tagged with applicable input contexts (e.g., `query_param`, `url_path`, `header`, `request_body`). During detection, only patterns relevant to the current input source are evaluated. This reduces false positives — for example, XSS patterns are not checked against URL paths, and sensitive file probing patterns are not checked against headers.
+
 ### 4. Performance Monitoring
 
 Tracks execution metrics:

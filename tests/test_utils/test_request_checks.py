@@ -960,12 +960,15 @@ async def test_detect_penetration_fallback_pattern_match() -> None:
     mock_pattern = MagicMock()
     mock_pattern.search.return_value = MagicMock()  # Truthy value
 
+    _all_ctx = frozenset(
+        {"query_param", "header", "url_path", "request_body", "unknown"}
+    )
     with (
         patch.object(sus_patterns_handler, "detect", side_effect=mock_detect_error),
         patch.object(
             sus_patterns_handler,
             "get_all_compiled_patterns",
-            return_value=[mock_pattern],
+            return_value=[(mock_pattern, _all_ctx)],
         ),
         patch("logging.error") as mock_error,
     ):
@@ -974,7 +977,6 @@ async def test_detect_penetration_fallback_pattern_match() -> None:
         assert result is True
         assert "Value matched pattern (fallback)" in trigger
 
-        # Verify error was logged
         mock_error.assert_called()
         error_msg = mock_error.call_args[0][0]
         assert "Enhanced detection failed" in error_msg
@@ -982,8 +984,6 @@ async def test_detect_penetration_fallback_pattern_match() -> None:
 
 @pytest.mark.asyncio
 async def test_detect_penetration_fallback_pattern_exception() -> None:
-    """Test fallback pattern exception handling."""
-
     async def receive() -> dict[str, str | bytes]:
         return {"type": "http.request", "body": b""}
 
@@ -999,20 +999,21 @@ async def test_detect_penetration_fallback_pattern_exception() -> None:
         receive=receive,
     )
 
-    # Mock detect to raise exception
     async def mock_detect_error(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
         raise RuntimeError("Detection engine failure")
 
-    # Create a mock pattern that raises exception
     mock_pattern = MagicMock()
     mock_pattern.search.side_effect = Exception("Pattern error")
 
+    _all_ctx = frozenset(
+        {"query_param", "header", "url_path", "request_body", "unknown"}
+    )
     with (
         patch.object(sus_patterns_handler, "detect", side_effect=mock_detect_error),
         patch.object(
             sus_patterns_handler,
             "get_all_compiled_patterns",
-            return_value=[mock_pattern],
+            return_value=[(mock_pattern, _all_ctx)],
         ),
         patch("logging.error") as mock_log_error,
     ):
