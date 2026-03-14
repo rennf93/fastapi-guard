@@ -99,6 +99,7 @@ Cloud Provider Settings
 | `ipinfo_token` | str | None | IPInfo API token for geolocation |
 | `block_cloud_providers` | dict | {} | Cloud providers to block |
 | `cloud_provider_cache_ttl` | int | 86400 | Cache TTL for cloud provider data |
+| `cloud_ip_refresh_interval` | int | 3600 | Interval in seconds between cloud IP range refreshes (60-86400) |
 
 Security Headers Settings
 ------------------------
@@ -172,7 +173,7 @@ Logging Settings
 | `log_enabled` | bool | True | Enable request logging |
 | `log_level` | str | "INFO" | Logging level |
 | `custom_log_file` | str | None | Custom log file path |
-| `log_format` | str | "default" | Log format (default, json) |
+| `log_format` | Literal["text", "json"] | "text" | Log output format: "text" for plain text, "json" for structured JSON |
 | `mask_sensitive_data` | bool | True | Mask sensitive data in logs |
 
 Usage Example
@@ -244,7 +245,11 @@ config = SecurityConfig(
 
     # Logging
     custom_log_file="security.log",
-    log_level="WARNING"
+    log_level="WARNING",
+    log_format="json",
+
+    # Cloud provider refresh
+    cloud_ip_refresh_interval=1800,
 )
 ```
 

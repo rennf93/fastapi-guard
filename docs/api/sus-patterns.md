@@ -105,9 +105,53 @@ async def get_all_patterns(cls) -> list[str]:
     """Get all registered patterns (default + custom)."""
 
 @classmethod
-async def get_all_compiled_patterns(cls) -> list[re.Pattern]:
-    """Get all compiled regex patterns."""
+async def get_all_compiled_patterns(cls) -> list[tuple[re.Pattern, frozenset[str]]]:
+    """
+    Get all compiled regex patterns with their applicable contexts.
+
+    Returns:
+        List of (compiled_pattern, context_set) tuples.
+        Context set contains applicable input sources:
+        "query_param", "url_path", "header", "request_body", "unknown"
+    """
 ```
+
+___
+
+Context-Aware Filtering
+------------------------
+
+Patterns are tagged with the input contexts where they are applicable, reducing false positives by only matching patterns against relevant input sources.
+
+**Context Types:**
+
+| Context | Description |
+|---------|-------------|
+| `query_param` | URL query string parameters |
+| `url_path` | URL path segments |
+| `header` | HTTP request headers |
+| `request_body` | Request body content (JSON, form data) |
+| `unknown` | Unidentified source (all patterns apply) |
+
+**Filtering Rules:**
+
+- When context is `unknown` or `request_body`, all patterns are evaluated
+- For specific contexts (`query_param`, `url_path`, `header`), only patterns tagged for that context are checked
+- Custom patterns added via `add_pattern()` always apply to all contexts
+
+**Example:** A SQL injection pattern tagged for `query_param` and `request_body` will fire on `?id=1 OR 1=1` but not on a URL path like `/api/union/select`.
+
+**Context Definitions by Attack Type:**
+
+- **XSS**: `query_param`, `header`, `request_body`
+- **SQL Injection**: `query_param`, `request_body`
+- **Directory/Path Traversal**: `url_path`, `query_param`, `request_body`
+- **Command Injection**: `query_param`, `request_body`
+- **File Inclusion**: `url_path`, `query_param`, `request_body`
+- **XXE/XML**: `header`, `request_body`
+- **SSRF**: `query_param`, `request_body`
+- **Sensitive File Probing**: `url_path`, `request_body`
+- **CMS Probing**: `url_path`, `request_body`
 
 ___
 

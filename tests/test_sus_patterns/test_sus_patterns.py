@@ -157,12 +157,12 @@ async def test_get_compiled_patterns_separation() -> None:
 
     # Test default compiled patterns
     test_default_string = "default_test_pattern_123"
-    default_matched = any(p.search(test_default_string) for p in default_compiled)
+    default_matched = any(p.search(test_default_string) for p, _ctx in default_compiled)
     assert default_matched
 
     # Test custom compiled patterns
     test_custom_string = "custom_test_pattern_456"
-    custom_matched = any(p.search(test_custom_string) for p in custom_compiled)
+    custom_matched = any(p.search(test_custom_string) for p, _ctx in custom_compiled)
     assert custom_matched
 
     # Verify separation
@@ -255,7 +255,7 @@ async def test_get_all_compiled_patterns() -> None:
     # Test pattern matching with compiled patterns
     test_string = "test_pattern123"
     matched = False
-    for pattern in compiled_patterns:
+    for pattern, _ctx in compiled_patterns:
         if pattern.search(test_string):
             matched = True
             break

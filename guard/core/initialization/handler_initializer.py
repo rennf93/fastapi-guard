@@ -49,7 +49,9 @@ class HandlerInitializer:
         # Initialize cloud handler with Redis if cloud providers are blocked
         if self.config.block_cloud_providers:
             await cloud_handler.initialize_redis(
-                self.redis_handler, self.config.block_cloud_providers
+                self.redis_handler,
+                self.config.block_cloud_providers,
+                ttl=self.config.cloud_ip_refresh_interval,
             )
 
         # Initialize core handlers

@@ -53,6 +53,7 @@ from pydantic import BaseModel, Field
 from guard import SecurityConfig, SecurityMiddleware
 from guard.decorators import SecurityDecorator
 from guard.handlers.behavior_handler import BehaviorRule
+from guard.handlers.cloud_handler import cloud_handler
 
 # NOTE: Uncomment this IF IPInfoManager is implemented
 # from guard.handlers.ipinfo_handler import IPInfoManager
@@ -256,6 +257,8 @@ security_config = SecurityConfig(
     auto_ban_duration=300,  # 5 minutes
     # Penetration Detection
     enable_penetration_detection=True,
+    cloud_ip_refresh_interval=1800,
+    log_format="json",
     # Redis Configuration
     enable_redis=True,
     redis_url="redis://localhost:6379",
@@ -1424,6 +1427,33 @@ async def toggle_emergency_mode(
     return MessageResponse(
         message=f"Emergency mode {mode}",
         details={"emergency_mode": enable, "timestamp": datetime.now(timezone.utc)},
+    )
+
+
+@admin_router.get(
+    "/cloud-status",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Cloud Provider IP Range Status",
+    description=(
+        "Returns per-provider cloud IP range refresh status including the configured"
+        "refresh interval and last update timestamps for each provider."
+    ),
+    responses={
+        403: {"description": "Access denied, admin endpoint restricted to localhost"}
+    },
+)
+@guard_decorator.require_ip(whitelist=["127.0.0.1"])
+async def cloud_provider_status() -> MessageResponse:
+    last_updated = {}
+    for provider, dt in cloud_handler.last_updated.items():
+        last_updated[provider] = dt.isoformat() if dt else None
+    return MessageResponse(
+        message="Cloud provider IP range status",
+        details={
+            "refresh_interval": security_config.cloud_ip_refresh_interval,
+            "providers": last_updated,
+        },
     )
 
 

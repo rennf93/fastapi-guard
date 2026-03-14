@@ -173,7 +173,7 @@ class TestUtilsEdgeCases:
             mock_pattern = Mock()
             mock_pattern.search = Mock(side_effect=Exception("Pattern error"))
             mock_handler.get_all_compiled_patterns = AsyncMock(
-                return_value=[mock_pattern]
+                return_value=[(mock_pattern, frozenset({"unknown"}))]
             )
 
             # Should handle exception and continue

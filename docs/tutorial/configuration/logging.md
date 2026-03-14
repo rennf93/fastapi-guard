@@ -59,6 +59,33 @@ Available log levels:
 
 ___
 
+Structured JSON Logging
+------------------------
+
+FastAPI Guard supports structured JSON log output for integration with log aggregation systems like ELK, Datadog, or CloudWatch:
+
+```python
+config = SecurityConfig(
+    log_format="json",
+    custom_log_file="security.log"
+)
+```
+
+When `log_format="json"` is set, all log output (both console and file) uses structured JSON:
+
+```json
+{"timestamp": "2026-03-14 08:30:00,123", "level": "INFO", "logger": "fastapi_guard", "message": "Request from 192.168.1.1"}
+{"timestamp": "2026-03-14 08:30:01,456", "level": "WARNING", "logger": "fastapi_guard", "message": "Suspicious activity detected from 10.0.0.5"}
+```
+
+The default `log_format="text"` preserves the human-readable format:
+
+```text
+[fastapi_guard] 2026-03-14 08:30:00 - INFO - Request from 192.168.1.1
+```
+
+___
+
 Performance Optimization
 -------------------------
 

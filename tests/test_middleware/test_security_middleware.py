@@ -982,7 +982,7 @@ async def test_redis_initialization(security_config_redis: SecurityConfig) -> No
         redis_init.assert_awaited_once()
 
         # Verify component initializations with Redis
-        cloud_init.assert_awaited_once_with(middleware.redis_handler, {"AWS"})
+        cloud_init.assert_awaited_once_with(middleware.redis_handler, {"AWS"}, ttl=3600)
         ipban_init.assert_awaited_once_with(middleware.redis_handler)
         ipinfo_init.assert_awaited_once_with(middleware.redis_handler)
         sus_init.assert_awaited_once_with(middleware.redis_handler)

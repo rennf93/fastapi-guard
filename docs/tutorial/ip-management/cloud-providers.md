@@ -52,13 +52,47 @@ ___
 IP Range Updates
 ----------------
 
-Cloud IP ranges are automatically updated daily. You can manually refresh them:
+Cloud IP ranges are refreshed automatically at a configurable interval (default: 1 hour). You can adjust the refresh interval:
+
+```python
+config = SecurityConfig(
+    block_cloud_providers={"AWS", "GCP", "Azure"},
+    cloud_ip_refresh_interval=1800,  # Refresh every 30 minutes
+)
+```
+
+Valid range: 60 to 86400 seconds (1 minute to 24 hours).
+
+When IP ranges are refreshed, changes are logged automatically:
+
+```text
+Cloud IP range update for AWS: +12 added, -3 removed
+```
+
+You can also manually trigger a refresh:
 
 ```python
 from guard.handlers.cloud_handler import cloud_handler
 
-# Refresh IP ranges
 cloud_handler.refresh()
+```
+
+___
+
+Provider Status
+---------------
+
+Track when each provider's IP ranges were last refreshed:
+
+```python
+from guard.handlers.cloud_handler import cloud_handler
+
+for provider in ("AWS", "GCP", "Azure"):
+    updated = cloud_handler.last_updated[provider]
+    if updated:
+        print(f"{provider}: last updated {updated.isoformat()}")
+    else:
+        print(f"{provider}: not yet loaded")
 ```
 
 ___
