@@ -4,7 +4,7 @@ Production-ready deployment demonstrating fastapi-guard with nginx reverse proxy
 
 ## Architecture
 
-```
+```text
 Client -> nginx (port 80) -> gunicorn/uvicorn (port 8000) -> FastAPI + guard middleware
                                                                              |
                                                                         Redis (cache)
