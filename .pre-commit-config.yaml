@@ -36,7 +36,7 @@ repos:
         pass_filenames: false
       - id: safety
         name: safety
-        entry: uv run safety check
+        entry: uv run safety scan
         require_serial: true
         language: system
         pass_filenames: false

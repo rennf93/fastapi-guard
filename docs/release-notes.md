@@ -10,6 +10,16 @@ Release Notes
 
 ___
 
+v4.4.1 (2026-03-16)
+-------------------
+
+Bug Fixes (v4.4.1)
+------------
+
+- **Per-endpoint rate limit check**: Fixed rate limit check to properly evaluate endpoint-specific rate limits. Previously, the rate limit check was only evaluating global rate limits.
+
+___
+
 v4.4.0 (2026-03-14)
 -------------------
 

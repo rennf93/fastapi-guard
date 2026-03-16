@@ -7,7 +7,6 @@ from fastapi import FastAPI, Request, Response
 from guard import SecurityConfig, SecurityDecorator
 from guard.decorators.base import RouteConfig
 from guard.handlers.behavior_handler import BehaviorRule
-from guard.handlers.ratelimit_handler import RateLimitManager
 from guard.middleware import SecurityMiddleware
 
 
@@ -591,16 +590,13 @@ async def test_route_specific_middleware_validations(
 
 
 async def test_route_specific_rate_limit_with_redis() -> None:
-    """Test route-specific rate limiting with Redis initialization."""
     app = FastAPI()
     config = SecurityConfig(enable_redis=True, redis_url="redis://localhost:6379")
     middleware = SecurityMiddleware(app, config=config)
 
-    # Mock Redis handler
     mock_redis_handler = Mock()
     middleware.redis_handler = mock_redis_handler
 
-    # Mock route config with rate limit
     mock_route_config = RouteConfig()
     mock_route_config.rate_limit = 5
     mock_route_config.rate_limit_window = 60
@@ -619,10 +615,18 @@ async def test_route_specific_rate_limit_with_redis() -> None:
     with patch.object(
         middleware.route_resolver, "get_route_config", return_value=mock_route_config
     ):
-        with patch.object(RateLimitManager, "initialize_redis") as mock_init_redis:
-            with patch.object(RateLimitManager, "check_rate_limit", return_value=None):
-                with patch(
-                    "guard.utils.detect_penetration_attempt", return_value=(False, "")
-                ):
-                    await middleware.dispatch(mock_request, mock_call_next)
-                    mock_init_redis.assert_called_once_with(mock_redis_handler)
+        with patch.object(
+            middleware.rate_limit_handler,
+            "check_rate_limit",
+            new_callable=AsyncMock,
+            return_value=None,
+        ) as mock_check:
+            with patch(
+                "guard.utils.detect_penetration_attempt", return_value=(False, "")
+            ):
+                await middleware.dispatch(mock_request, mock_call_next)
+                assert mock_check.call_count >= 2
+                route_call = mock_check.call_args_list[0]
+                assert route_call[1]["endpoint_path"] == "/test"
+                assert route_call[1]["rate_limit"] == 5
+                assert route_call[1]["rate_limit_window"] == 60

@@ -41,10 +41,8 @@ class TestHoneypotEdgeCases:
         # Create request that will cause form() to raise exception
         mock_request = AsyncMock()
         mock_request.method = "POST"
-        mock_request.headers.get = (
-            lambda key, default="": "application/x-www-form-urlencoded"
-            if key == "content-type"
-            else default
+        mock_request.headers.get = lambda key, default="": (
+            "application/x-www-form-urlencoded" if key == "content-type" else default
         )
         mock_request.form.side_effect = Exception("Form parsing error")
 
@@ -99,18 +97,16 @@ class TestHoneypotEdgeCases:
         # Test with unsupported content-type
         mock_request = AsyncMock()
         mock_request.method = "POST"
-        mock_request.headers.get = (
-            lambda key, default="": "text/plain" if key == "content-type" else default
+        mock_request.headers.get = lambda key, default="": (
+            "text/plain" if key == "content-type" else default
         )
 
         result = await validator(mock_request)
         assert result is None
 
         # Test with multipart/form-data (not explicitly supported)
-        mock_request.headers.get = (
-            lambda key, default="": "multipart/form-data"
-            if key == "content-type"
-            else default
+        mock_request.headers.get = lambda key, default="": (
+            "multipart/form-data" if key == "content-type" else default
         )
 
         result = await validator(mock_request)
@@ -165,10 +161,8 @@ class TestHoneypotEdgeCases:
         # POST/PUT/PATCH without supported content-type
         mock_request = AsyncMock()
         mock_request.method = method
-        mock_request.headers.get = (
-            lambda key, default="": "application/xml"
-            if key == "content-type"
-            else default
+        mock_request.headers.get = lambda key, default="": (
+            "application/xml" if key == "content-type" else default
         )
 
         result = await validator(mock_request)

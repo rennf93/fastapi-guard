@@ -230,10 +230,8 @@ async def test_honeypot_form_detection(security_config: SecurityConfig) -> None:
 
     mock_request = AsyncMock()
     mock_request.method = "POST"
-    mock_request.headers.get = (
-        lambda key, default="": "application/x-www-form-urlencoded"
-        if key == "content-type"
-        else default
+    mock_request.headers.get = lambda key, default="": (
+        "application/x-www-form-urlencoded" if key == "content-type" else default
     )
     mock_request.form.return_value = {"bot_trap": "filled"}
 
@@ -257,8 +255,8 @@ async def test_honeypot_json_exception(security_config: SecurityConfig) -> None:
 
     mock_request = AsyncMock()
     mock_request.method = "POST"
-    mock_request.headers.get = (
-        lambda key, default="": "application/json" if key == "content-type" else default
+    mock_request.headers.get = lambda key, default="": (
+        "application/json" if key == "content-type" else default
     )
     mock_request.json.side_effect = Exception("JSON error")
 
@@ -282,8 +280,8 @@ async def test_honeypot_json_detection(security_config: SecurityConfig) -> None:
 
     mock_request = AsyncMock()
     mock_request.method = "POST"
-    mock_request.headers.get = (
-        lambda key, default="": "application/json" if key == "content-type" else default
+    mock_request.headers.get = lambda key, default="": (
+        "application/json" if key == "content-type" else default
     )
     mock_request.json.return_value = {"spam_check": "filled"}
 

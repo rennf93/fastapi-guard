@@ -859,18 +859,12 @@ class TestMiddlewareAgentIntegration:
         mock_redis_handler.get_connection = MagicMock(return_value=mock_redis_context)
         middleware.redis_handler = mock_redis_handler
 
-        # Mock rate limit handler to simulate rate limit exceeded
-        mock_rate_handler = AsyncMock()
-        mock_rate_handler.check_rate_limit = AsyncMock(
+        middleware.rate_limit_handler = AsyncMock()
+        middleware.rate_limit_handler.check_rate_limit = AsyncMock(
             return_value=Response("Rate limit exceeded", status_code=429)
         )
-        mock_rate_handler.initialize_redis = AsyncMock()
 
         with (
-            patch(
-                "guard.core.checks.implementations.rate_limit.RateLimitManager",
-                return_value=mock_rate_handler,
-            ),
             patch(
                 "guard.utils.extract_client_ip",
                 new_callable=AsyncMock,
@@ -885,20 +879,17 @@ class TestMiddlewareAgentIntegration:
         ):
             request = MagicMock(spec=Request)
             request.client = MagicMock(host="127.0.0.1")
-            # Use proper URL mock with string path attribute
             request.url = MagicMock()
             request.url.path = "/api/sensitive"
             request.headers = {}
             request.method = "GET"
             request.scope = {"app": app}
-            # Ensure state exists for checks to set attributes
             request.state = MagicMock()
 
             call_next = AsyncMock(return_value=Response(status_code=200))
             response = await middleware.dispatch(request, call_next)
 
         assert response.status_code == 429
-        # Verify dynamic rule violation event was sent
         middleware.agent_handler.send_event.assert_called_once()
         event = middleware.agent_handler.send_event.call_args[0][0]
         assert event.event_type == "dynamic_rule_violation"
@@ -939,20 +930,14 @@ class TestMiddlewareAgentIntegration:
         mock_redis_handler.get_connection = MagicMock(return_value=mock_redis_context)
         middleware.redis_handler = mock_redis_handler
 
-        # Mock rate limit handler to simulate rate limit exceeded
-        mock_rate_handler = AsyncMock()
-        mock_rate_handler.check_rate_limit = AsyncMock(
+        middleware.rate_limit_handler = AsyncMock()
+        middleware.rate_limit_handler.check_rate_limit = AsyncMock(
             return_value=Response("Rate limit exceeded", status_code=429)
         )
-        mock_rate_handler.initialize_redis = AsyncMock()
 
         with (
             patch.object(
                 middleware.route_resolver, "get_route_config", return_value=route_config
-            ),
-            patch(
-                "guard.core.checks.implementations.rate_limit.RateLimitManager",
-                return_value=mock_rate_handler,
             ),
             patch(
                 "guard.utils.extract_client_ip",
@@ -968,13 +953,11 @@ class TestMiddlewareAgentIntegration:
         ):
             request = MagicMock(spec=Request)
             request.client = MagicMock(host="127.0.0.1")
-            # Use proper URL mock with string path attribute
             request.url = MagicMock()
             request.url.path = "/test"
             request.headers = {}
             request.method = "GET"
             request.scope = {"app": app}
-            # Ensure state exists for checks to set attributes
             request.state = MagicMock()
             request.state.is_whitelisted = False
 
@@ -982,7 +965,6 @@ class TestMiddlewareAgentIntegration:
             response = await middleware.dispatch(request, call_next)
 
         assert response.status_code == 429
-        # Verify decorator violation event was sent
         middleware.agent_handler.send_event.assert_called_once()
         event = middleware.agent_handler.send_event.call_args[0][0]
         assert event.event_type == "decorator_violation"
