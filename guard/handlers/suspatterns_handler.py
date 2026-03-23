@@ -26,6 +26,7 @@ _CTX_TEMPLATE = frozenset({"query_param", "request_body", "unknown"})
 _CTX_HTTP_SPLIT = frozenset({"header", "query_param", "request_body", "unknown"})
 _CTX_SENSITIVE_FILE = frozenset({"url_path", "request_body", "unknown"})
 _CTX_CMS_PROBING = frozenset({"url_path", "request_body", "unknown"})
+_CTX_RECON = frozenset({"url_path", "unknown"})
 _CTX_ALL = frozenset({"query_param", "header", "url_path", "request_body", "unknown"})
 
 
@@ -196,6 +197,52 @@ class SusPatternsManager:
             r"|\.npmrc|\.dockerenv|web\.config)(?:\?|$)",
             _CTX_CMS_PROBING,
         ),
+        # Reconnaissance & Fingerprinting
+        (
+            r"(?:^|/)[\w./-]*\.(?:asp|aspx|jsp|jsa|jhtml|shtml|cfm|cgi|do|action"
+            r"|lua|inc|woa|nsf|esp|html?|js|css|properties|png|gif|jpg|jpeg"
+            r"|svg|webp|bmp|pl)(?:\?|$)",
+            _CTX_RECON,
+        ),
+        (
+            r"^/(?:api|rest|v\d+|management|system|version|status|config"
+            r"|config_dump|credentials)(?:/|$|\?)",
+            _CTX_RECON,
+        ),
+        (r"^/admin(?:istrator)?(?:[./?\-]|$)", _CTX_RECON),
+        (r"^/(?:login|logon|signin)(?:[./?\-]|$|/)", _CTX_RECON),
+        (r"(?:^|/)account/login(?:\?|$|/)", _CTX_RECON),
+        (r"(?:^|/)(?:actuator|server-status|telescope)(?:/|$|\?)", _CTX_RECON),
+        (
+            r"(?:CSCOE|dana-(?:na|cached)|sslvpn|RDWeb|/owa/|/ecp/"
+            r"|global-protect|ssl-vpn/|svpn/|sonicui|/remote/login"
+            r"|myvpn|vpntunnel|versa/login)",
+            _CTX_RECON,
+        ),
+        (
+            r"(?:^|/)(?:geoserver|confluence|nifi|ScadaBR|pandora_console"
+            r"|centreon|kylin|decisioncenter|evox|MagicInfo|metasys"
+            r"|officescan|helpdesk|ignite)(?:/|$|\?|\.|-)",
+            _CTX_RECON,
+        ),
+        (r"(?:^|/)cgi-(?:bin|mod)/", _CTX_RECON),
+        (r"(?:^|/)(?:HNAP1|IPCamDesc\.xml|SDK/webLanguage)(?:\?|$|/)", _CTX_RECON),
+        (r"^/(?:scripts|language|languages|images|css|img)/", _CTX_RECON),
+        (
+            r"(?:^|/)(?:robots\.txt|sitemap\.xml|security\.txt|readme\.txt"
+            r"|README\.md|CHANGELOG|pom\.xml|build\.gradle|appsettings\.json"
+            r"|crossdomain\.xml)(?:\?|$|\.)",
+            _CTX_RECON,
+        ),
+        (
+            r"(?:^|/)(?:sap|ise|nidp|cslu|rustfs|developmentserver"
+            r"|fog/management|lms/db|json/login_session|sms_mp"
+            r"|plugin/webs_model|wsman|am_bin)(?:/|$|\?)",
+            _CTX_RECON,
+        ),
+        (r"(?:nmaplowercheck|nice\s+ports|Trinity\.txt)", _CTX_RECON),
+        (r"(?:^|/)\.(?:openclaw|clawdbot)(?:/|$)", _CTX_RECON),
+        (r"^/(?:default|inicio|indice|localstart)(?:\.|/|$|\?)", _CTX_RECON),
     ]
 
     patterns: list[str] = [p[0] for p in _pattern_definitions]
