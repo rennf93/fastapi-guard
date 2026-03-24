@@ -243,6 +243,24 @@ class SusPatternsManager:
         (r"(?:nmaplowercheck|nice\s+ports|Trinity\.txt)", _CTX_RECON),
         (r"(?:^|/)\.(?:openclaw|clawdbot)(?:/|$)", _CTX_RECON),
         (r"^/(?:default|inicio|indice|localstart)(?:\.|/|$|\?)", _CTX_RECON),
+        (
+            r"(?:^|/)(?:\.streamlit|\.gpt-pilot|\.aider|\.cursor"
+            r"|\.windsurf|\.copilot|\.devcontainer)(?:/|$)",
+            _CTX_RECON,
+        ),
+        (
+            r"(?:^|/)(?:docker-compose|Dockerfile|Makefile|Vagrantfile"
+            r"|Jenkinsfile|Procfile)(?:\.ya?ml)?(?:\?|$)",
+            _CTX_RECON,
+        ),
+        (
+            r"(?:^|/)[\w./-]*(?:secrets?|credentials?)"
+            r"\.(?:py|json|yml|yaml|toml|txt|env|xml|conf|cfg)(?:\?|$)",
+            _CTX_RECON,
+        ),
+        (r"(?:^|/)autodiscover/", _CTX_RECON),
+        (r"^/dns-query(?:\?|$)", _CTX_RECON),
+        (r"(?:^|/)\.git/(?:refs|index|HEAD|objects|logs)(?:/|$)", _CTX_RECON),
     ]
 
     patterns: list[str] = [p[0] for p in _pattern_definitions]
