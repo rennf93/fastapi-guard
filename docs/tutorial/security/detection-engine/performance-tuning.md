@@ -19,7 +19,7 @@ The Detection Engine's performance is influenced by several factors:
 Monitor these metrics to assess performance:
 
 ```python
-from guard.handlers.suspatterns_handler import sus_patterns_handler
+from guard import sus_patterns_handler
 
 # Get comprehensive performance statistics
 stats = await sus_patterns_handler.get_performance_stats()

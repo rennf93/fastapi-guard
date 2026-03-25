@@ -113,8 +113,7 @@ Example: Custom Geo IP Service
 Here's a complete example of a custom GeoIPHandler implementation that uses a different service:
 
 ```python
-from guard.protocols.geo_ip_protocol import GeoIPHandler
-from guard.protocols.redis_protocol import RedisHandlerProtocol
+from guard import GeoIPHandler, RedisHandlerProtocol
 
 class CustomGeoIPHandler:
     """Custom handler using Custom GeoIP database"""
@@ -180,8 +179,7 @@ Usage in Application
 
 ```python
 from fastapi import FastAPI
-from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
+from guard import SecurityMiddleware, SecurityConfig
 from your_custom_module import CustomGeoIPHandler
 
 app = FastAPI()

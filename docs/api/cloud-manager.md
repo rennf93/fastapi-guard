@@ -146,7 +146,7 @@ Usage Example
 -------------
 
 ```python
-from guard.handlers.cloud_handler import cloud_handler
+from guard import cloud_handler
 
 # The singleton instance is already created
 

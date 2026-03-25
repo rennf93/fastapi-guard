@@ -3,10 +3,11 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi import FastAPI, Request, Response
+from guard_core.decorators.base import RouteConfig
+from guard_core.handlers.behavior_handler import BehaviorRule
 
 from guard import SecurityConfig, SecurityDecorator
-from guard.decorators.base import RouteConfig
-from guard.handlers.behavior_handler import BehaviorRule
+from guard.adapters import StarletteGuardResponse
 from guard.middleware import SecurityMiddleware
 
 
@@ -26,25 +27,40 @@ async def test_set_decorator_handler() -> None:
 
 
 async def test_get_endpoint_id_with_route() -> None:
-    """Test _get_endpoint_id method with route in scope."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
 
-    mock_request = Mock()
-    mock_request.scope = {
-        "route": Mock(
-            endpoint=Mock(__module__="test_module", __qualname__="test_function")
-        )
+    from starlette.requests import Request
+
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/test",
+        "query_string": b"",
+        "headers": [],
+        "server": ("localhost", 8000),
+        "root_path": "",
+        "state": {},
     }
-    mock_request.method = "GET"
-    mock_request.url.path = "/test"
+    mock_request = Request(scope)
+    mock_request.state.guard_endpoint_id = "test_module.test_function"
 
     endpoint_id = middleware._get_endpoint_id(mock_request)
     assert endpoint_id == "test_module.test_function"
 
-    mock_request.scope = {}
-    endpoint_id = middleware._get_endpoint_id(mock_request)
+    scope2 = {
+        "type": "http",
+        "method": "GET",
+        "path": "/test",
+        "query_string": b"",
+        "headers": [],
+        "server": ("localhost", 8000),
+        "root_path": "",
+        "state": {},
+    }
+    mock_request2 = Request(scope2)
+    endpoint_id = middleware._get_endpoint_id(mock_request2)
     assert endpoint_id == "GET:/test"
 
 
@@ -187,7 +203,7 @@ async def test_check_user_agent_allowed() -> None:
     mock_route_config = Mock()
     mock_route_config.blocked_user_agents = [r"badbot"]
 
-    with patch("guard.utils.is_user_agent_allowed", return_value=True):
+    with patch("guard_core.utils.is_user_agent_allowed", return_value=True):
         result = await middleware._check_user_agent_allowed("badbot", mock_route_config)
         assert result is False
 
@@ -197,7 +213,9 @@ async def test_check_user_agent_allowed() -> None:
         assert result is True
 
     # Test without route config
-    with patch("guard.utils.is_user_agent_allowed", return_value=False) as mock_global:
+    with patch(
+        "guard_core.utils.is_user_agent_allowed", return_value=False
+    ) as mock_global:
         result = await middleware._check_user_agent_allowed("somebot", None)
         assert result is False
         mock_global.assert_called_once()
@@ -227,19 +245,19 @@ async def test_time_window_overnight() -> None:
     time_restrictions = {"start": "22:00", "end": "06:00"}
 
     # Test time within overnight window (after start)
-    with patch("guard.core.validation.validator.datetime") as mock_datetime:
+    with patch("guard_core.core.validation.validator.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "23:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is True
 
     # Test time within overnight window (before end)
-    with patch("guard.core.validation.validator.datetime") as mock_datetime:
+    with patch("guard_core.core.validation.validator.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "05:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is True
 
     # Test time outside overnight window
-    with patch("guard.core.validation.validator.datetime") as mock_datetime:
+    with patch("guard_core.core.validation.validator.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "12:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is False
@@ -254,13 +272,13 @@ async def test_time_window_normal() -> None:
     time_restrictions = {"start": "09:00", "end": "17:00"}
 
     # Test time within normal window
-    with patch("guard.core.validation.validator.datetime") as mock_datetime:
+    with patch("guard_core.core.validation.validator.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "12:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is True
 
     # Test time outside normal window
-    with patch("guard.core.validation.validator.datetime") as mock_datetime:
+    with patch("guard_core.core.validation.validator.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "20:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is False
@@ -389,60 +407,50 @@ async def test_behavioral_return_rules_with_decorator() -> None:
     )
 
 
-async def test_get_route_decorator_config_no_app() -> None:
-    """Test get_route_config (via route_resolver) when no app in scope."""
+async def test_get_route_decorator_config_no_route_id() -> None:
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
 
     mock_request = Mock()
-    mock_request.scope = {}  # No app in scope
+    mock_request.state = Mock(spec=[])
 
     result = middleware.route_resolver.get_route_config(mock_request)
     assert result is None
 
 
 async def test_get_route_decorator_config_no_guard_decorator() -> None:
-    """Test get_route_config (via route_resolver) when no guard decorator available."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
 
     mock_request = Mock()
-    mock_app = Mock()
-    mock_app.state = Mock()
-    mock_request.scope = {"app": mock_app}
+    mock_request.state = Mock()
+    mock_request.state.guard_route_id = "some_route"
+    mock_request.state.guard_decorator = None
 
     result = middleware.route_resolver.get_route_config(mock_request)
     assert result is None
 
 
 async def test_get_route_decorator_config_fallback_to_middleware_decorator() -> None:
-    """Test get_route_config falls back to middleware guard_decorator."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
 
     decorator = SecurityDecorator(config)
-    middleware.guard_decorator = decorator
+    middleware.set_decorator_handler(decorator)
 
     mock_request = Mock()
-    mock_request.url = Mock()
-    mock_request.url.path = "/test"
-    mock_request.method = "GET"
-
-    # App exists but state doesn't have guard_decorator
-    mock_app = Mock()
-    mock_app.state = Mock(spec=[])
-    mock_app.routes = []
-    mock_request.scope = {"app": mock_app}
+    mock_request.state = Mock()
+    mock_request.state.guard_route_id = "nonexistent_route"
+    mock_request.state.guard_decorator = None
 
     result = middleware.route_resolver.get_route_config(mock_request)
     assert result is None
 
 
 async def test_get_route_decorator_config_no_matching_route() -> None:
-    """Test get_route_config (via route_resolver) when no matching route is found."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
@@ -451,13 +459,10 @@ async def test_get_route_decorator_config_no_matching_route() -> None:
 
     mock_request = Mock()
     mock_request.url.path = "/nonexistent"
-    mock_request.method = "GET"
-
-    mock_app = Mock()
-    mock_app.routes = []
-    mock_app.state = Mock()
-    mock_app.state.guard_decorator = decorator
-    mock_request.scope = {"app": mock_app}
+    mock_request = Mock()
+    mock_request.state = Mock()
+    mock_request.state.guard_route_id = "nonexistent_route"
+    mock_request.state.guard_decorator = decorator
 
     result = middleware.route_resolver.get_route_config(mock_request)
     assert result is None
@@ -539,8 +544,8 @@ async def test_bypass_all_security_checks_with_custom_modifier() -> None:
             {
                 "custom_validators": [
                     AsyncMock(
-                        return_value=Response(
-                            "Custom validation failed", status_code=400
+                        return_value=StarletteGuardResponse(
+                            Response("Custom validation failed", status_code=400)
                         )
                     )
                 ],
@@ -584,7 +589,9 @@ async def test_route_specific_middleware_validations(
     with patch.object(
         middleware.route_resolver, "get_route_config", return_value=mock_route_config
     ):
-        with patch("guard.utils.detect_penetration_attempt", return_value=(False, "")):
+        with patch(
+            "guard_core.utils.detect_penetration_attempt", return_value=(False, "")
+        ):
             response = await middleware.dispatch(mock_request, mock_call_next)
             assert response.status_code == expected_status
 
@@ -622,7 +629,7 @@ async def test_route_specific_rate_limit_with_redis() -> None:
             return_value=None,
         ) as mock_check:
             with patch(
-                "guard.utils.detect_penetration_attempt", return_value=(False, "")
+                "guard_core.utils.detect_penetration_attempt", return_value=(False, "")
             ):
                 await middleware.dispatch(mock_request, mock_call_next)
                 assert mock_check.call_count >= 2

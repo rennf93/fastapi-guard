@@ -21,7 +21,7 @@ Apply custom rate limits to specific routes:
 ----------------------------
 
 ```python
-from guard.decorators import SecurityDecorator
+from guard import SecurityDecorator
 
 guard_deco = SecurityDecorator(config)
 

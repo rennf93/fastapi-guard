@@ -2,11 +2,11 @@ from unittest.mock import patch
 
 import pytest
 from fastapi import FastAPI
+from guard_core.handlers.cloud_handler import cloud_handler
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 
 from guard import SecurityConfig, SecurityDecorator
-from guard.handlers.cloud_handler import cloud_handler
 from guard.middleware import SecurityMiddleware
 
 
@@ -17,6 +17,8 @@ async def decorator_app(security_config: SecurityConfig) -> FastAPI:
 
     security_config.trusted_proxies = ["127.0.0.1"]
     security_config.enable_penetration_detection = False
+    security_config.whitelist = []
+    security_config.blacklist = []
 
     decorator = SecurityDecorator(security_config)
 
@@ -124,7 +126,9 @@ async def test_country_access_control(
         "FR": "11.11.11.11",
     }
 
-    with patch("guard.handlers.ipinfo_handler.IPInfoManager.get_country") as mock_geo:
+    with patch(
+        "guard_core.handlers.ipinfo_handler.IPInfoManager.get_country"
+    ) as mock_geo:
         mock_geo.return_value = country
 
         async with AsyncClient(
@@ -200,7 +204,9 @@ async def test_security_bypass(decorator_app: FastAPI) -> None:
 
 async def test_multiple_decorators(decorator_app: FastAPI) -> None:
     """Test multiple decorators on single endpoint."""
-    with patch("guard.handlers.ipinfo_handler.IPInfoManager.get_country") as mock_geo:
+    with patch(
+        "guard_core.handlers.ipinfo_handler.IPInfoManager.get_country"
+    ) as mock_geo:
         mock_geo.return_value = "US"
         async with AsyncClient(
             transport=ASGITransport(app=decorator_app), base_url="http://test"

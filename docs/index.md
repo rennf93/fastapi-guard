@@ -30,8 +30,8 @@ Quick Start
 ```python
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
-from guard.handlers.ipinfo_handler import IPInfoManager
+from guard import SecurityConfig
+from guard import IPInfoManager
 
 app = FastAPI()
 

@@ -340,7 +340,7 @@ Basic Setup
 ```python
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
+from guard import SecurityConfig
 
 app = FastAPI()
 
@@ -359,8 +359,8 @@ With Decorators
 ```python
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
-from guard.decorators import SecurityDecorator
+from guard import SecurityConfig
+from guard import SecurityDecorator
 
 app = FastAPI()
 
@@ -384,7 +384,7 @@ With Async Initialization
 ```python
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
+from guard import SecurityConfig
 
 app = FastAPI()
 

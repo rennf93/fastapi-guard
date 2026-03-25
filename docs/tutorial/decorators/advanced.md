@@ -21,7 +21,7 @@ Restrict access to endpoints based on specific time windows. This is useful for 
 --------------------------
 
 ```python
-from guard.decorators import SecurityDecorator
+from guard import SecurityDecorator
 
 guard_deco = SecurityDecorator(config)
 

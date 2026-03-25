@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.models import MessageResponse
 from app.security import guard
-from guard.handlers.behavior_handler import BehaviorRule
+from guard import BehaviorRule
 
 router = APIRouter(prefix="/behavior", tags=["Behavioral Analysis"])
 

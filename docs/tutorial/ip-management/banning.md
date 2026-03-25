@@ -32,7 +32,7 @@ Manual IP Banning
 You can also manually ban IPs using the `IPBanManager`:
 
 ```python
-from guard.handlers.ipban_handler import ip_ban_manager
+from guard import ip_ban_manager
 
 @app.post("/admin/ban/{ip}")
 async def ban_ip(ip: str, duration: int = 3600):

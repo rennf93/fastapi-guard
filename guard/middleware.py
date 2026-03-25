@@ -1,56 +1,37 @@
-# guard/middleware.py
 import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from guard_core.core.behavioral import BehavioralContext, BehavioralProcessor
+from guard_core.core.bypass import BypassContext, BypassHandler
+from guard_core.core.checks.pipeline import SecurityCheckPipeline
+from guard_core.core.events import MetricsCollector, SecurityEventBus
+from guard_core.core.initialization import HandlerInitializer
+from guard_core.core.responses import ErrorResponseFactory, ResponseContext
+from guard_core.core.routing import RouteConfigResolver, RoutingContext
+from guard_core.core.validation import RequestValidator, ValidationContext
+from guard_core.decorators.base import BaseSecurityDecorator, RouteConfig
+from guard_core.handlers.cloud_handler import cloud_handler
+from guard_core.handlers.ratelimit_handler import RateLimitManager
+from guard_core.handlers.security_headers_handler import security_headers_manager
+from guard_core.models import SecurityConfig
+from guard_core.utils import extract_client_ip, setup_custom_logging
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
-from guard.core.behavioral import (
-    BehavioralContext,
-    BehavioralProcessor,
-)
-from guard.core.bypass import BypassContext, BypassHandler
-from guard.core.checks.pipeline import SecurityCheckPipeline
-from guard.core.events import MetricsCollector, SecurityEventBus
-from guard.core.initialization import HandlerInitializer
-from guard.core.responses import ErrorResponseFactory, ResponseContext
-from guard.core.routing import RouteConfigResolver, RoutingContext
-from guard.core.validation import RequestValidator, ValidationContext
-from guard.decorators.base import BaseSecurityDecorator, RouteConfig
-from guard.handlers.cloud_handler import cloud_handler
-from guard.handlers.ratelimit_handler import RateLimitManager
-from guard.handlers.security_headers_handler import security_headers_manager
-from guard.models import SecurityConfig
-from guard.utils import (
-    extract_client_ip,
-    setup_custom_logging,
+from guard.adapters import (
+    StarletteGuardRequest,
+    StarletteGuardResponse,
+    StarletteResponseFactory,
+    unwrap_response,
+    wrap_call_next,
 )
 
 
 class SecurityMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware for implementing various
-    security measures in a FastAPI application.
-
-    This middleware handles rate limiting,
-    IP filtering, user agent filtering,
-    and detection of potential
-    penetration attempts.
-    """
-
     def __init__(self, app: ASGIApp, *, config: SecurityConfig) -> None:
-        """
-        Initialize the SecurityMiddleware.
-
-        Args:
-            app (FastAPI):
-                The FastAPI application.
-            config (SecurityConfig):
-                Configuration object for security settings.
-        """
         super().__init__(app)
         self.app = app
         self.config = config
@@ -69,14 +50,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if config.whitelist_countries or config.blocked_countries:
             self.geo_ip_handler = config.geo_ip_handler
 
-        # Initialize Redis handler if enabled
         self.redis_handler = None
         if config.enable_redis:
-            from guard.handlers.redis_handler import RedisManager
+            from guard_core.handlers.redis_handler import RedisManager
 
             self.redis_handler = RedisManager(config)
 
-        # Initialize agent handler if enabled
         self.agent_handler = None
         if config.enable_agent:
             agent_config = config.to_agent_config()
@@ -100,16 +79,15 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     "Check agent_api_key and other required fields."
                 )
 
-        # Initialize security check pipeline (built in initialize())
         self.security_pipeline: SecurityCheckPipeline | None = None
 
-        # Initialize event bus and metrics collector
+        self._guard_response_factory = StarletteResponseFactory()
+
         self.event_bus = SecurityEventBus(
             self.agent_handler, self.config, self.geo_ip_handler
         )
         self.metrics_collector = MetricsCollector(self.agent_handler, self.config)
 
-        # Initialize handler initializer
         self.handler_initializer = HandlerInitializer(
             config=self.config,
             redis_handler=self.redis_handler,
@@ -119,17 +97,16 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             guard_decorator=self.guard_decorator,
         )
 
-        # Initialize response factory
         response_context = ResponseContext(
             config=self.config,
             logger=self.logger,
             metrics_collector=self.metrics_collector,
             agent_handler=self.agent_handler,
             guard_decorator=self.guard_decorator,
+            response_factory=self._guard_response_factory,
         )
         self.response_factory = ErrorResponseFactory(response_context)
 
-        # Initialize route config resolver
         routing_context = RoutingContext(
             config=self.config,
             logger=self.logger,
@@ -137,7 +114,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         )
         self.route_resolver = RouteConfigResolver(routing_context)
 
-        # Initialize request validator
         validation_context = ValidationContext(
             config=self.config,
             logger=self.logger,
@@ -145,7 +121,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         )
         self.validator = RequestValidator(validation_context)
 
-        # Initialize bypass handler (requires validator and route_resolver)
         bypass_context = BypassContext(
             config=self.config,
             logger=self.logger,
@@ -156,7 +131,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         )
         self.bypass_handler = BypassHandler(bypass_context)
 
-        # Initialize behavioral processor
         behavioral_context = BehavioralContext(
             config=self.config,
             logger=self.logger,
@@ -165,9 +139,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         )
         self.behavioral_processor = BehavioralProcessor(behavioral_context)
 
+    @property
+    def guard_response_factory(self) -> StarletteResponseFactory:
+        return self._guard_response_factory
+
     def _build_security_pipeline(self) -> None:
-        """Build the security check pipeline with configured checks."""
-        from guard.core.checks import (
+        from guard_core.core.checks import (
             AuthenticationCheck,
             CloudIpRefreshCheck,
             CloudProviderCheck,
@@ -189,32 +166,22 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         )
 
         checks = [
-            # Always first: extract route config and client IP
             RouteConfigCheck(self),
-            # Emergency mode (highest priority after routing)
             EmergencyModeCheck(self),
-            # HTTPS enforcement (can redirect)
             HttpsEnforcementCheck(self),
-            # Request logging
             RequestLoggingCheck(self),
-            # Request validation checks
             RequestSizeContentCheck(self),
             RequiredHeadersCheck(self),
             AuthenticationCheck(self),
             ReferrerCheck(self),
             CustomValidatorsCheck(self),
             TimeWindowCheck(self),
-            # Periodic maintenance
             CloudIpRefreshCheck(self),
-            # IP-based checks
             IpSecurityCheck(self),
             CloudProviderCheck(self),
             UserAgentCheck(self),
-            # Rate limiting
             RateLimitCheck(self),
-            # Threat detection
             SuspiciousActivityCheck(self),
-            # Custom checks
             CustomRequestCheck(self),
         ]
 
@@ -225,7 +192,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         )
 
     def _configure_security_headers(self, config: SecurityConfig) -> None:
-        """Configure security headers manager if enabled."""
         if not config.security_headers:
             security_headers_manager.enabled = False
             return
@@ -261,50 +227,29 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     def set_decorator_handler(
         self, decorator_handler: BaseSecurityDecorator | None
     ) -> None:
-        """Set the SecurityDecorator instance for decorator support."""
         self.guard_decorator = decorator_handler
 
-    async def _create_https_redirect(self, request: Request) -> Response:
-        """
-        Create HTTPS redirect response with custom modifier if configured.
-
-        Delegates to ErrorResponseFactory for redirect creation.
-        """
-        return await self.response_factory.create_https_redirect(request)
-
     async def _check_time_window(self, time_restrictions: dict[str, str]) -> bool:
-        """Check if current time is within allowed time window (for tests)."""
-        return await self.validator.check_time_window(time_restrictions)
+        result: bool = await self.validator.check_time_window(time_restrictions)
+        return result
 
     async def _check_route_ip_access(
         self, client_ip: str, route_config: RouteConfig
     ) -> bool | None:
-        """Check route-specific IP restrictions (for tests)."""
-        from guard.core.checks.helpers import check_route_ip_access
+        from guard_core.core.checks.helpers import check_route_ip_access
 
-        return await check_route_ip_access(client_ip, route_config, self)
+        result: bool | None = await check_route_ip_access(client_ip, route_config, self)
+        return result
 
     async def _check_user_agent_allowed(
         self, user_agent: str, route_config: RouteConfig | None
     ) -> bool:
-        """Check if user agent is allowed (for tests)."""
-        from guard.core.checks.helpers import check_user_agent_allowed
+        from guard_core.core.checks.helpers import check_user_agent_allowed
 
-        return await check_user_agent_allowed(user_agent, route_config, self.config)
-
-    async def _check_rate_limit(
-        self, request: Request, client_ip: str, route_config: RouteConfig | None = None
-    ) -> Response | None:
-        """Check rate limiting (for tests)."""
-        response = await self.rate_limit_handler.check_rate_limit(
-            request, client_ip, self.create_error_response
+        result: bool = await check_user_agent_allowed(
+            user_agent, route_config, self.config
         )
-
-        # In passive mode, log but don't block
-        if response and self.config.passive_mode:
-            return None
-
-        return response
+        return result
 
     async def _process_response(
         self,
@@ -313,74 +258,100 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         response_time: float,
         route_config: RouteConfig | None,
     ) -> Response:
-        """
-        Process the response with behavioral rules, metrics, and headers.
+        from guard.adapters import StarletteGuardResponse
 
-        Delegates to ErrorResponseFactory and BehavioralProcessor.
-        """
-        return await self.response_factory.process_response(
-            request,
-            response,
+        guard_request = StarletteGuardRequest(request)
+        guard_response = StarletteGuardResponse(response)
+        result = await self.response_factory.process_response(
+            guard_request,
+            guard_response,
             response_time,
             route_config,
             process_behavioral_rules=self.behavioral_processor.process_return_rules,
         )
+        return unwrap_response(result)
+
+    def _resolve_route(self, request: Request) -> Any:
+        route = request.scope.get("route")
+        if route:
+            return route
+
+        app = request.scope.get("app")
+        if not app or not hasattr(app, "routes"):
+            return None
+
+        path = request.url.path
+        method = request.method
+        for r in app.routes:
+            if (
+                hasattr(r, "path")
+                and hasattr(r, "methods")
+                and r.path == path
+                and method in r.methods
+                and hasattr(r, "endpoint")
+            ):
+                return r
+        return None
+
+    def _populate_guard_state(
+        self, guard_request: StarletteGuardRequest, request: Request
+    ) -> None:
+        app_obj = request.scope.get("app")
+        if app_obj and hasattr(app_obj, "state"):
+            app_decorator = getattr(app_obj.state, "guard_decorator", None)
+            if app_decorator:
+                guard_request.state.guard_decorator = app_decorator
+
+        route = self._resolve_route(request)
+        if not route or not hasattr(route, "endpoint"):
+            return
+
+        ep = route.endpoint
+        if hasattr(ep, "_guard_route_id"):
+            guard_request.state.guard_route_id = ep._guard_route_id
+        if hasattr(ep, "__module__") and hasattr(ep, "__qualname__"):
+            guard_request.state.guard_endpoint_id = f"{ep.__module__}.{ep.__qualname__}"
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        """
-        Dispatch method to handle incoming requests and apply security measures.
+        guard_request = StarletteGuardRequest(request)
+        wrapped_call_next = wrap_call_next(call_next, request)
 
-        Pure orchestration - delegates all logic to specialized handlers:
-        - BypassHandler: Handles passthrough cases and security bypass
-        - SecurityCheckPipeline: Executes security checks
-        - BehavioralProcessor: Processes behavioral rules
-        - ErrorResponseFactory: Processes response with metrics and headers
+        self._populate_guard_state(guard_request, request)
 
-        Args:
-            request: The incoming request object.
-            call_next: The next middleware or route handler in the chain.
-
-        Returns:
-            Response: The response object, either from the next handler
-            or a security-related blocking response.
-        """
-        # 1. Handle passthrough cases (no client, excluded paths)
-        passthrough = await self.bypass_handler.handle_passthrough(request, call_next)
+        passthrough = await self.bypass_handler.handle_passthrough(
+            guard_request, wrapped_call_next
+        )
         if passthrough:
-            return passthrough
+            return unwrap_response(passthrough)
 
-        # 2. Get route config and client IP
-        client_ip = await extract_client_ip(request, self.config, self.agent_handler)
-        route_config = self.route_resolver.get_route_config(request)
+        client_ip = await extract_client_ip(
+            guard_request, self.config, self.agent_handler
+        )
+        route_config = self.route_resolver.get_route_config(guard_request)
 
-        # 3. Handle bypassed security checks
         if bypass := await self.bypass_handler.handle_security_bypass(
-            request, call_next, route_config
+            guard_request, wrapped_call_next, route_config
         ):
-            return bypass
+            return unwrap_response(bypass)
 
-        # 4. Execute security pipeline
         if not self.security_pipeline:
             self._build_security_pipeline()
         assert self.security_pipeline is not None
 
-        if blocking := await self.security_pipeline.execute(request):
-            return blocking
+        if blocking := await self.security_pipeline.execute(guard_request):
+            return unwrap_response(blocking)
 
-        # 5. Process behavioral usage rules
         if route_config and route_config.behavior_rules and client_ip:
             await self.behavioral_processor.process_usage_rules(
-                request, client_ip, route_config
+                guard_request, client_ip, route_config
             )
 
-        # 6. Call next handler and measure time
         start_time = time.time()
         response = await call_next(request)
         response_time = time.time() - start_time
 
-        # 7. Process response (rules, metrics, headers)
         return await self._process_response(
             request, response, response_time, route_config
         )
@@ -388,9 +359,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     async def _process_decorator_usage_rules(
         self, request: Request, client_ip: str, route_config: RouteConfig
     ) -> None:
-        """Process behavioral usage rules (wrapper for tests)."""
-        return await self.behavioral_processor.process_usage_rules(
-            request, client_ip, route_config
+        guard_request = StarletteGuardRequest(request)
+        await self.behavioral_processor.process_usage_rules(
+            guard_request, client_ip, route_config
         )
 
     async def _process_decorator_return_rules(
@@ -400,17 +371,20 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         client_ip: str,
         route_config: RouteConfig,
     ) -> None:
-        """Process behavioral return rules (wrapper for tests)."""
-        return await self.behavioral_processor.process_return_rules(
-            request, response, client_ip, route_config
+        from guard.adapters import StarletteGuardResponse
+
+        guard_request = StarletteGuardRequest(request)
+        guard_response = StarletteGuardResponse(response)
+        await self.behavioral_processor.process_return_rules(
+            guard_request, guard_response, client_ip, route_config
         )
 
     def _get_endpoint_id(self, request: Request) -> str:
-        """Generate unique endpoint identifier (wrapper for tests)."""
-        return self.behavioral_processor.get_endpoint_id(request)
+        guard_request = StarletteGuardRequest(request)
+        result: str = self.behavioral_processor.get_endpoint_id(guard_request)
+        return result
 
     async def refresh_cloud_ip_ranges(self) -> None:
-        """Refresh cloud IP ranges asynchronously."""
         if not self.config.block_cloud_providers:
             return
 
@@ -425,26 +399,19 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
     async def create_error_response(
         self, status_code: int, default_message: str
-    ) -> Response:
-        """
-        Create an error response with a custom message.
-
-        Delegates to ErrorResponseFactory for response creation.
-        """
-        return await self.response_factory.create_error_response(
-            status_code, default_message
+    ) -> StarletteGuardResponse:
+        result: StarletteGuardResponse = (
+            await self.response_factory.create_error_response(
+                status_code, default_message
+            )
         )
+        return result
 
     async def reset(self) -> None:
-        """Reset rate limiting state."""
         await self.rate_limit_handler.reset()
 
     @staticmethod
     def configure_cors(app: FastAPI, config: SecurityConfig) -> bool:
-        """
-        Configure FastAPI's CORS middleware
-        based on SecurityConfig.
-        """
         if config.enable_cors:
             cors_params: dict[str, Any] = {
                 "allow_origins": config.cors_allow_origins,
@@ -462,15 +429,10 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         return False
 
     async def initialize(self) -> None:
-        """Initialize all components asynchronously."""
-        # Build security check pipeline
         self._build_security_pipeline()
 
-        # Update handler initializer with current decorator (may have changed)
         self.handler_initializer.guard_decorator = self.guard_decorator
 
-        # Initialize Redis handlers
         await self.handler_initializer.initialize_redis_handlers()
 
-        # Initialize agent and its integrations
         await self.handler_initializer.initialize_agent_integrations()
