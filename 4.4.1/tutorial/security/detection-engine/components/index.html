@@ -3391,7 +3391,7 @@
 <li><strong>PerformanceMonitor</strong> - Tracks execution metrics</li>
 </ol>
 <h2 id="contentpreprocessor">ContentPreprocessor<a class="headerlink" href="#contentpreprocessor" title="Permanent link">&para;</a></h2>
-<p>Located in <code>guard/detection_engine/preprocessor.py</code></p>
+<p>Located in <code>guard_core/detection_engine/preprocessor.py</code></p>
 <h3 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h3>
 <p>Intelligently truncates content to prevent excessive memory usage while ensuring potential attack patterns are preserved.</p>
 <h3 id="implementation">Implementation<a class="headerlink" href="#implementation" title="Permanent link">&para;</a></h3>
@@ -3426,7 +3426,7 @@
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Result: Truncated content with attack patterns preserved</span>
 </span></code></pre></div>
 <h2 id="patterncompiler">PatternCompiler<a class="headerlink" href="#patterncompiler" title="Permanent link">&para;</a></h2>
-<p>Located in <code>guard/detection_engine/compiler.py</code></p>
+<p>Located in <code>guard_core/detection_engine/compiler.py</code></p>
 <h3 id="purpose_1">Purpose<a class="headerlink" href="#purpose_1" title="Permanent link">&para;</a></h3>
 <p>Provides safe pattern compilation and execution with timeout protection against ReDoS attacks.</p>
 <h3 id="implementation_1">Implementation<a class="headerlink" href="#implementation_1" title="Permanent link">&para;</a></h3>
@@ -3462,7 +3462,7 @@
 <li>Returns timeout indicator instead of hanging</li>
 </ul>
 <h2 id="semanticanalyzer">SemanticAnalyzer<a class="headerlink" href="#semanticanalyzer" title="Permanent link">&para;</a></h2>
-<p>Located in <code>guard/detection_engine/semantic.py</code></p>
+<p>Located in <code>guard_core/detection_engine/semantic.py</code></p>
 <h3 id="purpose_2">Purpose<a class="headerlink" href="#purpose_2" title="Permanent link">&para;</a></h3>
 <p>Provides heuristic-based detection of obfuscated attacks that might bypass regex patterns.</p>
 <h3 id="implementation_2">Implementation<a class="headerlink" href="#implementation_2" title="Permanent link">&para;</a></h3>
@@ -3526,7 +3526,7 @@
 </span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="p">}</span>
 </span></code></pre></div>
 <h2 id="performancemonitor">PerformanceMonitor<a class="headerlink" href="#performancemonitor" title="Permanent link">&para;</a></h2>
-<p>Located in <code>guard/detection_engine/monitor.py</code></p>
+<p>Located in <code>guard_core/detection_engine/monitor.py</code></p>
 <h3 id="purpose_3">Purpose<a class="headerlink" href="#purpose_3" title="Permanent link">&para;</a></h3>
 <p>Tracks pattern execution performance to identify bottlenecks and optimize detection.</p>
 <h3 id="implementation_3">Implementation<a class="headerlink" href="#implementation_3" title="Permanent link">&para;</a></h3>
