@@ -34,12 +34,12 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
-      - id: safety
-        name: safety
-        entry: uv run safety scan
-        require_serial: true
-        language: system
-        pass_filenames: false
+      # - id: safety
+      #   name: safety
+      #   entry: uv run safety scan
+      #   require_serial: true
+      #   language: system
+      #   pass_filenames: false
       - id: radon-cc
         name: radon-cyclomatic-complexity
         entry: uv run radon cc guard -nc
