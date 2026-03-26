@@ -13,7 +13,7 @@ The Detection Engine consists of four main components, each initialized conditio
 
 ## ContentPreprocessor
 
-Located in `guard/detection_engine/preprocessor.py`
+Located in `guard_core/detection_engine/preprocessor.py`
 
 ### Purpose
 
@@ -62,7 +62,7 @@ processed = preprocessor.preprocess(long_content)
 
 ## PatternCompiler
 
-Located in `guard/detection_engine/compiler.py`
+Located in `guard_core/detection_engine/compiler.py`
 
 ### Purpose
 
@@ -112,7 +112,7 @@ async def safe_matcher(content: str) -> dict[str, Any] | None:
 
 ## SemanticAnalyzer
 
-Located in `guard/detection_engine/semantic.py`
+Located in `guard_core/detection_engine/semantic.py`
 
 ### Purpose
 
@@ -180,7 +180,7 @@ The analyzer detects:
 
 ## PerformanceMonitor
 
-Located in `guard/detection_engine/monitor.py`
+Located in `guard_core/detection_engine/monitor.py`
 
 ### Purpose
 

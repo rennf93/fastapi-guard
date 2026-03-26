@@ -8,8 +8,8 @@ keywords: fastapi guard api, security middleware api, python api reference
 API Reference Overview
 ======================
 
-!!! info "Architecture Update (v4.2.0)"
-    FastAPI Guard v4.2.0 introduced a modular core architecture. While the public API remains unchanged, the internal implementation is now organized into specialized modules in `guard/core/`. See [Core Architecture](core-architecture.md) for details.
+!!! info "Architecture Update (v5.0.0)"
+    As of v5.0.0, FastAPI Guard is a thin adapter over [guard-core](https://github.com/rennf93/guard-core). All core security modules now live in the `guard_core` package. The public API remains unchanged — use `from guard import ...` for all imports. See [Core Architecture](core-architecture.md) for details.
 
 ___
 
@@ -71,14 +71,14 @@ from guard import SecurityConfig
 
 # Security decorators
 from guard import SecurityDecorator, RouteConfig
-from guard import get_route_decorator_config
+from guard_core.decorators.base import get_route_decorator_config
 
 # Handler classes and their pre-initialized instances
 from guard import CloudManager, cloud_handler
 from guard import IPBanManager, ip_ban_manager
 from guard import RateLimitManager, rate_limit_handler
 from guard import RedisManager, redis_handler
-from guard import SusPatternsManager, sus_patterns_handler
+from guard import sus_patterns_handler  # SusPatternsManager singleton instance
 from guard import BehaviorTracker, BehaviorRule
 
 # Special case - requires parameters

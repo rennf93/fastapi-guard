@@ -57,7 +57,7 @@ Configuration
 # Include your FastAPI Guard configuration here
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
+from guard import SecurityConfig
 
 app = FastAPI()
 

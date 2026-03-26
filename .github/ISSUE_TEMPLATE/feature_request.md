@@ -37,7 +37,7 @@ If possible, provide a pseudocode example of how this feature might be implement
 # Example code showing how you'd like to use this feature
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
+from guard import SecurityConfig
 
 app = FastAPI()
 

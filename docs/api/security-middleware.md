@@ -420,7 +420,7 @@ Internal Architecture
 Modular Design (v4.2.0+)
 -------------------------
 
-The middleware delegates to specialized modules in `guard/core/`:
+The middleware delegates to specialized modules in `guard_core/core/`:
 
 - **checks/**: Security check implementations (Chain of Responsibility pattern)
 - **events/**: Event bus and metrics collection

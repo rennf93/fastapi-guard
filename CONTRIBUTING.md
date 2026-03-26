@@ -44,7 +44,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 - Include tests for new features or bug fixes
 - Update documentation for significant changes
 - Ensure the test suite passes
-- Make sure your code lints (mypy, flake8, black)
+- Make sure your code lints (ruff, mypy)
 
 . Development Setup
 -----------------
@@ -124,7 +124,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 . Release Process
 ---------------
 
-1. Update version in `pyproject.toml` and `setup.py`
+1. Update version in `pyproject.toml`
 2. Update `docs/release-notes.md`
 3. Create a new GitHub release with release notes
 4. CI will automatically publish to PyPI

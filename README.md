@@ -104,8 +104,7 @@ To use `fastapi-guard`, you need to configure the middleware in your FastAPI app
 ```python
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
-from guard.handlers.ipinfo_handler import IPInfoManager
+from guard import SecurityConfig
 
 app = FastAPI()
 
@@ -213,7 +212,7 @@ Detect and log potential penetration attempts using the `detect_penetration_atte
 ```python
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
-from guard.utils import detect_penetration_attempt
+from guard_core.utils import detect_penetration_attempt
 
 @app.post("/submit")
 async def submit_data(request: Request):
@@ -345,8 +344,7 @@ FastAPI Guard provides powerful decorators that allow you to apply security cont
 ```python
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
-from guard.decorators import SecurityDecorator
+from guard import SecurityConfig, SecurityDecorator
 
 app = FastAPI()
 config = SecurityConfig()
@@ -487,7 +485,7 @@ The library implements a handler that uses IPInfo's [IP to Country database](htt
 To use the geolocation feature with this handler:
 
 ```python
-from guard.protocols.geoip_handler import GeoIPHandler
+from guard import GeoIPHandler
 
 config = SecurityConfig(
     geo_ip_handler=GeoIPHandler,
@@ -501,7 +499,7 @@ The database is automatically downloaded and cached locally when the middleware 
 You can also use a service other than IPInfo, as long as you implement the same protocol:
 
 ```python
-# implement the required methods of guard.protocols.geoip_handler.GeoIPHandler protocol
+# implement the required methods of guard_core.protocols.geoip_handler.GeoIPHandler protocol
 
 class GeoIPHandler:
     """
@@ -679,6 +677,6 @@ Acknowledgements
 - [FastAPI](https://fastapi.tiangolo.com/)
 - [IPInfo](https://ipinfo.io/)
 - [cachetools](https://cachetools.readthedocs.io/)
-- [requests](https://docs.python-requests.org/)
+- [guard-core](https://github.com/rennf93/guard-core)
 - [Redis](https://redis.io/)
 - [uvicorn](https://www.uvicorn.org/)

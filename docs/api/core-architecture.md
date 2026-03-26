@@ -10,7 +10,7 @@ Core Architecture (Internal)
 =============================
 
 !!! warning "Internal Implementation Details"
-    The `guard/core/` modules documented here are **internal implementation details** and should NOT be imported directly in user code. Always use the public API from `guard.middleware`, `guard.models`, and `guard.decorators`.
+    As of v5.0.0, all core modules live in the [guard-core](https://github.com/rennf93/guard-core) package (`guard_core/core/`). They should NOT be imported directly in user code. Always use the public API via `from guard import ...` or `from guard.middleware import SecurityMiddleware`.
 
     This documentation is provided for contributors and advanced users who want to understand the internal architecture.
 
@@ -34,7 +34,7 @@ Module Overview
 ----------------
 
 ```text
-guard/core/
+guard_core/core/
 ├── checks/              # Security check pipeline (Chain of Responsibility)
 ├── events/              # Event bus and metrics collection
 ├── initialization/      # Handler initialization logic
@@ -47,7 +47,7 @@ guard/core/
 
 ___
 
-Module: guard/core/checks/
+Module: guard_core/core/checks/
 --------------------------
 
 **Purpose**: Security check implementations using the Chain of Responsibility pattern
@@ -62,7 +62,7 @@ SecurityCheck (Base Class)
 
 Abstract base class for all security checks.
 
-**Location**: `guard/core/checks/base.py`
+**Location**: `guard_core/core/checks/base.py`
 
 **Key Methods**:
 
@@ -88,7 +88,7 @@ SecurityCheckPipeline
 
 Orchestrates the execution of multiple security checks in sequence.
 
-**Location**: `guard/core/checks/pipeline.py`
+**Location**: `guard_core/core/checks/pipeline.py`
 
 **Key Methods**:
 
@@ -116,7 +116,7 @@ class SecurityCheckPipeline:
 Check Implementations
 ---------------------
 
-**Location**: `guard/core/checks/implementations/`
+**Location**: `guard_core/core/checks/implementations/`
 
 Execution Order
 ---------------
@@ -172,7 +172,7 @@ class ExampleCheck(SecurityCheck):
 Helper Functions
 ----------------
 
-**Location**: `guard/core/checks/helpers.py`
+**Location**: `guard_core/core/checks/helpers.py`
 
 Common utilities shared across check implementations:
 
@@ -183,7 +183,7 @@ Common utilities shared across check implementations:
 
 ___
 
-Module: guard/core/events/
+Module: guard_core/core/events/
 --------------------------
 
 **Purpose**: Event system for middleware actions and metrics collection
@@ -193,7 +193,7 @@ SecurityEventBus
 
 Centralized event dispatching for security-related events.
 
-**Location**: `guard/core/events/middleware_events.py`
+**Location**: `guard_core/core/events/middleware_events.py`
 
 **Key Methods**:
 
@@ -236,7 +236,7 @@ MetricsCollector
 
 Collects and reports request metrics.
 
-**Location**: `guard/core/events/metrics.py`
+**Location**: `guard_core/core/events/metrics.py`
 
 **Key Methods**:
 
@@ -261,7 +261,7 @@ class MetricsCollector:
 
 ___
 
-Module: guard/core/initialization/
+Module: guard_core/core/initialization/
 ----------------------------------
 
 **Purpose**: Centralized handler initialization logic
@@ -271,7 +271,7 @@ HandlerInitializer
 
 Manages initialization of Redis, Agent, and other handlers.
 
-**Location**: `guard/core/initialization/handler_initializer.py`
+**Location**: `guard_core/core/initialization/handler_initializer.py`
 
 **Key Methods**:
 
@@ -298,7 +298,7 @@ class HandlerInitializer:
 
 ___
 
-Module: guard/core/responses/
+Module: guard_core/core/responses/
 -----------------------------
 
 **Purpose**: Response creation and processing
@@ -308,7 +308,7 @@ ErrorResponseFactory
 
 Centralized response creation, error handling, and header application.
 
-**Location**: `guard/core/responses/factory.py`
+**Location**: `guard_core/core/responses/factory.py`
 
 **Key Methods**:
 
@@ -348,11 +348,11 @@ ResponseContext
 
 Dependency injection container for response factory.
 
-**Location**: `guard/core/responses/context.py`
+**Location**: `guard_core/core/responses/context.py`
 
 ___
 
-Module: guard/core/routing/
+Module: guard_core/core/routing/
 -------------------------
 
 **Purpose**: Route configuration and decorator resolution
@@ -362,7 +362,7 @@ RouteConfigResolver
 
 Resolves route-specific security configuration from decorators.
 
-**Location**: `guard/core/routing/resolver.py`
+**Location**: `guard_core/core/routing/resolver.py`
 
 **Key Methods**:
 
@@ -392,11 +392,11 @@ RoutingContext
 
 Dependency injection container for route resolver.
 
-**Location**: `guard/core/routing/context.py`
+**Location**: `guard_core/core/routing/context.py`
 
 ___
 
-Module: guard/core/validation/
+Module: guard_core/core/validation/
 -----------------------------
 
 **Purpose**: Request validation utilities
@@ -406,7 +406,7 @@ RequestValidator
 
 Provides request validation logic for HTTPS, proxies, time windows, and path exclusions.
 
-**Location**: `guard/core/validation/validator.py`
+**Location**: `guard_core/core/validation/validator.py`
 
 **Key Methods**:
 
@@ -436,11 +436,11 @@ ValidationContext
 
 Dependency injection container for validator.
 
-**Location**: `guard/core/validation/context.py`
+**Location**: `guard_core/core/validation/context.py`
 
 ___
 
-Module: guard/core/bypass/
+Module: guard_core/core/bypass/
 --------------------------
 
 **Purpose**: Handle security bypass cases
@@ -450,7 +450,7 @@ BypassHandler
 
 Handles passthrough cases and decorator-based security bypasses.
 
-**Location**: `guard/core/bypass/handler.py`
+**Location**: `guard_core/core/bypass/handler.py`
 
 **Key Methods**:
 
@@ -483,11 +483,11 @@ BypassContext
 
 Dependency injection container for bypass handler.
 
-**Location**: `guard/core/bypass/context.py`
+**Location**: `guard_core/core/bypass/context.py`
 
 ___
 
-Module: guard/core/behavioral/
+Module: guard_core/core/behavioral/
 -----------------------------
 
 **Purpose**: Behavioral rule processing
@@ -497,7 +497,7 @@ BehavioralProcessor
 
 Processes decorator-based behavioral rules for usage and return monitoring.
 
-**Location**: `guard/core/behavioral/processor.py`
+**Location**: `guard_core/core/behavioral/processor.py`
 
 **Key Methods**:
 
@@ -529,7 +529,7 @@ BehavioralContext
 
 Dependency injection container for behavioral processor.
 
-**Location**: `guard/core/behavioral/context.py`
+**Location**: `guard_core/core/behavioral/context.py`
 
 ___
 
@@ -564,7 +564,7 @@ To add a custom security check:
 
 1. Create Implementation
 
-**File**: `guard/core/checks/implementations/my_custom_check.py`
+**File**: `guard_core/core/checks/implementations/my_custom_check.py`
 
 ```python
 from fastapi import Request, Response
@@ -612,7 +612,7 @@ def _build_security_pipeline(self) -> None:
 
 3. Export (Optional)
 
-**File**: `guard/core/checks/__init__.py`
+**File**: `guard_core/core/checks/__init__.py`
 
 ```python
 from guard_core.core.checks.implementations.my_custom_check import MyCustomCheck
