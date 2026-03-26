@@ -26,7 +26,7 @@ ___
 BehaviorTracker
 ---------------
 
-::: guard.handlers.behavior_handler.BehaviorTracker
+::: guard_core.handlers.behavior_handler.BehaviorTracker
 
 The main class responsible for tracking and analyzing user behavior patterns.
 
@@ -75,7 +75,7 @@ ___
 BehaviorRule
 ------------
 
-::: guard.handlers.behavior_handler.BehaviorRule
+::: guard_core.handlers.behavior_handler.BehaviorRule
 
 Configuration class that defines behavioral analysis rules.
 

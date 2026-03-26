@@ -225,6 +225,7 @@ known_first_party = ["guard", "guard_core"]
 per_rule_ignores = { "DEP002" = [
     "aiohttp",
     "guard-core",
+    "httpx",
     "bandit",
     "deptry",
     "fastapi-guard-agent",
