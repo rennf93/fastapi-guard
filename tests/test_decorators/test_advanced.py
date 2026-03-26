@@ -81,7 +81,9 @@ async def test_time_window_restrictions(
     mock_datetime = datetime(2024, 1, 1, mock_hour, 0, 0, tzinfo=timezone.utc)
 
     # Patch datetime at both locations where it's used
-    with patch("guard.core.checks.implementations.time_window.datetime") as mock_dt:
+    with patch(
+        "guard_core.core.checks.implementations.time_window.datetime"
+    ) as mock_dt:
         mock_dt.now.return_value = mock_datetime
         mock_dt.side_effect = lambda *args, **kw: datetime(*args, **kw)
 
@@ -233,7 +235,7 @@ async def test_honeypot_form_detection(security_config: SecurityConfig) -> None:
     mock_request.headers.get = lambda key, default="": (
         "application/x-www-form-urlencoded" if key == "content-type" else default
     )
-    mock_request.form.return_value = {"bot_trap": "filled"}
+    mock_request.body.return_value = b"bot_trap=filled"
 
     result = await validator(mock_request)
     assert result.status_code == 403
@@ -258,7 +260,7 @@ async def test_honeypot_json_exception(security_config: SecurityConfig) -> None:
     mock_request.headers.get = lambda key, default="": (
         "application/json" if key == "content-type" else default
     )
-    mock_request.json.side_effect = Exception("JSON error")
+    mock_request.body.side_effect = Exception("JSON error")
 
     result = await validator(mock_request)
     assert result is None
@@ -283,7 +285,7 @@ async def test_honeypot_json_detection(security_config: SecurityConfig) -> None:
     mock_request.headers.get = lambda key, default="": (
         "application/json" if key == "content-type" else default
     )
-    mock_request.json.return_value = {"spam_check": "filled"}
+    mock_request.body.return_value = b'{"spam_check": "filled"}'
 
     result = await validator(mock_request)
     assert result.status_code == 403

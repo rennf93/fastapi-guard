@@ -20,7 +20,7 @@ To enable rate limiting, configure the following parameters in your `SecurityCon
 ```python
 from fastapi import FastAPI
 from guard import SecurityMiddleware
-from guard.models import SecurityConfig
+from guard import SecurityConfig
 
 app = FastAPI()
 
@@ -140,7 +140,7 @@ Accessing the Rate Limiter Directly
 For advanced use cases, you can access the rate limiter directly:
 
 ```python
-from guard.handlers.ratelimit_handler import rate_limit_handler
+from guard import rate_limit_handler
 
 # Get the singleton instance
 async def some_route():
@@ -157,7 +157,7 @@ Resetting Rate Limits
 You might want to reset rate limits in certain scenarios:
 
 ```python
-from guard.handlers.ratelimit_handler import rate_limit_handler
+from guard import rate_limit_handler
 
 async def reset_rate_limits_for_user(user_id: str):
     handler = rate_limit_handler(config)

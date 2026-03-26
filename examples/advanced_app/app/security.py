@@ -3,8 +3,7 @@ import os
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
 
-from guard import SecurityConfig
-from guard.decorators import SecurityDecorator
+from guard import SecurityConfig, SecurityDecorator
 
 
 async def custom_request_check(request: Request) -> Response | None:

@@ -147,7 +147,7 @@ Implementation Details
 Each check is self-contained and follows this pattern:
 
 ```python
-from guard.core.checks.base import SecurityCheck
+from guard_core.core.checks.base import SecurityCheck
 
 class ExampleCheck(SecurityCheck):
     check_name = "example_check"
@@ -568,7 +568,7 @@ To add a custom security check:
 
 ```python
 from fastapi import Request, Response
-from guard.core.checks.base import SecurityCheck
+from guard_core.core.checks.base import SecurityCheck
 
 class MyCustomCheck(SecurityCheck):
     """Description of what this check does."""
@@ -600,7 +600,7 @@ class MyCustomCheck(SecurityCheck):
 **File**: `guard/middleware.py` in `_build_security_pipeline()` method
 
 ```python
-from guard.core.checks.implementations.my_custom_check import MyCustomCheck
+from guard_core.core.checks.implementations.my_custom_check import MyCustomCheck
 
 def _build_security_pipeline(self) -> None:
     checks = [
@@ -615,7 +615,7 @@ def _build_security_pipeline(self) -> None:
 **File**: `guard/core/checks/__init__.py`
 
 ```python
-from guard.core.checks.implementations.my_custom_check import MyCustomCheck
+from guard_core.core.checks.implementations.my_custom_check import MyCustomCheck
 
 __all__ = [
     # ... existing exports
@@ -627,7 +627,7 @@ __all__ = [
 
 ```python
 import pytest
-from guard.core.checks.implementations.my_custom_check import MyCustomCheck
+from guard_core.core.checks.implementations.my_custom_check import MyCustomCheck
 
 @pytest.mark.asyncio
 async def test_my_custom_check(test_middleware, test_request):
@@ -645,7 +645,7 @@ Each module is independently testable:
 
 ```python
 # Test a specific check
-from guard.core.checks.implementations import IpSecurityCheck
+from guard_core.core.checks.implementations import IpSecurityCheck
 
 async def test_ip_security():
     middleware = create_test_middleware()
@@ -659,7 +659,7 @@ async def test_ip_security():
 
 ```python
 # Test the pipeline
-from guard.core.checks import SecurityCheckPipeline
+from guard_core.core.checks import SecurityCheckPipeline
 
 async def test_pipeline():
     checks = [Check1(middleware), Check2(middleware)]

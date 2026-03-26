@@ -1,6 +1,6 @@
 [project]
 name = "fastapi_guard"
-version = "4.4.1"
+version = "5.0.0"
 description = "A security library for FastAPI to control IPs, log requests, and detect penetration attempts."
 authors = [
     {name = "Renzo Franceschini", email = "rennf93@users.noreply.github.com"}
@@ -22,15 +22,9 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "cachetools",
     "fastapi",
-    "httpx",
-    "maxminddb",
-    "pydantic",
-    "redis",
-    "requests",
+    "guard-core",
     "starlette",
-    "typing-extensions",
     "uvicorn",
 ]
 
@@ -129,6 +123,11 @@ follow_imports = "skip"
 module = "redis.*"
 follow_imports = "skip"
 
+[[tool.mypy.overrides]]
+module = ["guard_core", "guard_core.*", "guard_core.core.*", "guard_core.handlers.*", "guard_core.protocols.*", "guard_core.decorators.*", "guard_core.utils", "guard_core.detection_engine.*"]
+ignore_missing_imports = true
+follow_imports = "skip"
+
 [tool.pymarkdown.plugins.md007]
 # MD007 - Unordered list indentation (set to 2 spaces)
 enabled = true
@@ -220,11 +219,12 @@ exclude = ["tests/*", ".venv/*", "vulture_whitelist.py"]
 ignore = []
 
 [tool.deptry]
-exclude = ["tests", ".venv", "vulture_whitelist.py", "examples", "docs"]
+exclude = ["tests", ".venv", "vulture_whitelist.py", "examples", "docs", "manual_testing"]
 extend_exclude = ["conftest.py", "setup.py"]
-known_first_party = ["guard"]
+known_first_party = ["guard", "guard_core"]
 per_rule_ignores = { "DEP002" = [
     "aiohttp",
+    "guard-core",
     "bandit",
     "deptry",
     "fastapi-guard-agent",

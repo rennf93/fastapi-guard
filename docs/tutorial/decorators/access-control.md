@@ -23,7 +23,7 @@ Control access based on specific IP addresses or CIDR ranges:
 Only allow access from specific IP addresses:
 
 ```python
-from guard.decorators import SecurityDecorator
+from guard import SecurityDecorator
 
 guard_deco = SecurityDecorator(config)
 

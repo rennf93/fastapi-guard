@@ -39,7 +39,7 @@ The main decorator class that combines all security capabilities. This is the pr
 ```python
 from fastapi import FastAPI
 from guard import SecurityConfig
-from guard.decorators import SecurityDecorator
+from guard import SecurityDecorator
 
 app = FastAPI()
 config = SecurityConfig()
@@ -190,7 +190,7 @@ The decorators work in conjunction with the SecurityMiddleware to provide compre
 ```python
 from fastapi import FastAPI
 from guard import SecurityMiddleware, SecurityConfig
-from guard.decorators import SecurityDecorator
+from guard import SecurityDecorator
 
 app = FastAPI()
 config = SecurityConfig(

@@ -238,7 +238,7 @@ dev_config = SecurityConfig(
 You can adjust certain settings at runtime:
 
 ```python
-from guard.handlers.suspatterns_handler import sus_patterns_handler
+from guard import sus_patterns_handler
 
 # Adjust semantic threshold dynamically
 await sus_patterns_handler.configure_semantic_threshold(0.8)

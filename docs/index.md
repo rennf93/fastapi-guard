@@ -30,8 +30,8 @@ Quick Start
 ```python
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
-from guard.handlers.ipinfo_handler import IPInfoManager
+from guard import SecurityConfig
+from guard import IPInfoManager
 
 app = FastAPI()
 
@@ -75,7 +75,7 @@ You can also download the example app as a Docker container from [GitHub Contain
 docker pull ghcr.io/rennf93/fastapi-guard-example:latest
 
 # Or pull a specific version (matches library releases)
-docker pull ghcr.io/rennf93/fastapi-guard-example:v4.4.1
+docker pull ghcr.io/rennf93/fastapi-guard-example:v5.0.0
 ```
 
 ___

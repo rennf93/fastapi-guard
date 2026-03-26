@@ -42,7 +42,7 @@ The main class responsible for tracking and analyzing user behavior patterns.
 ---------------
 
 ```python
-from guard.handlers.behavior_handler import BehaviorTracker, BehaviorRule
+from guard import BehaviorTracker, BehaviorRule
 
 # Create tracker
 tracker = BehaviorTracker(config)
@@ -142,7 +142,7 @@ Integration with Decorators
 The Behavior Manager integrates seamlessly with the decorator system:
 
 ```python
-from guard.decorators import SecurityDecorator
+from guard import SecurityDecorator
 
 guard_deco = SecurityDecorator(config)
 

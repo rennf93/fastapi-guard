@@ -100,7 +100,7 @@ Usage Example
 -------------
 
 ```python
-from guard.handlers.ipinfo_handler import IPInfoManager
+from guard import IPInfoManager
 from pathlib import Path
 
 # Initialize with custom database location

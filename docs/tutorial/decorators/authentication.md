@@ -21,7 +21,7 @@ Force secure connections for specific routes:
 -----------------------
 
 ```python
-from guard.decorators import SecurityDecorator
+from guard import SecurityDecorator
 
 guard_deco = SecurityDecorator(config)
 

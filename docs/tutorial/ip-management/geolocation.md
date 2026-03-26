@@ -29,7 +29,7 @@ class GeoIPHandler(Protocol):
 It provides an implementation that uses the [ipinfo.io](https://ipinfo.io/signup) service:
 
 ```python
-from guard.handlers.ipinfo_handler import IPInfoManager
+from guard import IPInfoManager
 ```
 
 The geolocation handler is only initialized and used when country filtering is configured, improving performance for applications that don't need these features.
@@ -138,7 +138,7 @@ Custom Geolocation Logic
 You can also use the `IPInfoManager` directly for custom geolocation logic:
 
 ```python
-from guard.handlers.ipinfo_handler import IPInfoManager
+from guard import IPInfoManager
 
 ipinfo_db = IPInfoManager(token="your_ipinfo_token_here")  # NOTE: Required when using custom geolocation
 await ipinfo_db.initialize()

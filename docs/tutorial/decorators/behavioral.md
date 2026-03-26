@@ -21,7 +21,7 @@ Monitor how frequently individual IPs access specific endpoints:
 ----------------------
 
 ```python
-from guard.decorators import SecurityDecorator
+from guard import SecurityDecorator
 
 guard_deco = SecurityDecorator(config)
 
@@ -181,7 +181,7 @@ Combine multiple behavioral rules for comprehensive protection:
 -------------------
 
 ```python
-from guard.handlers.behavior_handler import BehaviorRule
+from guard import BehaviorRule
 
 # Define multiple rules
 rules = [

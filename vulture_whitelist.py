@@ -112,6 +112,8 @@ critical  # type: ignore  # pragma: no cover
 exception  # type: ignore  # pragma: no cover
 log  # type: ignore  # pragma: no cover
 
+kwargs  # type: ignore  # pragma: no cover
+
 # Common test helpers and mocks
 mock  # type: ignore  # pragma: no cover
 patch  # type: ignore  # pragma: no cover

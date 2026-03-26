@@ -4,16 +4,16 @@ from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
+from guard_core.handlers.cloud_handler import cloud_handler
+from guard_core.handlers.ipban_handler import reset_global_state
+from guard_core.handlers.ipinfo_handler import IPInfoManager
+from guard_core.handlers.ratelimit_handler import rate_limit_handler
+from guard_core.handlers.redis_handler import RedisManager
+from guard_core.handlers.suspatterns_handler import sus_patterns_handler
+from guard_core.models import SecurityConfig
 from pytest import TempPathFactory
 
-from guard.handlers.cloud_handler import cloud_handler
-from guard.handlers.ipban_handler import reset_global_state
-from guard.handlers.ipinfo_handler import IPInfoManager
-from guard.handlers.ratelimit_handler import rate_limit_handler
-from guard.handlers.redis_handler import RedisManager
-from guard.handlers.suspatterns_handler import sus_patterns_handler
 from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
 
 IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 REDIS_URL = str(os.getenv("REDIS_URL"))
@@ -55,6 +55,7 @@ def security_config() -> SecurityConfig:
     return SecurityConfig(
         geo_ip_handler=IPInfoManager(IPINFO_TOKEN, None),
         enable_redis=False,
+        enable_penetration_detection=False,
         whitelist=["127.0.0.1"],
         blacklist=["192.168.1.1"],
         blocked_countries=["CN"],
@@ -80,6 +81,7 @@ def security_config() -> SecurityConfig:
 async def security_middleware() -> AsyncGenerator[SecurityMiddleware, None]:
     config = SecurityConfig(
         geo_ip_handler=IPInfoManager(IPINFO_TOKEN),
+        enable_penetration_detection=False,
         whitelist=[],
         blacklist=[],
         auto_ban_threshold=10,
@@ -104,6 +106,7 @@ def security_config_redis(ipinfo_db_path: Path) -> SecurityConfig:
         geo_ip_handler=IPInfoManager(IPINFO_TOKEN, ipinfo_db_path),
         redis_url=REDIS_URL,
         redis_prefix=REDIS_PREFIX,
+        enable_penetration_detection=False,
         whitelist=["127.0.0.1"],
         blacklist=["192.168.1.1"],
         blocked_countries=["CN"],
@@ -152,6 +155,6 @@ async def reset_rate_limiter() -> None:
 @pytest.fixture
 def clean_rate_limiter() -> None:
     """Reset rate limiter singleton for tests that need a completely clean state"""
-    from guard.handlers.ratelimit_handler import RateLimitManager
+    from guard_core.handlers.ratelimit_handler import RateLimitManager
 
     RateLimitManager._instance = None

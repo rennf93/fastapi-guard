@@ -67,22 +67,22 @@ Key Classes and Instances
 ```python
 # Core middleware and configuration
 from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
+from guard import SecurityConfig
 
 # Security decorators
-from guard.decorators import SecurityDecorator, RouteConfig
-from guard.decorators.base import get_route_decorator_config
+from guard import SecurityDecorator, RouteConfig
+from guard import get_route_decorator_config
 
 # Handler classes and their pre-initialized instances
-from guard.handlers.cloud_handler import CloudManager, cloud_handler
-from guard.handlers.ipban_handler import IPBanManager, ip_ban_manager
-from guard.handlers.ratelimit_handler import RateLimitManager, rate_limit_handler
-from guard.handlers.redis_handler import RedisManager, redis_handler
-from guard.handlers.suspatterns_handler import SusPatternsManager, sus_patterns_handler
-from guard.handlers.behavior_handler import BehaviorTracker, BehaviorRule
+from guard import CloudManager, cloud_handler
+from guard import IPBanManager, ip_ban_manager
+from guard import RateLimitManager, rate_limit_handler
+from guard import RedisManager, redis_handler
+from guard import SusPatternsManager, sus_patterns_handler
+from guard import BehaviorTracker, BehaviorRule
 
 # Special case - requires parameters
-from guard.handlers.ipinfo_handler import IPInfoManager
+from guard import IPInfoManager
 ```
 
 ___
@@ -172,7 +172,7 @@ SecurityDecorator Class
 The main decorator class combines all security capabilities:
 
 ```python
-from guard.decorators import SecurityDecorator
+from guard import SecurityDecorator
 
 config = SecurityConfig()
 guard_deco = SecurityDecorator(config)
