@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -2483,7 +2483,7 @@
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_country</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
 </span></code></pre></div>
 <p>It provides an implementation that uses the <a href="https://ipinfo.io/signup">ipinfo.io</a> service:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.handlers.ipinfo_handler</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPInfoManager</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPInfoManager</span>
 </span></code></pre></div>
 <p>The geolocation handler is only initialized and used when country filtering is configured, improving performance for applications that don't need these features.</p>
 <hr />
@@ -2562,7 +2562,7 @@
 <hr />
 <h2 id="custom-geolocation-logic">Custom Geolocation Logic<a class="headerlink" href="#custom-geolocation-logic" title="Permanent link">&para;</a></h2>
 <p>You can also use the <code>IPInfoManager</code> directly for custom geolocation logic:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.handlers.ipinfo_handler</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPInfoManager</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPInfoManager</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">ipinfo_db</span> <span class="o">=</span> <span class="n">IPInfoManager</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="s2">&quot;your_ipinfo_token_here&quot;</span><span class="p">)</span>  <span class="c1"># NOTE: Required when using custom geolocation</span>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">await</span> <span class="n">ipinfo_db</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>

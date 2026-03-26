@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -3298,7 +3298,7 @@
 </ol>
 <h2 id="implementation-details">Implementation Details<a class="headerlink" href="#implementation-details" title="Permanent link">&para;</a></h2>
 <p>Each check is self-contained and follows this pattern:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.core.checks.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityCheck</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard_core.core.checks.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityCheck</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">ExampleCheck</span><span class="p">(</span><span class="n">SecurityCheck</span><span class="p">):</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">check_name</span> <span class="o">=</span> <span class="s2">&quot;example_check&quot;</span>
@@ -3594,7 +3594,7 @@
 </ol>
 <p><strong>File</strong>: <code>guard/core/checks/implementations/my_custom_check.py</code></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span><span class="p">,</span> <span class="n">Response</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.core.checks.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityCheck</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard_core.core.checks.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityCheck</span>
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
 </span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyCustomCheck</span><span class="p">(</span><span class="n">SecurityCheck</span><span class="p">):</span>
 </span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Description of what this check does.&quot;&quot;&quot;</span>
@@ -3624,7 +3624,7 @@
 <li>Register in Pipeline</li>
 </ol>
 <p><strong>File</strong>: <code>guard/middleware.py</code> in <code>_build_security_pipeline()</code> method</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.core.checks.implementations.my_custom_check</span><span class="w"> </span><span class="kn">import</span> <span class="n">MyCustomCheck</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard_core.core.checks.implementations.my_custom_check</span><span class="w"> </span><span class="kn">import</span> <span class="n">MyCustomCheck</span>
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
 </span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">_build_security_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="n">checks</span> <span class="o">=</span> <span class="p">[</span>
@@ -3637,7 +3637,7 @@
 <li>Export (Optional)</li>
 </ol>
 <p><strong>File</strong>: <code>guard/core/checks/__init__.py</code></p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.core.checks.implementations.my_custom_check</span><span class="w"> </span><span class="kn">import</span> <span class="n">MyCustomCheck</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard_core.core.checks.implementations.my_custom_check</span><span class="w"> </span><span class="kn">import</span> <span class="n">MyCustomCheck</span>
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>
 </span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
 </span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>    <span class="c1"># ... existing exports</span>
@@ -3648,7 +3648,7 @@
 <li>Test</li>
 </ol>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.core.checks.implementations.my_custom_check</span><span class="w"> </span><span class="kn">import</span> <span class="n">MyCustomCheck</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard_core.core.checks.implementations.my_custom_check</span><span class="w"> </span><span class="kn">import</span> <span class="n">MyCustomCheck</span>
 </span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
 </span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
 </span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_my_custom_check</span><span class="p">(</span><span class="n">test_middleware</span><span class="p">,</span> <span class="n">test_request</span><span class="p">):</span>
@@ -3660,7 +3660,7 @@
 <h2 id="testing-core-modules">Testing Core Modules<a class="headerlink" href="#testing-core-modules" title="Permanent link">&para;</a></h2>
 <p>Each module is independently testable:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Test a specific check</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.core.checks.implementations</span><span class="w"> </span><span class="kn">import</span> <span class="n">IpSecurityCheck</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard_core.core.checks.implementations</span><span class="w"> </span><span class="kn">import</span> <span class="n">IpSecurityCheck</span>
 </span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
 </span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_ip_security</span><span class="p">():</span>
 </span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>    <span class="n">middleware</span> <span class="o">=</span> <span class="n">create_test_middleware</span><span class="p">()</span>
@@ -3672,7 +3672,7 @@
 </span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>    <span class="k">assert</span> <span class="n">response</span> <span class="ow">is</span> <span class="kc">None</span>  <span class="c1"># IP allowed</span>
 </span></code></pre></div>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Test the pipeline</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard.core.checks</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityCheckPipeline</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard_core.core.checks</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityCheckPipeline</span>
 </span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
 </span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_pipeline</span><span class="p">():</span>
 </span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>    <span class="n">checks</span> <span class="o">=</span> <span class="p">[</span><span class="n">Check1</span><span class="p">(</span><span class="n">middleware</span><span class="p">),</span> <span class="n">Check2</span><span class="p">(</span><span class="n">middleware</span><span class="p">)]</span>
