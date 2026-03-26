@@ -6,8 +6,9 @@ We currently provide security updates for the following versions of FastAPI Guar
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+| 5.0.x   | :white_check_mark: |
+| 4.x.x   | :white_check_mark: |
+| < 4.0   | :x:                |
 
 ## Reporting a Vulnerability
 
