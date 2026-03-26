@@ -7,7 +7,7 @@
 ---
 
 <p align="center">
-    <strong>fastapi-guard is a security library for FastAPI that provides middleware to control IPs, log requests, detect penetration attempts and more. It integrates seamlessly with FastAPI to offer robust protection against various security threats.</strong>
+    <strong>fastapi-guard is a security library for FastAPI that provides middleware to control IPs, log requests, detect penetration attempts and more. It integrates seamlessly with FastAPI to offer robust protection against various security threats. Powered by <a href="https://github.com/rennf93/guard-core">guard-core</a>.</strong>
 </p>
 
 <p align="center">

@@ -108,7 +108,7 @@ Custom Logger
 The `setup_custom_logging` function is automatically called by the middleware during initialization:
 
 ```python
-from guard.utils import setup_custom_logging
+from guard_core.utils import setup_custom_logging
 
 # Manual setup (if needed outside of middleware)
 # Console only (no file)
@@ -134,7 +134,7 @@ Logging
 FastAPI Guard uses a unified logging approach with the `log_activity` function that handles different types of log events:
 
 ```python
-from guard.utils import log_activity
+from guard_core.utils import log_activity
 
 # Log a regular request
 await log_activity(request, logger)

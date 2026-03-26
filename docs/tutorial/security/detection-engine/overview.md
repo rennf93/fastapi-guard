@@ -203,7 +203,7 @@ The engine loads patterns from:
 ### Adding Custom Patterns
 
 ```python
-from guard.handlers.suspatterns_handler import sus_patterns_handler
+from guard import sus_patterns_handler
 
 # Add a pattern
 await sus_patterns_handler.add_pattern(

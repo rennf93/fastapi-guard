@@ -5,7 +5,7 @@ from fastapi import APIRouter, BackgroundTasks, Body
 
 from app.models import MessageResponse, StatsResponse
 from app.security import guard, security_config
-from guard.handlers.cloud_handler import cloud_handler
+from guard import cloud_handler
 
 logger = logging.getLogger(__name__)
 

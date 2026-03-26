@@ -21,7 +21,7 @@ Control which content types are accepted by specific endpoints:
 ------------------------------
 
 ```python
-from guard.decorators import SecurityDecorator
+from guard import SecurityDecorator
 
 guard_deco = SecurityDecorator(config)
 

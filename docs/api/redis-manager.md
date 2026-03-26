@@ -87,8 +87,8 @@ Usage Example
 -------------
 
 ```python
-from guard.handlers.redis_handler import RedisManager
-from guard.models import SecurityConfig
+from guard import RedisManager
+from guard import SecurityConfig
 
 config = SecurityConfig(redis_url="redis://localhost:6379")
 redis = RedisManager(config)

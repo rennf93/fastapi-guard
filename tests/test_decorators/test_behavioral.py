@@ -3,11 +3,11 @@ from unittest.mock import Mock
 import pytest
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
+from guard_core.handlers.behavior_handler import BehaviorRule
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 
 from guard import SecurityConfig, SecurityDecorator
-from guard.handlers.behavior_handler import BehaviorRule
 from guard.middleware import SecurityMiddleware
 
 

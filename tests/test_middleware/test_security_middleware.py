@@ -3,21 +3,22 @@ import logging
 import os
 import time
 from typing import Any
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import ANY, AsyncMock, Mock, patch
 
 import pytest
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import JSONResponse
+from guard_core.handlers.cloud_handler import cloud_handler
+from guard_core.handlers.ipinfo_handler import IPInfoManager
+from guard_core.handlers.ratelimit_handler import rate_limit_handler
+from guard_core.handlers.redis_handler import redis_handler
+from guard_core.models import SecurityConfig
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 from redis.exceptions import RedisError
 
-from guard.handlers.cloud_handler import cloud_handler
-from guard.handlers.ipinfo_handler import IPInfoManager
-from guard.handlers.ratelimit_handler import rate_limit_handler
-from guard.handlers.redis_handler import redis_handler
+from guard.adapters import StarletteGuardRequest, StarletteGuardResponse
 from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
 
 IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 
@@ -31,6 +32,7 @@ async def test_rate_limiting() -> None:
     app = FastAPI()
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
+        enable_penetration_detection=False,
         rate_limit=2,
         rate_limit_window=1,
         enable_rate_limiting=True,
@@ -101,7 +103,11 @@ async def test_user_agent_filtering() -> None:
     functionality of the SecurityMiddleware.
     """
     app = FastAPI()
-    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, blocked_user_agents=[r"badbot"])
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        enable_penetration_detection=False,
+        blocked_user_agents=[r"badbot"],
+    )
 
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -220,7 +226,9 @@ async def test_custom_request_check() -> None:
         return None
 
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN, custom_request_check=custom_check
+        ipinfo_token=IPINFO_TOKEN,
+        enable_penetration_detection=False,
+        custom_request_check=custom_check,
     )
 
     app.add_middleware(SecurityMiddleware, config=config)
@@ -388,6 +396,7 @@ async def test_custom_response_modifier_parameterized(
 
     config_args = {
         "ipinfo_token": IPINFO_TOKEN,
+        "enable_penetration_detection": False,
         "blacklist": ["192.168.1.5"],
         "custom_response_modifier": custom_modifier,
         "trusted_proxies": ["127.0.0.1"],
@@ -504,6 +513,7 @@ async def test_cors_configuration() -> None:
     app = FastAPI()
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
+        enable_penetration_detection=False,
         enable_cors=True,
         cors_allow_origins=["https://example.com"],
         cors_allow_methods=["GET", "POST"],
@@ -538,6 +548,7 @@ async def test_cors_configuration_missing_expose_headers() -> None:
     app = FastAPI()
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
+        enable_penetration_detection=False,
         enable_cors=True,
         cors_allow_origins=["https://example.com"],
         cors_allow_methods=["GET", "POST"],
@@ -568,7 +579,9 @@ async def test_cors_configuration_missing_expose_headers() -> None:
 async def test_cloud_ip_blocking() -> None:
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN, block_cloud_providers={"AWS", "GCP", "Azure"}
+        ipinfo_token=IPINFO_TOKEN,
+        enable_penetration_detection=False,
+        block_cloud_providers={"AWS", "GCP", "Azure"},
     )
 
     app.add_middleware(SecurityMiddleware, config=config)
@@ -605,7 +618,8 @@ async def test_cloud_ip_refresh() -> None:
     middleware = SecurityMiddleware(app, config=config)
 
     with patch(
-        "guard.handlers.cloud_handler.cloud_handler.is_cloud_ip", return_value=False
+        "guard_core.handlers.cloud_handler.cloud_handler.is_cloud_ip",
+        return_value=False,
     ) as mock_is_cloud_ip:
 
         async def receive() -> dict[str, str | bytes]:
@@ -648,7 +662,11 @@ async def test_cleanup_rate_limits(security_middleware: SecurityMiddleware) -> N
 @pytest.mark.asyncio
 async def test_excluded_paths() -> None:
     app = FastAPI()
-    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, exclude_paths=["/health"])
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        enable_penetration_detection=False,
+        exclude_paths=["/health"],
+    )
 
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -730,7 +748,11 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
 @pytest.mark.asyncio
 async def test_refresh_cloud_ips_without_any_cloud() -> None:
     app = FastAPI()
-    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, block_cloud_providers=None)
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        enable_penetration_detection=False,
+        block_cloud_providers=None,
+    )
     middleware = SecurityMiddleware(app, config=config)
     with (
         patch.object(cloud_handler, "refresh_async") as mock_refresh_async,
@@ -745,7 +767,11 @@ async def test_refresh_cloud_ips_without_any_cloud() -> None:
 async def test_cors_disabled() -> None:
     """Test CORS configuration when disabled"""
     app = FastAPI()
-    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, enable_cors=False)
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        enable_penetration_detection=False,
+        enable_cors=False,
+    )
 
     cors_added = SecurityMiddleware.configure_cors(app, config)
     assert not cors_added, "CORS middleware should not be added when disabled"
@@ -757,6 +783,7 @@ async def test_https_enforcement_with_xforwarded_proto() -> None:
     app = FastAPI()
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
+        enable_penetration_detection=False,
         enforce_https=True,
         trusted_proxies=["127.0.0.1"],
         trust_x_forwarded_proto=True,
@@ -794,7 +821,10 @@ async def test_cleanup_expired_request_times() -> None:
     """Test cleanup of expired request times"""
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN, rate_limit=2, rate_limit_window=1
+        ipinfo_token=IPINFO_TOKEN,
+        enable_penetration_detection=False,
+        rate_limit=2,
+        rate_limit_window=1,
     )
     middleware = SecurityMiddleware(app, config=config)
 
@@ -870,10 +900,10 @@ async def test_cloud_ip_blocking_with_logging() -> None:
     with (
         patch.object(cloud_handler, "is_cloud_ip", return_value=True),
         patch(
-            "guard.core.checks.implementations.cloud_provider.log_activity"
+            "guard_core.core.checks.implementations.cloud_provider.log_activity"
         ) as mock_log,
         patch(
-            "guard.core.checks.implementations.ip_security.is_ip_allowed",
+            "guard_core.core.checks.implementations.ip_security.is_ip_allowed",
             new_callable=AsyncMock,
             return_value=True,
         ),
@@ -902,7 +932,7 @@ async def test_cloud_ip_blocking_with_logging() -> None:
         response = await middleware.dispatch(request, mock_call_next)
 
         mock_log.assert_any_call(
-            request,
+            ANY,
             middleware.logger,
             log_type="suspicious",
             reason="Blocked cloud provider IP: 13.59.255.255",
@@ -918,7 +948,7 @@ async def test_cloud_ip_blocking_with_logging() -> None:
     with (
         patch.object(cloud_handler, "is_cloud_ip", return_value=False),
         patch(
-            "guard.core.checks.implementations.ip_security.is_ip_allowed",
+            "guard_core.core.checks.implementations.ip_security.is_ip_allowed",
             new_callable=AsyncMock,
             return_value=True,
         ),
@@ -963,14 +993,14 @@ async def test_redis_initialization(security_config_redis: SecurityConfig) -> No
     with (
         patch.object(middleware.redis_handler, "initialize") as redis_init,
         patch(
-            "guard.handlers.cloud_handler.cloud_handler.initialize_redis"
+            "guard_core.handlers.cloud_handler.cloud_handler.initialize_redis"
         ) as cloud_init,
         patch(
-            "guard.handlers.ipban_handler.ip_ban_manager.initialize_redis"
+            "guard_core.handlers.ipban_handler.ip_ban_manager.initialize_redis"
         ) as ipban_init,
         patch.object(IPInfoManager, "initialize_redis") as ipinfo_init,
         patch(
-            "guard.handlers.suspatterns_handler.sus_patterns_handler.initialize_redis"
+            "guard_core.handlers.suspatterns_handler.sus_patterns_handler.initialize_redis"
         ) as sus_init,
         patch.object(
             middleware.handler_initializer.rate_limit_handler, "initialize_redis"
@@ -1004,14 +1034,14 @@ async def test_redis_initialization_without_ipinfo_and_cloud(
     with (
         patch.object(middleware.redis_handler, "initialize") as redis_init,
         patch(
-            "guard.handlers.cloud_handler.cloud_handler.initialize_redis"
+            "guard_core.handlers.cloud_handler.cloud_handler.initialize_redis"
         ) as cloud_init,
         patch(
-            "guard.handlers.ipban_handler.ip_ban_manager.initialize_redis"
+            "guard_core.handlers.ipban_handler.ip_ban_manager.initialize_redis"
         ) as ipban_init,
         patch.object(IPInfoManager, "initialize_redis") as ipinfo_init,
         patch(
-            "guard.handlers.suspatterns_handler.sus_patterns_handler.initialize_redis"
+            "guard_core.handlers.suspatterns_handler.sus_patterns_handler.initialize_redis"
         ) as sus_init,
         patch.object(
             middleware.handler_initializer.rate_limit_handler, "initialize_redis"
@@ -1087,7 +1117,11 @@ async def test_request_without_client(security_config: SecurityConfig) -> None:
 async def test_rate_limiting_disabled() -> None:
     """Test when rate limiting is disabled"""
     app = FastAPI()
-    config = SecurityConfig(ipinfo_token=IPINFO_TOKEN, enable_rate_limiting=False)
+    config = SecurityConfig(
+        ipinfo_token=IPINFO_TOKEN,
+        enable_penetration_detection=False,
+        enable_rate_limiting=False,
+    )
 
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -1193,15 +1227,15 @@ async def test_passive_mode_penetration_detection() -> None:
 
     with (
         patch(
-            "guard.core.checks.implementations.suspicious_activity.detect_penetration_patterns",
+            "guard_core.core.checks.implementations.suspicious_activity.detect_penetration_patterns",
             new_callable=AsyncMock,
             return_value=(True, "SQL injection attempt"),
         ) as mock_detect,
         patch(
-            "guard.core.checks.implementations.suspicious_activity.log_activity"
+            "guard_core.core.checks.implementations.suspicious_activity.log_activity"
         ) as mock_log,
         patch(
-            "guard.utils.detect_penetration_attempt",
+            "guard_core.utils.detect_penetration_attempt",
             return_value=(True, "SQL injection attempt"),
         ),
     ):
@@ -1235,7 +1269,7 @@ async def test_passive_mode_penetration_detection() -> None:
         assert mock_detect.called, "detect_penetration_patterns should be called"
 
         mock_log.assert_any_call(
-            request,
+            ANY,
             middleware.logger,
             log_type="suspicious",
             reason="Suspicious activity detected: 192.168.1.1",
@@ -1251,6 +1285,7 @@ async def test_sliding_window_rate_limiting() -> None:
     app = FastAPI()
     config = SecurityConfig(
         ipinfo_token=IPINFO_TOKEN,
+        enable_penetration_detection=False,
         rate_limit=3,
         rate_limit_window=1,
         enable_rate_limiting=True,
@@ -1324,24 +1359,32 @@ async def test_rate_limiter_deque_cleanup(security_config: SecurityConfig) -> No
     body = await request.body()
     assert body == b""
 
-    async def create_error_response(status_code: int, message: str) -> Response:
-        return Response(message, status_code=status_code)
+    guard_request = StarletteGuardRequest(request)
+
+    async def create_error_response(
+        status_code: int, message: str
+    ) -> StarletteGuardResponse:
+        return StarletteGuardResponse(Response(message, status_code=status_code))
 
     response = await create_error_response(429, "Test message")
     assert response.status_code == 429
     assert response.body == b"Test message"
 
-    result = await handler.check_rate_limit(request, client_ip, create_error_response)
+    result = await handler.check_rate_limit(
+        guard_request, client_ip, create_error_response
+    )
 
     assert result is None
 
     assert len(handler.request_timestamps[client_ip]) == 1
 
     handler.request_timestamps[client_ip].clear()
-    handler.request_timestamps[client_ip].append(window_start - 10)  # Way before window
-    handler.request_timestamps[client_ip].append(window_start + 0.5)  # Within window
+    handler.request_timestamps[client_ip].append(window_start - 10)
+    handler.request_timestamps[client_ip].append(window_start + 0.5)
 
-    result = await handler.check_rate_limit(request, client_ip, create_error_response)
+    result = await handler.check_rate_limit(
+        guard_request, client_ip, create_error_response
+    )
 
     assert result is None
 
@@ -1392,21 +1435,25 @@ async def test_lua_script_execution(security_config_redis: SecurityConfig) -> No
         body = await request.body()
         assert body == b""
 
-        async def create_error_response(status_code: int, message: str) -> Response:
-            return Response(message, status_code=status_code)
+        guard_request = StarletteGuardRequest(request)
+
+        async def create_error_response(
+            status_code: int, message: str
+        ) -> StarletteGuardResponse:
+            return StarletteGuardResponse(Response(message, status_code=status_code))
 
         result = await handler.check_rate_limit(
-            request, "192.168.1.1", create_error_response
+            guard_request, "192.168.1.1", create_error_response
         )
-        assert result is None  # NOTE: should not be rate limited
+        assert result is None
 
         mock_conn.evalsha.assert_called_once()
 
         mock_conn.evalsha.reset_mock()
-        mock_conn.evalsha.return_value = 3  # NOTE: over the limit
+        mock_conn.evalsha.return_value = 3
 
         result = await handler.check_rate_limit(
-            request, "192.168.1.1", create_error_response
+            guard_request, "192.168.1.1", create_error_response
         )
         assert result is not None
         assert result.status_code == status.HTTP_429_TOO_MANY_REQUESTS
@@ -1469,13 +1516,17 @@ async def test_fallback_to_pipeline(security_config_redis: SecurityConfig) -> No
         body = await request.body()
         assert body == b""
 
-        async def create_error_response(status_code: int, message: str) -> Response:
-            return Response(message, status_code=status_code)
+        guard_request = StarletteGuardRequest(request)
+
+        async def create_error_response(
+            status_code: int, message: str
+        ) -> StarletteGuardResponse:
+            return StarletteGuardResponse(Response(message, status_code=status_code))
 
         result = await handler.check_rate_limit(
-            request, "192.168.1.1", create_error_response
+            guard_request, "192.168.1.1", create_error_response
         )
-        assert result is None  # NOTE: should not be rate limited
+        assert result is None
 
         mock_conn.pipeline.assert_called_once()
         mock_pipeline.zadd.assert_called_once()
@@ -1492,7 +1543,7 @@ async def test_fallback_to_pipeline(security_config_redis: SecurityConfig) -> No
         mock_pipeline.execute.reset_mock()
 
         result = await handler.check_rate_limit(
-            request, "192.168.1.1", create_error_response
+            guard_request, "192.168.1.1", create_error_response
         )
         assert result is not None
         assert result.status_code == status.HTTP_429_TOO_MANY_REQUESTS
@@ -1538,8 +1589,12 @@ async def test_rate_limiter_redis_errors(security_config_redis: SecurityConfig) 
     body = await request.body()
     assert body == b""
 
-    async def create_error_response(status_code: int, message: str) -> Response:
-        return Response(message, status_code=status_code)
+    guard_request = StarletteGuardRequest(request)
+
+    async def create_error_response(
+        status_code: int, message: str
+    ) -> StarletteGuardResponse:
+        return StarletteGuardResponse(Response(message, status_code=status_code))
 
     error_response = await create_error_response(429, "Rate limited")
     assert error_response.status_code == 429
@@ -1559,7 +1614,7 @@ async def test_rate_limiter_redis_errors(security_config_redis: SecurityConfig) 
         handler.rate_limit_script_sha = "test_script_sha"
 
         result = await handler.check_rate_limit(
-            request, "192.168.1.1", create_error_response
+            guard_request, "192.168.1.1", create_error_response
         )
 
         assert result is None
@@ -1577,7 +1632,7 @@ async def test_rate_limiter_redis_errors(security_config_redis: SecurityConfig) 
         mock_get_connection.return_value = mock_conn
 
         result = await handler.check_rate_limit(
-            request, "192.168.1.1", create_error_response
+            guard_request, "192.168.1.1", create_error_response
         )
 
         assert result is None
@@ -1625,6 +1680,7 @@ async def test_ipv6_rate_limiting(
     config.enable_rate_limiting = True
     config.trusted_proxies = ["127.0.0.1"]
     config.whitelist = []
+    config.blocked_countries = []
     config.enable_penetration_detection = False
 
     app.add_middleware(SecurityMiddleware, config=config)
@@ -1872,3 +1928,114 @@ async def test_emergency_mode_passive(security_config: SecurityConfig) -> None:
         # Should pass in passive mode
         response = await client.get("/test", headers={"X-Forwarded-For": "8.8.8.8"})
         assert response.status_code == 200
+
+
+async def test_guard_response_factory_property() -> None:
+    from guard.adapters import StarletteResponseFactory
+
+    app = FastAPI()
+    config = SecurityConfig()
+    middleware = SecurityMiddleware(app, config=config)
+    assert isinstance(middleware.guard_response_factory, StarletteResponseFactory)
+
+
+async def test_security_headers_not_configured() -> None:
+    app = FastAPI()
+    config = SecurityConfig(security_headers=None)
+    SecurityMiddleware(app, config=config)
+
+
+async def test_security_headers_disabled() -> None:
+    app = FastAPI()
+    config = SecurityConfig(security_headers={"enabled": False})
+    SecurityMiddleware(app, config=config)
+
+
+async def test_agent_initialization_success() -> None:
+    app = FastAPI()
+    config = SecurityConfig(
+        enable_agent=True,
+        agent_api_key="test-key-long-enough-for-validation",
+        agent_model="claude-sonnet-4-20250514",
+    )
+    middleware = SecurityMiddleware(app, config=config)
+    assert middleware.agent_handler is not None
+
+
+async def test_agent_initialization_import_error() -> None:
+    import builtins
+    import sys
+
+    app = FastAPI()
+    config = SecurityConfig(
+        enable_agent=True,
+        agent_api_key="test-key-long-enough-for-validation",
+        agent_model="claude-sonnet-4-20250514",
+    )
+    fake_agent_config = config.to_agent_config()
+
+    original_import = builtins.__import__
+    saved_modules = {
+        k: sys.modules.pop(k) for k in list(sys.modules) if k.startswith("guard_agent")
+    }
+
+    def mock_import(name: str, *args: Any, **kwargs: Any) -> Any:
+        if name == "guard_agent":
+            raise ImportError("No module named 'guard_agent'")
+        return original_import(name, *args, **kwargs)
+
+    try:
+        with (
+            patch.object(
+                SecurityConfig, "to_agent_config", return_value=fake_agent_config
+            ),
+            patch("builtins.__import__", side_effect=mock_import),
+        ):
+            middleware = SecurityMiddleware(app, config=config)
+            assert middleware.agent_handler is None
+    finally:
+        sys.modules.update(saved_modules)
+
+
+async def test_agent_initialization_exception() -> None:
+    app = FastAPI()
+    config = SecurityConfig(
+        enable_agent=True,
+        agent_api_key="test-key",
+        agent_model="claude-sonnet-4-20250514",
+    )
+    with patch("guard_agent.guard_agent", side_effect=RuntimeError("init failed")):
+        SecurityMiddleware(app, config=config)
+
+
+async def test_agent_initialization_invalid_config() -> None:
+    app = FastAPI()
+    config = SecurityConfig(
+        enable_agent=True,
+        agent_api_key="test-key",
+        agent_model="claude-sonnet-4-20250514",
+    )
+    with patch.object(SecurityConfig, "to_agent_config", return_value=None):
+        SecurityMiddleware(app, config=config)
+
+
+async def test_resolve_route_no_app_routes() -> None:
+    app = FastAPI()
+    config = SecurityConfig()
+    middleware = SecurityMiddleware(app, config=config)
+
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/nonexistent",
+        "query_string": b"",
+        "headers": [],
+        "server": ("localhost", 8000),
+        "root_path": "",
+        "app": app,
+    }
+    from starlette.requests import Request as StarletteRequest
+
+    request = StarletteRequest(scope)
+    result = middleware._resolve_route(request)
+    assert result is None

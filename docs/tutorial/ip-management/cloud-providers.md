@@ -72,7 +72,7 @@ Cloud IP range update for AWS: +12 added, -3 removed
 You can also manually trigger a refresh:
 
 ```python
-from guard.handlers.cloud_handler import cloud_handler
+from guard import cloud_handler
 
 cloud_handler.refresh()
 ```
@@ -85,7 +85,7 @@ Provider Status
 Track when each provider's IP ranges were last refreshed:
 
 ```python
-from guard.handlers.cloud_handler import cloud_handler
+from guard import cloud_handler
 
 for provider in ("AWS", "GCP", "Azure"):
     updated = cloud_handler.last_updated[provider]
@@ -103,7 +103,7 @@ Custom IP Checking
 Check if an IP belongs to a cloud provider:
 
 ```python
-from guard.handlers.cloud_handler import cloud_handler
+from guard import cloud_handler
 
 @app.get("/check-cloud/{ip}")
 async def check_cloud_ip(ip: str):

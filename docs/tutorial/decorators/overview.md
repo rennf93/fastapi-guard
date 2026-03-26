@@ -20,7 +20,7 @@ Security decorators are Python decorators that you can apply to your FastAPI rou
 ```python
 from fastapi import FastAPI
 from guard import SecurityConfig
-from guard.decorators import SecurityDecorator
+from guard import SecurityDecorator
 
 app = FastAPI()
 config = SecurityConfig()
@@ -141,7 +141,7 @@ Basic Setup
 ```python
 from fastapi import FastAPI
 from guard import SecurityMiddleware, SecurityConfig
-from guard.decorators import SecurityDecorator
+from guard import SecurityDecorator
 
 app = FastAPI()
 config = SecurityConfig(

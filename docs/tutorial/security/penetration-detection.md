@@ -76,7 +76,7 @@ Comprehensive Results
 The detection engine returns detailed information about threats:
 
 ```python
-from guard.handlers.suspatterns_handler import sus_patterns_handler
+from guard import sus_patterns_handler
 
 # Direct detection with rich results
 result = await sus_patterns_handler.detect(
@@ -113,7 +113,7 @@ Custom Detection Logic
 You can use the penetration detection directly in your routes:
 
 ```python
-from guard.utils import detect_penetration_attempt
+from guard_core.utils import detect_penetration_attempt
 
 @app.post("/api/data")
 async def submit_data(request: Request):
@@ -131,7 +131,7 @@ async def submit_data(request: Request):
 For more control, use the enhanced detection API:
 
 ```python
-from guard.handlers.suspatterns_handler import sus_patterns_handler
+from guard import sus_patterns_handler
 
 @app.post("/api/secure")
 async def secure_endpoint(request: Request, data: dict):
@@ -233,7 +233,7 @@ Pattern Management
 Add or remove custom patterns:
 
 ```python
-from guard.handlers.suspatterns_handler import sus_patterns_handler
+from guard import sus_patterns_handler
 
 # Add custom pattern
 await sus_patterns_handler.add_pattern(

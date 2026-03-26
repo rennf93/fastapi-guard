@@ -50,13 +50,13 @@ from fastapi import (
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 
-from guard import SecurityConfig, SecurityMiddleware
-from guard.decorators import SecurityDecorator
-from guard.handlers.behavior_handler import BehaviorRule
-from guard.handlers.cloud_handler import cloud_handler
-
-# NOTE: Uncomment this IF IPInfoManager is implemented
-# from guard.handlers.ipinfo_handler import IPInfoManager
+from guard import (
+    BehaviorRule,
+    SecurityConfig,
+    SecurityDecorator,
+    SecurityMiddleware,
+    cloud_handler,
+)
 
 # Configure logging
 # FastAPI Guard uses its own logger hierarchy under "fastapi_guard" namespace

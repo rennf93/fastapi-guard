@@ -27,7 +27,7 @@ SecurityHeadersManager
 ----------------------
 
 ```python
-from guard.handlers.security_headers_handler import SecurityHeadersManager
+from guard import SecurityHeadersManager
 
 security_headers_manager = SecurityHeadersManager()
 ```
@@ -325,7 +325,7 @@ Basic Configuration
 ```python
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
+from guard import SecurityConfig
 
 app = FastAPI()
 

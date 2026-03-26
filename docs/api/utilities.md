@@ -158,7 +158,7 @@ Example usage:
 
 ```python
 from fastapi import Request
-from guard.utils import detect_penetration_attempt
+from guard_core.utils import detect_penetration_attempt
 
 @app.post("/api/submit")
 async def submit_data(request: Request):
@@ -204,7 +204,7 @@ Usage Examples
 --------------
 
 ```python
-from guard.utils import (
+from guard_core.utils import (
     setup_custom_logging,
     log_activity,
     detect_penetration_attempt

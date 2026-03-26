@@ -305,7 +305,7 @@ Basic Pattern Management
 ------------------------
 
 ```python
-from guard.handlers.suspatterns_handler import sus_patterns_handler
+from guard import sus_patterns_handler
 
 # Add custom pattern
 await sus_patterns_handler.add_pattern(

@@ -36,8 +36,7 @@ The example app is built using FastAPI and shows how to integrate FastAPI Guard 
 
 ```python
 from fastapi import FastAPI
-from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
+from guard import SecurityMiddleware, SecurityConfig
 
 # Initialize FastAPI app
 app = FastAPI(title="FastAPI Guard Playground")

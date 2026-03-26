@@ -33,7 +33,7 @@ Example Usage
 ```python
 from fastapi import FastAPI
 from guard import SecurityMiddleware
-from guard.models import SecurityConfig
+from guard import SecurityConfig
 
 app = FastAPI()
 
@@ -86,7 +86,7 @@ Direct Access
 You can also access the handler directly if needed:
 
 ```python
-from guard.handlers.ratelimit_handler import rate_limit_handler
+from guard import rate_limit_handler
 
 # Get the singleton instance
 handler = rate_limit_handler(config)

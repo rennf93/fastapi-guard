@@ -16,7 +16,7 @@ Overview
 --------
 
 ```python
-from guard.handlers.ipban_handler import IPBanManager
+from guard import IPBanManager
 
 ip_ban_manager = IPBanManager()
 ```
@@ -112,7 +112,7 @@ The `IPBanManager` is automatically integrated when you use the `SecurityMiddlew
 ```python
 from fastapi import FastAPI
 from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
+from guard import SecurityConfig
 
 app = FastAPI()
 

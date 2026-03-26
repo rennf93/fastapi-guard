@@ -30,8 +30,7 @@ Enable security headers with default OWASP-recommended settings:
 
 ```python
 from fastapi import FastAPI
-from guard.middleware import SecurityMiddleware
-from guard.models import SecurityConfig
+from guard import SecurityMiddleware, SecurityConfig
 
 app = FastAPI()
 
@@ -182,7 +181,7 @@ from fastapi import Request
 
 @app.post("/api/csp-report")
 async def csp_report(request: Request):
-    from guard.handlers.security_headers_handler import security_headers_manager
+    from guard import security_headers_manager
     
     report = await request.json()
     is_valid = await security_headers_manager.validate_csp_report(report)

@@ -18,11 +18,11 @@ Adding Custom Patterns
 Add your own patterns to the detection system:
 
 ```python
-from guard.handlers.suspatterns_handler import SusPatternsManager
+from guard import sus_patterns_handler
 
 async def setup_patterns():
     # Add custom pattern
-    await SusPatternsManager.add_pattern(
+    await sus_patterns_handler.add_pattern(
         r"malicious_pattern.*",
         custom=True
     )
@@ -37,19 +37,19 @@ You can add patterns for different types of attacks:
 
 ```python
 # Custom XSS pattern
-await SusPatternsManager.add_pattern(
+await sus_patterns_handler.add_pattern(
     r"<script\s*src=.*>",
     custom=True
 )
 
 # Custom SQL injection pattern
-await SusPatternsManager.add_pattern(
+await sus_patterns_handler.add_pattern(
     r";\s*DROP\s+TABLE",
     custom=True
 )
 
 # Custom file path pattern
-await SusPatternsManager.add_pattern(
+await sus_patterns_handler.add_pattern(
     r"\.\.\/.*\/etc\/passwd",
     custom=True
 )
@@ -64,7 +64,7 @@ Remove or modify existing patterns:
 
 ```python
 # Remove a custom pattern
-success = await SusPatternsManager.remove_pattern(
+success = await sus_patterns_handler.remove_pattern(
     r"malicious_pattern.*",
     custom=True
 )
@@ -74,22 +74,22 @@ else:
     print("Pattern not found")
 
 # Get all patterns (both default and custom)
-all_patterns = await SusPatternsManager.get_all_patterns()
+all_patterns = await sus_patterns_handler.get_all_patterns()
 
 # Get only default patterns
-default_patterns = await SusPatternsManager.get_default_patterns()
+default_patterns = await sus_patterns_handler.get_default_patterns()
 
 # Get only custom patterns
-custom_patterns = await SusPatternsManager.get_custom_patterns()
+custom_patterns = await sus_patterns_handler.get_custom_patterns()
 
 # Get all compiled patterns
-all_compiled_patterns = await SusPatternsManager.get_all_compiled_patterns()
+all_compiled_patterns = await sus_patterns_handler.get_all_compiled_patterns()
 
 # Get only default compiled patterns
-default_compiled = await SusPatternsManager.get_default_compiled_patterns()
+default_compiled = await sus_patterns_handler.get_default_compiled_patterns()
 
 # Get only custom compiled patterns
-custom_compiled = await SusPatternsManager.get_custom_compiled_patterns()
+custom_compiled = await sus_patterns_handler.get_custom_compiled_patterns()
 ```
 
 ___
@@ -100,7 +100,7 @@ Pattern Testing
 Test your patterns against requests:
 
 ```python
-from guard.utils import detect_penetration_attempt
+from guard_core.utils import detect_penetration_attempt
 
 @app.post("/test/patterns")
 async def test_patterns(request: Request):
