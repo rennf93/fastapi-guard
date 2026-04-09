@@ -68,6 +68,26 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["guard"]
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+    ".env",
+    ".envrc",
+    ".venv/",
+    ".github/",
+    ".claude/",
+    "CLAUDE.md",
+    ".pre-commit-config.yaml",
+    "compose.yml",
+    "Dockerfile",
+    "Makefile",
+    "mkdocs.yml",
+    "vulture_whitelist.py",
+    "tests/",
+    "docs/",
+    "examples/",
+    "manual_testing/",
+]
+
 [tool.hatch.metadata]
 allow-direct-references = true
 
