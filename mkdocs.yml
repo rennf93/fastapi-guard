@@ -134,6 +134,8 @@ extra:
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/fastapi-guard/
 
+  analytics:
+    provider: custom
 
   generator: false
   meta:
