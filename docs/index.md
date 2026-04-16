@@ -151,3 +151,26 @@ Documentation
 - [Example App](tutorial/examples/example-app.md)
 
 [📖 **Learn More in the Tutorial**](tutorial/first-steps.md)
+
+___
+
+What's New
+----------
+
+FastAPI Guard now has a centralized cloud platform for monitoring, threat analysis, and rule management across all your apps.
+
+- **Real-time security dashboard** at [app.fastapi-guard.com](https://app.fastapi-guard.com/dashboard)
+- **Threat intelligence** --- attack patterns, geographic breakdowns, severity scoring
+- **Dynamic rules** --- update security configuration from the dashboard without redeploying
+- **GDPR compliance** --- consent management, data export, account deletion
+- **Free tier** --- 10K events/month on the Individual plan
+
+Connect your existing setup in 2 minutes with [`fastapi-guard-agent`](https://pypi.org/project/fastapi-guard-agent/):
+
+```bash
+uv add fastapi-guard-agent
+```
+
+See the [Cloud Dashboard documentation](https://rennf93.github.io/fastapi-guard/latest/) for setup instructions.
+
+The [Playground](https://playground.fastapi-guard.com/playground) shows real attack data from a live server --- see what gets blocked and why before connecting your own apps.

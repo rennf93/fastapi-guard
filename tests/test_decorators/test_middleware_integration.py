@@ -1,4 +1,3 @@
-from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -12,7 +11,6 @@ from guard.middleware import SecurityMiddleware
 
 
 async def test_set_decorator_handler() -> None:
-    """Test set_decorator_handler method."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
@@ -65,7 +63,6 @@ async def test_get_endpoint_id_with_route() -> None:
 
 
 async def test_should_bypass_check() -> None:
-    """Test should_bypass_check method (via route_resolver)."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
@@ -87,7 +84,6 @@ async def test_should_bypass_check() -> None:
 
 
 async def test_check_route_ip_access_invalid_ip() -> None:
-    """Test _check_route_ip_access with invalid IP."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
@@ -103,7 +99,6 @@ async def test_check_route_ip_access_invalid_ip() -> None:
 
 
 async def test_check_route_ip_access_blacklist() -> None:
-    """Test _check_route_ip_access with IP blacklist."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
@@ -114,21 +109,17 @@ async def test_check_route_ip_access_blacklist() -> None:
     mock_route_config.blocked_countries = None
     mock_route_config.whitelist_countries = None
 
-    # Test blocked IP
     result = await middleware._check_route_ip_access("192.168.1.100", mock_route_config)
     assert result is False
 
-    # Test blocked CIDR
     result = await middleware._check_route_ip_access("10.0.0.1", mock_route_config)
     assert result is False
 
-    # Test allowed IP
     result = await middleware._check_route_ip_access("8.8.8.8", mock_route_config)
     assert result is None
 
 
 async def test_check_route_ip_access_whitelist() -> None:
-    """Test _check_route_ip_access with IP whitelist."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
@@ -139,26 +130,21 @@ async def test_check_route_ip_access_whitelist() -> None:
     mock_route_config.blocked_countries = None
     mock_route_config.whitelist_countries = None
 
-    # Test allowed IP
     result = await middleware._check_route_ip_access("192.168.1.100", mock_route_config)
     assert result is True
 
-    # Test allowed CIDR
     result = await middleware._check_route_ip_access("10.0.0.1", mock_route_config)
     assert result is True
 
-    # Test blocked IP (not in whitelist)
     result = await middleware._check_route_ip_access("8.8.8.8", mock_route_config)
     assert result is False
 
 
 async def test_check_route_ip_access_countries() -> None:
-    """Test _check_route_ip_access with country restrictions."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
 
-    # Mock geo IP handler
     mock_geo_handler = Mock()
     middleware.geo_ip_handler = mock_geo_handler
 
@@ -166,7 +152,6 @@ async def test_check_route_ip_access_countries() -> None:
     mock_route_config.ip_blacklist = None
     mock_route_config.ip_whitelist = None
 
-    # Test blocked countries
     mock_route_config.blocked_countries = ["XX"]
     mock_route_config.whitelist_countries = None
     mock_geo_handler.get_country.return_value = "XX"
@@ -174,7 +159,6 @@ async def test_check_route_ip_access_countries() -> None:
     result = await middleware._check_route_ip_access("8.8.8.8", mock_route_config)
     assert result is False
 
-    # Test allowed countries
     mock_route_config.blocked_countries = None
     mock_route_config.whitelist_countries = ["US"]
     mock_geo_handler.get_country.return_value = "US"
@@ -182,24 +166,20 @@ async def test_check_route_ip_access_countries() -> None:
     result = await middleware._check_route_ip_access("8.8.8.8", mock_route_config)
     assert result is True
 
-    # Test country not in allowed list
     mock_geo_handler.get_country.return_value = "XX"
     result = await middleware._check_route_ip_access("8.8.8.8", mock_route_config)
     assert result is False
 
-    # Test no country data
     mock_geo_handler.get_country.return_value = None
     result = await middleware._check_route_ip_access("8.8.8.8", mock_route_config)
     assert result is False
 
 
 async def test_check_user_agent_allowed() -> None:
-    """Test _check_user_agent_allowed method."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
 
-    # Test with route config blocking user agents
     mock_route_config = Mock()
     mock_route_config.blocked_user_agents = [r"badbot"]
 
@@ -212,7 +192,6 @@ async def test_check_user_agent_allowed() -> None:
         )
         assert result is True
 
-    # Test without route config
     with patch(
         "guard_core.utils.is_user_agent_allowed", return_value=False
     ) as mock_global:
@@ -222,12 +201,10 @@ async def test_check_user_agent_allowed() -> None:
 
 
 async def test_time_window_error_handling() -> None:
-    """Test time window check error handling."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
 
-    # Test with invalid time restrictions
     invalid_time_restrictions = {"invalid": "data"}
 
     with patch.object(middleware.logger, "error") as mock_error:
@@ -237,26 +214,22 @@ async def test_time_window_error_handling() -> None:
 
 
 async def test_time_window_overnight() -> None:
-    """Test time window check with overnight window."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
 
     time_restrictions = {"start": "22:00", "end": "06:00"}
 
-    # Test time within overnight window (after start)
     with patch("guard_core.core.validation.validator.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "23:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is True
 
-    # Test time within overnight window (before end)
     with patch("guard_core.core.validation.validator.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "05:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is True
 
-    # Test time outside overnight window
     with patch("guard_core.core.validation.validator.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "12:00"
         result = await middleware._check_time_window(time_restrictions)
@@ -264,20 +237,17 @@ async def test_time_window_overnight() -> None:
 
 
 async def test_time_window_normal() -> None:
-    """Test time window check with normal window."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
 
     time_restrictions = {"start": "09:00", "end": "17:00"}
 
-    # Test time within normal window
     with patch("guard_core.core.validation.validator.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "12:00"
         result = await middleware._check_time_window(time_restrictions)
         assert result is True
 
-    # Test time outside normal window
     with patch("guard_core.core.validation.validator.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "20:00"
         result = await middleware._check_time_window(time_restrictions)
@@ -285,19 +255,16 @@ async def test_time_window_normal() -> None:
 
 
 async def test_behavioral_rules_without_guard_decorator() -> None:
-    """Test behavioral rule processing when guard_decorator is None."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
 
-    # Ensure guard_decorator is None
     middleware.guard_decorator = None
 
     mock_request = Mock()
     mock_route_config = Mock()
     mock_route_config.behavior_rules = [BehaviorRule("usage", threshold=5, window=3600)]
 
-    # Should not raise any errors and return without processing
     await middleware._process_decorator_usage_rules(
         mock_request, "127.0.0.1", mock_route_config
     )
@@ -307,12 +274,10 @@ async def test_behavioral_rules_without_guard_decorator() -> None:
 
 
 async def test_behavioral_usage_rules_with_decorator() -> None:
-    """Test behavioral usage rule processing with guard decorator."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
 
-    # Mock guard decorator with behavior tracker
     mock_guard_decorator = Mock()
     mock_behavior_tracker = Mock()
     mock_guard_decorator.behavior_tracker = mock_behavior_tracker
@@ -329,26 +294,15 @@ async def test_behavioral_usage_rules_with_decorator() -> None:
     usage_rule = BehaviorRule("usage", threshold=5, window=3600)
     mock_route_config.behavior_rules = [usage_rule]
 
-    # Test when threshold not exceeded
-    async def mock_track_usage(*args: Any, **kwargs: Any) -> bool:
-        return False  # pragma: no cover
-
-    mock_behavior_tracker.track_endpoint_usage = mock_track_usage
+    mock_behavior_tracker.track_endpoint_usage = AsyncMock(return_value=False)
 
     await middleware._process_decorator_usage_rules(
         mock_request, "127.0.0.1", mock_route_config
     )
     mock_behavior_tracker.apply_action.assert_not_called()
 
-    # Test when threshold exceeded
-    async def mock_track_usage_exceeded(*args: Any, **kwargs: Any) -> bool:
-        return True  # pragma: no cover
-
-    async def mock_apply_action(*args: Any, **kwargs: Any) -> None:
-        return None  # pragma: no cover
-
-    mock_behavior_tracker.track_endpoint_usage = mock_track_usage_exceeded
-    mock_behavior_tracker.apply_action = mock_apply_action
+    mock_behavior_tracker.track_endpoint_usage = AsyncMock(return_value=True)
+    mock_behavior_tracker.apply_action = AsyncMock()
 
     await middleware._process_decorator_usage_rules(
         mock_request, "127.0.0.1", mock_route_config
@@ -356,12 +310,10 @@ async def test_behavioral_usage_rules_with_decorator() -> None:
 
 
 async def test_behavioral_return_rules_with_decorator() -> None:
-    """Test behavioral return rule processing with guard decorator."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
 
-    # Mock guard decorator with behavior tracker
     mock_guard_decorator = Mock()
     mock_behavior_tracker = Mock()
     mock_guard_decorator.behavior_tracker = mock_behavior_tracker
@@ -381,26 +333,15 @@ async def test_behavioral_return_rules_with_decorator() -> None:
     )
     mock_route_config.behavior_rules = [return_rule]
 
-    # Test when pattern not detected
-    async def mock_track_pattern(*args: Any, **kwargs: Any) -> bool:
-        return False  # pragma: no cover
-
-    mock_behavior_tracker.track_return_pattern = mock_track_pattern
+    mock_behavior_tracker.track_return_pattern = AsyncMock(return_value=False)
 
     await middleware._process_decorator_return_rules(
         mock_request, mock_response, "127.0.0.1", mock_route_config
     )
     mock_behavior_tracker.apply_action.assert_not_called()
 
-    # Test when pattern detected
-    async def mock_track_pattern_detected(*args: Any, **kwargs: Any) -> bool:
-        return True  # pragma: no cover
-
-    async def mock_apply_action(*args: Any, **kwargs: Any) -> None:
-        return None  # pragma: no cover
-
-    mock_behavior_tracker.track_return_pattern = mock_track_pattern_detected
-    mock_behavior_tracker.apply_action = mock_apply_action
+    mock_behavior_tracker.track_return_pattern = AsyncMock(return_value=True)
+    mock_behavior_tracker.apply_action = AsyncMock()
 
     await middleware._process_decorator_return_rules(
         mock_request, mock_response, "127.0.0.1", mock_route_config
@@ -469,7 +410,6 @@ async def test_get_route_decorator_config_no_matching_route() -> None:
 
 
 async def test_bypass_all_security_checks() -> None:
-    """Test bypassing all security checks when 'all' is in bypassed_checks."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
@@ -494,7 +434,6 @@ async def test_bypass_all_security_checks() -> None:
 
 
 async def test_bypass_all_security_checks_with_custom_modifier() -> None:
-    """Test bypassing all security checks with custom response modifier."""
     app = FastAPI()
 
     async def custom_modifier(response: Response) -> Response:
@@ -564,14 +503,12 @@ async def test_bypass_all_security_checks_with_custom_modifier() -> None:
 async def test_route_specific_middleware_validations(
     test_case: dict, expected_status: int, description: str
 ) -> None:
-    """Parametrized test for route-specific middleware validation features."""
     app = FastAPI()
     config = SecurityConfig()
     middleware = SecurityMiddleware(app, config=config)
 
     mock_route_config = RouteConfig()
 
-    # Set up route config based on test case
     for attr, value in test_case.items():
         if attr != "headers":
             setattr(mock_route_config, attr, value)
@@ -582,6 +519,7 @@ async def test_route_specific_middleware_validations(
     mock_request.url.path = "/test"
     mock_request.headers = test_case["headers"]
     mock_request.query_params = {}
+    mock_request.state.client_ip = "127.0.0.1"
 
     async def mock_call_next(request: Request) -> Response:
         return Response("ok", status_code=200)
@@ -614,6 +552,7 @@ async def test_route_specific_rate_limit_with_redis() -> None:
     mock_request.url.path = "/test"
     mock_request.headers = {}
     mock_request.query_params = {}
+    mock_request.state.client_ip = "127.0.0.1"
     mock_request.state.is_whitelisted = False
 
     async def mock_call_next(request: Request) -> Response:

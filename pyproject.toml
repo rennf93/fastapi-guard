@@ -1,7 +1,7 @@
 [project]
 name = "fastapi_guard"
 version = "5.0.0"
-description = "A security library for FastAPI to control IPs, log requests, and detect penetration attempts."
+description = "Production-ready security middleware for FastAPI — IP filtering, rate limiting, penetration detection, and 20+ per-route security decorators."
 authors = [
     {name = "Renzo Franceschini", email = "rennf93@users.noreply.github.com"}
 ]
@@ -20,6 +20,20 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Topic :: Internet :: WWW/HTTP :: WSGI :: Middleware",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+keywords = [
+    "fastapi",
+    "security",
+    "middleware",
+    "rate-limiting",
+    "ip-filtering",
+    "waf",
+    "penetration-detection",
+    "api-security",
 ]
 dependencies = [
     "fastapi",
@@ -29,7 +43,13 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/rennf93/fastapi-guard"
+Homepage = "https://fastapi-guard.com"
+Documentation = "https://rennf93.github.io/fastapi-guard/latest/"
+Repository = "https://github.com/rennf93/fastapi-guard"
+Changelog = "https://github.com/rennf93/fastapi-guard/blob/master/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/rennf93/fastapi-guard/issues"
+"Cloud Dashboard" = "https://app.fastapi-guard.com"
+"Live Playground" = "https://playground.fastapi-guard.com"
 
 [project.optional-dependencies]
 dev = [
@@ -114,10 +134,16 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 asyncio_default_fixture_loop_scope = "function"
-addopts = "--cov=guard --cov-report=term-missing"
+addopts = "--cov=guard --cov-branch --cov-report=term-missing"
 markers = [
     "asyncio: mark tests as async"
 ]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
 
 [tool.mypy]
 python_version = "3.10"

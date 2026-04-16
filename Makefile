@@ -163,7 +163,7 @@ check-all: lint security quality analysis
 # Run tests (default Python version)
 .PHONY: test
 test:
-	@COMPOSE_BAKE=true PYTHON_VERSION=$(DEFAULT_PYTHON) docker compose run --rm --build fastapi-guard pytest -v --cov=.
+	@COMPOSE_BAKE=true PYTHON_VERSION=$(DEFAULT_PYTHON) docker compose run --rm --build fastapi-guard pytest -v --cov=. --cov-branch
 	@docker compose down --rmi all --remove-orphans -v
 	@docker system prune -f
 
@@ -176,7 +176,7 @@ test-all: test-3.10 test-3.11 test-3.12 test-3.13 test-3.14
 test-3.10:
 	@docker compose down -v fastapi-guard
 	@COMPOSE_BAKE=true PYTHON_VERSION=3.10 docker compose build fastapi-guard
-	@PYTHON_VERSION=3.10 docker compose run --rm fastapi-guard pytest -v --cov=.
+	@PYTHON_VERSION=3.10 docker compose run --rm fastapi-guard pytest -v --cov=. --cov-branch
 	@docker compose down --rmi all --remove-orphans -v
 	@docker system prune -f
 
@@ -185,7 +185,7 @@ test-3.10:
 test-3.11:
 	@docker compose down -v fastapi-guard
 	@COMPOSE_BAKE=true PYTHON_VERSION=3.11 docker compose build fastapi-guard
-	@PYTHON_VERSION=3.11 docker compose run --rm fastapi-guard pytest -v --cov=.
+	@PYTHON_VERSION=3.11 docker compose run --rm fastapi-guard pytest -v --cov=. --cov-branch
 	@docker compose down --rmi all --remove-orphans -v
 	@docker system prune -f
 
@@ -194,7 +194,7 @@ test-3.11:
 test-3.12:
 	@docker compose down -v fastapi-guard
 	@COMPOSE_BAKE=true PYTHON_VERSION=3.12 docker compose build fastapi-guard
-	@PYTHON_VERSION=3.12 docker compose run --rm fastapi-guard pytest -v --cov=.
+	@PYTHON_VERSION=3.12 docker compose run --rm fastapi-guard pytest -v --cov=. --cov-branch
 	@docker compose down --rmi all --remove-orphans -v
 	@docker system prune -f
 
@@ -203,7 +203,7 @@ test-3.12:
 test-3.13:
 	@docker compose down -v fastapi-guard
 	@COMPOSE_BAKE=true PYTHON_VERSION=3.13 docker compose build fastapi-guard
-	@PYTHON_VERSION=3.13 docker compose run --rm fastapi-guard pytest -v --cov=.
+	@PYTHON_VERSION=3.13 docker compose run --rm fastapi-guard pytest -v --cov=. --cov-branch
 	@docker compose down --rmi all --remove-orphans -v
 	@docker system prune -f
 
@@ -212,7 +212,7 @@ test-3.13:
 test-3.14:
 	@docker compose down -v fastapi-guard
 	@COMPOSE_BAKE=true PYTHON_VERSION=3.14 docker compose build fastapi-guard
-	@PYTHON_VERSION=3.14 docker compose run --rm fastapi-guard pytest -v --cov=.
+	@PYTHON_VERSION=3.14 docker compose run --rm fastapi-guard pytest -v --cov=. --cov-branch
 	@docker compose down --rmi all --remove-orphans -v
 	@docker system prune -f
 
