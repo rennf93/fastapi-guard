@@ -1,10 +1,5 @@
-{% if config.extra.analytics %}
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.extra.analytics.property }}"></script>
-<script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-    gtag('js', new Date());
-    gtag('config', '{{ config.extra.analytics.property }}');
-</script>
-{% endif %}
+<script
+    src="https://analytics.fastapi-guard.com/api/script.js"
+    data-site-id="852006e69f52"
+    defer
+></script>
