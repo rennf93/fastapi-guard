@@ -1,0 +1,69 @@
+# Warns then closes issues and PRs that have had no activity for a specified amount of time.
+# Configuration reference: https://github.com/actions/stale
+name: Mark stale issues and pull requests
+
+on:
+  schedule:
+    - cron: '16 22 * * *'
+  workflow_dispatch:
+
+jobs:
+  stale:
+      runs-on: ubuntu-latest
+      permissions:
+        issues: write
+        pull-requests: write
+
+      steps:
+        - uses: actions/stale@v9
+          with:
+            repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+            days-before-issue-stale: 60
+            days-before-issue-close: 14
+            days-before-pr-stale: 30
+            days-before-pr-close: 14
+
+            stale-issue-label: 'no-issue-activity'
+            stale-pr-label: 'no-pr-activity'
+
+            exempt-issue-labels: 'pinned,security,bug,enhancement,help-wanted,good-first-issue'
+            exempt-pr-labels: 'pinned,security,work-in-progress,blocked'
+
+            stale-issue-message: |
+              This issue has had no activity for 60 days and is being marked as stale.
+
+              If it's still relevant, please leave a comment — otherwise it will be closed in 14 days.
+
+              Things that help keep an issue moving:
+              - A current reproduction (FastAPI app or failing test)
+              - Output of `python --version && uv --version` and `pip show fastapi guard-core fastapi-guard`
+              - Any new findings since the last activity
+
+              Maintainers can keep this open indefinitely by adding the `pinned` label.
+
+            close-issue-message: |
+                Closing this issue due to inactivity.
+
+                No worries — feel free to reopen with fresh context (reproduction, traceback, version info) if the problem still occurs on the latest release. Thanks for the original report!
+
+            stale-pr-message: |
+              This pull request has had no activity for 30 days and is being marked as stale.
+
+              If you'd like to keep it moving, please:
+              - Rebase or merge the latest `master` into your branch
+              - Address any unresolved review comments
+              - Make sure CI is green (`make lint`, `make test`, `make security`)
+              - Confirm the entry in `## Unreleased` of `CHANGELOG.md` is still accurate
+
+              Otherwise this PR will be closed in 14 days. Closed PRs can always be reopened.
+
+            close-pr-message: |
+              Closing this pull request due to inactivity.
+
+              Thanks for the contribution — please reopen when you're ready to pick it back up. The branch and review history are preserved, so you won't lose any work.
+
+            remove-stale-when-updated: true
+            operations-per-run: 100
+            ascending: true
+            enable-statistics: true

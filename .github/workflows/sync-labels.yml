@@ -1,0 +1,32 @@
+name: Sync labels
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - .github/labels.yml
+      - .github/workflows/sync-labels.yml
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Show diff without applying'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  issues: write
+
+jobs:
+  labeler:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync labels from .github/labels.yml
+        uses: crazy-max/ghaction-github-labeler@v5
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          yaml-file: .github/labels.yml
+          skip-delete: false
+          dry-run: ${{ inputs.dry_run || false }}

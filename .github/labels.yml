@@ -1,0 +1,91 @@
+- name: "area: middleware"
+  color: "0E8A16"
+  description: "Touches guard/middleware.py (ASGI middleware adapter)"
+
+- name: "area: adapters"
+  color: "0E8A16"
+  description: "Touches guard/adapters.py (request/response protocol implementations)"
+
+- name: "area: decorators"
+  color: "0E8A16"
+  description: "Touches FastAPI-specific decorator wiring or re-exports"
+
+- name: "area: integrations"
+  color: "0E8A16"
+  description: "Touches public re-exports or framework wiring (guard/__init__.py)"
+
+- name: tests
+  color: "FBCA04"
+  description: "Test suite changes"
+
+- name: examples
+  color: "C5DEF5"
+  description: "examples/ apps and example tests"
+
+- name: documentation
+  color: "0075CA"
+  description: "Docs, README, CHANGELOG, governance files"
+
+- name: ci
+  color: "5319E7"
+  description: "GitHub Actions and pre-commit"
+
+- name: build
+  color: "BFD4F2"
+  description: "Makefile / Docker / setup.py / packaging"
+
+- name: dependencies
+  color: "0366D6"
+  description: "pyproject.toml or uv.lock"
+
+- name: bug
+  color: "D73A4A"
+  description: "Confirmed defect"
+
+- name: enhancement
+  color: "A2EEEF"
+  description: "Improvement to an existing feature"
+
+- name: security
+  color: "B60205"
+  description: "Security-related issue (use private reporting first!)"
+
+- name: "good-first-issue"
+  color: "7057FF"
+  description: "Approachable issue for new contributors"
+
+- name: "help-wanted"
+  color: "008672"
+  description: "Maintainers welcome external help"
+
+- name: pinned
+  color: "FEF2C0"
+  description: "Exempt from staleness automation"
+
+- name: "no-issue-activity"
+  color: "EEEEEE"
+  description: "Marked stale by automation"
+
+- name: "no-pr-activity"
+  color: "EEEEEE"
+  description: "Marked stale by automation"
+
+- name: "needs-summary"
+  color: "1D76DB"
+  description: "Trigger an AI-generated summary on this issue (auto-removed after run)"
+
+- name: "no-summary"
+  color: "EEEEEE"
+  description: "Suppress automated AI summaries on this issue"
+
+- name: "work-in-progress"
+  color: "FBCA04"
+  description: "PR is not ready for review"
+
+- name: blocked
+  color: "B60205"
+  description: "Blocked by an external dependency or upstream issue"
+
+- name: "breaking-change"
+  color: "B60205"
+  description: "PR contains a backward-incompatible change"

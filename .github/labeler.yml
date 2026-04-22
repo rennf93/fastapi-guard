@@ -1,0 +1,67 @@
+"area: middleware":
+  - changed-files:
+      - any-glob-to-any-file:
+          - guard/middleware.py
+          - tests/test_middleware/**
+
+"area: adapters":
+  - changed-files:
+      - any-glob-to-any-file:
+          - guard/adapters.py
+          - tests/test_adapters.py
+
+"area: decorators":
+  - changed-files:
+      - any-glob-to-any-file:
+          - tests/test_decorators/**
+
+"area: integrations":
+  - changed-files:
+      - any-glob-to-any-file:
+          - guard/__init__.py
+          - tests/test_reexports.py
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - tests/**
+
+examples:
+  - changed-files:
+      - any-glob-to-any-file:
+          - examples/**
+          - tests/test_examples/**
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - docs/**
+          - mkdocs.yml
+          - README.md
+          - CHANGELOG.md
+          - CONTRIBUTING.md
+          - SECURITY.md
+          - CODE_OF_CONDUCT.md
+          - LICENSE
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/**
+          - .pre-commit-config.yaml
+
+build:
+  - changed-files:
+      - any-glob-to-any-file:
+          - Makefile
+          - Dockerfile
+          - compose.yml
+          - setup.py
+          - MANIFEST.in
+          - vulture_whitelist.py
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - pyproject.toml
+          - uv.lock
