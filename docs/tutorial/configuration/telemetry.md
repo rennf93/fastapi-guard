@@ -11,9 +11,20 @@ FastAPI Guard emits security events and request metrics through a composable tel
 
 The middleware installs and tears down the telemetry pipeline automatically — you only set fields on `SecurityConfig`.
 
+## Two-tier model
+
+Telemetry ships in two tiers:
+
+| Tier | Prerequisites | What every exporter sees |
+|---|---|---|
+| **Raw** (free) | `enable_otel=True` and/or `enable_logfire=True` | All event types, all metrics, W3C `traceparent` / `tracestate` propagation, muting. No `guard.*` enrichment fields. |
+| **Enriched** (guard-agent tier) | `enable_agent=True` + `enable_enrichment=True` | Everything in Raw, **plus** per-event `guard.project_id`, `guard.service.name`, `guard.deployment.environment`, `guard.threat_score`, `guard.rule.id` + `guard.rule.version`, `guard.behavior.correlation_key`, `guard.behavior.recent_event_count`. Metrics also inherit project/service/environment tags. |
+
+Setting `enable_enrichment=True` without `enable_agent=True` raises `ValidationError`.
+
 ## Config surface
 
-Nine `SecurityConfig` fields control telemetry:
+Ten `SecurityConfig` fields control telemetry:
 
 | Field | Type | Default | Purpose |
 |---|---|---|---|
@@ -26,6 +37,7 @@ Nine `SecurityConfig` fields control telemetry:
 | `otel_resource_attributes` | `dict[str, str]` | `{}` | Extra OpenTelemetry resource attributes (e.g. `deployment.environment`, `service.version`). |
 | `enable_logfire` | `bool` | `False` | Enable Logfire export (requires `guard-core[logfire]`). |
 | `logfire_service_name` | `str` | `"guard-core"` | Service name for Logfire. |
+| `enable_enrichment` | `bool` | `False` | Populate `guard.*` metadata on every event and metric. **Requires `enable_agent=True`.** |
 
 All three mute fields validate their contents at config time. Unknown values raise `ValidationError` and the error message lists the valid values.
 
@@ -141,6 +153,43 @@ app.add_middleware(SecurityMiddleware, config=config)
 ```
 
 Events are emitted as `logfire.span("guard.event.<event_type>", ...)` and metrics as structured logs via `logfire.info("guard.metric.<metric_type>", value=..., endpoint=..., **tags)`. When both `enable_otel` and `enable_logfire` are set, Logfire also observes the OpenTelemetry instruments automatically via its OTel bridge.
+
+Both OTel and Logfire spans receive enrichment fields as span attributes when `enable_enrichment=True` (see next section).
+
+## Enabling enrichment
+
+```python
+from fastapi import FastAPI
+from guard import SecurityMiddleware, SecurityConfig
+
+config = SecurityConfig(
+    enable_agent=True,
+    agent_api_key="your-api-key",
+    agent_project_id="proj-prod",
+    enable_enrichment=True,
+    enable_otel=True,
+    otel_service_name="api",
+    otel_resource_attributes={"deployment.environment": "prod"},
+)
+
+app = FastAPI()
+app.add_middleware(SecurityMiddleware, config=config)
+```
+
+When `enable_enrichment=True`, every event and every metric routed through the middleware picks up the following `guard.*` keys inside `CompositeAgentHandler`:
+
+| Key | Type | Source | Applied to |
+|---|---|---|---|
+| `guard.project_id` | `str` | `agent_project_id` | events + metrics |
+| `guard.service.name` | `str` | `otel_service_name` | events + metrics |
+| `guard.deployment.environment` | `str` | `otel_resource_attributes["deployment.environment"]` | events + metrics |
+| `guard.threat_score` | `int` (0-100) | Deterministic map of `event_type` → score (penetration_attempt=90, ip_banned=70, medium=50, rate_limited=20, default=20) | events only |
+| `guard.rule.id` | `str` | `DynamicRuleManager.match_event(event)` when the cached rule matched | events only |
+| `guard.rule.version` | `int` | Same source as `guard.rule.id` | events only |
+| `guard.behavior.correlation_key` | `str` (16-char hex) | SHA-256 prefix of `ip \| service \| floor(now/300)` — stable within a 5-minute window | events only |
+| `guard.behavior.recent_event_count` | `int` | Total events observed from the IP across all endpoints in the last 5 minutes | events only |
+
+All fields are nullable; absence = unavailable context. Every exporter (guard-agent, OTel, Logfire) sees the same enriched payload. See the [guard-core telemetry reference](https://github.com/rennf93/guard-core/blob/master/docs/architecture/telemetry.md) for the full behavior spec.
 
 ## Incoming `traceparent`
 
