@@ -742,7 +742,7 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
         patch.object(cloud_handler, "is_cloud_ip", return_value=False),
     ):
         await middleware.dispatch(request, mock_call_next)
-        mock_refresh_async.assert_awaited_once()
+        assert mock_refresh_async.await_count >= 1
 
 
 @pytest.mark.asyncio

@@ -1,3 +1,4 @@
+import asyncio
 import time
 from collections.abc import Awaitable, Callable
 from typing import Any
@@ -31,6 +32,8 @@ from guard.adapters import (
 
 
 class SecurityMiddleware(BaseHTTPMiddleware):
+    _initialized: bool
+
     def __init__(self, app: ASGIApp, *, config: SecurityConfig) -> None:
         super().__init__(app)
         self.app = app
@@ -106,6 +109,21 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         self._build_event_dependent_contexts()
 
+        self._initialized = False
+        self._init_lock = asyncio.Lock()
+
+    def _is_initialized(self) -> bool:
+        return self._initialized
+
+    async def _ensure_initialized(self) -> None:
+        if self._is_initialized():
+            return
+        async with self._init_lock:
+            if self._is_initialized():
+                return
+            await self.initialize()
+            self._initialized = True
+
     def _build_event_dependent_contexts(self) -> None:
         response_context = ResponseContext(
             config=self.config,
@@ -139,6 +157,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             logger=self.logger,
             event_bus=self.event_bus,
             guard_decorator=self.guard_decorator,
+            behavior_tracker=self.handler_initializer.behavior_tracker,
         )
         self.behavioral_processor = BehavioralProcessor(behavioral_context)
 
@@ -318,6 +337,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
+        await self._ensure_initialized()
+
         guard_request = StarletteGuardRequest(request)
         wrapped_call_next = wrap_call_next(call_next, request)
 
@@ -339,10 +360,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         ):
             return unwrap_response(bypass)
 
-        if not self.security_pipeline:
-            self._build_security_pipeline()
         assert self.security_pipeline is not None
-
         if blocking := await self.security_pipeline.execute(guard_request):
             return unwrap_response(blocking)
 
@@ -441,6 +459,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         await self.handler_initializer.initialize_agent_integrations()
 
         if self.handler_initializer.composite_handler is not None:
+            self.agent_handler = self.handler_initializer.composite_handler
             self.event_bus = self.handler_initializer.build_event_bus(
                 geo_ip_handler=self.geo_ip_handler
             )

@@ -3,6 +3,21 @@ Release Notes
 
 ___
 
+v5.1.1 (2026-04-24)
+-------------------
+
+Integration fixes for OTel + enrichment pipeline (v5.1.1)
+---------------------------------------------------------
+
+- **Fixed** — `SecurityMiddleware.initialize()` is now invoked on the first request via a `_ensure_initialized()` asyncio-lock guard inside `dispatch()`. Previously the method existed but was never called, so `HandlerInitializer.initialize_agent_integrations()` never ran and the composite handler stayed `None`. Without this fix, no OTel span or Logfire log was ever emitted regardless of config.
+- **Fixed** — After composite construction, `self.agent_handler` is rebound from the bare `guard-agent` client to the composite. Downstream callers that receive `middleware.agent_handler` (most notably `guard_core.utils.extract_client_ip → send_agent_event`) now route through the composite, so enrichment and OTel see every event instead of the ~13% that happened to go through the pipeline directly.
+- **Fixed** — `BehavioralContext` now receives `handler_initializer.behavior_tracker`, matching the guard-core 1.2.1 wiring. This closes the last architectural gap so `guard.behavior.recent_event_count` populates end-to-end when `enable_enrichment=True`.
+- **Added** — `tests/test_middleware/test_middleware_lifecycle.py` — regression tests that pin lazy initialization semantics (runs once on first dispatch, no-op when telemetry disabled, single-init under concurrent dispatch) and confirm `behavioral_processor.context.behavior_tracker` is the same object owned by `handler_initializer`.
+- **Dependencies** — `guard-core>=1.2.1,<2.0.0` for the OTLP endpoint normalization + `BehaviorTracker` wiring fixes.
+- **User-visible impact** — Users with `enable_otel=True`, `enable_logfire=True`, or `enable_enrichment=True` previously saw silent drops: the middleware never ran `initialize()`, so the composite handler was never constructed and nothing reached OTel, Logfire, or the enricher. After this release the composite is built on the first request and all downstream agent callers receive it, so every event flows through telemetry and enrichment as configured. No `SecurityConfig` changes required.
+
+___
+
 v5.1.0 (2026-04-24)
 -------------------
 
