@@ -1643,6 +1643,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#two-tier-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two-tier model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#config-surface" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1691,6 +1702,17 @@
     <span class="md-ellipsis">
       
         Enabling Logfire
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enabling-enrichment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enabling enrichment
       
     </span>
   </a>
@@ -2484,6 +2506,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#two-tier-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two-tier model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#config-surface" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2532,6 +2565,17 @@
     <span class="md-ellipsis">
       
         Enabling Logfire
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enabling-enrichment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enabling enrichment
       
     </span>
   </a>
@@ -2644,8 +2688,32 @@
 <h1 id="telemetry">Telemetry<a class="headerlink" href="#telemetry" title="Permanent link">&para;</a></h1>
 <p>FastAPI Guard emits security events and request metrics through a composable telemetry pipeline provided by <a href="https://github.com/rennf93/guard-core">guard-core</a>. Events can be muted, metrics can be muted, individual security-check logs can be muted, and exports to OpenTelemetry and Logfire are opt-in.</p>
 <p>The middleware installs and tears down the telemetry pipeline automatically — you only set fields on <code>SecurityConfig</code>.</p>
+<h2 id="two-tier-model">Two-tier model<a class="headerlink" href="#two-tier-model" title="Permanent link">&para;</a></h2>
+<p>Telemetry ships in two tiers:</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Prerequisites</th>
+<th>What every exporter sees</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Raw</strong> (free)</td>
+<td><code>enable_otel=True</code> and/or <code>enable_logfire=True</code></td>
+<td>All event types, all metrics, W3C <code>traceparent</code> / <code>tracestate</code> propagation, muting. No <code>guard.*</code> enrichment fields.</td>
+</tr>
+<tr>
+<td><strong>Enriched</strong> (guard-agent tier)</td>
+<td><code>enable_agent=True</code> + <code>enable_enrichment=True</code></td>
+<td>Everything in Raw, <strong>plus</strong> per-event <code>guard.project_id</code>, <code>guard.service.name</code>, <code>guard.deployment.environment</code>, <code>guard.threat_score</code>, <code>guard.rule.id</code> + <code>guard.rule.version</code>, <code>guard.behavior.correlation_key</code>, <code>guard.behavior.recent_event_count</code>. Metrics also inherit project/service/environment tags.</td>
+</tr>
+</tbody>
+</table>
+<p>Setting <code>enable_enrichment=True</code> without <code>enable_agent=True</code> raises <code>ValidationError</code>.</p>
 <h2 id="config-surface">Config surface<a class="headerlink" href="#config-surface" title="Permanent link">&para;</a></h2>
-<p>Nine <code>SecurityConfig</code> fields control telemetry:</p>
+<p>Ten <code>SecurityConfig</code> fields control telemetry:</p>
 <table>
 <thead>
 <tr>
@@ -2709,6 +2777,12 @@
 <td><code>str</code></td>
 <td><code>"guard-core"</code></td>
 <td>Service name for Logfire.</td>
+</tr>
+<tr>
+<td><code>enable_enrichment</code></td>
+<td><code>bool</code></td>
+<td><code>False</code></td>
+<td>Populate <code>guard.*</code> metadata on every event and metric. <strong>Requires <code>enable_agent=True</code>.</strong></td>
 </tr>
 </tbody>
 </table>
@@ -2809,6 +2883,86 @@
 </span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">SecurityMiddleware</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Events are emitted as <code>logfire.span("guard.event.&lt;event_type&gt;", ...)</code> and metrics as structured logs via <code>logfire.info("guard.metric.&lt;metric_type&gt;", value=..., endpoint=..., **tags)</code>. When both <code>enable_otel</code> and <code>enable_logfire</code> are set, Logfire also observes the OpenTelemetry instruments automatically via its OTel bridge.</p>
+<p>Both OTel and Logfire spans receive enrichment fields as span attributes when <code>enable_enrichment=True</code> (see next section).</p>
+<h2 id="enabling-enrichment">Enabling enrichment<a class="headerlink" href="#enabling-enrichment" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityMiddleware</span><span class="p">,</span> <span class="n">SecurityConfig</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">enable_agent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">agent_api_key</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span><span class="p">,</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="n">agent_project_id</span><span class="o">=</span><span class="s2">&quot;proj-prod&quot;</span><span class="p">,</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="n">enable_enrichment</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="n">enable_otel</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="n">otel_service_name</span><span class="o">=</span><span class="s2">&quot;api&quot;</span><span class="p">,</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>    <span class="n">otel_resource_attributes</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;deployment.environment&quot;</span><span class="p">:</span> <span class="s2">&quot;prod&quot;</span><span class="p">},</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="p">)</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">SecurityMiddleware</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+</span></code></pre></div>
+<p>When <code>enable_enrichment=True</code>, every event and every metric routed through the middleware picks up the following <code>guard.*</code> keys inside <code>CompositeAgentHandler</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Source</th>
+<th>Applied to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>guard.project_id</code></td>
+<td><code>str</code></td>
+<td><code>agent_project_id</code></td>
+<td>events + metrics</td>
+</tr>
+<tr>
+<td><code>guard.service.name</code></td>
+<td><code>str</code></td>
+<td><code>otel_service_name</code></td>
+<td>events + metrics</td>
+</tr>
+<tr>
+<td><code>guard.deployment.environment</code></td>
+<td><code>str</code></td>
+<td><code>otel_resource_attributes["deployment.environment"]</code></td>
+<td>events + metrics</td>
+</tr>
+<tr>
+<td><code>guard.threat_score</code></td>
+<td><code>int</code> (0-100)</td>
+<td>Deterministic map of <code>event_type</code> → score (penetration_attempt=90, ip_banned=70, medium=50, rate_limited=20, default=20)</td>
+<td>events only</td>
+</tr>
+<tr>
+<td><code>guard.rule.id</code></td>
+<td><code>str</code></td>
+<td><code>DynamicRuleManager.match_event(event)</code> when the cached rule matched</td>
+<td>events only</td>
+</tr>
+<tr>
+<td><code>guard.rule.version</code></td>
+<td><code>int</code></td>
+<td>Same source as <code>guard.rule.id</code></td>
+<td>events only</td>
+</tr>
+<tr>
+<td><code>guard.behavior.correlation_key</code></td>
+<td><code>str</code> (16-char hex)</td>
+<td>SHA-256 prefix of <code>ip \| service \| floor(now/300)</code> — stable within a 5-minute window</td>
+<td>events only</td>
+</tr>
+<tr>
+<td><code>guard.behavior.recent_event_count</code></td>
+<td><code>int</code></td>
+<td>Total events observed from the IP across all endpoints in the last 5 minutes</td>
+<td>events only</td>
+</tr>
+</tbody>
+</table>
+<p>All fields are nullable; absence = unavailable context. Every exporter (guard-agent, OTel, Logfire) sees the same enriched payload. See the <a href="https://github.com/rennf93/guard-core/blob/master/docs/architecture/telemetry.md">guard-core telemetry reference</a> for the full behavior spec.</p>
 <h2 id="incoming-traceparent">Incoming <code>traceparent</code><a class="headerlink" href="#incoming-traceparent" title="Permanent link">&para;</a></h2>
 <p>When <code>enable_otel=True</code> and the request carries a W3C <code>traceparent</code> header, the guard event bus copies it into the event's metadata. The OTel handler extracts it with <code>TraceContextTextMapPropagator</code> and sets the resumed context as the parent of <code>guard.event.&lt;event_type&gt;</code> spans. This preserves the upstream trace across the guard layer.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
