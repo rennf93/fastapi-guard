@@ -8,11 +8,25 @@ keywords: fastapi guard installation, python security middleware, fastapi securi
 Installation
 ============
 
-Install `fastapi-guard` using pip:
+Install `fastapi-guard` with **uv** (recommended), **poetry**, or **pip**:
 
-```bash
-pip install fastapi-guard
-```
+=== "uv"
+
+    ```bash
+    uv add fastapi-guard
+    ```
+
+=== "poetry"
+
+    ```bash
+    poetry add fastapi-guard
+    ```
+
+=== "pip"
+
+    ```bash
+    pip install fastapi-guard
+    ```
 
 **Note**: Ensure you have Python 3.10 or higher installed.
 

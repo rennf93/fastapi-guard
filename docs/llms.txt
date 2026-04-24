@@ -146,8 +146,16 @@ Complete API documentation for all classes and functions:
 
 ## Installation
 
+Primary choice is `uv`, second is `poetry`, `pip` is the fallback.
+
 ```bash
-# Basic installation
+# uv (recommended)
+uv add fastapi-guard
+
+# poetry
+poetry add fastapi-guard
+
+# pip
 pip install fastapi-guard
 ```
 
