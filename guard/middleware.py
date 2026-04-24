@@ -68,7 +68,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 except ImportError:
                     self.logger.warning(
                         "Agent enabled but guard_agent package not installed. "
-                        "Install with: pip install fastapi-guard-agent"
+                        "Install with: pip install guard-agent"
                     )
                 except Exception as e:
                     self.logger.error(f"Failed to initialize Guard Agent: {e}")

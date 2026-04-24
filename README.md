@@ -14,10 +14,10 @@
 </p>
 
 <p align="center">
-  <a href="https://fastapi-guard.com">Website</a> &middot;
+  <a href="https://guard-core.com">Website</a> &middot;
   <a href="https://rennf93.github.io/fastapi-guard/latest/">Docs</a> &middot;
-  <a href="https://playground.fastapi-guard.com/playground">Playground</a> &middot;
-  <a href="https://app.fastapi-guard.com/dashboard">Dashboard</a> &middot;
+  <a href="https://playground.guard-core.com">Playground</a> &middot;
+  <a href="https://app.guard-core.com">Dashboard</a> &middot;
   <a href="https://discord.gg/ZW7ZJbjMkK">Discord</a>
 </p>
 
@@ -108,15 +108,15 @@ async def process_payment():
 
 FastAPI Guard has a centralized cloud platform for real-time monitoring and threat analysis across all your applications.
 
-- **[Dashboard](https://app.fastapi-guard.com/dashboard)** --- real-time security events, threat intelligence, attack pattern analytics
-- **[Playground](https://playground.fastapi-guard.com/playground)** --- try every security feature in-browser with real attack data from a live server
+- **[Dashboard](https://app.guard-core.com)** --- real-time security events, threat intelligence, attack pattern analytics
+- **[Playground](https://playground.guard-core.com)** --- try every security feature in-browser with real attack data from a live server
 - **Dynamic Rules** --- update security configuration from the dashboard without redeploying
 - **GDPR Tools** --- consent management, data export, account deletion
 
 Connect your existing setup in 2 minutes:
 
 ```bash
-uv add fastapi-guard-agent    # or: pip install fastapi-guard-agent
+uv add guard-agent    # or: pip install guard-agent
 ```
 
 ```python
@@ -130,7 +130,7 @@ from guard_agent import AgentConfig, guard_agent
 security_config = SecurityConfig(
     enable_agent=True,
     agent_api_key="your-api-key",
-    agent_endpoint="https://api.fastapi-guard.com/api/v1",
+    agent_endpoint="https://api.guard-core.com/api/v1",
     agent_project_id="your-project-id",
     agent_buffer_size=5000,
     agent_flush_interval=2,
@@ -142,7 +142,7 @@ security_config = SecurityConfig(
 
 agent_config = AgentConfig(
     api_key="your-api-key",
-    endpoint="https://api.fastapi-guard.com/api/v1",
+    endpoint="https://api.guard-core.com/api/v1",
     project_id="your-project-id",
     buffer_size=5000,
     flush_interval=2,

@@ -261,8 +261,8 @@ Combine middleware for baseline security with decorators for enhanced route-spec
 ## Related Resources
 
 ### Official Sites
-- **Main Website**: https://fastapi-guard.com
-- **Playground**: https://playground.fastapi-guard.com (Interactive demos)
+- **Main Website**: https://guard-core.com
+- **Playground**: https://playground.guard-core.com (Interactive demos)
 - **Documentation**: https://rennf93.github.io/fastapi-guard/latest/
 - **GitHub**: https://github.com/rennf93/fastapi-guard
 - **PyPI**: https://pypi.org/project/fastapi-guard/

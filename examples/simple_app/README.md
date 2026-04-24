@@ -10,7 +10,7 @@ Playground
 
 You can try FastAPI Guard without installation at the interactive demo site:
 
-**[https://playground.fastapi-guard.com](https://playground.fastapi-guard.com)**
+**[https://playground.guard-core.com](https://playground.guard-core.com)**
 
 ___
 

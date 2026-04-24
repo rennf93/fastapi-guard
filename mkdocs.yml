@@ -72,6 +72,7 @@ nav:
       - Security Config: tutorial/configuration/security-config.md
       - CORS: tutorial/configuration/cors.md
       - Logging: tutorial/configuration/logging.md
+      - Telemetry: tutorial/configuration/telemetry.md
     - Redis Integration: tutorial/redis-integration/caching.md
     - Advanced Customizations: tutorial/advanced-customizations.md
     - Example App: tutorial/examples/example-app.md

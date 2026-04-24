@@ -59,7 +59,7 @@ Live Playground
 
 Try FastAPI Guard features directly in your browser:
 
-**<https://playground.fastapi-guard.com>**
+**<https://playground.guard-core.com>**
 
 This interactive demo allows you to explore FastAPI Guard's capabilities without any setup.
 
@@ -159,18 +159,18 @@ What's New
 
 FastAPI Guard now has a centralized cloud platform for monitoring, threat analysis, and rule management across all your apps.
 
-- **Real-time security dashboard** at [app.fastapi-guard.com](https://app.fastapi-guard.com/dashboard)
+- **Real-time security dashboard** at [app.guard-core.com](https://app.guard-core.com)
 - **Threat intelligence** --- attack patterns, geographic breakdowns, severity scoring
 - **Dynamic rules** --- update security configuration from the dashboard without redeploying
 - **GDPR compliance** --- consent management, data export, account deletion
 - **Free tier** --- 10K events/month on the Individual plan
 
-Connect your existing setup in 2 minutes with [`fastapi-guard-agent`](https://pypi.org/project/fastapi-guard-agent/):
+Connect your existing setup in 2 minutes with [`guard-agent`](https://pypi.org/project/guard-agent/):
 
 ```bash
-uv add fastapi-guard-agent
+uv add guard-agent
 ```
 
 See the [Cloud Dashboard documentation](https://rennf93.github.io/fastapi-guard/latest/) for setup instructions.
 
-The [Playground](https://playground.fastapi-guard.com/playground) shows real attack data from a live server --- see what gets blocked and why before connecting your own apps.
+The [Playground](https://playground.guard-core.com) shows real attack data from a live server --- see what gets blocked and why before connecting your own apps.
