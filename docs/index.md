@@ -8,7 +8,7 @@ keywords: fastapi, security, middleware, python, ip control, penetration detecti
 FastAPI Guard
 =============
 
-![FastAPI Guard Logo](assets/big_logo.svg)
+![FastAPI Guard Logo](assets/fastapi_guard_legend.svg)
 
 [![PyPI version](https://badge.fury.io/py/fastapi-guard.svg?cache=none&icon=si%3Apython&icon_color=%23008cb4)](https://badge.fury.io/py/fastapi-guard)
 [![Release](https://github.com/rennf93/fastapi-guard/actions/workflows/release.yml/badge.svg)](https://github.com/rennf93/fastapi-guard/actions/workflows/release.yml)
@@ -75,7 +75,7 @@ You can also download the example app as a Docker container from [GitHub Contain
 docker pull ghcr.io/rennf93/fastapi-guard-example:latest
 
 # Or pull a specific version (matches library releases)
-docker pull ghcr.io/rennf93/fastapi-guard-example:v5.0.0
+docker pull ghcr.io/rennf93/fastapi-guard-example:v5.1.0
 ```
 
 ___

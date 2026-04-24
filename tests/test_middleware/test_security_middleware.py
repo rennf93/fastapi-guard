@@ -938,6 +938,8 @@ async def test_cloud_ip_blocking_with_logging() -> None:
             reason="Blocked cloud provider IP: 13.59.255.255",
             level="WARNING",
             passive_mode=False,
+            check_name="cloud_provider",
+            muted_check_logs=set(),
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -1276,6 +1278,8 @@ async def test_passive_mode_penetration_detection() -> None:
             passive_mode=True,
             trigger_info="SQL injection attempt",
             level="WARNING",
+            check_name="suspicious_activity",
+            muted_check_logs=set(),
         )
 
 
