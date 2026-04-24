@@ -1,6 +1,8 @@
 ---
+
 title: Telemetry
 description: OpenTelemetry, Logfire, and event/metric/log muting for FastAPI Guard
+
 ---
 
 # Telemetry

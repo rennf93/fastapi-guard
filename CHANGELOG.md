@@ -11,22 +11,10 @@ Telemetry pipeline wiring fix (v5.1.0)
 
 Adopts guard-core 1.1.0 and fixes a middleware wiring bug that prevented OpenTelemetry, Logfire, and event/metric/check-log muting from seeing anything emitted by the request-path security pipeline.
 
-**Fixed**
-
-- `SecurityMiddleware` previously constructed `SecurityEventBus(agent_handler, ...)` and `MetricsCollector(agent_handler, ...)` directly inside `__init__`, using the bare `guard_agent` handler (or `None`). `HandlerInitializer.initialize_agent_integrations()` then built a `CompositeAgentHandler` that no code path ever reached, because the event bus / metrics collector were frozen on the bare handler from `__init__`. As a result, every event emitted through the request pipeline (`SecurityEventBus.send_middleware_event`) and every request metric bypassed OTel, Logfire, and the configured `muted_event_types` / `muted_metric_types` filter. This release rewires the middleware to call `HandlerInitializer.build_event_bus()` and `.build_metrics_collector()` after `initialize_agent_integrations()` completes, so the composite handler is on the hot path. The dependent contexts (`ResponseContext`, `ValidationContext`, `BypassContext`, `BehavioralContext`) are rebuilt at the same point so they bind to the post-init event bus.
-
-**Added**
-
-- `tests/test_middleware/test_middleware_wiring.py` — four regression tests that pin `middleware.event_bus.agent_handler` and `middleware.metrics_collector.agent_handler` to `CompositeAgentHandler` after `middleware.initialize()` when OTel or Logfire is enabled, and confirm all dependent contexts reference the post-init event bus.
-
-**Dependencies**
-
-- `guard-core>=1.1.0,<2.0.0` (was unpinned).
-
-**User-visible impact**
-
-- Users already setting `enable_otel=True` or `enable_logfire=True` on `SecurityConfig` were previously getting handler-path events only (ip_banned, rate_limited from `ip_ban_manager` / `rate_limit_handler`, etc.) — but never pipeline-path events (`penetration_attempt`, `authentication_failed`, `user_agent_blocked`, `https_enforced`, etc.) or request metrics (`guard.request.duration`, `guard.request.count`, `guard.error.count`). After this release, every event and every metric flows through the composite, which means OTel spans, Logfire logs, and all mute fields (`muted_event_types`, `muted_metric_types`, `muted_check_logs`) work as documented.
-- No `SecurityConfig` changes required. Existing configurations produce strictly more telemetry, not less.
+- **Fixed** — `SecurityMiddleware` previously constructed `SecurityEventBus(agent_handler, ...)` and `MetricsCollector(agent_handler, ...)` directly inside `__init__`, using the bare `guard_agent` handler (or `None`). `HandlerInitializer.initialize_agent_integrations()` then built a `CompositeAgentHandler` that no code path ever reached, because the event bus / metrics collector were frozen on the bare handler from `__init__`. As a result, every event emitted through the request pipeline (`SecurityEventBus.send_middleware_event`) and every request metric bypassed OTel, Logfire, and the configured `muted_event_types` / `muted_metric_types` filter. This release rewires the middleware to call `HandlerInitializer.build_event_bus()` and `.build_metrics_collector()` after `initialize_agent_integrations()` completes, so the composite handler is on the hot path. The dependent contexts (`ResponseContext`, `ValidationContext`, `BypassContext`, `BehavioralContext`) are rebuilt at the same point so they bind to the post-init event bus.
+- **Added** — `tests/test_middleware/test_middleware_wiring.py` — four regression tests that pin `middleware.event_bus.agent_handler` and `middleware.metrics_collector.agent_handler` to `CompositeAgentHandler` after `middleware.initialize()` when OTel or Logfire is enabled, and confirm all dependent contexts reference the post-init event bus.
+- **Dependencies** — `guard-core>=1.1.0,<2.0.0` (was unpinned).
+- **User-visible impact** — Users already setting `enable_otel=True` or `enable_logfire=True` on `SecurityConfig` were previously getting handler-path events only (ip_banned, rate_limited from `ip_ban_manager` / `rate_limit_handler`, etc.) — but never pipeline-path events (`penetration_attempt`, `authentication_failed`, `user_agent_blocked`, `https_enforced`, etc.) or request metrics (`guard.request.duration`, `guard.request.count`, `guard.error.count`). After this release, every event and every metric flows through the composite, which means OTel spans, Logfire logs, and all mute fields (`muted_event_types`, `muted_metric_types`, `muted_check_logs`) work as documented. No `SecurityConfig` changes required; existing configurations produce strictly more telemetry, not less.
 
 ___
 
