@@ -146,10 +146,19 @@ async def redis_cleanup() -> None:
 
 @pytest.fixture(autouse=True)
 async def reset_rate_limiter() -> None:
-    """Reset rate limiter between tests to avoid interference"""
-    config = SecurityConfig(geo_ip_handler=IPInfoManager(IPINFO_TOKEN, None))
+    config = SecurityConfig(
+        redis_url=REDIS_URL,
+        redis_prefix=REDIS_PREFIX,
+        enable_redis=True,
+        geo_ip_handler=IPInfoManager(IPINFO_TOKEN, None),
+    )
     rate_limit = rate_limit_handler(config)
     await rate_limit.reset()
+
+    fresh_redis = RedisManager(config)
+    await fresh_redis.initialize()
+    rate_limit.redis_handler = fresh_redis
+    rate_limit.rate_limit_script_sha = None
 
     import redis.asyncio as redis_asyncio
 
