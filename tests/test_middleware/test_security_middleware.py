@@ -8,6 +8,7 @@ from unittest.mock import ANY, AsyncMock, Mock, patch
 import pytest
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import JSONResponse
+from guard_core.detection_result import DetectionResult
 from guard_core.handlers.cloud_handler import cloud_handler
 from guard_core.handlers.ipinfo_handler import IPInfoManager
 from guard_core.handlers.ratelimit_handler import rate_limit_handler
@@ -462,6 +463,8 @@ async def test_custom_response_modifier_parameterized(
                 response = await client.get(request_path, headers=request_headers)
                 response_json = response.json()
                 assert "detail" in response_json
+            else:
+                assert expected_status_code < 400
 
 
 @pytest.mark.asyncio
@@ -1231,14 +1234,18 @@ async def test_passive_mode_penetration_detection() -> None:
         patch(
             "guard_core.core.checks.implementations.suspicious_activity.detect_penetration_patterns",
             new_callable=AsyncMock,
-            return_value=(True, "SQL injection attempt"),
+            return_value=DetectionResult(
+                is_threat=True, trigger_info="SQL injection attempt"
+            ),
         ) as mock_detect,
         patch(
             "guard_core.core.checks.implementations.suspicious_activity.log_activity"
         ) as mock_log,
         patch(
             "guard_core.utils.detect_penetration_attempt",
-            return_value=(True, "SQL injection attempt"),
+            return_value=DetectionResult(
+                is_threat=True, trigger_info="SQL injection attempt"
+            ),
         ),
     ):
 
@@ -1267,7 +1274,6 @@ async def test_passive_mode_penetration_detection() -> None:
         assert response.status_code == status.HTTP_200_OK
         assert call_next_called, "call_next should be called in passive mode"
 
-        # detect_penetration_patterns is called with 4 arguments now
         assert mock_detect.called, "detect_penetration_patterns should be called"
 
         mock_log.assert_any_call(

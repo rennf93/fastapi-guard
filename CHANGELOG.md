@@ -3,6 +3,19 @@ Release Notes
 
 ___
 
+v5.2.0 (2026-04-25)
+-------------------
+
+guard-core 2.0.0 adoption (v5.2.0)
+----------------------------------
+
+- **Changed** — `SecurityMiddleware.suspicious_request_counts` is now typed `dict[str, dict[str, int]]` (per-IP, per-category nested counters) to match the guard-core 2.0.0 protocol shape. The middleware itself does not mutate this attribute directly — guard-core's `SuspiciousActivityCheck` owns the writes — so no behavior change is visible to user code that did not reach into this internal field.
+- **Changed** — Test fixtures that previously mocked `guard_core.utils.detect_penetration_attempt` and `guard_core.core.checks.implementations.suspicious_activity.detect_penetration_patterns` with raw `(bool, str)` tuples now return `DetectionResult(is_threat=..., trigger_info=...)`, mirroring the new return type from guard-core's detection engine.
+- **Compat** — Requires guard-core 2.0.0 or newer. The major-bump in guard-core changes `suspicious_request_counts` to a per-category nested dict, replaces `detect_penetration_attempt` / `detect_penetration_patterns` 2-tuple returns with `DetectionResult`, and migrates the cloud-IP cache namespace. fastapi-guard's middleware was updated to match the new protocol shape; user code that didn't reach into those internals continues to work unchanged.
+- **User-visible impact** — None for users on the public API (`SecurityConfig`, `SecurityMiddleware`, `SecurityDecorator`, the 20+ per-route decorators). Users who imported guard-core internals directly (e.g. `detect_penetration_attempt`, `detect_penetration_patterns`, or the raw `suspicious_request_counts` shape) must adapt to the new return type / nested dict — see the guard-core 2.0.0 release notes for the migration guide.
+
+___
+
 v5.1.1 (2026-04-24)
 -------------------
 

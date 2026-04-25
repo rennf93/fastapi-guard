@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from fastapi import FastAPI, Request, Response
 from guard_core.decorators.base import RouteConfig
+from guard_core.detection_result import DetectionResult
 from guard_core.handlers.behavior_handler import BehaviorRule
 
 from guard import SecurityConfig, SecurityDecorator
@@ -528,7 +529,8 @@ async def test_route_specific_middleware_validations(
         middleware.route_resolver, "get_route_config", return_value=mock_route_config
     ):
         with patch(
-            "guard_core.utils.detect_penetration_attempt", return_value=(False, "")
+            "guard_core.utils.detect_penetration_attempt",
+            return_value=DetectionResult(is_threat=False, trigger_info=""),
         ):
             response = await middleware.dispatch(mock_request, mock_call_next)
             assert response.status_code == expected_status
@@ -568,7 +570,8 @@ async def test_route_specific_rate_limit_with_redis() -> None:
             return_value=None,
         ) as mock_check:
             with patch(
-                "guard_core.utils.detect_penetration_attempt", return_value=(False, "")
+                "guard_core.utils.detect_penetration_attempt",
+                return_value=DetectionResult(is_threat=False, trigger_info=""),
             ):
                 await middleware.dispatch(mock_request, mock_call_next)
                 assert mock_check.call_count >= 2
