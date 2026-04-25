@@ -151,6 +151,14 @@ async def reset_rate_limiter() -> None:
     rate_limit = rate_limit_handler(config)
     await rate_limit.reset()
 
+    import redis.asyncio as redis_asyncio
+
+    client = redis_asyncio.from_url(REDIS_URL)
+    try:
+        await client.flushdb()
+    finally:
+        await client.aclose()
+
 
 @pytest.fixture
 def clean_rate_limiter() -> None:
