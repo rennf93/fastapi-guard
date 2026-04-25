@@ -97,16 +97,26 @@ def _ensure_detection_components(self) -> None:
 ```python
 # In middleware.py
 if self.config.enable_penetration_detection:
-    detection_result, trigger_info = await detect_penetration_attempt(request)
-    if detection_result:
-        # Handle detected attack
+    result = await detect_penetration_attempt(
+        request,
+        config=self.config,
+        route_config=route_config,
+    )
+    if result.is_threat:
+        # result.trigger_info, result.threat_categories, result.threat_scores
+        # are all available for richer logging, metrics, or response shaping
+        ...
 ```
 
 ### 2. Content Extraction
 
 ```python
 # In utils.py
-async def detect_penetration_attempt(request: Request) -> tuple[bool, str]:
+async def detect_penetration_attempt(
+    request: Request,
+    config: SecurityConfig | None = None,
+    route_config: RouteConfig | None = None,
+) -> DetectionResult:
     # Extract content from various sources
     contents_to_check = []
     

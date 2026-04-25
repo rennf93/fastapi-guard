@@ -105,16 +105,35 @@ async def get_all_patterns(cls) -> list[str]:
     """Get all registered patterns (default + custom)."""
 
 @classmethod
-async def get_all_compiled_patterns(cls) -> list[tuple[re.Pattern, frozenset[str]]]:
+async def get_default_compiled_patterns(
+    cls,
+) -> list[tuple[re.Pattern, frozenset[str], str]]:
+    """Default compiled patterns with their contexts and category label."""
+
+@classmethod
+async def get_custom_compiled_patterns(
+    cls,
+) -> list[tuple[re.Pattern, frozenset[str], str]]:
+    """Custom compiled patterns with their contexts and category label."""
+
+@classmethod
+async def get_all_compiled_patterns(
+    cls,
+) -> list[tuple[re.Pattern, frozenset[str], str]]:
     """
-    Get all compiled regex patterns with their applicable contexts.
+    Get all compiled regex patterns with their applicable contexts and category.
 
     Returns:
-        List of (compiled_pattern, context_set) tuples.
+        List of (compiled_pattern, context_set, category) tuples.
         Context set contains applicable input sources:
-        "query_param", "url_path", "header", "request_body", "unknown"
+        "query_param", "url_path", "header", "request_body", "unknown".
+        Category is the threat-class label (e.g. "xss", "sqli",
+        "dir_traversal", "ssrf", "xml", "recon", "sensitive_file",
+        "ldap", "nosql", "custom").
     """
 ```
+
+> Custom patterns added via `add_pattern(..., custom=True)` always carry the literal category label `"custom"` and run regardless of `detection_enabled_categories` filtering on `SecurityConfig` or per-route `RouteConfig`.
 
 ___
 
