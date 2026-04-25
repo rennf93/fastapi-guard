@@ -1,5 +1,5 @@
 import asyncio
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi import FastAPI
@@ -11,6 +11,7 @@ from guard.middleware import SecurityMiddleware
 @pytest.fixture
 def otel_config() -> SecurityConfig:
     return SecurityConfig(
+        enable_redis=False,
         enable_otel=True,
         otel_service_name="guard-test",
         otel_exporter_endpoint="http://localhost:4318",
@@ -55,7 +56,7 @@ async def test_initialize_rebinds_agent_handler_to_composite(
 
 
 async def test_initialize_is_noop_when_no_telemetry_enabled() -> None:
-    config = SecurityConfig()
+    config = SecurityConfig(enable_redis=False)
     app = FastAPI()
     mw = SecurityMiddleware(app, config=config)
 
@@ -87,10 +88,46 @@ async def test_concurrent_first_dispatch_triggers_single_init(
     assert calls == 1
 
 
+async def test_ensure_initialized_fast_path_skips_lock_when_already_initialized(
+    otel_config: SecurityConfig,
+) -> None:
+    app = FastAPI()
+    mw = SecurityMiddleware(app, config=otel_config)
+    await mw._ensure_initialized()
+    assert mw._initialized is True
+
+    mw.initialize = MagicMock(  # type: ignore[method-assign]
+        side_effect=AssertionError("should not be called again")
+    )
+    await mw._ensure_initialized()
+    await mw._ensure_initialized()
+
+
+async def test_ensure_initialized_double_check_after_lock(
+    otel_config: SecurityConfig,
+) -> None:
+    app = FastAPI()
+    mw = SecurityMiddleware(app, config=otel_config)
+
+    original = mw.initialize
+
+    async def slow_init() -> None:
+        await asyncio.sleep(0.02)
+        await original()
+
+    mw.initialize = slow_init  # type: ignore[method-assign]
+
+    tasks = [asyncio.create_task(mw._ensure_initialized()) for _ in range(5)]
+    await asyncio.gather(*tasks)
+
+    assert mw._initialized is True
+
+
 async def test_behavior_tracker_threaded_through_behavioral_context() -> None:
     enriched_config = SecurityConfig(
+        enable_redis=False,
         enable_agent=True,
-        agent_api_key="k",
+        agent_api_key="0123456789",
         agent_project_id="p",
         enable_enrichment=True,
         enable_otel=True,

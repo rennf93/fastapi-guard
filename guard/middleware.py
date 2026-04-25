@@ -32,8 +32,6 @@ from guard.adapters import (
 
 
 class SecurityMiddleware(BaseHTTPMiddleware):
-    _initialized: bool
-
     def __init__(self, app: ASGIApp, *, config: SecurityConfig) -> None:
         super().__init__(app)
         self.app = app
