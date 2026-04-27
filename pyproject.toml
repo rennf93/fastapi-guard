@@ -1,6 +1,6 @@
 [project]
 name = "fastapi_guard"
-version = "5.2.0"
+version = "6.0.0"
 description = "Production-ready security middleware for FastAPI — IP filtering, rate limiting, penetration detection, and 20+ per-route security decorators."
 authors = [
     {name = "Renzo Franceschini", email = "rennf93@users.noreply.github.com"}
@@ -161,18 +161,6 @@ warn_no_return = true
 warn_unreachable = true
 exclude = ["vulture_whitelist.py", ".venv"]
 
-[[tool.mypy.overrides]]
-module = "pydantic.*"
-follow_imports = "skip"
-
-[[tool.mypy.overrides]]
-module = "redis.*"
-follow_imports = "skip"
-
-[[tool.mypy.overrides]]
-module = ["guard_core", "guard_core.*", "guard_core.core.*", "guard_core.handlers.*", "guard_core.protocols.*", "guard_core.decorators.*", "guard_core.utils", "guard_core.detection_engine.*"]
-ignore_missing_imports = true
-follow_imports = "skip"
 
 [tool.pymarkdown.plugins.md007]
 # MD007 - Unordered list indentation (set to 2 spaces)

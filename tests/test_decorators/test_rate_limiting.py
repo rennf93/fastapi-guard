@@ -129,7 +129,7 @@ async def test_rate_limiting_decorators_unit(security_config: SecurityConfig) ->
     rate_limit_decorator = decorator.rate_limit(requests=5, window=120)
     decorated_func = rate_limit_decorator(mock_func)
 
-    route_id = decorated_func._guard_route_id  # type: ignore[attr-defined]
+    route_id = decorated_func._guard_route_id
     route_config = decorator.get_route_config(route_id)
     assert route_config is not None
     assert route_config.rate_limit == 5
@@ -144,7 +144,7 @@ async def test_rate_limiting_decorators_unit(security_config: SecurityConfig) ->
     geo_rate_limit_decorator = decorator.geo_rate_limit(limits)
     decorated_func2 = geo_rate_limit_decorator(mock_func2)
 
-    route_id2 = decorated_func2._guard_route_id  # type: ignore[attr-defined]
+    route_id2 = decorated_func2._guard_route_id
     route_config2 = decorator.get_route_config(route_id2)
     assert route_config2 is not None
     assert route_config2.geo_rate_limits == limits

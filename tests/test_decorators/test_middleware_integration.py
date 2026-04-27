@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request, Response
 from guard_core.decorators.base import RouteConfig
 from guard_core.detection_result import DetectionResult
 from guard_core.handlers.behavior_handler import BehaviorRule
+from guard_core.protocols import GuardResponse
 
 from guard import SecurityConfig, SecurityDecorator
 from guard.adapters import StarletteGuardResponse
@@ -437,9 +438,9 @@ async def test_bypass_all_security_checks() -> None:
 async def test_bypass_all_security_checks_with_custom_modifier() -> None:
     app = FastAPI()
 
-    async def custom_modifier(response: Response) -> Response:
-        modified_response = Response("custom modified", status_code=202)
-        return modified_response
+    async def custom_modifier(response: GuardResponse) -> GuardResponse:
+        del response
+        return StarletteGuardResponse(Response("custom modified", status_code=202))
 
     config = SecurityConfig(custom_response_modifier=custom_modifier)
     middleware = SecurityMiddleware(app, config=config)
