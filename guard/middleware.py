@@ -19,6 +19,7 @@ from guard_core.handlers.ratelimit_handler import RateLimitManager
 from guard_core.handlers.security_headers_handler import security_headers_manager
 from guard_core.models import SecurityConfig
 from guard_core.protocols import AgentHandlerProtocol, GuardResponse
+from guard_core.protocols.request_protocol import GuardRequest
 from guard_core.utils import extract_client_ip, setup_custom_logging
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response as StarletteResponse
@@ -356,6 +357,63 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         for key, value in cors_headers.items():
             response.headers[key] = value
 
+    async def _handle_preflight(
+        self, request: Request, guard_request: StarletteGuardRequest
+    ) -> Response | None:
+        if self._cors_handler is None:
+            return None
+        if not is_preflight(request.method, request.headers):
+            return None
+        assert self.security_pipeline is not None
+        blocking = await self.security_pipeline.execute(guard_request)
+        if blocking is not None:
+            blocked = unwrap_response(blocking)
+            self._inject_cors_headers(blocked, request.headers)
+            return blocked
+        return self._build_preflight_starlette_response(request.headers)
+
+    async def _handle_passthrough(
+        self,
+        request: Request,
+        guard_request: StarletteGuardRequest,
+        wrapped_call_next: Callable[[GuardRequest], Awaitable[GuardResponse]],
+    ) -> Response | None:
+        passthrough = await self.bypass_handler.handle_passthrough(
+            guard_request, wrapped_call_next
+        )
+        if passthrough is None:
+            return None
+        passthrough_response = unwrap_response(passthrough)
+        self._inject_cors_headers(passthrough_response, request.headers)
+        return passthrough_response
+
+    async def _handle_security_bypass(
+        self,
+        request: Request,
+        guard_request: StarletteGuardRequest,
+        wrapped_call_next: Callable[[GuardRequest], Awaitable[GuardResponse]],
+        route_config: RouteConfig | None,
+    ) -> Response | None:
+        bypass = await self.bypass_handler.handle_security_bypass(
+            guard_request, wrapped_call_next, route_config
+        )
+        if bypass is None:
+            return None
+        bypass_response = unwrap_response(bypass)
+        self._inject_cors_headers(bypass_response, request.headers)
+        return bypass_response
+
+    async def _handle_pipeline_block(
+        self, request: Request, guard_request: StarletteGuardRequest
+    ) -> Response | None:
+        assert self.security_pipeline is not None
+        blocking = await self.security_pipeline.execute(guard_request)
+        if blocking is None:
+            return None
+        blocked = unwrap_response(blocking)
+        self._inject_cors_headers(blocked, request.headers)
+        return blocked
+
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
@@ -363,25 +421,16 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         guard_request = StarletteGuardRequest(request)
         wrapped_call_next = wrap_call_next(call_next, request)
-
         self._populate_guard_state(guard_request, request)
 
-        if self._cors_handler is not None and is_preflight(
-            request.method, request.headers
-        ):
-            assert self.security_pipeline is not None
-            if blocking := await self.security_pipeline.execute(guard_request):
-                blocked = unwrap_response(blocking)
-                self._inject_cors_headers(blocked, request.headers)
-                return blocked
-            return self._build_preflight_starlette_response(request.headers)
+        preflight_response = await self._handle_preflight(request, guard_request)
+        if preflight_response is not None:
+            return preflight_response
 
-        passthrough = await self.bypass_handler.handle_passthrough(
-            guard_request, wrapped_call_next
+        passthrough_response = await self._handle_passthrough(
+            request, guard_request, wrapped_call_next
         )
-        if passthrough:
-            passthrough_response = unwrap_response(passthrough)
-            self._inject_cors_headers(passthrough_response, request.headers)
+        if passthrough_response is not None:
             return passthrough_response
 
         client_ip = await extract_client_ip(
@@ -389,18 +438,15 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         )
         route_config = self.route_resolver.get_route_config(guard_request)
 
-        if bypass := await self.bypass_handler.handle_security_bypass(
-            guard_request, wrapped_call_next, route_config
-        ):
-            bypass_response = unwrap_response(bypass)
-            self._inject_cors_headers(bypass_response, request.headers)
+        bypass_response = await self._handle_security_bypass(
+            request, guard_request, wrapped_call_next, route_config
+        )
+        if bypass_response is not None:
             return bypass_response
 
-        assert self.security_pipeline is not None
-        if blocking := await self.security_pipeline.execute(guard_request):
-            blocked = unwrap_response(blocking)
-            self._inject_cors_headers(blocked, request.headers)
-            return blocked
+        blocked_response = await self._handle_pipeline_block(request, guard_request)
+        if blocked_response is not None:
+            return blocked_response
 
         if route_config and route_config.behavior_rules and client_ip:
             await self.behavioral_processor.process_usage_rules(
