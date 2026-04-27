@@ -60,7 +60,7 @@ jobs:
       - name: Run AI inference
         id: inference
         if: steps.target.outputs.skip != 'true'
-        uses: actions/ai-inference@v1
+        uses: actions/ai-inference@v2
         with:
           prompt: |
             You are an assistant that summarizes a GitHub issue for maintainers of the `fastapi-guard` Python package (the FastAPI/ASGI adapter for the guard-core engine).
