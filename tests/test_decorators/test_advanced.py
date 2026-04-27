@@ -225,7 +225,7 @@ async def test_honeypot_form_detection(security_config: SecurityConfig) -> None:
     honeypot_decorator = decorator.honeypot_detection(["bot_trap"])
     decorated_func = honeypot_decorator(mock_func)
 
-    route_id = decorated_func._guard_route_id  # type: ignore[attr-defined]
+    route_id = decorated_func._guard_route_id
     route_config = decorator.get_route_config(route_id)
     assert route_config is not None
     validator = route_config.custom_validators[0]
@@ -250,7 +250,7 @@ async def test_honeypot_json_exception(security_config: SecurityConfig) -> None:
     honeypot_decorator = decorator.honeypot_detection(["spam_check"])
     decorated_func = honeypot_decorator(mock_func)
 
-    route_id = decorated_func._guard_route_id  # type: ignore[attr-defined]
+    route_id = decorated_func._guard_route_id
     route_config = decorator.get_route_config(route_id)
     assert route_config is not None
     validator = route_config.custom_validators[0]
@@ -275,7 +275,7 @@ async def test_honeypot_json_detection(security_config: SecurityConfig) -> None:
     honeypot_decorator = decorator.honeypot_detection(["spam_check"])
     decorated_func = honeypot_decorator(mock_func)
 
-    route_id = decorated_func._guard_route_id  # type: ignore[attr-defined]
+    route_id = decorated_func._guard_route_id
     route_config = decorator.get_route_config(route_id)
     assert route_config is not None
     validator = route_config.custom_validators[0]

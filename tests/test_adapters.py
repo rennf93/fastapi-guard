@@ -9,7 +9,7 @@ from guard.adapters import (
 )
 
 
-async def test_starlette_guard_request_url_path():
+async def test_starlette_guard_request_url_path() -> None:
     scope = {
         "type": "http",
         "method": "GET",
@@ -24,7 +24,7 @@ async def test_starlette_guard_request_url_path():
     assert guard_request.url_path == "/test"
 
 
-async def test_starlette_guard_request_method():
+async def test_starlette_guard_request_method() -> None:
     scope = {
         "type": "http",
         "method": "POST",
@@ -39,7 +39,7 @@ async def test_starlette_guard_request_method():
     assert guard_request.method == "POST"
 
 
-async def test_starlette_guard_request_client_host():
+async def test_starlette_guard_request_client_host() -> None:
     scope = {
         "type": "http",
         "method": "GET",
@@ -55,7 +55,7 @@ async def test_starlette_guard_request_client_host():
     assert guard_request.client_host == "127.0.0.1"
 
 
-async def test_starlette_guard_request_no_client():
+async def test_starlette_guard_request_no_client() -> None:
     scope = {
         "type": "http",
         "method": "GET",
@@ -70,7 +70,7 @@ async def test_starlette_guard_request_no_client():
     assert guard_request.client_host is None
 
 
-async def test_starlette_guard_request_headers():
+async def test_starlette_guard_request_headers() -> None:
     scope = {
         "type": "http",
         "method": "GET",
@@ -85,7 +85,7 @@ async def test_starlette_guard_request_headers():
     assert guard_request.headers.get("x-custom") == "value"
 
 
-async def test_starlette_guard_request_query_params():
+async def test_starlette_guard_request_query_params() -> None:
     scope = {
         "type": "http",
         "method": "GET",
@@ -100,7 +100,7 @@ async def test_starlette_guard_request_query_params():
     assert guard_request.query_params.get("key") == "val"
 
 
-async def test_starlette_guard_request_scheme():
+async def test_starlette_guard_request_scheme() -> None:
     scope = {
         "type": "http",
         "method": "GET",
@@ -116,41 +116,41 @@ async def test_starlette_guard_request_scheme():
     assert guard_request.url_scheme == "https"
 
 
-async def test_starlette_guard_response_properties():
+async def test_starlette_guard_response_properties() -> None:
     response = Response(content="test", status_code=200)
     guard_response = StarletteGuardResponse(response)
     assert guard_response.status_code == 200
     assert guard_response.body == b"test"
 
 
-async def test_starlette_guard_response_headers():
+async def test_starlette_guard_response_headers() -> None:
     response = Response(content="test", status_code=200)
     guard_response = StarletteGuardResponse(response)
     guard_response.headers["X-Custom"] = "value"
     assert response.headers["X-Custom"] == "value"
 
 
-async def test_starlette_response_factory_create():
+async def test_starlette_response_factory_create() -> None:
     factory = StarletteResponseFactory()
     guard_resp = factory.create_response("error", 403)
     assert guard_resp.status_code == 403
     assert guard_resp.body == b"error"
 
 
-async def test_starlette_response_factory_redirect():
+async def test_starlette_response_factory_redirect() -> None:
     factory = StarletteResponseFactory()
     guard_resp = factory.create_redirect_response("https://example.com", 301)
     assert guard_resp.status_code == 301
 
 
-async def test_unwrap_response_starlette():
+async def test_unwrap_response_starlette() -> None:
     response = Response(content="test", status_code=200)
     guard_response = StarletteGuardResponse(response)
     unwrapped = unwrap_response(guard_response)
     assert unwrapped is response
 
 
-async def test_unwrap_response_generic():
+async def test_unwrap_response_generic() -> None:
     from unittest.mock import MagicMock
 
     mock_resp = MagicMock()
@@ -161,7 +161,7 @@ async def test_unwrap_response_generic():
     assert unwrapped.status_code == 404
 
 
-async def test_starlette_guard_request_scope():
+async def test_starlette_guard_request_scope() -> None:
     scope = {
         "type": "http",
         "method": "GET",

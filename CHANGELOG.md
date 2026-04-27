@@ -3,6 +3,18 @@ Release Notes
 
 ___
 
+v6.0.0 (2026-04-26)
+--------------------
+
+CORS routed through SecurityMiddleware via guard_core.cors_handler (v6.0.0)
+----------------------------------------------------------------------------
+
+- **Breaking** — Removed `SecurityMiddleware.configure_cors(app, config)`. CORS is now handled inside `SecurityMiddleware`; configure via `SecurityConfig.cors_*` fields and the middleware activates CORS automatically. The security pipeline now runs against `OPTIONS` preflight requests — previously the external Starlette `CORSMiddleware` short-circuited preflights ahead of `SecurityMiddleware`, allowing banned IPs and rate-limited clients to preflight freely.
+- **Migration** — Before: `app.add_middleware(SecurityMiddleware, config=config)` + `SecurityMiddleware.configure_cors(app, config)`. After: `app.add_middleware(SecurityMiddleware, config=config)` only.
+- **Internal** — Lock refreshed to consume `guard-core==2.2.0` (transitively brings the new `guard_core.handlers.cors_handler` module). pyproject.toml dependency on guard-core remains unconstrained.
+
+___
+
 v5.2.0 (2026-04-25)
 -------------------
 

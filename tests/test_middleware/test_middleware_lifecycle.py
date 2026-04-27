@@ -1,4 +1,5 @@
 import asyncio
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -47,12 +48,14 @@ async def test_initialize_rebinds_agent_handler_to_composite(
 ) -> None:
     app = FastAPI()
     mw = SecurityMiddleware(app, config=otel_config)
-    assert mw.handler_initializer.composite_handler is None
+    pre_init_composite = mw.handler_initializer.composite_handler
+    assert pre_init_composite is None
 
     await mw._ensure_initialized()
 
-    assert mw.handler_initializer.composite_handler is not None
-    assert mw.agent_handler is mw.handler_initializer.composite_handler
+    composite = mw.handler_initializer.composite_handler
+    assert composite is not None
+    assert mw.agent_handler is composite
 
 
 async def test_initialize_is_noop_when_no_telemetry_enabled() -> None:
@@ -96,7 +99,7 @@ async def test_ensure_initialized_fast_path_skips_lock_when_already_initialized(
     await mw._ensure_initialized()
     assert mw._initialized is True
 
-    mw.initialize = MagicMock(  # type: ignore[method-assign]
+    cast(Any, mw).initialize = MagicMock(
         side_effect=AssertionError("should not be called again")
     )
     await mw._ensure_initialized()
@@ -115,7 +118,7 @@ async def test_ensure_initialized_double_check_after_lock(
         await asyncio.sleep(0.02)
         await original()
 
-    mw.initialize = slow_init  # type: ignore[method-assign]
+    cast(Any, mw).initialize = slow_init
 
     tasks = [asyncio.create_task(mw._ensure_initialized()) for _ in range(5)]
     await asyncio.gather(*tasks)

@@ -1,10 +1,9 @@
 import asyncio
 import time
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, cast
 
-from fastapi import FastAPI, Request, Response
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Request, Response
 from guard_core.core.behavioral import BehavioralContext, BehavioralProcessor
 from guard_core.core.bypass import BypassContext, BypassHandler
 from guard_core.core.checks.pipeline import SecurityCheckPipeline
@@ -15,16 +14,18 @@ from guard_core.core.routing import RouteConfigResolver, RoutingContext
 from guard_core.core.validation import RequestValidator, ValidationContext
 from guard_core.decorators.base import BaseSecurityDecorator, RouteConfig
 from guard_core.handlers.cloud_handler import cloud_handler
+from guard_core.handlers.cors_handler import CorsHandler, is_preflight
 from guard_core.handlers.ratelimit_handler import RateLimitManager
 from guard_core.handlers.security_headers_handler import security_headers_manager
 from guard_core.models import SecurityConfig
+from guard_core.protocols import AgentHandlerProtocol, GuardResponse
 from guard_core.utils import extract_client_ip, setup_custom_logging
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response as StarletteResponse
 from starlette.types import ASGIApp
 
 from guard.adapters import (
     StarletteGuardRequest,
-    StarletteGuardResponse,
     StarletteResponseFactory,
     unwrap_response,
     wrap_call_next,
@@ -57,14 +58,16 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
             self.redis_handler = RedisManager(config)
 
-        self.agent_handler = None
+        self.agent_handler: AgentHandlerProtocol | None = None
         if config.enable_agent:
             agent_config = config.to_agent_config()
             if agent_config:
                 try:
                     from guard_agent import guard_agent
 
-                    self.agent_handler = guard_agent(agent_config)
+                    self.agent_handler = cast(
+                        AgentHandlerProtocol, guard_agent(agent_config)
+                    )
                     self.logger.info("Guard Agent initialized successfully")
                 except ImportError:
                     self.logger.warning(
@@ -109,6 +112,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         self._initialized = False
         self._init_lock = asyncio.Lock()
+        self._cors_handler: CorsHandler | None = (
+            CorsHandler(config) if config.enable_cors else None
+        )
 
     def _is_initialized(self) -> bool:
         return self._initialized
@@ -332,6 +338,24 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if hasattr(ep, "__module__") and hasattr(ep, "__qualname__"):
             guard_request.state.guard_endpoint_id = f"{ep.__module__}.{ep.__qualname__}"
 
+    def _build_preflight_starlette_response(
+        self, request_headers: Any
+    ) -> StarletteResponse:
+        assert self._cors_handler is not None
+        preflight = self._cors_handler.build_preflight_response(request_headers)
+        return StarletteResponse(
+            content=preflight.body,
+            status_code=preflight.status_code,
+            headers=preflight.headers,
+        )
+
+    def _inject_cors_headers(self, response: Response, request_headers: Any) -> None:
+        if self._cors_handler is None:
+            return
+        cors_headers = self._cors_handler.build_response_headers(request_headers)
+        for key, value in cors_headers.items():
+            response.headers[key] = value
+
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
@@ -342,11 +366,23 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         self._populate_guard_state(guard_request, request)
 
+        if self._cors_handler is not None and is_preflight(
+            request.method, request.headers
+        ):
+            assert self.security_pipeline is not None
+            if blocking := await self.security_pipeline.execute(guard_request):
+                blocked = unwrap_response(blocking)
+                self._inject_cors_headers(blocked, request.headers)
+                return blocked
+            return self._build_preflight_starlette_response(request.headers)
+
         passthrough = await self.bypass_handler.handle_passthrough(
             guard_request, wrapped_call_next
         )
         if passthrough:
-            return unwrap_response(passthrough)
+            passthrough_response = unwrap_response(passthrough)
+            self._inject_cors_headers(passthrough_response, request.headers)
+            return passthrough_response
 
         client_ip = await extract_client_ip(
             guard_request, self.config, self.agent_handler
@@ -356,11 +392,15 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if bypass := await self.bypass_handler.handle_security_bypass(
             guard_request, wrapped_call_next, route_config
         ):
-            return unwrap_response(bypass)
+            bypass_response = unwrap_response(bypass)
+            self._inject_cors_headers(bypass_response, request.headers)
+            return bypass_response
 
         assert self.security_pipeline is not None
         if blocking := await self.security_pipeline.execute(guard_request):
-            return unwrap_response(blocking)
+            blocked = unwrap_response(blocking)
+            self._inject_cors_headers(blocked, request.headers)
+            return blocked
 
         if route_config and route_config.behavior_rules and client_ip:
             await self.behavioral_processor.process_usage_rules(
@@ -371,9 +411,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response_time = time.time() - start_time
 
-        return await self._process_response(
+        processed = await self._process_response(
             request, response, response_time, route_config
         )
+        self._inject_cors_headers(processed, request.headers)
+        return processed
 
     async def _process_decorator_usage_rules(
         self, request: Request, client_ip: str, route_config: RouteConfig
@@ -413,39 +455,18 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 ttl=self.config.cloud_ip_refresh_interval,
             )
         else:
-            cloud_handler.refresh(self.config.block_cloud_providers)
+            await cloud_handler.refresh(self.config.block_cloud_providers)
         self.last_cloud_ip_refresh = int(time.time())
 
     async def create_error_response(
         self, status_code: int, default_message: str
-    ) -> StarletteGuardResponse:
-        result: StarletteGuardResponse = (
-            await self.response_factory.create_error_response(
-                status_code, default_message
-            )
+    ) -> GuardResponse:
+        return await self.response_factory.create_error_response(
+            status_code, default_message
         )
-        return result
 
     async def reset(self) -> None:
         await self.rate_limit_handler.reset()
-
-    @staticmethod
-    def configure_cors(app: FastAPI, config: SecurityConfig) -> bool:
-        if config.enable_cors:
-            cors_params: dict[str, Any] = {
-                "allow_origins": config.cors_allow_origins,
-                "allow_methods": config.cors_allow_methods,
-                "allow_headers": config.cors_allow_headers,
-                "allow_credentials": config.cors_allow_credentials,
-                "max_age": config.cors_max_age,
-            }
-
-            if config.cors_expose_headers:
-                cors_params["expose_headers"] = config.cors_expose_headers
-
-            app.add_middleware(CORSMiddleware, **cors_params)
-            return True
-        return False
 
     async def initialize(self) -> None:
         self._build_security_pipeline()
