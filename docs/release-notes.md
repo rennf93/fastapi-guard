@@ -10,6 +10,60 @@ Release Notes
 
 ___
 
+v7.0.0 (2026-04-29)
+-------------------
+
+Fail-secure by default (upstream), agent-stats surface, version reporting (v7.0.0)
+----------------------------------------------------------------------------------
+
+### Breaking changes (upstream)
+
+- **`SecurityConfig.fail_secure` now defaults to `True`** (inherited from `guard-core >= 3.0.0`). When any security check raises an unhandled exception, the request is now blocked with HTTP 500 instead of logging and falling through. Bugs in checks that previously slipped past as silent fail-open responses now surface immediately.
+
+  Restore the old behavior on deployments that depend on it:
+
+  ```python
+  from guard import SecurityConfig
+
+  config = SecurityConfig(fail_secure=False)
+  ```
+
+  Recommended migration: keep the new default, surface any check exceptions in your monitoring, and fix them — the previous default could mask serious bugs. The fastapi-guard major bump tracks this upstream change so deployments see a clear signal.
+
+### Added
+
+- **`SecurityMiddleware.agent_stats`** — read-only `@property` returning the agent's telemetry buffer state. Returns `{"enabled": False}` when no agent is wired; otherwise returns `{"enabled": True, **agent_handler.get_stats()}` exposing `events_dropped`, `metrics_dropped`, `circuit_breaker_state`, and other agent counters. No caching — fresh on each call. Lets app teams build health endpoints that surface agent-side drops and circuit-breaker trips without scraping the agent directly.
+- **`from guard import __version__`** — package version is now exported via `importlib.metadata.version("fastapi-guard")` with a `"0.0.0+unknown"` fallback if the package is not installed (development from source). Pairs with `guard-core >= 3.0.0`'s `SecurityConfig.agent_guard_version` so application code can wire the fastapi-guard version through to the agent for SaaS-side telemetry attribution:
+
+  ```python
+  from guard import SecurityConfig, __version__
+
+  config = SecurityConfig(agent_guard_version=__version__)
+  ```
+
+### Compatibility
+
+- `SecurityMiddleware.agent_stats` is purely additive — no existing API was changed.
+- `__version__` was previously absent; reading it before this release returned `None` via missing-attribute fallback in some integrations.
+
+___
+
+v6.0.0 (2026-04-26)
+--------------------
+
+CORS routed through SecurityMiddleware via guard_core.cors_handler (v6.0.0)
+----------------------------------------------------------------------------
+
+- **Breaking** — Removed `SecurityMiddleware.configure_cors(app, config)`. CORS is now handled inside `SecurityMiddleware`; configure via `SecurityConfig.cors_*` fields and the middleware activates CORS automatically. The security pipeline now runs against `OPTIONS` preflight requests — previously the external Starlette `CORSMiddleware` short-circuited preflights ahead of `SecurityMiddleware`, allowing banned IPs and rate-limited clients to preflight freely.
+- **Migration** — Before: `app.add_middleware(SecurityMiddleware, config=config)` + `SecurityMiddleware.configure_cors(app, config)`. After: `app.add_middleware(SecurityMiddleware, config=config)` only.
+- **Fixed** — Cross-origin preflight requests to passthrough paths (e.g. `exclude_paths=["/health"]`) now receive a valid CORS response. Preflight handling runs ahead of the passthrough/bypass short-circuit so the browser permission check works for excluded paths.
+- **Fixed** — Cross-origin GETs to passthrough/bypass paths now carry CORS headers on their responses, matching the previous outer-CORSMiddleware semantics that the `configure_cors` design provided.
+- **Fixed** — `cloud_handler.refresh()` was being called without `await` — the coroutine was never awaited, meaning cloud-IP refreshes silently never completed in production. Surfaced and fixed at root after removing the `[[tool.mypy.overrides]] follow_imports = "skip"` block that had been hiding the type error.
+- **Internal** — Removed all three `[[tool.mypy.overrides]]` suppression blocks (`pydantic.*`, `redis.*`, `guard_core.*`). All three packages ship `py.typed` in their current versions; the `follow_imports = "skip"` settings had been masking real type errors. Stripped `[tool.uv.sources] guard-core` local-path block from committed pyproject.toml. pyproject.toml dependency on guard-core remains unconstrained.
+- **Requires** — `guard-core>=2.2.0` (declared as unconstrained `guard-core` in pyproject; documented here for upgrade guidance).
+
+___
+
 v5.2.0 (2026-04-25)
 -------------------
 

@@ -166,6 +166,20 @@ Free tier includes 10,000 events/month --- no credit card required.
 
 > The core library is fully self-contained and MIT licensed. The cloud dashboard is optional.
 
+### Monitoring agent buffer health
+
+When `enable_agent=True`, the middleware exposes an `agent_stats` property that returns the current buffer drop counters and transport circuit-breaker state without needing to reach into the agent directly:
+
+```python
+middleware: SecurityMiddleware = ...
+
+stats = middleware.agent_stats
+# {"enabled": True, "buffer_stats": {"events_dropped": 0, "metrics_dropped": 0, ...},
+#  "transport_stats": {"circuit_breaker_state": "CLOSED", ...}, ...}
+```
+
+When the agent is disabled or failed to initialize, the property returns `{"enabled": False}`. Read it on each scrape — it reflects live counters and is not cached.
+
 ---
 
 ## Ecosystem
