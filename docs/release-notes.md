@@ -48,6 +48,22 @@ Fail-secure by default (upstream), agent-stats surface, version reporting (v7.0.
 
 ___
 
+v6.0.0 (2026-04-26)
+--------------------
+
+CORS routed through SecurityMiddleware via guard_core.cors_handler (v6.0.0)
+----------------------------------------------------------------------------
+
+- **Breaking** — Removed `SecurityMiddleware.configure_cors(app, config)`. CORS is now handled inside `SecurityMiddleware`; configure via `SecurityConfig.cors_*` fields and the middleware activates CORS automatically. The security pipeline now runs against `OPTIONS` preflight requests — previously the external Starlette `CORSMiddleware` short-circuited preflights ahead of `SecurityMiddleware`, allowing banned IPs and rate-limited clients to preflight freely.
+- **Migration** — Before: `app.add_middleware(SecurityMiddleware, config=config)` + `SecurityMiddleware.configure_cors(app, config)`. After: `app.add_middleware(SecurityMiddleware, config=config)` only.
+- **Fixed** — Cross-origin preflight requests to passthrough paths (e.g. `exclude_paths=["/health"]`) now receive a valid CORS response. Preflight handling runs ahead of the passthrough/bypass short-circuit so the browser permission check works for excluded paths.
+- **Fixed** — Cross-origin GETs to passthrough/bypass paths now carry CORS headers on their responses, matching the previous outer-CORSMiddleware semantics that the `configure_cors` design provided.
+- **Fixed** — `cloud_handler.refresh()` was being called without `await` — the coroutine was never awaited, meaning cloud-IP refreshes silently never completed in production. Surfaced and fixed at root after removing the `[[tool.mypy.overrides]] follow_imports = "skip"` block that had been hiding the type error.
+- **Internal** — Removed all three `[[tool.mypy.overrides]]` suppression blocks (`pydantic.*`, `redis.*`, `guard_core.*`). All three packages ship `py.typed` in their current versions; the `follow_imports = "skip"` settings had been masking real type errors. Stripped `[tool.uv.sources] guard-core` local-path block from committed pyproject.toml. pyproject.toml dependency on guard-core remains unconstrained.
+- **Requires** — `guard-core>=2.2.0` (declared as unconstrained `guard-core` in pyproject; documented here for upgrade guidance).
+
+___
+
 v5.2.0 (2026-04-25)
 -------------------
 
