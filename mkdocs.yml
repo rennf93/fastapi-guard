@@ -44,6 +44,7 @@ nav:
   - Installation: installation.md
   - Tutorial - User Guide:
     - First Steps: tutorial/first-steps.md
+    - Integration Guide: tutorial/integration.md
     - IP Management:
       - IP Banning: tutorial/ip-management/banning.md
       - Geolocation: tutorial/ip-management/geolocation.md
