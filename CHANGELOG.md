@@ -9,35 +9,10 @@ v7.0.0 (2026-04-29)
 Fail-secure by default (upstream), agent-stats surface, version reporting (v7.0.0)
 ----------------------------------------------------------------------------------
 
-### Breaking changes (upstream)
-
-- **`SecurityConfig.fail_secure` now defaults to `True`** (inherited from `guard-core >= 3.0.0`). When any security check raises an unhandled exception, the request is now blocked with HTTP 500 instead of logging and falling through. Bugs in checks that previously slipped past as silent fail-open responses now surface immediately.
-
-  Restore the old behavior on deployments that depend on it:
-
-  ```python
-  from guard import SecurityConfig
-
-  config = SecurityConfig(fail_secure=False)
-  ```
-
-  Recommended migration: keep the new default, surface any check exceptions in your monitoring, and fix them — the previous default could mask serious bugs. The fastapi-guard major bump tracks this upstream change so deployments see a clear signal.
-
-### Added
-
-- **`SecurityMiddleware.agent_stats`** — read-only `@property` returning the agent's telemetry buffer state. Returns `{"enabled": False}` when no agent is wired; otherwise returns `{"enabled": True, **agent_handler.get_stats()}` exposing `events_dropped`, `metrics_dropped`, `circuit_breaker_state`, and other agent counters. No caching — fresh on each call. Lets app teams build health endpoints that surface agent-side drops and circuit-breaker trips without scraping the agent directly.
-- **`from guard import __version__`** — package version is now exported via `importlib.metadata.version("fastapi-guard")` with a `"0.0.0+unknown"` fallback if the package is not installed (development from source). Pairs with `guard-core >= 3.0.0`'s `SecurityConfig.agent_guard_version` so application code can wire the fastapi-guard version through to the agent for SaaS-side telemetry attribution:
-
-  ```python
-  from guard import SecurityConfig, __version__
-
-  config = SecurityConfig(agent_guard_version=__version__)
-  ```
-
-### Compatibility
-
-- `SecurityMiddleware.agent_stats` is purely additive — no existing API was changed.
-- `__version__` was previously absent; reading it before this release returned `None` via missing-attribute fallback in some integrations.
+- **Breaking (upstream)** — `SecurityConfig.fail_secure` now defaults to `True` (inherited from `guard-core >= 3.0.0`). When any security check raises an unhandled exception, the request is now blocked with HTTP 500 instead of logging and falling through. Bugs in checks that previously slipped past as silent fail-open responses now surface immediately. Restore the old behavior on deployments that depend on it via `SecurityConfig(fail_secure=False)`. Recommended migration: keep the new default, surface any check exceptions in your monitoring, and fix them — the previous default could mask serious bugs. The fastapi-guard major bump tracks this upstream change so deployments see a clear signal.
+- **Added** — `SecurityMiddleware.agent_stats` read-only `@property` returning the agent's telemetry buffer state. Returns `{"enabled": False}` when no agent is wired; otherwise returns `{"enabled": True, **agent_handler.get_stats()}` exposing `events_dropped`, `metrics_dropped`, `circuit_breaker_state`, and other agent counters. No caching — fresh on each call. Lets app teams build health endpoints that surface agent-side drops and circuit-breaker trips without scraping the agent directly.
+- **Added** — `from guard import __version__` — package version is now exported via `importlib.metadata.version("fastapi-guard")` with a `"0.0.0+unknown"` fallback if the package is not installed (development from source). Pairs with `guard-core >= 3.0.0`'s `SecurityConfig.agent_guard_version` so application code can wire the fastapi-guard version through to the agent for SaaS-side telemetry attribution: `SecurityConfig(agent_guard_version=__version__)`.
+- **Compatibility** — `SecurityMiddleware.agent_stats` is purely additive; no existing API was changed. `__version__` was previously absent; reading it before this release returned `None` via missing-attribute fallback in some integrations.
 
 ___
 
