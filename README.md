@@ -23,7 +23,7 @@
 
 <p align="center">
   Production-ready security middleware for FastAPI.<br>
-  IP filtering, rate limiting, penetration detection, and 20+ per-route security decorators.
+  IP filtering, rate limiting, signature-based attack-pattern detection, and 20+ per-route security decorators.
 </p>
 
 ---

@@ -310,9 +310,9 @@ New Features (v4.0.2)
 
 - **Sus Patterns Handler Overhaul**: Complete redesign of the suspicious patterns detection system with modular architecture
   - **Pattern Compiler**: Safe regex execution with configurable timeouts to prevent ReDoS attacks
-  - **Content Preprocessor**: Intelligent content truncation that preserves attack signatures
+  - **Content Preprocessor**: Heuristic content truncation that searches the trimmed bytes for known attack-pattern matches and preserves them in the retained slice
   - **Semantic Analyzer**: Heuristic-based detection using TF-IDF and n-gram analysis for obfuscated attacks
-  - **Performance Monitor**: Real-time tracking of pattern execution times and anomaly detection
+  - **Performance Monitor**: Tracks regex pattern execution times and warns when an individual pattern exceeds the configured slow-pattern threshold (slow-pattern monitoring, not request-anomaly detection)
   - **Enhanced Detection API**: Rich detection results with threat scores, detailed threat information, and performance metrics
   - **Lazy Component Initialization**: Detection components only load when explicitly configured
   - **Comprehensive Configuration**: New `detection_*` configuration options for fine-tuning all components
@@ -364,18 +364,18 @@ New Features (v3.0.0)
   - Access control decorators for IP filtering, geographic restrictions, and cloud provider blocking
   - Authentication decorators for HTTPS enforcement, auth requirements, and API key validation
   - Rate limiting decorators with custom limits and geographic rate limiting
-  - Behavioral analysis decorators for usage monitoring, return pattern detection, and frequency analysis
+  - Threshold-based behavior decorators: per-IP request counting, response-pattern matching, and suspicious-frequency triggers (deterministic threshold matching, not learning-based)
   - Content filtering decorators for content type validation, size limits, and user agent blocking
   - Advanced decorators for time windows, suspicious detection, and honeypot detection
   - Route-specific configuration that can override global middleware settings
   - Seamless integration with existing SecurityMiddleware
-- **Behavior Manager**: Added behavioral analysis and monitoring system
-  - `BehaviorTracker` for tracking and analyzing user behavior patterns
-  - `BehaviorRule` for defining behavioral analysis rules
-  - Support for endpoint usage tracking, return pattern analysis, and frequency detection
+- **Behavior Manager**: Added threshold-based behavior tracking and monitoring
+  - `BehaviorTracker` for tracking per-IP and per-endpoint request patterns
+  - `BehaviorRule` for defining threshold-based behavior rules
+  - Support for endpoint usage tracking, return pattern matching, and frequency-threshold detection
   - Multiple pattern formats including JSON paths, regex, and status codes
-  - Automated actions (ban, alert, log, throttle) based on behavioral thresholds
-  - Redis integration for distributed behavioral tracking
+  - Automated actions (ban, alert, log, throttle) when configured thresholds are exceeded
+  - Redis integration for distributed behavior-counter storage
 
 ___
 
