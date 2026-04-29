@@ -3,6 +3,7 @@ title_switch: true
 versions_file: docs/versions/versions.json
 versions:
   - 7.0.0
+  - 6.0.0
   - 5.2.0
   - 5.1.1
   - 5.1.0
