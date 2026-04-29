@@ -2047,3 +2047,57 @@ async def test_resolve_route_no_app_routes() -> None:
     request = StarletteRequest(scope)
     result = middleware._resolve_route(request)
     assert result is None
+
+
+async def test_agent_stats_returns_disabled_when_agent_handler_unset() -> None:
+    app = FastAPI()
+    config = SecurityConfig(enable_agent=False)
+    middleware = SecurityMiddleware(app, config=config)
+    assert middleware.agent_handler is None
+    assert middleware.agent_stats == {"enabled": False}
+
+
+async def test_agent_stats_returns_enabled_with_agent_handler_stats() -> None:
+    app = FastAPI()
+    config = SecurityConfig()
+    middleware = SecurityMiddleware(app, config=config)
+
+    fake_handler = Mock()
+    fake_handler.get_stats.return_value = {
+        "buffer_stats": {"events_dropped": 0, "metrics_dropped": 0},
+        "transport_stats": {"circuit_breaker_state": "CLOSED"},
+    }
+    middleware.agent_handler = fake_handler
+
+    stats = middleware.agent_stats
+    assert stats["enabled"] is True
+    assert stats["buffer_stats"] == {"events_dropped": 0, "metrics_dropped": 0}
+    assert stats["transport_stats"] == {"circuit_breaker_state": "CLOSED"}
+    fake_handler.get_stats.assert_called_once()
+
+
+async def test_agent_stats_reflects_live_drop_counter_increments() -> None:
+    app = FastAPI()
+    config = SecurityConfig()
+    middleware = SecurityMiddleware(app, config=config)
+
+    fake_handler = Mock()
+    fake_handler.get_stats.return_value = {
+        "buffer_stats": {"events_dropped": 0, "metrics_dropped": 0},
+        "transport_stats": {"circuit_breaker_state": "CLOSED"},
+    }
+    middleware.agent_handler = fake_handler
+
+    first = middleware.agent_stats
+    assert first["buffer_stats"]["events_dropped"] == 0
+
+    fake_handler.get_stats.return_value = {
+        "buffer_stats": {"events_dropped": 7, "metrics_dropped": 3},
+        "transport_stats": {"circuit_breaker_state": "OPEN"},
+    }
+
+    second = middleware.agent_stats
+    assert second["buffer_stats"]["events_dropped"] == 7
+    assert second["buffer_stats"]["metrics_dropped"] == 3
+    assert second["transport_stats"]["circuit_breaker_state"] == "OPEN"
+    assert fake_handler.get_stats.call_count == 2

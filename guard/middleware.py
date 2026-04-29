@@ -170,6 +170,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     def guard_response_factory(self) -> StarletteResponseFactory:
         return self._guard_response_factory
 
+    @property
+    def agent_stats(self) -> dict[str, Any]:
+        if self.agent_handler is None:
+            return {"enabled": False}
+        handler_stats = cast(Any, self.agent_handler).get_stats()
+        return {"enabled": True, **handler_stats}
+
     def _build_security_pipeline(self) -> None:
         from guard_core.core.checks import (
             AuthenticationCheck,
