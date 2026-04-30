@@ -1,12 +1,18 @@
 ---
+
 title: Integration Guide — fastapi-guard, guard-core, guard-agent
 description: How fastapi-guard, guard-core, and guard-agent fit together. Decision tree + three concrete integration paths with full code.
 keywords: fastapi-guard integration, guard-core, guard-agent, saas telemetry, encrypted telemetry, security middleware
 ---
 
+Integration Guide
+=================
+
 Three packages, one stack. This page is the canonical reference for which to install and how to wire them together — without the dead-end patterns that the older docs accumulated.
 
-## What each package is
+What each package is
+---------------------
+
 
 | Package | Layer | What it does | Always required? |
 |---|---|---|---|
@@ -14,7 +20,8 @@ Three packages, one stack. This page is the canonical reference for which to ins
 | `fastapi-guard` | Adapter | Wires `guard-core`'s checks into FastAPI via `SecurityMiddleware`. Provides `SecurityDecorator` for per-route declarative policies. | **Yes** if you want FastAPI integration. (Use `flaskapi-guard`, `djapi-guard`, etc. for other frameworks.) |
 | `guard-agent` | Telemetry | Buffers security events + metrics in memory and ships them to a SaaS endpoint (`api.guard-core.com` by default). Also fetches dynamic rules from the dashboard. Optional. | **No** — only if you want a hosted dashboard, paid features, or dynamic-rule sync. |
 
-## What guard-core is useful for
+What guard-core is useful for
+------------------------------
 
 It catches a specific class of HTTP-layer attacks — the ones an automated, AI-orchestrated attacker runs at scale:
 
@@ -31,7 +38,8 @@ It does **not** cover:
 - **Application-logic vulnerabilities** (auth bypass, IDOR, business-logic flaws — those are your code's responsibility)
 - **Network-layer DDoS** — that's Cloudflare/AWS Shield's job; guard-core sits behind those
 
-## Decision tree
+Decision tree
+-------------
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
@@ -63,7 +71,8 @@ It does **not** cover:
 
 ___
 
-## Path A — Standalone (no SaaS)
+Path A — Standalone (no SaaS)
+-----------------------------
 
 You install `fastapi-guard` only. Everything runs in-process. State lives in Redis (recommended) or memory.
 
@@ -115,7 +124,8 @@ That's the whole integration. No `enable_agent`, no `agent_*` fields, no `lifesp
 
 ___
 
-## Path B — SaaS dashboard, plain telemetry
+Path B — SaaS dashboard, plain telemetry
+----------------------------------------
 
 You add `guard-agent` and configure `agent_*` fields on `SecurityConfig`. The middleware starts and stops the agent's flush loop for you — **do not** manually construct an `AgentConfig` or wire a `lifespan` (older docs showed that pattern; it creates a second singleton that doesn't receive traffic).
 
@@ -178,20 +188,23 @@ app.add_middleware(SecurityMiddleware, config=config)
 
 **That is the entire integration.** No explicit `AgentConfig`, no `guard_agent()` factory call, no `@asynccontextmanager` lifespan. The middleware drives the agent lifecycle.
 
-### Where credentials come from
+Where credentials come from
+---------------------------
 
 1. Sign in to [`app.guard-core.com`](https://app.guard-core.com)
 2. Create a project — copy the `proj_*` ID into `GUARD_PROJECT_ID`
 3. Generate an API key for that project — copy the `fg_*` key into `GUARD_API_KEY`
 4. Done. The agent's first flush registers your project in the dashboard.
 
-### Wire format
+Wire format
+-----------
 
 The agent posts batches to `POST https://api.guard-core.com/api/v1/events` with a JSON body containing your events + metrics. Standard HTTPS. CloudFlare in front of nginx in front of the Guard Core API. No special networking.
 
 ___
 
-## Path C — SaaS dashboard with encrypted telemetry
+Path C — SaaS dashboard with encrypted telemetry
+-----------------------------------------------
 
 For deployments that handle PII, sensitive customer data, or work in regulated industries (SOC 2, HIPAA, GDPR Art. 32) where end-to-end payload encryption between agent and SaaS is a contract requirement.
 
@@ -230,7 +243,8 @@ app.add_middleware(SecurityMiddleware, config=config)
 
 When `agent_project_encryption_key` is set, the agent posts to a different route — `POST /api/v1/events/encrypted` — with the body encrypted client-side via AES-256-GCM. The SaaS decrypts only with the per-project key (which the SaaS stores wrapped under a master KEK), so even an attacker with backup-database access can't read your event payloads without the master key.
 
-### Critical: key/api-key pairing
+Critical: key/api-key pairing
+----------------------------
 
 The encryption key is **paired** with a specific API key in the dashboard. Mixing keys produces:
 
@@ -242,7 +256,8 @@ If you rotate the API key, you must also retrieve and update the encryption key 
 
 ___
 
-## Configuration reference — agent fields on `SecurityConfig`
+Configuration reference — agent fields on `SecurityConfig`
+--------------------------------------------------------
 
 | Field | Type | Default | Notes |
 |---|---|---|---|
@@ -263,31 +278,37 @@ ___
 
 ___
 
-## Common pitfalls
+Common pitfalls
+---------------
 
-### "Failed to decrypt payload" on every batch
+"Failed to decrypt payload" on every batch
+-------------------------------------------
 
 Cause: encryption key paired with a different API key.
 Fix: re-copy the encryption key from the dashboard alongside the API key it was issued with.
 
-### Agent doesn't ship events even though `enable_agent=True`
+Agent doesn't ship events even though `enable_agent=True`
+------------------------------------------------------
 
 Cause #1: `agent_api_key` is empty string instead of `None`. The middleware's `to_agent_config()` returns `None` when the key is missing.
 Cause #2: You manually constructed an `AgentConfig` and called `guard_agent(agent_config)` from your app's module-level code. This creates a `SyncGuardAgentHandler` (singleton class A) before the middleware creates the `GuardAgentHandler` (singleton class B). Two different singletons; the one the middleware controls is the one telemetry actually flows through.
 
 Fix for both: stop creating `AgentConfig`/`guard_agent()` manually. Configure `agent_*` on `SecurityConfig` only and let the middleware run the agent lifecycle.
 
-### `nginx 413 Request Entity Too Large` on `/api/v1/events/encrypted`
+`nginx 413 Request Entity Too Large` on `/api/v1/events/encrypted`
+-----------------------------------------------------------------
 
 Cause: `client_max_body_size` is the nginx default (1m) and your encrypted bodies are 2-5MB.
 Fix: set `client_max_body_size 16m;` in your nginx server block for the Guard Core API (or your custom self-hosted endpoint).
 
-### `HASH_PEPPER is required to compute peppered hashes`
+`HASH_PEPPER is required to compute peppered hashes`
+---------------------------------------------------
 
 Cause: this is a SaaS-side error. The Guard Core SaaS hashes IPs with HMAC-SHA256 using a per-deployment pepper. If the pepper isn't injected into the SaaS container's environment, every event ingestion raises this.
 Fix: this is a Guard Core operations issue, not yours — file a ticket if you're using the hosted SaaS. If you're self-hosting, ensure `HASH_PEPPER` is set in your docker-compose env.
 
-### Dashboard shows zero events even though the app is running
+Dashboard shows zero events even though the app is running
+---------------------------------------------------------
 
 1. Confirm `agent_api_key` and `agent_project_id` are set and non-empty.
 2. Check your application logs for `Guard Agent initialized successfully`.
@@ -296,6 +317,7 @@ Fix: this is a Guard Core operations issue, not yours — file a ticket if you'r
 
 ___
 
-## What if you outgrow this stack?
+What if you outgrow this stack?
+------------------------------
 
 `guard-core` exposes the engine as a protocol-based library. If you have a non-FastAPI service (Django, Flask, Tornado, raw ASGI), use the framework's adapter — `djapi-guard`, `flaskapi-guard`, `tornadoapi-guard` — they all consume the same `guard-core` engine and the same `guard-agent`. Telemetry is unified across frameworks in a single dashboard project.
