@@ -13,7 +13,6 @@ Three packages, one stack. This page is the canonical reference for which to ins
 What each package is
 ---------------------
 
-
 | Package | Layer | What it does | Always required? |
 |---|---|---|---|
 | `guard-core` | Engine | Framework-agnostic security checks: IP banning, rate limiting, signature-based attack-pattern detection, geo-IP, cloud-provider blocking, dynamic-rule cache, behavioral counters, security-headers handler, Redis integration. Pure Python, no framework deps. | **Yes** — but pulled in transitively. |
