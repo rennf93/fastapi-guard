@@ -4,9 +4,6 @@ description: How fastapi-guard, guard-core, and guard-agent fit together. Decisi
 keywords: fastapi-guard integration, guard-core, guard-agent, saas telemetry, encrypted telemetry, security middleware
 ---
 
-Integration Guide
-=================
-
 Three packages, one stack. This page is the canonical reference for which to install and how to wire them together — without the dead-end patterns that the older docs accumulated.
 
 ## What each package is
@@ -237,7 +234,7 @@ When `agent_project_encryption_key` is set, the agent posts to a different route
 
 The encryption key is **paired** with a specific API key in the dashboard. Mixing keys produces:
 
-```
+```text
 HTTP 400: Failed to decrypt payload: Invalid or tampered payload
 ```
 
