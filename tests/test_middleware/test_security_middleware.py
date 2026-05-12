@@ -738,7 +738,9 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
         await middleware.dispatch(request, mock_call_next)
         mock_refresh.assert_not_called()
 
-    # Redis enabled
+    from guard._middleware_state import clear_state_registry
+
+    clear_state_registry()
     config.enable_redis = True
     middleware = SecurityMiddleware(app, config=config)
     middleware.last_cloud_ip_refresh = int(time.time() - 3700)

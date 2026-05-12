@@ -1,7 +1,7 @@
 import asyncio
 import time
 from collections.abc import Awaitable, Callable
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from fastapi import Request, Response
 from guard_core.core.behavioral import BehavioralContext, BehavioralProcessor
@@ -31,6 +31,9 @@ from guard.adapters import (
     unwrap_response,
     wrap_call_next,
 )
+
+if TYPE_CHECKING:
+    from guard._middleware_state import MiddlewareState
 
 
 class SecurityMiddleware(BaseHTTPMiddleware):
@@ -120,14 +123,61 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     def _is_initialized(self) -> bool:
         return self._initialized
 
+    def mark_initialized(self) -> None:
+        self._initialized = True
+
     async def _ensure_initialized(self) -> None:
         if self._is_initialized():
             return
         async with self._init_lock:
             if self._is_initialized():
                 return
+
+            from guard._middleware_state import (
+                MiddlewareState,
+                get_state,
+                register_state,
+            )
+
+            warm = get_state(self.config)
+            if warm is not None:
+                self._adopt_warm_state(warm)
+                self._initialized = True
+                return
+
             await self.initialize()
+            register_state(
+                self.config,
+                MiddlewareState(
+                    security_pipeline=self.security_pipeline,
+                    composite_handler=self.handler_initializer.composite_handler,
+                    event_bus=self.event_bus,
+                    metrics_collector=self.metrics_collector,
+                    response_factory=self.response_factory,
+                    validator=self.validator,
+                    bypass_handler=self.bypass_handler,
+                    behavioral_processor=self.behavioral_processor,
+                    handler_initializer=self.handler_initializer,
+                    agent_handler=self.agent_handler,
+                ),
+            )
             self._initialized = True
+
+    def _adopt_warm_state(self, state: "MiddlewareState") -> None:
+        self.security_pipeline = cast(SecurityCheckPipeline, state.security_pipeline)
+        self.event_bus = cast(SecurityEventBus, state.event_bus)
+        self.metrics_collector = cast(MetricsCollector, state.metrics_collector)
+        self.response_factory = cast(ErrorResponseFactory, state.response_factory)
+        self.validator = cast(RequestValidator, state.validator)
+        self.bypass_handler = cast(BypassHandler, state.bypass_handler)
+        self.behavioral_processor = cast(
+            BehavioralProcessor, state.behavioral_processor
+        )
+        self.handler_initializer = cast(HandlerInitializer, state.handler_initializer)
+        if state.composite_handler is not None:
+            self.agent_handler = cast(AgentHandlerProtocol, state.composite_handler)
+        elif state.agent_handler is not None:
+            self.agent_handler = cast(AgentHandlerProtocol, state.agent_handler)
 
     def _build_event_dependent_contexts(self) -> None:
         response_context = ResponseContext(

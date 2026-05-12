@@ -69,6 +69,7 @@ config = SecurityConfig(
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
+For production, wire `guard.lifespan.guard_lifespan` into `FastAPI(lifespan=...)` so initialization runs at app startup instead of on the first request — see [Eager initialization](https://rennf93.github.io/fastapi-guard/latest/tutorial/first-steps/#eager-initialization-with-fastapi-lifespan).
 
 ---
 

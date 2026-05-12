@@ -100,6 +100,48 @@ Your API is now protected by FastAPI Guard! 🛡️
 
 ___
 
+Eager initialization with FastAPI lifespan
+------------------------------------------
+
+Without lifespan wiring, fastapi-guard initializes lazily on the **first request** — the Redis connection, cloud-IP fetches, pipeline build, and agent / OTEL / Logfire startup all happen there. The first caller pays the full initialization cost.
+
+With `guard_lifespan`, all of that work runs at ASGI startup, and the first request hits a pre-warmed middleware:
+
+```python
+from fastapi import FastAPI
+from guard.lifespan import guard_lifespan
+from guard.middleware import SecurityMiddleware
+from guard_core.models import SecurityConfig
+
+config = SecurityConfig(enable_redis=True, redis_url="redis://localhost:6379")
+
+app = FastAPI(lifespan=guard_lifespan)
+app.add_middleware(SecurityMiddleware, config=config)
+```
+
+If you already have a custom lifespan, compose them with `make_lifespan`:
+
+```python
+from contextlib import asynccontextmanager
+
+from guard.lifespan import make_lifespan
+
+
+@asynccontextmanager
+async def my_lifespan(app):
+    # your startup work
+    yield
+    # your shutdown work
+
+
+app = FastAPI(lifespan=make_lifespan(my_lifespan))
+app.add_middleware(SecurityMiddleware, config=config)
+```
+
+OTEL and Logfire users benefit the most: without the lifespan helper their providers initialize on the first request; with it, providers are set at app boot, and the shared-state registry guarantees no duplicate `set_tracer_provider` call from the spawned-vs-live instance mismatch.
+
+___
+
 What's Next
 -----------
 

@@ -108,6 +108,7 @@ class SecurityCheckPipeline:
 ```
 
 **Features**:
+
 - Sequential execution with early termination
 - Error handling with fail-secure option
 - Logging of blocking checks
@@ -296,6 +297,17 @@ class HandlerInitializer:
 
 **Usage**: Called from `SecurityMiddleware.initialize()` to set up all handlers.
 
+Shared-State Registry
+---------------------
+
+**Location**: `guard/_middleware_state.py`
+
+A module-local registry keyed by `id(config)` holds a `MiddlewareState` dataclass with the live `security_pipeline`, `composite_handler`, `event_bus`, `metrics_collector`, `response_factory`, `validator`, `bypass_handler`, `behavioral_processor`, `handler_initializer`, and `agent_handler`.
+
+The lifespan helpers (`guard_lifespan`, `make_lifespan`) and the lazy-init fallback path both write to this registry after `SecurityMiddleware.initialize()` succeeds. Subsequent `SecurityMiddleware` instances constructed against the same `SecurityConfig` skip rebuilding their pipeline and adopt the registered components by reference via `_adopt_warm_state()`.
+
+This is the mechanism that guarantees `composite_handler.start()` — which sets the OTEL/Logfire global tracer providers and starts the agent worker tasks — runs exactly once per config across the spawned-vs-live middleware instances Starlette produces when a lifespan is in use.
+
 ___
 
 Module: guard_core/core/responses/
@@ -337,6 +349,7 @@ class ErrorResponseFactory:
 ```
 
 **Features**:
+
 - Custom error message support
 - Security header application
 - CORS header handling
@@ -473,6 +486,7 @@ class BypassHandler:
 ```
 
 **Features**:
+
 - No client IP detection (passthrough)
 - Excluded path handling
 - Decorator bypass support
@@ -550,6 +564,7 @@ class ResponseContext:
 ```
 
 **Benefits**:
+
 - Explicit dependencies
 - Easy testing with mocks
 - Prevents tight coupling

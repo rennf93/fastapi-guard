@@ -1,5 +1,5 @@
 import os
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Iterator
 from pathlib import Path
 
 import pytest
@@ -13,9 +13,19 @@ from guard_core.handlers.suspatterns_handler import sus_patterns_handler
 from guard_core.models import SecurityConfig
 from pytest import TempPathFactory
 
+from guard._middleware_state import clear_state_registry
 from guard.middleware import SecurityMiddleware
 
 IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
+
+
+@pytest.fixture(autouse=True)
+def _clear_middleware_state_registry() -> Iterator[None]:
+    clear_state_registry()
+    yield
+    clear_state_registry()
+
+
 REDIS_URL = str(os.getenv("REDIS_URL"))
 REDIS_PREFIX = str(os.getenv("REDIS_PREFIX"))
 

@@ -182,26 +182,55 @@ async def initialize(self) -> None:
     """
     Initialize all components asynchronously.
 
-    This method should be called after adding the middleware to the app,
-    typically in a startup event handler.
-
     Tasks performed:
         - Build security check pipeline
         - Initialize Redis handlers (if enabled)
         - Initialize agent integrations (if enabled)
         - Initialize dynamic rule manager (if configured)
-
-    Example:
-        ```python
-        @app.on_event("startup")
-        async def startup():
-            # Get middleware instance
-            for middleware in app.user_middleware:
-                if isinstance(middleware.cls, SecurityMiddleware):
-                    await middleware.cls.initialize()
-        ```
     """
 ```
+
+`initialize` is part of the public API for advanced integration scenarios, but most applications should not call it directly. The recommended path is to wire FastAPI Guard's lifespan helper at app construction time:
+
+```python
+from fastapi import FastAPI
+from guard.lifespan import guard_lifespan
+from guard.middleware import SecurityMiddleware
+from guard import SecurityConfig
+
+config = SecurityConfig(enable_redis=True, redis_url="redis://localhost:6379")
+
+app = FastAPI(lifespan=guard_lifespan)
+app.add_middleware(SecurityMiddleware, config=config)
+```
+
+If you already have a custom lifespan, compose them with `make_lifespan`:
+
+```python
+from contextlib import asynccontextmanager
+from guard.lifespan import make_lifespan
+
+
+@asynccontextmanager
+async def my_lifespan(app):
+    yield
+
+
+app = FastAPI(lifespan=make_lifespan(my_lifespan))
+app.add_middleware(SecurityMiddleware, config=config)
+```
+
+The lifespan helpers warm guard-core's singletons (cloud-IP cache, IP ban store, suspicious patterns, Redis pool) AND populate a shared-state registry so the live request-handling middleware adopts the spawned instance's pipeline, agent handler, and event bus by reference. This guarantees `composite_handler.start()` runs exactly once per config — no duplicate OTEL `set_tracer_provider already set` warning, no leaked agent worker tasks.
+
+mark_initialized
+----------------
+
+```python
+def mark_initialized(self) -> None:
+    """Record that initialization has completed."""
+```
+
+`mark_initialized` is the public setter the lifespan helpers call after they finish warming or adopting state. It flips the internal initialization flag so the first request does not re-trigger lazy init. User code rarely needs to call this directly; the lifespan helpers handle it.
 
 set_decorator_handler
 ---------------------
@@ -229,31 +258,18 @@ def set_decorator_handler(
     """
 ```
 
-configure_cors
---------------
+___
 
-```python
-@staticmethod
-def configure_cors(app: FastAPI, config: SecurityConfig) -> bool:
-    """
-    Configure FastAPI's CORS middleware based on SecurityConfig.
+State Sharing via the Shared-State Registry
+-------------------------------------------
 
-    This is a convenience method for setting up CORS.
+FastAPI Guard maintains a module-local registry at `guard._middleware_state`, keyed by `id(config)`. The registry holds a `MiddlewareState` dataclass containing the live `security_pipeline`, `composite_handler`, `event_bus`, `metrics_collector`, `response_factory`, `validator`, `bypass_handler`, `behavioral_processor`, `handler_initializer`, and `agent_handler`.
 
-    Args:
-        app: FastAPI application instance
-        config: Security configuration with CORS settings
+When multiple `SecurityMiddleware` instances are constructed against the same `SecurityConfig` — the common case under the lifespan helpers (where one instance is spawned to perform warmup while Starlette later constructs the live request-handling instance), and the sub-app mounted-middleware case — every instance after the first adopts the registered components by reference instead of building its own.
 
-    Returns:
-        bool: True if CORS was configured, False otherwise
+The keying is intentional: two `SecurityConfig` instances with identical contents but separate `id()` values get separate registry entries, because they are logically distinct configurations. If you want shared state, share the config object.
 
-    Example:
-        ```python
-        SecurityMiddleware.configure_cors(app, config)
-        app.add_middleware(SecurityMiddleware, config=config)
-        ```
-    """
-```
+The practical effect is that `composite_handler.start()` — which sets the OTEL/Logfire global tracer providers and starts the agent worker tasks — runs exactly once per config object. No duplicate `set_tracer_provider already set` warning, no leaked agent worker tasks, no duplicate buffered events.
 
 ___
 
@@ -305,6 +321,7 @@ config = SecurityConfig(
 ```
 
 The middleware automatically initializes:
+
 - CloudManager cloud provider IP ranges
 - IPBanManager distributed banning
 - IPInfoManager IP geolocation
@@ -378,36 +395,25 @@ app.add_middleware(SecurityMiddleware, config=config)
 app.state.guard_decorator = guard_deco  # Required for decorator integration
 ```
 
-With Async Initialization
--------------------------
+With Eager Initialization (Lifespan)
+------------------------------------
 
 ```python
 from fastapi import FastAPI
+from guard.lifespan import guard_lifespan
 from guard.middleware import SecurityMiddleware
 from guard import SecurityConfig
-
-app = FastAPI()
 
 config = SecurityConfig(
     enable_redis=True,
     redis_url="redis://localhost:6379"
 )
 
-# Add middleware
-middleware_instance = None
-for mw in app.user_middleware:
-    if isinstance(mw.cls, type) and issubclass(mw.cls, SecurityMiddleware):
-        middleware_instance = mw.cls
-        break
-
+app = FastAPI(lifespan=guard_lifespan)
 app.add_middleware(SecurityMiddleware, config=config)
-
-@app.on_event("startup")
-async def startup():
-    # Initialize async components
-    if middleware_instance:
-        await middleware_instance.initialize()
 ```
+
+`guard_lifespan` runs the full initialization sequence at ASGI startup so the first request hits a pre-warmed middleware. Use `make_lifespan(existing)` to compose with your own lifespan context manager.
 
 ___
 

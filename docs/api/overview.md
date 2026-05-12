@@ -143,6 +143,8 @@ FastAPI Guard uses a smart loading strategy to improve performance:
 
 This approach reduces startup time and memory usage when not all security features are needed.
 
+By default initialization runs lazily on the first request. For production deployments, wire `guard_lifespan` so initialization runs at ASGI startup instead — see [Eager initialization with FastAPI lifespan](../tutorial/first-steps.md#eager-initialization-with-fastapi-lifespan).
+
 ```python
 # Conditional loading example from middleware
 async def initialize(self) -> None:

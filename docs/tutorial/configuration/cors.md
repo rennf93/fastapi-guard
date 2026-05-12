@@ -8,7 +8,7 @@ keywords: fastapi cors, cors configuration, api security, cross origin resource 
 CORS Configuration
 ==================
 
-FastAPI Guard provides comprehensive CORS (Cross-Origin Resource Sharing) configuration options.
+FastAPI Guard provides comprehensive CORS (Cross-Origin Resource Sharing) configuration options. Set `enable_cors=True` on `SecurityConfig` and the middleware activates CORS automatically — no separate setup call is required.
 
 ___
 
@@ -22,7 +22,7 @@ config = SecurityConfig(
     enable_cors=True,
     cors_allow_origins=["*"]
 )
-SecurityMiddleware.configure_cors(app, security_config)
+app.add_middleware(SecurityMiddleware, config=config)
 ```
 
 ___
@@ -45,7 +45,7 @@ config = SecurityConfig(
     cors_expose_headers=["X-Custom-Header"],
     cors_max_age=600
 )
-SecurityMiddleware.configure_cors(app, security_config)
+app.add_middleware(SecurityMiddleware, config=config)
 ```
 
 ___
@@ -63,7 +63,7 @@ config = SecurityConfig(
         "https://*.api.example.com"
     ]
 )
-SecurityMiddleware.configure_cors(app, security_config)
+app.add_middleware(SecurityMiddleware, config=config)
 ```
 
 ___
@@ -81,7 +81,7 @@ config = SecurityConfig(
         "https://app.example.com"  # Must be specific origin when using credentials
     ]
 )
-SecurityMiddleware.configure_cors(app, security_config)
+app.add_middleware(SecurityMiddleware, config=config)
 ```
 
 ___
@@ -103,5 +103,5 @@ config = SecurityConfig(
         "X-Custom-Response-Header"
     ]
 )
-SecurityMiddleware.configure_cors(app, security_config)
+app.add_middleware(SecurityMiddleware, config=config)
 ```

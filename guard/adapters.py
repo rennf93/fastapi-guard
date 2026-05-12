@@ -70,7 +70,7 @@ class StarletteGuardResponse:
 
     @property
     def body(self) -> bytes | None:
-        return self._response.body
+        return bytes(self._response.body)
 
 
 class StarletteResponseFactory:

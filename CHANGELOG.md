@@ -3,6 +3,21 @@ Release Notes
 
 ___
 
+v7.1.0 (2026-05-11)
+-------------------
+
+ASGI-lifespan-driven warm-up and Starlette body-typing fix (v7.1.0)
+-------------------------------------------------------------------
+
+- **Added** — `guard.lifespan.guard_lifespan` and `guard.lifespan.make_lifespan(existing_lifespan=None)` helpers. Wire `app = FastAPI(lifespan=guard_lifespan)` to fully initialize guard-core's security pipeline, agent integrations, OTEL/Logfire providers, Redis connection, and cloud-IP cache during ASGI lifespan startup. First request hits a pre-warmed middleware with zero re-initialization. Backed by a per-`SecurityConfig` shared-state registry (`guard._middleware_state`) — Starlette's middleware-stack architecture would normally create a separate `SecurityMiddleware` instance for the request path (causing duplicate `composite_handler.start()` calls and leaked agent/OTEL worker tasks), but the registry guarantees per-config init runs exactly once and the live request-handling instance adopts the spawned instance's pipeline/agent/event-bus by reference.
+- **Added** — `SecurityMiddleware.mark_initialized()`: public method used by the lifespan helpers to record that initialization has completed, so external callers no longer have to reach into the underscore-prefixed `_initialized` attribute.
+- **Changed** — `SecurityMiddleware` now backs its per-instance state (security pipeline, composite agent handler, event bus, metrics collector, response factory, validator, bypass handler, behavioral processor) via a module-level `guard._middleware_state` registry keyed by `id(config)`. Multiple `SecurityMiddleware` instances sharing the same `SecurityConfig` (e.g. a lifespan-spawned instance + Starlette's live request-handling instance, or a sub-app mounted middleware) now share state by reference instead of each rebuilding their own copy. Eliminates the `OTEL TracerProvider already set` warning that previously fired on first request when `enable_otel=True` or `enable_logfire=True` and `guard_lifespan` was wired in.
+- **Documented** — `SecurityMiddleware.initialize()` is now formally part of the public API for advanced lifespan integration patterns. Without lifespan wiring, fastapi-guard still works correctly: initialization happens lazily on the first request via the existing fallback path.
+- **Fixed** — `StarletteGuardResponse.body` now always returns `bytes` instead of leaking `bytes | memoryview` from the underlying Starlette `Response`, silencing a pre-existing mypy invariance error and ensuring downstream code that calls `len()` / slicing on the body sees consistent types.
+- **Requires** — `guard-core>=3.1.0` (declared as unconstrained `guard-core` in pyproject; documented here for upgrade guidance). v3.1.0 brings NOSCRIPT-aware rate limiting, `lazy_init=True` as the default, the `cloud_ip_store` factory protocol, and country-code/cloud-provider normalization in decorators and dynamic rules.
+
+___
+
 v7.0.0 (2026-04-29)
 -------------------
 
