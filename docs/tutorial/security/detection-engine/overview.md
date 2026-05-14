@@ -202,6 +202,7 @@ Components are initialized only when needed:
 ### Default Patterns
 
 The engine loads patterns from:
+
 1. Built-in YAML files in the package
 2. Custom patterns added via API
 
