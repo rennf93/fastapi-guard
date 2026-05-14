@@ -19,7 +19,7 @@ Class Definition
 class SusPatternsManager:
     """
     Singleton pattern manager with enhanced detection capabilities.
-    
+
     Manages both default patterns (loaded from YAML files) and custom patterns,
     with optional detection engine components for advanced threat analysis.
     """
@@ -42,11 +42,11 @@ async def add_pattern(
 ) -> None:
     """
     Add a new pattern to the detection system.
-    
+
     Args:
         pattern: Regular expression pattern to add
         custom: Whether this is a custom pattern (default: False)
-    
+
     Note:
         - Custom patterns are stored separately and persist across restarts if Redis is enabled
         - Patterns are compiled and validated before being added
@@ -65,11 +65,11 @@ async def remove_pattern(
 ) -> bool:
     """
     Remove a pattern from the detection system.
-    
+
     Args:
         pattern: Pattern to remove
         custom: Whether to remove from custom patterns
-    
+
     Returns:
         bool: True if pattern was successfully removed, False otherwise
     """
@@ -83,7 +83,7 @@ clear_custom_patterns
 async def clear_custom_patterns(cls) -> None:
     """
     Clear all custom patterns.
-    
+
     Note: This does not affect default patterns loaded from YAML files.
     """
 ```
@@ -190,13 +190,13 @@ async def detect(
 ) -> dict[str, Any]:
     """
     Perform comprehensive threat detection with detection engine.
-    
+
     Args:
         content: Content to analyze
         ip_address: IP address of the request
         context: Where content came from (e.g., "query_param", "body")
         correlation_id: Optional ID for request correlation
-    
+
     Returns:
         Comprehensive detection results including:
         - is_threat: Whether a threat was detected
@@ -219,7 +219,7 @@ async def detect_pattern_match(
 ) -> tuple[bool, str | None]:
     """
     Legacy detection method for backward compatibility.
-    
+
     Returns:
         Tuple of (pattern_detected, matched_pattern_string)
     """
@@ -238,13 +238,13 @@ get_performance_stats
 async def get_performance_stats(cls) -> dict[str, Any] | None:
     """
     Get comprehensive performance statistics.
-    
+
     Returns:
         Dictionary containing:
         - slow_patterns: Patterns exceeding slow threshold
         - problematic_patterns: Patterns with timeouts or anomalies
         - summary: Overall performance metrics
-        
+
     Returns None if performance monitoring is not configured.
     """
 ```
@@ -257,7 +257,7 @@ get_component_status
 async def get_component_status(cls) -> dict[str, bool]:
     """
     Check which detection engine components are active.
-    
+
     Returns:
         Dictionary with component status:
         - compiler: Whether PatternCompiler is active
@@ -274,7 +274,7 @@ configure_semantic_threshold
 async def configure_semantic_threshold(self, threshold: float) -> None:
     """
     Dynamically adjust semantic analysis threshold.
-    
+
     Args:
         threshold: New threshold value (0.0 to 1.0)
                   0 = disabled, higher values = stricter detection
@@ -356,7 +356,7 @@ result = await sus_patterns_handler.detect(
 
 if result["is_threat"]:
     print(f"Threat score: {result['threat_score']}")
-    
+
     for threat in result["threats"]:
         if threat["type"] == "regex":
             print(f"Pattern matched: {threat['pattern']}")
@@ -373,7 +373,7 @@ stats = await sus_patterns_handler.get_performance_stats()
 if stats:
     print(f"Average execution time: {stats['summary']['average_time']}")
     print(f"Timeout rate: {stats['summary']['timeout_rate']}")
-    
+
     # Check for slow patterns
     for pattern in stats["slow_patterns"]:
         print(f"Slow pattern: {pattern['pattern']}")
@@ -452,6 +452,7 @@ Error Handling
 --------------
 
 The manager handles various error conditions gracefully:
+
 - Invalid regex patterns are logged and skipped
 - Component initialization failures fall back to basic detection
 - Pattern timeouts are logged and don't stop detection
@@ -463,6 +464,7 @@ Thread Safety
 -------------
 
 The SusPatternsManager uses:
+
 - Thread-safe singleton pattern
 - Async-safe operations
 - Thread pool for pattern execution

@@ -205,6 +205,7 @@ fastapi_guard                    # Root logger for all FastAPI Guard components
 ```
 
 This namespace isolation ensures:
+
 - FastAPI Guard logs are separate from your application logs
 - You can configure log levels for specific components
 - Test frameworks can capture logs via propagation

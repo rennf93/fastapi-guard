@@ -24,7 +24,7 @@ Intelligently truncates content to prevent excessive memory usage while ensuring
 ```python
 class ContentPreprocessor:
     """Intelligent content preprocessing with attack pattern preservation."""
-    
+
     def __init__(self, config: SecurityConfig):
         self.max_length = config.detection_max_content_length
         self.preserve_patterns = config.detection_preserve_attack_patterns
@@ -46,6 +46,7 @@ Preprocesses content with the following logic:
 ### Attack Pattern Preservation
 
 The preprocessor looks for indicators like:
+
 - SQL keywords: SELECT, UNION, INSERT, DELETE, etc.
 - Script tags and JavaScript events
 - Path traversal patterns: ../, ..\
@@ -73,7 +74,7 @@ Provides safe pattern compilation and execution with timeout protection against 
 ```python
 class PatternCompiler:
     """Pattern compilation with timeout protection."""
-    
+
     def __init__(self, config: SecurityConfig):
         self.timeout = config.detection_compiler_timeout
         self._compiled_cache: dict[str, re.Pattern | None] = {}
@@ -84,6 +85,7 @@ class PatternCompiler:
 #### `compile_pattern(pattern: str) -> re.Pattern | None`
 
 Compiles regex patterns with error handling:
+
 - Caches compiled patterns for performance
 - Returns None for invalid patterns
 - Logs compilation errors
@@ -123,7 +125,7 @@ Provides heuristic-based detection of obfuscated attacks that might bypass regex
 ```python
 class SemanticAnalyzer:
     """Heuristic-based semantic analysis for attack detection."""
-    
+
     def __init__(self, config: SecurityConfig):
         self.threshold = config.detection_semantic_threshold
         self.token_patterns = self._initialize_patterns()
@@ -148,7 +150,7 @@ The analyzer detects:
   - Keywords: SELECT, UNION, WHERE, OR, AND
   - Operators: =, --, /*
   - Functions: concat(), char()
-  
+
 - **XSS Attacks**:
   - Tags: <script>, <img>, <iframe>
   - Events: onerror, onload, onclick
@@ -191,13 +193,13 @@ Tracks pattern execution performance to identify bottlenecks and optimize detect
 ```python
 class PerformanceMonitor:
     """Real-time performance monitoring for detection operations."""
-    
+
     def __init__(self, config: SecurityConfig):
         self.history_size = config.detection_monitor_history_size
         self.slow_threshold = config.detection_slow_pattern_threshold
         self.anomaly_threshold = config.detection_anomaly_threshold
         self.max_patterns = config.detection_max_tracked_patterns
-        
+
         self._metrics: deque[dict] = deque(maxlen=self.history_size)
         self._pattern_stats: dict[str, deque] = {}
 ```
@@ -207,6 +209,7 @@ class PerformanceMonitor:
 #### `record_metric(**kwargs)`
 
 Records execution metrics:
+
 - Pattern identifier
 - Execution time
 - Match result
@@ -246,6 +249,7 @@ Identifies patterns exceeding the threshold:
 #### `detect_anomalies() -> list[dict]`
 
 Uses statistical analysis to find anomalous patterns:
+
 - Calculates mean and standard deviation
 - Identifies patterns beyond anomaly threshold
 - Returns patterns with unusual behavior
@@ -264,16 +268,16 @@ Components are created lazily in `SusPatternsManager._ensure_detection_component
 def _ensure_detection_components(self) -> None:
     """Initialize detection engine components based on configuration."""
     config = get_current_config()
-    
+
     if config.detection_compiler_timeout > 0 and not self._compiler:
         self._compiler = PatternCompiler(config)
-    
+
     if config.detection_max_content_length > 0 and not self._preprocessor:
         self._preprocessor = ContentPreprocessor(config)
-    
+
     if config.detection_semantic_threshold > 0 and not self._semantic_analyzer:
         self._semantic_analyzer = SemanticAnalyzer(config)
-    
+
     if not self._performance_monitor:
         self._performance_monitor = PerformanceMonitor(config)
 ```
@@ -296,7 +300,7 @@ async def detect(self, content: str, **kwargs) -> dict:
         processed = self._preprocessor.preprocess(content)
     else:
         processed = content
-    
+
     # 2. Pattern matching with compiler
     threats = []
     for pattern_str in self.patterns:
@@ -305,13 +309,13 @@ async def detect(self, content: str, **kwargs) -> dict:
             result = await matcher(processed)
             if result and not result.get("timeout"):
                 threats.append({"type": "regex", "pattern": pattern_str})
-    
+
     # 3. Semantic analysis if configured
     if self._semantic_analyzer:
         semantic_result = self._semantic_analyzer.analyze_content(processed)
         if semantic_result["score"] > config.detection_semantic_threshold:
             threats.append({"type": "semantic", **semantic_result})
-    
+
     # 4. Record performance
     if self._performance_monitor:
         await self._performance_monitor.record_metric(
@@ -319,7 +323,7 @@ async def detect(self, content: str, **kwargs) -> dict:
             execution_time=elapsed,
             matched=bool(result)
         )
-    
+
     return {
         "is_threat": len(threats) > 0,
         "threats": threats,

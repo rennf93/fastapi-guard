@@ -83,6 +83,7 @@ config = SecurityConfig(
 ```
 
 The X-Forwarded-For format is: `client, proxy1, proxy2, ...` (leftmost is the original client)
+
 - With depth=1 (default): Assumes one proxy in chain, uses leftmost IP as client
 - With depth=2: Assumes two proxies in chain, still uses leftmost IP
 - Higher values handle more complex proxy chains

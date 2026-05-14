@@ -57,6 +57,7 @@ async def ban_ip(ip: str, duration: int) -> None
 ```
 
 **Parameters**:
+
 - `ip`: The IP address to ban
 - `duration`: Ban duration in seconds
 
@@ -76,9 +77,11 @@ async def is_ip_banned(ip: str) -> bool
 ```
 
 **Parameters**:
+
 - `ip`: The IP address to check
 
 **Returns**:
+
 - `bool`: True if the IP is banned, False otherwise
 
 **Example**:

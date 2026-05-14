@@ -17,6 +17,7 @@ The Detection Engine is an evolution of FastAPI Guard's suspicious patterns syst
 ### 1. Pattern Matching with Timeout Protection
 
 The engine protects against Regular Expression Denial of Service (ReDoS) by:
+
 - Wrapping pattern execution in asyncio timeouts
 - Configurable timeout via `detection_compiler_timeout` (default: 2.0 seconds)
 - Graceful handling of timeout events
@@ -25,6 +26,7 @@ The engine protects against Regular Expression Denial of Service (ReDoS) by:
 ### 2. Content Preprocessing
 
 The `ContentPreprocessor` component:
+
 - Truncates content to `detection_max_content_length` (default: 10,000 characters)
 - Preserves attack patterns when `detection_preserve_attack_patterns` is True
 - Uses a sliding window approach to retain potential threats
@@ -33,6 +35,7 @@ The `ContentPreprocessor` component:
 ### 3. Optional Semantic Analysis
 
 When enabled, provides heuristic-based detection:
+
 - Pattern-based heuristics for SQL injection, XSS, path traversal, etc.
 - Configurable threshold via `detection_semantic_threshold` (default: 0.7)
 - Returns probability scores and detected attack types
@@ -45,6 +48,7 @@ Patterns are tagged with applicable input contexts (e.g., `query_param`, `url_pa
 ### 4. Performance Monitoring
 
 Tracks execution metrics:
+
 - Records pattern execution times
 - Identifies slow patterns exceeding `detection_slow_pattern_threshold`
 - Maintains rolling statistics with configurable history size
@@ -58,17 +62,17 @@ The Detection Engine uses a modular design:
 flowchart TB
     Request[FastAPI Request] --> DPA[detect_penetration_attempt]
     DPA --> SPM[SusPatternsManager.detect]
-    
+
     SPM --> CP[ContentPreprocessor<br/>if configured]
     SPM --> PC[PatternCompiler<br/>if configured]
     SPM --> SA[SemanticAnalyzer<br/>if configured]
-    
+
     CP --> PM[PerformanceMonitor<br/>if configured]
     PC --> PM
     SA --> PM
-    
+
     PM --> Results[Detection Results]
-    
+
     style Request fill:#f9f,stroke:#333,stroke-width:2px
     style Results fill:#9f9,stroke:#333,stroke-width:2px
 ```
@@ -87,18 +91,18 @@ app = FastAPI()
 config = SecurityConfig(
     # Enable penetration detection
     enable_penetration_detection=True,
-    
+
     # Pattern execution timeout (prevents ReDoS)
     detection_compiler_timeout=2.0,
-    
+
     # Content preprocessing
     detection_max_content_length=10000,
     detection_preserve_attack_patterns=True,
-    
+
     # Optional: Enable semantic analysis
     # Note: Requires explicit configuration
     detection_semantic_threshold=0.7,
-    
+
     # Performance monitoring
     detection_slow_pattern_threshold=0.1,
     detection_monitor_history_size=1000,
@@ -112,6 +116,7 @@ app.add_middleware(SecurityMiddleware, config=config)
 ### 1. Request Analysis
 
 When a request arrives, `detect_penetration_attempt()` extracts content from:
+
 - Query parameters
 - Request body (JSON, form data)
 - Path parameters
@@ -255,6 +260,7 @@ except asyncio.TimeoutError:
 ### Redis Integration
 
 When Redis is enabled:
+
 - Custom patterns can be shared across instances
 - Performance metrics can be aggregated
 - Pattern effectiveness can be tracked globally
@@ -262,6 +268,7 @@ When Redis is enabled:
 ### Agent Integration
 
 When Agent is enabled:
+
 - Detection events are sent with full context
 - Performance metrics are reported
 - Pattern effectiveness is tracked

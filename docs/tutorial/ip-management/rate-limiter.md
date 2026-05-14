@@ -48,6 +48,7 @@ FastAPI Guard implements a sliding window rate limiting algorithm:
 5. This ensures precise rate limiting without artificial time boundaries
 
 The sliding window approach offers several advantages over fixed windows:
+
 - No traffic spikes at window boundaries
 - More consistent load on your API
 - Fair treatment of users across time periods
@@ -75,12 +76,14 @@ config = SecurityConfig(
 ```
 
 **Pros:**
+
 - Simple setup (no external dependencies)
 - Fast performance
 - Automatic cleanup of old timestamps
 - True sliding window algorithm
 
 **Cons:**
+
 - Doesn't work across multiple application instances
 - Lost on application restart
 - Consumes application memory
@@ -101,12 +104,14 @@ config = SecurityConfig(
 ```
 
 **Pros:**
+
 - Works across multiple application instances
 - Persists through application restarts
 - Uses atomic Lua scripts for reliable concurrency handling
 - Consistent rate limiting across distributed systems
 
 **Cons:**
+
 - Requires a Redis server
 - Slightly higher latency due to network calls
 - Additional infrastructure dependency

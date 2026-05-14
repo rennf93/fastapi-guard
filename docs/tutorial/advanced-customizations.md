@@ -206,6 +206,7 @@ When you create a custom GeoIPHandler:
 3. Your handler can store this manager and use it for caching
 
 You don't need to:
+
 - Create your own Redis connection
 - Implement RedisHandlerProtocol
 - Manage Redis connection pools

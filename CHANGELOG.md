@@ -3,7 +3,7 @@ Release Notes
 
 ___
 
-v7.1.0 (2026-05-11)
+v7.1.0 (2026-05-15)
 -------------------
 
 ASGI-lifespan-driven warm-up and Starlette body-typing fix (v7.1.0)

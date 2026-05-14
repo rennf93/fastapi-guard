@@ -203,6 +203,7 @@ dev_config = SecurityConfig(
 | `detection_preserve_attack_patterns` | bool | True | Preserve attacks during truncation |
 
 **Best Practices:**
+
 - Set `max_content_length` based on your typical request size
 - Always keep `preserve_attack_patterns` True for security
 - Consider memory usage with very large content limits
@@ -214,6 +215,7 @@ dev_config = SecurityConfig(
 | `detection_semantic_threshold` | float | 0.7 | 0.0-1.0 | Minimum score to consider threat |
 
 **Threshold Guidelines:**
+
 - 0.0-0.3: Very sensitive, many false positives
 - 0.4-0.6: Sensitive, catches more attacks
 - 0.7-0.8: Balanced (recommended)
@@ -229,6 +231,7 @@ dev_config = SecurityConfig(
 | `detection_max_tracked_patterns` | int | 1000 | Maximum patterns to track |
 
 **Optimization Tips:**
+
 - Lower `anomaly_threshold` to catch unusual behavior earlier
 - Adjust `slow_pattern_threshold` based on your performance requirements
 - Increase history sizes for better long-term analysis
