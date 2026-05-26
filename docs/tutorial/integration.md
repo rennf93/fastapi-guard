@@ -263,7 +263,7 @@ Configuration reference — agent fields on `SecurityConfig`
 | `enable_agent` | `bool` | `False` | Master switch. False → no telemetry, no dynamic rules. |
 | `agent_api_key` | `str \| None` | `None` | Required when `enable_agent=True`. |
 | `agent_project_id` | `str \| None` | `None` | The `proj_*` ID from the dashboard. Required for dashboard attribution. |
-| `agent_endpoint` | `str` | `https://api.fastapi-guard.com` | Override only for self-hosted Guard Core deploys. |
+| `agent_endpoint` | `str` | `https://api.guard-core.com` | Override only for self-hosted Guard Core deploys. |
 | `agent_buffer_size` | `int` | `100` | In-memory event buffer cap. Set to `5000` for production traffic. The SaaS accepts batches up to 10,000 events / 5,000 metrics; nginx default is 1MB so set `client_max_body_size` ≥ 16m on any reverse proxy in front of the SaaS. |
 | `agent_flush_interval` | `int` | `30` | Seconds between automatic buffer flushes. `2` is a reasonable production setting. |
 | `agent_enable_events` | `bool` | `True` | Ship security events. |

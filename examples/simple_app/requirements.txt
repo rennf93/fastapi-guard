@@ -1,6 +1,6 @@
 fastapi
 fastapi-guard
-# fastapi-guard-agent
+# guard-agent
 redis
 requests
 uvicorn

@@ -86,7 +86,7 @@ Agent Settings
 |-------|------|---------|-------------|
 | `enable_agent` | bool | False | Enable FastAPI Guard Agent integration |
 | `agent_api_key` | str | None | API key for agent authentication |
-| `agent_api_base_url` | str | "https://api.fastapiguard.com/v1/agent" | Agent API endpoint |
+| `agent_api_base_url` | str | "https://api.guard-core.com/v1/agent" | Agent API endpoint |
 | `agent_enable_events` | bool | True | Send events to agent |
 | `agent_enable_metrics` | bool | True | Send metrics to agent |
 | `agent_send_interval` | int | 60 | Metric sending interval (seconds) |
