@@ -552,13 +552,17 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if not self.config.block_cloud_providers:
             return
 
+        providers: set[str] = {
+            str(provider) for provider in self.config.block_cloud_providers
+        }
+
         if self.config.enable_redis and self.redis_handler:
             await cloud_handler.refresh_async(
-                self.config.block_cloud_providers,
+                providers,
                 ttl=self.config.cloud_ip_refresh_interval,
             )
         else:
-            await cloud_handler.refresh(self.config.block_cloud_providers)
+            await cloud_handler.refresh(providers)
         self.last_cloud_ip_refresh = int(time.time())
 
     async def create_error_response(

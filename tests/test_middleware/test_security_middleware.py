@@ -995,6 +995,7 @@ async def test_redis_initialization(security_config_redis: SecurityConfig) -> No
     app = FastAPI()
 
     security_config_redis.block_cloud_providers = {"AWS"}
+    security_config_redis.lazy_init = False
 
     middleware = SecurityMiddleware(app, config=security_config_redis)
 
