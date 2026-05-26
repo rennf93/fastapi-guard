@@ -10,6 +10,19 @@ Release Notes
 
 ___
 
+v7.1.1 (2026-05-26)
+-------------------
+
+guard-core 3.1.0 compatibility: cloud-provider set typing + lazy-init test alignment (v7.1.1)
+---------------------------------------------------------------------------------------------
+
+- **Fixed** — `SecurityMiddleware.refresh_cloud_ip_ranges()` now normalizes `SecurityConfig.block_cloud_providers` to `set[str]` before forwarding it to guard-core's `cloud_handler.refresh_async()` / `refresh()`. guard-core 3.1.0 narrowed the field's type to `set[Literal["AWS", "GCP", "Azure"]]`; because `set` is invariant, forwarding it directly raised a mypy `arg-type` error against the handler's `set[str]` parameter. Runtime behavior is unchanged — the values were always those provider strings.
+- **Fixed (tests)** — The Redis-initialization test that asserts eager cloud-IP and geo-IP handler wiring now sets `SecurityConfig(lazy_init=False)` explicitly. guard-core 3.1.0 changed the `lazy_init` default from `False` to `True`, which defers those `initialize_redis()` calls into a background task; the test exercises the eager path and so must opt into it.
+- **Compatibility** — Patch-level; no public API change. v7.1.0 declared `guard-core>=3.1.0`, but its CI run completed minutes before guard-core 3.1.0 was published, so two 3.1.0-only changes — `block_cloud_providers` literal typing and the `lazy_init=True` default — went unexercised until now. v7.1.1 brings the adapter source and test suite into line with the guard-core 3.1.0 it already targets. Note: under guard-core's `lazy_init=True` default, cloud-IP and geo-IP caches warm in the background after startup rather than blocking initialization — wire `guard_lifespan` (v7.1.0) or set `SecurityConfig(lazy_init=False)` to restore eager warm-up.
+- **Requires** — `guard-core>=3.1.0` (declared as unconstrained `guard-core` in pyproject; documented here for upgrade guidance).
+
+___
+
 v7.1.0 (2026-05-15)
 -------------------
 
