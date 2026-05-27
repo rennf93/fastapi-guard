@@ -15,7 +15,6 @@ on:
       - 'pyproject.toml'
       - 'pytest.ini'
       - 'reqs.pip'
-      - 'setup.py'
       - 'tests/**'
   pull_request_target:
     branches:
@@ -31,7 +30,6 @@ on:
       - 'pyproject.toml'
       - 'pytest.ini'
       - 'reqs.pip'
-      - 'setup.py'
       - 'tests/**'
   workflow_dispatch:
 
