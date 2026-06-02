@@ -4,7 +4,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /build
 
-COPY pyproject.toml setup.py README.md ./
+COPY pyproject.toml README.md ./
 COPY guard/ guard/
 
 COPY examples/advanced_app/pyproject.toml /app/pyproject.toml
