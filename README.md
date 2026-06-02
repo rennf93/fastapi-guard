@@ -121,17 +121,13 @@ uv add guard-agent    # or: pip install guard-agent
 ```
 
 ```python
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from guard import SecurityConfig, SecurityMiddleware
-from guard_agent import AgentConfig, guard_agent
 
 security_config = SecurityConfig(
     enable_agent=True,
     agent_api_key="your-api-key",
-    agent_endpoint="https://api.guard-core.com/api/v1",
+    agent_endpoint="https://api.guard-core.com",
     agent_project_id="your-project-id",
     agent_buffer_size=5000,
     agent_flush_interval=2,
@@ -141,27 +137,11 @@ security_config = SecurityConfig(
     dynamic_rule_interval=60,
 )
 
-agent_config = AgentConfig(
-    api_key="your-api-key",
-    endpoint="https://api.guard-core.com/api/v1",
-    project_id="your-project-id",
-    buffer_size=5000,
-    flush_interval=2,
-)
-
-agent = guard_agent(agent_config)
-
-
-@asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
-    await agent.start()
-    yield
-    await agent.stop()
-
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 app.add_middleware(SecurityMiddleware, config=security_config)
 ```
+
+That is the entire integration. The middleware drives the agent's lifecycle for you --- **do not** import `guard_agent`, construct an `AgentConfig`, or wire a `lifespan` hook when using fastapi-guard; doing so spins up a second agent that never sees traffic.
 
 Free tier includes 10,000 events/month --- no credit card required.
 
