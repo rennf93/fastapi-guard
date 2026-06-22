@@ -1064,6 +1064,8 @@
       
         
       
+        
+      
     
     
     
@@ -1143,6 +1145,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../tutorial/security/http-security-headers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP Security Headers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
       
@@ -1169,10 +1199,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_5_2" id="__nav_3_5_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_5_3" id="__nav_3_5_3_label" tabindex="0">
             
   
   
@@ -1190,8 +1220,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5_2">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2553,21 +2583,22 @@
 <li>Supports atomic ban operations</li>
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Cluster-wide ban</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">await</span> <span class="n">ip_ban_manager</span><span class="o">.</span><span class="n">ban_ip</span><span class="p">(</span><span class="s2">&quot;192.168.1.1&quot;</span><span class="p">,</span> <span class="mi">3600</span><span class="p">,</span> <span class="n">distributed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">await</span> <span class="n">ip_ban_manager</span><span class="o">.</span><span class="n">ban_ip</span><span class="p">(</span><span class="s2">&quot;192.168.1.1&quot;</span><span class="p">,</span> <span class="mi">3600</span><span class="p">)</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Check ban status across cluster</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">is_banned</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ip_ban_manager</span><span class="o">.</span><span class="n">is_ip_banned</span><span class="p">(</span><span class="s2">&quot;192.168.1.1&quot;</span><span class="p">,</span> <span class="n">check_redis</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">is_banned</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ip_ban_manager</span><span class="o">.</span><span class="n">is_ip_banned</span><span class="p">(</span><span class="s2">&quot;192.168.1.1&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="methods">Methods<a class="headerlink" href="#methods" title="Permanent link">&para;</a></h2>
 <h2 id="ban_ip">ban_ip<a class="headerlink" href="#ban_ip" title="Permanent link">&para;</a></h2>
 <p>Ban an IP address for a specified duration.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ban_ip</span><span class="p">(</span><span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ban_ip</span><span class="p">(</span><span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;threshold_exceeded&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>ip</code>: The IP address to ban</li>
 <li><code>duration</code>: Ban duration in seconds</li>
+<li><code>reason</code>: Ban reason used as the <code>SecurityEvent</code> reason when an agent handler is configured (defaults to <code>"threshold_exceeded"</code>)</li>
 </ul>
 <p><strong>Example</strong>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">await</span> <span class="n">ip_ban_manager</span><span class="o">.</span><span class="n">ban_ip</span><span class="p">(</span><span class="s2">&quot;192.168.1.1&quot;</span><span class="p">,</span> <span class="mi">3600</span><span class="p">)</span>  <span class="c1"># Ban for 1 hour</span>

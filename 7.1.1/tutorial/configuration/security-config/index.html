@@ -1075,6 +1075,8 @@
       
         
       
+        
+      
     
     
     
@@ -1157,6 +1159,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../security/http-security-headers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP Security Headers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
       
@@ -1183,10 +1213,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_5_2" id="__nav_3_5_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_5_3" id="__nav_3_5_3_label" tabindex="0">
             
   
   
@@ -1204,8 +1234,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5_2">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1721,17 +1751,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#environment-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Environment Variables
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#other-models" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1743,43 +1762,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ipinfo" class="md-nav__link">
+  <a href="#detectionresult" class="md-nav__link">
     <span class="md-ellipsis">
       
-        IPInfo
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#ratelimitstatus" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RateLimitStatus
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#threatdetectionresult" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ThreatDetectionResult
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#behaviorprofile" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        BehaviorProfile
+        DetectionResult
       
     </span>
   </a>
@@ -2750,17 +2736,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#environment-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Environment Variables
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#other-models" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2772,43 +2747,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ipinfo" class="md-nav__link">
+  <a href="#detectionresult" class="md-nav__link">
     <span class="md-ellipsis">
       
-        IPInfo
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#ratelimitstatus" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RateLimitStatus
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#threatdetectionresult" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ThreatDetectionResult
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#behaviorprofile" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        BehaviorProfile
+        DetectionResult
       
     </span>
   </a>
@@ -2884,11 +2826,10 @@
 <hr />
 <h2 id="securityconfig">SecurityConfig<a class="headerlink" href="#securityconfig" title="Permanent link">&para;</a></h2>
 <p>The main configuration model for FastAPI Guard middleware.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">SecurityConfig</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">SecurityConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="sd">    Main configuration model for FastAPI Guard.</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="sd">    All settings can be configured via environment variables with FASTAPI_GUARD_ prefix.</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span></code></pre></div>
 <h2 id="core-security-settings">Core Security Settings<a class="headerlink" href="#core-security-settings" title="Permanent link">&para;</a></h2>
 <table>
@@ -2902,16 +2843,22 @@
 </thead>
 <tbody>
 <tr>
-<td><code>enabled</code></td>
-<td>bool</td>
-<td>True</td>
-<td>Enable/disable the middleware</td>
-</tr>
-<tr>
 <td><code>passive_mode</code></td>
 <td>bool</td>
 <td>False</td>
 <td>If True, only log without blocking</td>
+</tr>
+<tr>
+<td><code>enable_ip_banning</code></td>
+<td>bool</td>
+<td>True</td>
+<td>Enable/disable IP banning functionality</td>
+</tr>
+<tr>
+<td><code>enable_rate_limiting</code></td>
+<td>bool</td>
+<td>True</td>
+<td>Enable/disable rate limiting functionality</td>
 </tr>
 <tr>
 <td><code>enable_penetration_detection</code></td>
@@ -2920,9 +2867,15 @@
 <td>Enable penetration attempt detection</td>
 </tr>
 <tr>
+<td><code>fail_secure</code></td>
+<td>bool</td>
+<td>True</td>
+<td>Block the request when a security check raises an unexpected exception</td>
+</tr>
+<tr>
 <td><code>auto_ban_threshold</code></td>
 <td>int</td>
-<td>5</td>
+<td>10</td>
 <td>Number of suspicious requests before auto-ban</td>
 </tr>
 <tr>
@@ -2930,6 +2883,30 @@
 <td>int</td>
 <td>3600</td>
 <td>Auto-ban duration in seconds</td>
+</tr>
+<tr>
+<td><code>rate_limit</code></td>
+<td>int</td>
+<td>10</td>
+<td>Maximum requests per <code>rate_limit_window</code></td>
+</tr>
+<tr>
+<td><code>rate_limit_window</code></td>
+<td>int</td>
+<td>60</td>
+<td>Rate limiting time window (seconds)</td>
+</tr>
+<tr>
+<td><code>enforce_https</code></td>
+<td>bool</td>
+<td>False</td>
+<td>Whether to enforce HTTPS connections</td>
+</tr>
+<tr>
+<td><code>exclude_paths</code></td>
+<td>list[str]</td>
+<td><code>["/docs", "/redoc", "/openapi.json", "/openapi.yaml", "/favicon.ico", "/static"]</code></td>
+<td>Paths to exclude from security checks</td>
 </tr>
 </tbody>
 </table>
@@ -3007,46 +2984,52 @@
 </thead>
 <tbody>
 <tr>
-<td><code>trusted_ips</code></td>
-<td>list[str]</td>
-<td>[]</td>
-<td>List of always-allowed IP addresses</td>
+<td><code>whitelist</code></td>
+<td>list[str] | None</td>
+<td>None</td>
+<td>Allowed IP addresses or CIDR ranges</td>
 </tr>
 <tr>
-<td><code>blocked_ips</code></td>
+<td><code>blacklist</code></td>
 <td>list[str]</td>
 <td>[]</td>
-<td>List of always-blocked IP addresses</td>
+<td>Blocked IP addresses or CIDR ranges</td>
+</tr>
+<tr>
+<td><code>whitelist_countries</code></td>
+<td>frozenset[str]</td>
+<td><code>frozenset()</code></td>
+<td>Country codes that are always allowed</td>
 </tr>
 <tr>
 <td><code>blocked_countries</code></td>
-<td>list[str]</td>
-<td>[]</td>
-<td>List of blocked country codes</td>
+<td>frozenset[str]</td>
+<td><code>frozenset()</code></td>
+<td>Country codes that are always blocked</td>
 </tr>
 <tr>
 <td><code>blocked_user_agents</code></td>
 <td>list[str]</td>
 <td>[]</td>
-<td>List of blocked user agent patterns</td>
+<td>Blocked user agents</td>
 </tr>
 <tr>
-<td><code>trusted_hosts</code></td>
+<td><code>trusted_proxies</code></td>
 <td>list[str]</td>
-<td>["*"]</td>
-<td>List of allowed host headers</td>
+<td>[]</td>
+<td>Trusted proxy IPs or CIDR ranges for X-Forwarded-For</td>
 </tr>
 <tr>
-<td><code>real_ip_header</code></td>
-<td>str</td>
-<td>None</td>
-<td>Header containing real IP (e.g., 'X-Forwarded-For')</td>
+<td><code>trusted_proxy_depth</code></td>
+<td>int</td>
+<td>1</td>
+<td>How many proxies to expect in the X-Forwarded-For chain</td>
 </tr>
 <tr>
-<td><code>global_rate_limit</code></td>
-<td>str</td>
-<td>"5000/hour"</td>
-<td>Global rate limit for all requests</td>
+<td><code>trust_x_forwarded_proto</code></td>
+<td>bool</td>
+<td>False</td>
+<td>Trust X-Forwarded-Proto header for HTTPS detection</td>
 </tr>
 </tbody>
 </table>
@@ -3062,52 +3045,22 @@
 </thead>
 <tbody>
 <tr>
-<td><code>use_redis</code></td>
+<td><code>enable_redis</code></td>
 <td>bool</td>
-<td>False</td>
-<td>Enable Redis integration</td>
+<td>True</td>
+<td>Enable/disable Redis for distributed state management</td>
 </tr>
 <tr>
-<td><code>redis_host</code></td>
+<td><code>redis_url</code></td>
+<td>str | None</td>
+<td>"redis://localhost:6379"</td>
+<td>Redis URL for distributed state management</td>
+</tr>
+<tr>
+<td><code>redis_prefix</code></td>
 <td>str</td>
-<td>"localhost"</td>
-<td>Redis server hostname</td>
-</tr>
-<tr>
-<td><code>redis_port</code></td>
-<td>int</td>
-<td>6379</td>
-<td>Redis server port</td>
-</tr>
-<tr>
-<td><code>redis_password</code></td>
-<td>str</td>
-<td>None</td>
-<td>Redis password</td>
-</tr>
-<tr>
-<td><code>redis_db</code></td>
-<td>int</td>
-<td>0</td>
-<td>Redis database number</td>
-</tr>
-<tr>
-<td><code>redis_ssl</code></td>
-<td>bool</td>
-<td>False</td>
-<td>Use SSL for Redis connection</td>
-</tr>
-<tr>
-<td><code>redis_pool_size</code></td>
-<td>int</td>
-<td>10</td>
-<td>Connection pool size</td>
-</tr>
-<tr>
-<td><code>redis_ttl</code></td>
-<td>int</td>
-<td>86400</td>
-<td>Default TTL for Redis keys (seconds)</td>
+<td>"guard_core:"</td>
+<td>Prefix for Redis keys to avoid collisions with other apps</td>
 </tr>
 </tbody>
 </table>
@@ -3126,37 +3079,49 @@
 <td><code>enable_agent</code></td>
 <td>bool</td>
 <td>False</td>
-<td>Enable FastAPI Guard Agent integration</td>
+<td>Enable Guard Agent telemetry and monitoring</td>
 </tr>
 <tr>
 <td><code>agent_api_key</code></td>
-<td>str</td>
+<td>str | None</td>
 <td>None</td>
-<td>API key for agent authentication</td>
+<td>API key for Guard Agent SaaS platform</td>
 </tr>
 <tr>
-<td><code>agent_api_base_url</code></td>
+<td><code>agent_endpoint</code></td>
 <td>str</td>
-<td>"https://api.guard-core.com/v1/agent"</td>
-<td>Agent API endpoint</td>
+<td>"https://api.guard-core.com"</td>
+<td>Guard Agent SaaS platform endpoint</td>
+</tr>
+<tr>
+<td><code>agent_project_id</code></td>
+<td>str | None</td>
+<td>None</td>
+<td>Project ID for organizing telemetry data</td>
+</tr>
+<tr>
+<td><code>agent_buffer_size</code></td>
+<td>int</td>
+<td>100</td>
+<td>Number of events to buffer before auto-flush</td>
+</tr>
+<tr>
+<td><code>agent_flush_interval</code></td>
+<td>int</td>
+<td>30</td>
+<td>Interval in seconds between automatic buffer flushes</td>
 </tr>
 <tr>
 <td><code>agent_enable_events</code></td>
 <td>bool</td>
 <td>True</td>
-<td>Send events to agent</td>
+<td>Enable sending security events to SaaS platform</td>
 </tr>
 <tr>
 <td><code>agent_enable_metrics</code></td>
 <td>bool</td>
 <td>True</td>
-<td>Send metrics to agent</td>
-</tr>
-<tr>
-<td><code>agent_send_interval</code></td>
-<td>int</td>
-<td>60</td>
-<td>Metric sending interval (seconds)</td>
+<td>Enable sending performance metrics to SaaS platform</td>
 </tr>
 </tbody>
 </table>
@@ -3173,21 +3138,21 @@
 <tbody>
 <tr>
 <td><code>ipinfo_token</code></td>
-<td>str</td>
+<td>str | None</td>
 <td>None</td>
-<td>IPInfo API token for geolocation</td>
+<td>IPInfo API token for geolocation (deprecated; use a custom <code>geo_ip_handler</code>)</td>
+</tr>
+<tr>
+<td><code>ipinfo_db_path</code></td>
+<td>Path | None</td>
+<td><code>Path("data/ipinfo/country_asn.mmdb")</code></td>
+<td>Path to the IPInfo database file (deprecated; use a custom <code>geo_ip_handler</code>)</td>
 </tr>
 <tr>
 <td><code>block_cloud_providers</code></td>
-<td>dict</td>
-<td>{}</td>
-<td>Cloud providers to block</td>
-</tr>
-<tr>
-<td><code>cloud_provider_cache_ttl</code></td>
-<td>int</td>
-<td>86400</td>
-<td>Cache TTL for cloud provider data</td>
+<td>set[CloudProvider] | None</td>
+<td>None</td>
+<td>Set of cloud provider names to block (<code>"AWS"</code>, <code>"GCP"</code>, <code>"Azure"</code>)</td>
 </tr>
 <tr>
 <td><code>cloud_ip_refresh_interval</code></td>
@@ -3332,40 +3297,46 @@
 </thead>
 <tbody>
 <tr>
-<td><code>cors_enabled</code></td>
-<td>bool</td>
-<td>True</td>
-<td>Enable CORS handling</td>
-</tr>
-<tr>
-<td><code>cors_origins</code></td>
-<td>list[str]</td>
-<td>["*"]</td>
-<td>Allowed origins</td>
-</tr>
-<tr>
-<td><code>cors_methods</code></td>
-<td>list[str]</td>
-<td>["*"]</td>
-<td>Allowed methods</td>
-</tr>
-<tr>
-<td><code>cors_headers</code></td>
-<td>list[str]</td>
-<td>["*"]</td>
-<td>Allowed headers</td>
-</tr>
-<tr>
-<td><code>cors_credentials</code></td>
+<td><code>enable_cors</code></td>
 <td>bool</td>
 <td>False</td>
-<td>Allow credentials</td>
+<td>Enable/disable CORS</td>
+</tr>
+<tr>
+<td><code>cors_allow_origins</code></td>
+<td>list[str]</td>
+<td>["*"]</td>
+<td>Origins allowed in CORS requests</td>
+</tr>
+<tr>
+<td><code>cors_allow_methods</code></td>
+<td>list[str]</td>
+<td><code>["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]</code></td>
+<td>Methods allowed in CORS requests</td>
+</tr>
+<tr>
+<td><code>cors_allow_headers</code></td>
+<td>list[str]</td>
+<td>["*"]</td>
+<td>Headers allowed in CORS requests</td>
+</tr>
+<tr>
+<td><code>cors_allow_credentials</code></td>
+<td>bool</td>
+<td>False</td>
+<td>Whether to allow credentials in CORS requests</td>
+</tr>
+<tr>
+<td><code>cors_expose_headers</code></td>
+<td>list[str]</td>
+<td>[]</td>
+<td>Headers exposed in CORS responses</td>
 </tr>
 <tr>
 <td><code>cors_max_age</code></td>
 <td>int</td>
 <td>600</td>
-<td>Preflight cache duration</td>
+<td>Maximum age of CORS preflight results</td>
 </tr>
 </tbody>
 </table>
@@ -3381,20 +3352,20 @@
 </thead>
 <tbody>
 <tr>
-<td><code>log_enabled</code></td>
-<td>bool</td>
-<td>True</td>
-<td>Enable request logging</td>
+<td><code>log_suspicious_level</code></td>
+<td>Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None</td>
+<td>"WARNING"</td>
+<td>Log level for suspicious requests</td>
 </tr>
 <tr>
-<td><code>log_level</code></td>
-<td>str</td>
-<td>"INFO"</td>
-<td>Logging level</td>
+<td><code>log_request_level</code></td>
+<td>Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None</td>
+<td>None</td>
+<td>Log level for requests</td>
 </tr>
 <tr>
 <td><code>custom_log_file</code></td>
-<td>str</td>
+<td>str | None</td>
 <td>None</td>
 <td>Custom log file path</td>
 </tr>
@@ -3403,12 +3374,6 @@
 <td>Literal["text", "json"]</td>
 <td>"text"</td>
 <td>Log output format: "text" for plain text, "json" for structured JSON</td>
-</tr>
-<tr>
-<td><code>mask_sensitive_data</code></td>
-<td>bool</td>
-<td>True</td>
-<td>Mask sensitive data in logs</td>
 </tr>
 </tbody>
 </table>
@@ -3425,168 +3390,133 @@
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c1"># Full configuration</span>
 </span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="c1"># Core settings</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">passive_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="c1"># Detection engine</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="n">enable_penetration_detection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="n">detection_compiler_timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
-</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>    <span class="n">detection_max_content_length</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
-</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>    <span class="n">detection_preserve_attack_patterns</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>    <span class="n">detection_semantic_threshold</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
-</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>    <span class="n">detection_anomaly_threshold</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span>
-</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>    <span class="n">detection_slow_pattern_threshold</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>    <span class="n">detection_monitor_history_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>    <span class="n">detection_max_tracked_patterns</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>
-</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>    <span class="c1"># Security headers</span>
-</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>    <span class="n">security_headers</span><span class="o">=</span><span class="p">{</span>
-</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>        <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>        <span class="s2">&quot;hsts&quot;</span><span class="p">:</span> <span class="p">{</span>
-</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>            <span class="s2">&quot;max_age&quot;</span><span class="p">:</span> <span class="mi">31536000</span><span class="p">,</span>  <span class="c1"># 1 year</span>
-</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>            <span class="s2">&quot;include_subdomains&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>            <span class="s2">&quot;preload&quot;</span><span class="p">:</span> <span class="kc">False</span>
-</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>        <span class="p">},</span>
-</span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>        <span class="s2">&quot;csp&quot;</span><span class="p">:</span> <span class="p">{</span>
-</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>            <span class="s2">&quot;default-src&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;self&#39;&quot;</span><span class="p">],</span>
-</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>            <span class="s2">&quot;script-src&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;self&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;https://cdn.example.com&quot;</span><span class="p">],</span>
-</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>            <span class="s2">&quot;style-src&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;self&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;unsafe-inline&#39;&quot;</span><span class="p">],</span>
-</span><span id="__span-2-39"><a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>            <span class="s2">&quot;img-src&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;self&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;data:&quot;</span><span class="p">,</span> <span class="s2">&quot;https:&quot;</span><span class="p">],</span>
-</span><span id="__span-2-40"><a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a>            <span class="s2">&quot;connect-src&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;self&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;https://api.example.com&quot;</span><span class="p">],</span>
-</span><span id="__span-2-41"><a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a>            <span class="s2">&quot;frame-ancestors&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;none&#39;&quot;</span><span class="p">],</span>
-</span><span id="__span-2-42"><a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>            <span class="s2">&quot;base-uri&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;self&#39;&quot;</span><span class="p">],</span>
-</span><span id="__span-2-43"><a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a>            <span class="s2">&quot;form-action&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;self&#39;&quot;</span><span class="p">]</span>
-</span><span id="__span-2-44"><a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a>        <span class="p">},</span>
-</span><span id="__span-2-45"><a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a>        <span class="s2">&quot;frame_options&quot;</span><span class="p">:</span> <span class="s2">&quot;DENY&quot;</span><span class="p">,</span>
-</span><span id="__span-2-46"><a id="__codelineno-2-46" name="__codelineno-2-46" href="#__codelineno-2-46"></a>        <span class="s2">&quot;content_type_options&quot;</span><span class="p">:</span> <span class="s2">&quot;nosniff&quot;</span><span class="p">,</span>
-</span><span id="__span-2-47"><a id="__codelineno-2-47" name="__codelineno-2-47" href="#__codelineno-2-47"></a>        <span class="s2">&quot;xss_protection&quot;</span><span class="p">:</span> <span class="s2">&quot;1; mode=block&quot;</span><span class="p">,</span>
-</span><span id="__span-2-48"><a id="__codelineno-2-48" name="__codelineno-2-48" href="#__codelineno-2-48"></a>        <span class="s2">&quot;referrer_policy&quot;</span><span class="p">:</span> <span class="s2">&quot;no-referrer&quot;</span><span class="p">,</span>
-</span><span id="__span-2-49"><a id="__codelineno-2-49" name="__codelineno-2-49" href="#__codelineno-2-49"></a>        <span class="s2">&quot;permissions_policy&quot;</span><span class="p">:</span> <span class="s2">&quot;geolocation=(), microphone=(), camera=()&quot;</span><span class="p">,</span>
-</span><span id="__span-2-50"><a id="__codelineno-2-50" name="__codelineno-2-50" href="#__codelineno-2-50"></a>        <span class="s2">&quot;custom&quot;</span><span class="p">:</span> <span class="p">{</span>
-</span><span id="__span-2-51"><a id="__codelineno-2-51" name="__codelineno-2-51" href="#__codelineno-2-51"></a>            <span class="s2">&quot;X-Custom-Header&quot;</span><span class="p">:</span> <span class="s2">&quot;CustomValue&quot;</span>
-</span><span id="__span-2-52"><a id="__codelineno-2-52" name="__codelineno-2-52" href="#__codelineno-2-52"></a>        <span class="p">}</span>
-</span><span id="__span-2-53"><a id="__codelineno-2-53" name="__codelineno-2-53" href="#__codelineno-2-53"></a>    <span class="p">},</span>
-</span><span id="__span-2-54"><a id="__codelineno-2-54" name="__codelineno-2-54" href="#__codelineno-2-54"></a>
-</span><span id="__span-2-55"><a id="__codelineno-2-55" name="__codelineno-2-55" href="#__codelineno-2-55"></a>    <span class="c1"># Redis</span>
-</span><span id="__span-2-56"><a id="__codelineno-2-56" name="__codelineno-2-56" href="#__codelineno-2-56"></a>    <span class="n">use_redis</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-2-57"><a id="__codelineno-2-57" name="__codelineno-2-57" href="#__codelineno-2-57"></a>    <span class="n">redis_host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
-</span><span id="__span-2-58"><a id="__codelineno-2-58" name="__codelineno-2-58" href="#__codelineno-2-58"></a>    <span class="n">redis_port</span><span class="o">=</span><span class="mi">6379</span><span class="p">,</span>
-</span><span id="__span-2-59"><a id="__codelineno-2-59" name="__codelineno-2-59" href="#__codelineno-2-59"></a>
-</span><span id="__span-2-60"><a id="__codelineno-2-60" name="__codelineno-2-60" href="#__codelineno-2-60"></a>    <span class="c1"># Agent</span>
-</span><span id="__span-2-61"><a id="__codelineno-2-61" name="__codelineno-2-61" href="#__codelineno-2-61"></a>    <span class="n">enable_agent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-2-62"><a id="__codelineno-2-62" name="__codelineno-2-62" href="#__codelineno-2-62"></a>    <span class="n">agent_api_key</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span><span class="p">,</span>
-</span><span id="__span-2-63"><a id="__codelineno-2-63" name="__codelineno-2-63" href="#__codelineno-2-63"></a>
-</span><span id="__span-2-64"><a id="__codelineno-2-64" name="__codelineno-2-64" href="#__codelineno-2-64"></a>    <span class="c1"># Logging</span>
-</span><span id="__span-2-65"><a id="__codelineno-2-65" name="__codelineno-2-65" href="#__codelineno-2-65"></a>    <span class="n">custom_log_file</span><span class="o">=</span><span class="s2">&quot;security.log&quot;</span><span class="p">,</span>
-</span><span id="__span-2-66"><a id="__codelineno-2-66" name="__codelineno-2-66" href="#__codelineno-2-66"></a>    <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;WARNING&quot;</span><span class="p">,</span>
-</span><span id="__span-2-67"><a id="__codelineno-2-67" name="__codelineno-2-67" href="#__codelineno-2-67"></a>    <span class="n">log_format</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
-</span><span id="__span-2-68"><a id="__codelineno-2-68" name="__codelineno-2-68" href="#__codelineno-2-68"></a>
-</span><span id="__span-2-69"><a id="__codelineno-2-69" name="__codelineno-2-69" href="#__codelineno-2-69"></a>    <span class="c1"># Cloud provider refresh</span>
-</span><span id="__span-2-70"><a id="__codelineno-2-70" name="__codelineno-2-70" href="#__codelineno-2-70"></a>    <span class="n">cloud_ip_refresh_interval</span><span class="o">=</span><span class="mi">1800</span><span class="p">,</span>
-</span><span id="__span-2-71"><a id="__codelineno-2-71" name="__codelineno-2-71" href="#__codelineno-2-71"></a><span class="p">)</span>
-</span></code></pre></div>
-<h2 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
-<p>All settings can be configured using environment variables with the <code>FASTAPI_GUARD_</code> prefix:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">FASTAPI_GUARD_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">FASTAPI_GUARD_DETECTION_SEMANTIC_THRESHOLD</span><span class="o">=</span><span class="m">0</span>.8
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">FASTAPI_GUARD_REDIS_HOST</span><span class="o">=</span>redis.example.com
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nb">export</span><span class="w"> </span><span class="nv">FASTAPI_GUARD_AGENT_API_KEY</span><span class="o">=</span>your-api-key
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">passive_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="c1"># Detection engine</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="n">enable_penetration_detection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="n">detection_compiler_timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="n">detection_max_content_length</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>    <span class="n">detection_preserve_attack_patterns</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>    <span class="n">detection_semantic_threshold</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>    <span class="n">detection_anomaly_threshold</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>    <span class="n">detection_slow_pattern_threshold</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>    <span class="n">detection_monitor_history_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>    <span class="n">detection_max_tracked_patterns</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>
+</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>    <span class="c1"># Security headers</span>
+</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>    <span class="n">security_headers</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>        <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>        <span class="s2">&quot;hsts&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>            <span class="s2">&quot;max_age&quot;</span><span class="p">:</span> <span class="mi">31536000</span><span class="p">,</span>  <span class="c1"># 1 year</span>
+</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>            <span class="s2">&quot;include_subdomains&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>            <span class="s2">&quot;preload&quot;</span><span class="p">:</span> <span class="kc">False</span>
+</span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>        <span class="p">},</span>
+</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>        <span class="s2">&quot;csp&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>            <span class="s2">&quot;default-src&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;self&#39;&quot;</span><span class="p">],</span>
+</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>            <span class="s2">&quot;script-src&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;self&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;https://cdn.example.com&quot;</span><span class="p">],</span>
+</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>            <span class="s2">&quot;style-src&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;self&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;unsafe-inline&#39;&quot;</span><span class="p">],</span>
+</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>            <span class="s2">&quot;img-src&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;self&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;data:&quot;</span><span class="p">,</span> <span class="s2">&quot;https:&quot;</span><span class="p">],</span>
+</span><span id="__span-2-39"><a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>            <span class="s2">&quot;connect-src&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;self&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;https://api.example.com&quot;</span><span class="p">],</span>
+</span><span id="__span-2-40"><a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a>            <span class="s2">&quot;frame-ancestors&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;none&#39;&quot;</span><span class="p">],</span>
+</span><span id="__span-2-41"><a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a>            <span class="s2">&quot;base-uri&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;self&#39;&quot;</span><span class="p">],</span>
+</span><span id="__span-2-42"><a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>            <span class="s2">&quot;form-action&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;self&#39;&quot;</span><span class="p">]</span>
+</span><span id="__span-2-43"><a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a>        <span class="p">},</span>
+</span><span id="__span-2-44"><a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a>        <span class="s2">&quot;frame_options&quot;</span><span class="p">:</span> <span class="s2">&quot;DENY&quot;</span><span class="p">,</span>
+</span><span id="__span-2-45"><a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a>        <span class="s2">&quot;content_type_options&quot;</span><span class="p">:</span> <span class="s2">&quot;nosniff&quot;</span><span class="p">,</span>
+</span><span id="__span-2-46"><a id="__codelineno-2-46" name="__codelineno-2-46" href="#__codelineno-2-46"></a>        <span class="s2">&quot;xss_protection&quot;</span><span class="p">:</span> <span class="s2">&quot;1; mode=block&quot;</span><span class="p">,</span>
+</span><span id="__span-2-47"><a id="__codelineno-2-47" name="__codelineno-2-47" href="#__codelineno-2-47"></a>        <span class="s2">&quot;referrer_policy&quot;</span><span class="p">:</span> <span class="s2">&quot;no-referrer&quot;</span><span class="p">,</span>
+</span><span id="__span-2-48"><a id="__codelineno-2-48" name="__codelineno-2-48" href="#__codelineno-2-48"></a>        <span class="s2">&quot;permissions_policy&quot;</span><span class="p">:</span> <span class="s2">&quot;geolocation=(), microphone=(), camera=()&quot;</span><span class="p">,</span>
+</span><span id="__span-2-49"><a id="__codelineno-2-49" name="__codelineno-2-49" href="#__codelineno-2-49"></a>        <span class="s2">&quot;custom&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="__span-2-50"><a id="__codelineno-2-50" name="__codelineno-2-50" href="#__codelineno-2-50"></a>            <span class="s2">&quot;X-Custom-Header&quot;</span><span class="p">:</span> <span class="s2">&quot;CustomValue&quot;</span>
+</span><span id="__span-2-51"><a id="__codelineno-2-51" name="__codelineno-2-51" href="#__codelineno-2-51"></a>        <span class="p">}</span>
+</span><span id="__span-2-52"><a id="__codelineno-2-52" name="__codelineno-2-52" href="#__codelineno-2-52"></a>    <span class="p">},</span>
+</span><span id="__span-2-53"><a id="__codelineno-2-53" name="__codelineno-2-53" href="#__codelineno-2-53"></a>
+</span><span id="__span-2-54"><a id="__codelineno-2-54" name="__codelineno-2-54" href="#__codelineno-2-54"></a>    <span class="c1"># Redis</span>
+</span><span id="__span-2-55"><a id="__codelineno-2-55" name="__codelineno-2-55" href="#__codelineno-2-55"></a>    <span class="n">enable_redis</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-2-56"><a id="__codelineno-2-56" name="__codelineno-2-56" href="#__codelineno-2-56"></a>    <span class="n">redis_url</span><span class="o">=</span><span class="s2">&quot;redis://localhost:6379&quot;</span><span class="p">,</span>
+</span><span id="__span-2-57"><a id="__codelineno-2-57" name="__codelineno-2-57" href="#__codelineno-2-57"></a>    <span class="n">redis_prefix</span><span class="o">=</span><span class="s2">&quot;guard_core:&quot;</span><span class="p">,</span>
+</span><span id="__span-2-58"><a id="__codelineno-2-58" name="__codelineno-2-58" href="#__codelineno-2-58"></a>
+</span><span id="__span-2-59"><a id="__codelineno-2-59" name="__codelineno-2-59" href="#__codelineno-2-59"></a>    <span class="c1"># Agent</span>
+</span><span id="__span-2-60"><a id="__codelineno-2-60" name="__codelineno-2-60" href="#__codelineno-2-60"></a>    <span class="n">enable_agent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-2-61"><a id="__codelineno-2-61" name="__codelineno-2-61" href="#__codelineno-2-61"></a>    <span class="n">agent_api_key</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span><span class="p">,</span>
+</span><span id="__span-2-62"><a id="__codelineno-2-62" name="__codelineno-2-62" href="#__codelineno-2-62"></a>
+</span><span id="__span-2-63"><a id="__codelineno-2-63" name="__codelineno-2-63" href="#__codelineno-2-63"></a>    <span class="c1"># Logging</span>
+</span><span id="__span-2-64"><a id="__codelineno-2-64" name="__codelineno-2-64" href="#__codelineno-2-64"></a>    <span class="n">custom_log_file</span><span class="o">=</span><span class="s2">&quot;security.log&quot;</span><span class="p">,</span>
+</span><span id="__span-2-65"><a id="__codelineno-2-65" name="__codelineno-2-65" href="#__codelineno-2-65"></a>    <span class="n">log_suspicious_level</span><span class="o">=</span><span class="s2">&quot;WARNING&quot;</span><span class="p">,</span>
+</span><span id="__span-2-66"><a id="__codelineno-2-66" name="__codelineno-2-66" href="#__codelineno-2-66"></a>    <span class="n">log_format</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
+</span><span id="__span-2-67"><a id="__codelineno-2-67" name="__codelineno-2-67" href="#__codelineno-2-67"></a>
+</span><span id="__span-2-68"><a id="__codelineno-2-68" name="__codelineno-2-68" href="#__codelineno-2-68"></a>    <span class="c1"># Cloud provider refresh</span>
+</span><span id="__span-2-69"><a id="__codelineno-2-69" name="__codelineno-2-69" href="#__codelineno-2-69"></a>    <span class="n">cloud_ip_refresh_interval</span><span class="o">=</span><span class="mi">1800</span><span class="p">,</span>
+</span><span id="__span-2-70"><a id="__codelineno-2-70" name="__codelineno-2-70" href="#__codelineno-2-70"></a><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="other-models">Other Models<a class="headerlink" href="#other-models" title="Permanent link">&para;</a></h2>
-<h2 id="ipinfo">IPInfo<a class="headerlink" href="#ipinfo" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">IPInfo</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;IP address information from geolocation service&quot;&quot;&quot;</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">ip</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">country</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">region</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">city</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">is_cloud</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">cloud_provider</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-</span></code></pre></div>
-<h2 id="ratelimitstatus">RateLimitStatus<a class="headerlink" href="#ratelimitstatus" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">RateLimitStatus</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Rate limit status for a client&quot;&quot;&quot;</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">allowed</span><span class="p">:</span> <span class="nb">bool</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">current_requests</span><span class="p">:</span> <span class="nb">int</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">window_seconds</span><span class="p">:</span> <span class="nb">int</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">reset_time</span><span class="p">:</span> <span class="n">datetime</span>
-</span></code></pre></div>
-<h2 id="threatdetectionresult">ThreatDetectionResult<a class="headerlink" href="#threatdetectionresult" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ThreatDetectionResult</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Result from detection engine analysis&quot;&quot;&quot;</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">is_threat</span><span class="p">:</span> <span class="nb">bool</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">threat_score</span><span class="p">:</span> <span class="nb">float</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">threats</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">context</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">original_length</span><span class="p">:</span> <span class="nb">int</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="n">processed_length</span><span class="p">:</span> <span class="nb">int</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">execution_time</span><span class="p">:</span> <span class="nb">float</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">detection_method</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="n">timeouts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="n">correlation_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
-</span></code></pre></div>
-<h2 id="behaviorprofile">BehaviorProfile<a class="headerlink" href="#behaviorprofile" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">BehaviorProfile</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Client behavior profile for analysis&quot;&quot;&quot;</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">ip_address</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">request_count</span><span class="p">:</span> <span class="nb">int</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">suspicious_count</span><span class="p">:</span> <span class="nb">int</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">last_seen</span><span class="p">:</span> <span class="n">datetime</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">user_agents</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="n">paths_accessed</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="n">methods_used</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="n">risk_score</span><span class="p">:</span> <span class="nb">float</span>
+<h2 id="detectionresult">DetectionResult<a class="headerlink" href="#detectionresult" title="Permanent link">&para;</a></h2>
+<p>The result returned by the detection engine when analyzing a request:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nd">@dataclass</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">DetectionResult</span><span class="p">:</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">is_threat</span><span class="p">:</span> <span class="nb">bool</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">trigger_info</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">threat_categories</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">threat_scores</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="configuration-validation">Configuration Validation<a class="headerlink" href="#configuration-validation" title="Permanent link">&para;</a></h2>
 <p>The SecurityConfig model validates settings on initialization:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Validation examples</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">try</span><span class="p">:</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>        <span class="n">detection_compiler_timeout</span><span class="o">=</span><span class="mf">0.05</span>  <span class="c1"># Too low</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="p">)</span>
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configuration error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>
-</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="c1"># Valid ranges</span>
-</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
-</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    <span class="n">detection_compiler_timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>      <span class="c1"># 0.1 - 30.0</span>
-</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    <span class="n">detection_semantic_threshold</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>    <span class="c1"># 0.0 - 1.0</span>
-</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>    <span class="n">detection_anomaly_threshold</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span>     <span class="c1"># 1.0 - 10.0</span>
-</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>    <span class="n">auto_ban_threshold</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>                <span class="c1"># 1 - 1000</span>
-</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>    <span class="n">auto_ban_duration</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>              <span class="c1"># 60 - 86400</span>
-</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Validation examples</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">try</span><span class="p">:</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        <span class="n">detection_compiler_timeout</span><span class="o">=</span><span class="mf">0.05</span>  <span class="c1"># Too low</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="p">)</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configuration error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="c1"># Valid ranges</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="n">detection_compiler_timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>      <span class="c1"># 0.1 - 10.0</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="n">detection_semantic_threshold</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>    <span class="c1"># 0.0 - 1.0</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>    <span class="n">detection_anomaly_threshold</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span>     <span class="c1"># 1.0 - 10.0</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>    <span class="n">auto_ban_threshold</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>    <span class="n">auto_ban_duration</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="model-serialization">Model Serialization<a class="headerlink" href="#model-serialization" title="Permanent link">&para;</a></h2>
 <p>All models support standard Pydantic serialization:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Export configuration</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">config_dict</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">dict</span><span class="p">(</span><span class="n">exclude_unset</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">config_json</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># Import configuration</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="o">.</span><span class="n">parse_obj</span><span class="p">(</span><span class="n">config_dict</span><span class="p">)</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="o">.</span><span class="n">parse_raw</span><span class="p">(</span><span class="n">config_json</span><span class="p">)</span>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="c1"># Schema generation</span>
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="o">.</span><span class="n">schema</span><span class="p">()</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Export configuration</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">config_dict</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">exclude_unset</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">config_json</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">model_dump_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># Import configuration</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">config_dict</span><span class="p">)</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="o">.</span><span class="n">model_validate_json</span><span class="p">(</span><span class="n">config_json</span><span class="p">)</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1"># Schema generation</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">()</span>
 </span></code></pre></div>
 <hr />
 <h2 id="custom-validators">Custom Validators<a class="headerlink" href="#custom-validators" title="Permanent link">&para;</a></h2>
 <p>The models include custom validators for complex fields:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;detection_semantic_threshold&quot;</span><span class="p">)</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">validate_threshold</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Threshold must be between 0.0 and 1.0&quot;</span><span class="p">)</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="k">return</span> <span class="n">v</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;redis_host&quot;</span><span class="p">)</span>
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">validate_redis_host</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
-</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;use_redis&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">v</span><span class="p">:</span>
-</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Redis host required when use_redis is True&quot;</span><span class="p">)</span>
-</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>    <span class="k">return</span> <span class="n">v</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;whitelist&quot;</span><span class="p">,</span> <span class="s2">&quot;blacklist&quot;</span><span class="p">)</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">validate_ip_lists</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>        <span class="k">return</span> <span class="kc">None</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">validated</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>            <span class="k">if</span> <span class="s2">&quot;/&quot;</span> <span class="ow">in</span> <span class="n">entry</span><span class="p">:</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>                <span class="n">validated</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ip_network</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">)))</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>                <span class="n">validated</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ip_address</span><span class="p">(</span><span class="n">entry</span><span class="p">)))</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid IP or CIDR range: </span><span class="si">{</span><span class="n">entry</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>    <span class="k">return</span> <span class="n">validated</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="k">def</span><span class="w"> </span><span class="nf">validate_agent_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_agent</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent_api_key</span><span class="p">:</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;agent_api_key is required when enable_agent is True&quot;</span><span class="p">)</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>    <span class="k">return</span> <span class="bp">self</span>
 </span></code></pre></div>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
