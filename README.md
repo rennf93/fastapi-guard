@@ -22,6 +22,10 @@
 </p>
 
 <p align="center">
+    <a href="https://peerpush.com/p/guard-core" target="_blank" rel="noopener" style="width: 230px;"><img src="https://peerpush.com/p/guard-core/badge.png" alt="Guard Core badge" style="width: 230px;" /></a>
+</p>
+
+<p align="center">
   Production-ready security middleware for FastAPI.<br>
   IP filtering, rate limiting, signature-based attack-pattern detection, and 20+ per-route security decorators.
 </p>
