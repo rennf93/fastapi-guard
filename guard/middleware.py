@@ -64,28 +64,29 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         self.agent_handler: AgentHandlerProtocol | None = None
         if config.enable_agent:
-            agent_config = config.to_agent_config()
-            if agent_config:
-                try:
-                    from guard_agent import guard_agent
-
-                    self.agent_handler = cast(
-                        AgentHandlerProtocol, guard_agent(agent_config)
-                    )
-                    self.logger.info("Guard Agent initialized successfully")
-                except ImportError:
-                    self.logger.warning(
-                        "Agent enabled but guard_agent package not installed. "
-                        "Install with: pip install guard-agent"
-                    )
-                except Exception as e:
-                    self.logger.error(f"Failed to initialize Guard Agent: {e}")
-                    self.logger.warning("Continuing without agent functionality")
-            else:
+            try:
+                from guard_agent import guard_agent
+            except ImportError:
                 self.logger.warning(
-                    "Agent enabled but configuration is invalid. "
-                    "Check agent_api_key and other required fields."
+                    "Agent enabled but guard_agent package not installed. "
+                    "Install with: pip install guard-agent"
                 )
+            else:
+                agent_config = config.to_agent_config()
+                if agent_config is None:
+                    self.logger.error(
+                        "Agent enabled but configuration is invalid. "
+                        "Check agent_api_key and other required fields."
+                    )
+                else:
+                    try:
+                        self.agent_handler = cast(
+                            AgentHandlerProtocol, guard_agent(agent_config)
+                        )
+                        self.logger.info("Guard Agent initialized successfully")
+                    except Exception as e:
+                        self.logger.error(f"Failed to initialize Guard Agent: {e}")
+                        self.logger.warning("Continuing without agent functionality")
 
         self.security_pipeline: SecurityCheckPipeline | None = None
 
