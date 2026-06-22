@@ -60,6 +60,7 @@ nav:
       - Advanced Decorators: tutorial/decorators/advanced.md
     - Security Features:
       - Penetration Detection: tutorial/security/penetration-detection.md
+      - HTTP Security Headers: tutorial/security/http-security-headers.md
       - Detection Engine:
         - Overview: tutorial/security/detection-engine/overview.md
         - Architecture: tutorial/security/detection-engine/architecture.md

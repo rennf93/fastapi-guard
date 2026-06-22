@@ -69,7 +69,7 @@ set_key
 -------
 
 ```python
-async def set_key(self, namespace: str, key: str, value: Any, ttl: int | None = None) -> bool:
+async def set_key(self, namespace: str, key: str, value: Any, ttl: int | None = None) -> bool | None:
     """Set namespaced key with optional TTL"""
 ```
 
@@ -77,8 +77,8 @@ incr
 ----
 
 ```python
-async def incr(self, namespace: str, key: str, ttl: int | None = None) -> int:
-    """Atomic increment with expiration"""
+async def incr(self, namespace: str, key: str, ttl: int | None = None) -> int | None:
+    """Atomic increment with expiration (returns None when Redis is disabled)"""
 ```
 
 ___

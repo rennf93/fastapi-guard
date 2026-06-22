@@ -31,13 +31,14 @@ class CloudManager:
                 "AWS": set(),
                 "GCP": set(),
                 "Azure": set(),
+                "DigitalOcean": set(),
+                "Linode": set(),
+                "Vultr": set(),
             }
-            cls._instance.last_updated = {
-                "AWS": None, "GCP": None, "Azure": None,
-            }
+            cls._instance.last_updated = {provider: None for provider in _ALL_PROVIDERS}
             cls._instance.redis_handler = None
             cls._instance.agent_handler = None
-            cls._instance.logger = logging.getLogger("fastapi_guard.handlers.cloud")
+            cls._instance.logger = logging.getLogger("guard_core.handlers.cloud")
         return cls._instance
 ```
 
@@ -61,10 +62,11 @@ refresh
 -------
 
 ```python
-def refresh(self, providers: set[str] = _ALL_PROVIDERS):
+async def refresh(self, providers: set[str] = _ALL_PROVIDERS) -> None:
     """
-    Synchronous refresh of IP ranges from cloud providers.
-    Only available when Redis is not enabled.
+    Refresh of IP ranges from cloud providers.
+    Only available when Redis is not enabled; raises RuntimeError
+    when Redis is configured (use refresh_async instead).
     """
 ```
 
@@ -136,7 +138,8 @@ def is_cloud_ip(
 
     Args:
         ip: IP address to check
-        providers: Set of provider names ('AWS', 'GCP', 'Azure')
+        providers: Set of provider names ('AWS', 'GCP', 'Azure',
+            'DigitalOcean', 'Linode', 'Vultr')
     """
 ```
 
@@ -160,7 +163,7 @@ is_cloud = cloud_handler.is_cloud_ip(
 )
 
 # Refresh IP ranges manually if needed
-cloud_handler.refresh()  # Synchronous refresh
+await cloud_handler.refresh()  # Raises RuntimeError when Redis is enabled
 await cloud_handler.refresh_async()  # Asynchronous with Redis
 
 # Check when a provider was last refreshed

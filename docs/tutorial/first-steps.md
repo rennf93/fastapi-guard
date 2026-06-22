@@ -32,7 +32,6 @@ Create a `SecurityConfig` instance with your desired settings:
 ```python
 config = SecurityConfig(
     geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required for geolocation
-    db_path="data/ipinfo/country_asn.mmdb",  # Optional, default: ./data/ipinfo/country_asn.mmdb
     enable_redis=True,  # Enable Redis integration
     redis_url="redis://localhost:6379",  # Redis URL
     rate_limit=100,  # Max requests per minute

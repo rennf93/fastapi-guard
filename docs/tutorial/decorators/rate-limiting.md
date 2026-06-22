@@ -36,7 +36,7 @@ def limited_endpoint():
 
 ```python
 # Global rate limit: 100 requests/hour
-config = SecurityConfig(rate_limit_requests=100, rate_limit_window=3600)
+config = SecurityConfig(rate_limit=100, rate_limit_window=3600)
 
 @app.get("/api/public")
 def public_endpoint():

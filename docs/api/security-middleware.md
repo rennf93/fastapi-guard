@@ -23,6 +23,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: Callable[[Request], Awaitable[Response]],
+        *,
         config: SecurityConfig
     ):
         """
@@ -363,7 +364,7 @@ app = FastAPI()
 
 config = SecurityConfig(
     rate_limit=100,
-    enable_https=True,
+    enforce_https=True,
     enable_cors=True
 )
 

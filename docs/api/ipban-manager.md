@@ -36,10 +36,10 @@ When Redis is enabled:
 
 ```python
 # Cluster-wide ban
-await ip_ban_manager.ban_ip("192.168.1.1", 3600, distributed=True)
+await ip_ban_manager.ban_ip("192.168.1.1", 3600)
 
 # Check ban status across cluster
-is_banned = await ip_ban_manager.is_ip_banned("192.168.1.1", check_redis=True)
+is_banned = await ip_ban_manager.is_ip_banned("192.168.1.1")
 ```
 
 ___
@@ -53,13 +53,14 @@ ban_ip
 Ban an IP address for a specified duration.
 
 ```python
-async def ban_ip(ip: str, duration: int) -> None
+async def ban_ip(ip: str, duration: int, reason: str = "threshold_exceeded") -> None
 ```
 
 **Parameters**:
 
 - `ip`: The IP address to ban
 - `duration`: Ban duration in seconds
+- `reason`: Ban reason used as the `SecurityEvent` reason when an agent handler is configured (defaults to `"threshold_exceeded"`)
 
 **Example**:
 

@@ -20,7 +20,8 @@ setup_custom_logging
 
 ```python
 def setup_custom_logging(
-    log_file: str | None = None
+    log_file: str | None = None,
+    log_format: str = "text"
 ) -> logging.Logger:
     """
     Setup custom logging for FastAPI Guard.
@@ -32,9 +33,11 @@ def setup_custom_logging(
     Args:
         log_file: Optional path to log file. If None, only console output is enabled.
                   If provided, creates the directory if it doesn't exist.
+        log_format: Output format for log records. "text" (default) uses a
+                    human-readable formatter; "json" emits structured JSON.
     
     Returns:
-        logging.Logger: Configured logger with namespace "fastapi_guard"
+        logging.Logger: Configured logger with namespace "guard_core"
     
     Note: This function is synchronous (not async).
     """
@@ -95,7 +98,7 @@ check_ip_country
 async def check_ip_country(
     request: str | Request,
     config: SecurityConfig,
-    ipinfo_db: IPInfoManager
+    geo_ip_handler: GeoIPHandler
 ) -> bool:
     """
     Check if IP is from a blocked country.
@@ -109,19 +112,19 @@ is_ip_allowed
 async def is_ip_allowed(
     ip: str,
     config: SecurityConfig,
-    ipinfo_db: IPInfoManager | None = None
+    geo_ip_handler: GeoIPHandler | None = None
 ) -> bool:
     """
     Check if IP address is allowed.
     """
 ```
 
-The `ipinfo_db` parameter is now properly optional - it's only needed when country filtering is configured. If it's not provided when country filtering is configured, the function will work correctly but won't apply country filtering rules rules.
+The `geo_ip_handler` parameter is now properly optional - it's only needed when country filtering is configured. If it's not provided when country filtering is configured, the function will work correctly but won't apply country filtering rules rules.
 
 This function intelligently handles:
 
 - Whitelist/blacklist checking
-- Country filtering (only when IPInfoManager is provided)
+- Country filtering (only when GeoIPHandler is provided)
 - Cloud provider detection (only when cloud blocking is configured)
 
 This selective processing aligns with FastAPI Guard's smart resource loading to optimize performance.
@@ -144,7 +147,7 @@ This function analyzes various parts of the request (query params, body, path, h
 Parameters:
 
 - `request`: The FastAPI request object to analyze
-- `config`: Optional `SecurityConfig`. When supplied, its detection-exclusion fields (`detection_excluded_query_params`, `detection_excluded_body_fields`, `detection_excluded_headers`) and `detection_enabled_categories` are honored as global defaults.
+- `config`: Optional `SecurityConfig`. When supplied, its detection-exclusion fields (`excluded_detection_params`, `excluded_detection_body_fields`, `excluded_detection_headers`) and `enabled_detection_categories` are honored as global defaults.
 - `route_config`: Optional `RouteConfig` produced by a `SecurityDecorator` rule. Per-route exclusions and enabled categories override the global `config` values for the matched route.
 
 Returns a `DetectionResult` dataclass:
@@ -200,7 +203,11 @@ extract_client_ip
 -----------------
 
 ```python
-def extract_client_ip(request: Request, config: SecurityConfig) -> str:
+async def extract_client_ip(
+    request: Request,
+    config: SecurityConfig,
+    agent_handler: AgentHandlerProtocol | None = None
+) -> str:
     """
     Securely extract the client IP address from the request, considering trusted proxies.
 
@@ -214,6 +221,8 @@ This function provides a secure way to extract client IPs by:
 1. Only trusting X-Forwarded-For headers from configured trusted proxies
 2. Using the connecting IP when not from a trusted proxy
 3. Properly handling proxy chains based on configured depth
+
+When `agent_handler` is provided and an `X-Forwarded-For` header arrives from an untrusted IP, a `suspicious_request` spoofing event is reported through the handler. This only happens when `config.trusted_proxies` is non-empty; with the default empty `trusted_proxies`, the function returns the connecting IP early and no spoofing event is emitted.
 
 ___
 

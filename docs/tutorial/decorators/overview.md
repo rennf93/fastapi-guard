@@ -147,7 +147,7 @@ app = FastAPI()
 config = SecurityConfig(
     enable_ip_banning=True,
     enable_rate_limiting=True,
-    rate_limit_requests=100,
+    rate_limit=100,
     rate_limit_window=3600
 )
 
@@ -196,7 +196,7 @@ This allows flexible overrides where routes can customize their security while m
 
 ```python
 # Global: 100 requests/hour
-config = SecurityConfig(rate_limit_requests=100, rate_limit_window=3600)
+config = SecurityConfig(rate_limit=100, rate_limit_window=3600)
 
 @app.get("/api/public")
 def public_endpoint():
