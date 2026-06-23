@@ -13,6 +13,7 @@ from guard_core.core.responses import ErrorResponseFactory, ResponseContext
 from guard_core.core.routing import RouteConfigResolver, RoutingContext
 from guard_core.core.validation import RequestValidator, ValidationContext
 from guard_core.decorators.base import BaseSecurityDecorator, RouteConfig
+from guard_core.exceptions import AgentPackageNotInstalledError
 from guard_core.handlers.cloud_handler import cloud_handler
 from guard_core.handlers.cors_handler import CorsHandler, is_preflight
 from guard_core.handlers.ratelimit_handler import RateLimitManager
@@ -20,7 +21,11 @@ from guard_core.handlers.security_headers_handler import security_headers_manage
 from guard_core.models import SecurityConfig
 from guard_core.protocols import AgentHandlerProtocol, GuardResponse
 from guard_core.protocols.request_protocol import GuardRequest
-from guard_core.utils import extract_client_ip, setup_custom_logging
+from guard_core.utils import (
+    extract_client_ip,
+    invoke_error_hook,
+    setup_custom_logging,
+)
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response as StarletteResponse
 from starlette.types import ASGIApp
@@ -63,30 +68,27 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             self.redis_handler = RedisManager(config)
 
         self.agent_handler: AgentHandlerProtocol | None = None
+        self.agent_degraded = False
         if config.enable_agent:
             try:
-                from guard_agent import guard_agent
-            except ImportError:
-                self.logger.warning(
-                    "Agent enabled but guard_agent package not installed. "
-                    "Install with: pip install guard-agent"
-                )
-            else:
                 agent_config = config.to_agent_config()
-                if agent_config is None:
-                    self.logger.error(
-                        "Agent enabled but configuration is invalid. "
-                        "Check agent_api_key and other required fields."
-                    )
-                else:
-                    try:
-                        self.agent_handler = cast(
-                            AgentHandlerProtocol, guard_agent(agent_config)
-                        )
-                        self.logger.info("Guard Agent initialized successfully")
-                    except Exception as e:
-                        self.logger.error(f"Failed to initialize Guard Agent: {e}")
-                        self.logger.warning("Continuing without agent functionality")
+                from guard_agent import guard_agent
+
+                self.agent_handler = cast(
+                    AgentHandlerProtocol, guard_agent(cast(Any, agent_config))
+                )
+                self.logger.info("Guard Agent initialized successfully")
+            except AgentPackageNotInstalledError as e:
+                self._on_agent_init_failed(
+                    config,
+                    e,
+                    "Agent enabled but guard-agent is not installed. "
+                    "Install with: pip install fastapi-guard[agent]",
+                )
+            except Exception as e:
+                self._on_agent_init_failed(
+                    config, e, f"Failed to initialize Guard Agent: {e}"
+                )
 
         self.security_pipeline: SecurityCheckPipeline | None = None
 
@@ -221,12 +223,22 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     def guard_response_factory(self) -> StarletteResponseFactory:
         return self._guard_response_factory
 
+    def _on_agent_init_failed(
+        self, config: SecurityConfig, exc: Exception, message: str
+    ) -> None:
+        self.agent_degraded = True
+        invoke_error_hook(config.on_error, "agent_init", exc, {})
+        if config.agent_strict:
+            raise exc
+        self.logger.error(message)
+        self.logger.warning("Continuing without agent functionality")
+
     @property
     def agent_stats(self) -> dict[str, Any]:
         if self.agent_handler is None:
-            return {"enabled": False}
+            return {"enabled": False, "degraded": self.agent_degraded}
         handler_stats = cast(Any, self.agent_handler).get_stats()
-        return {"enabled": True, **handler_stats}
+        return {"enabled": True, "degraded": self.agent_degraded, **handler_stats}
 
     def _build_security_pipeline(self) -> None:
         from guard_core.core.checks import (
