@@ -8,6 +8,18 @@ def test_all_exports_importable() -> None:
         assert hasattr(guard, name), f"{name} not found in guard module"
 
 
+def test_all_derives_from_guard_core_exports() -> None:
+    import guard_core
+
+    import guard
+
+    assert set(guard.__all__) == {
+        "__version__",
+        "SecurityMiddleware",
+        *guard_core.__all__,
+    }
+
+
 def test_security_middleware_importable() -> None:
     from guard.middleware import SecurityMiddleware
 
