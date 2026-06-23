@@ -1794,11 +1794,11 @@ async def test_ipv6_cidr_whitelist_blacklist(
         response = await client.get("/", headers={"X-Forwarded-For": "2001:db8:1::1"})
         assert response.status_code == status.HTTP_200_OK
 
-        # IPv6 address in blacklisted CIDR (blacklist overrides whitelist)
+        # IPv6 in both a whitelist CIDR and the blacklist: whitelist overrides
         response = await client.get(
             "/", headers={"X-Forwarded-For": "2001:db8:dead::beef"}
         )
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_200_OK
 
         # IPv6 address outside whitelisted CIDR
         response = await client.get("/", headers={"X-Forwarded-For": "2001:db9::1"})
@@ -1834,7 +1834,7 @@ async def test_mixed_ipv4_ipv6_handling(security_config_redis: SecurityConfig) -
         assert response.status_code == status.HTTP_200_OK
 
         response = await client.get("/", headers={"X-Forwarded-For": "192.168.1.100"})
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_200_OK
 
         # IPv6 addresses
         response = await client.get("/", headers={"X-Forwarded-For": "::1"})
@@ -1846,7 +1846,7 @@ async def test_mixed_ipv4_ipv6_handling(security_config_redis: SecurityConfig) -
         response = await client.get(
             "/", headers={"X-Forwarded-For": "2001:db8:dead::beef"}
         )
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.asyncio
@@ -2057,7 +2057,7 @@ async def test_agent_stats_returns_disabled_when_agent_handler_unset() -> None:
     config = SecurityConfig(enable_agent=False)
     middleware = SecurityMiddleware(app, config=config)
     assert middleware.agent_handler is None
-    assert middleware.agent_stats == {"enabled": False}
+    assert middleware.agent_stats == {"enabled": False, "degraded": False}
 
 
 async def test_agent_stats_returns_enabled_with_agent_handler_stats() -> None:

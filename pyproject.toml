@@ -52,6 +52,9 @@ Changelog = "https://github.com/rennf93/fastapi-guard/blob/master/CHANGELOG.md"
 "Live Playground" = "https://playground.guard-core.com"
 
 [project.optional-dependencies]
+agent = [
+    "guard-agent",
+]
 dev = [
     "aiohttp",
     "bandit[toml]",
