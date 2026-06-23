@@ -6,17 +6,17 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Guide to monitoring and analyzing security events in FastAPI Guard">
+        <meta name="description" content="A safe, reversible path from log-only monitoring to real blocking, with a way to preview the blast radius before you flip">
       
       
       
-        <link rel="canonical" href="https://rennf93.github.io/fastapi-guard/latest/7.1.1/tutorial/security/monitoring/">
+        <link rel="canonical" href="https://rennf93.github.io/fastapi-guard/latest/7.1.1/tutorial/security/passive-to-active/">
       
       
-        <link rel="prev" href="../custom-patterns/">
+        <link rel="prev" href="../monitoring/">
       
       
-        <link rel="next" href="../passive-to-active/">
+        <link rel="next" href="../../configuration/security-config/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Security Monitoring - FastAPI Guard - FastAPI Guard</title>
+        <title>Passive to Active - FastAPI Guard - FastAPI Guard</title>
       
     
     
@@ -93,7 +93,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#security-monitoring" class="md-skip">
+        <a href="#passive-to-active" class="md-skip">
           Skip to content
         </a>
       
@@ -130,7 +130,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Security Monitoring - FastAPI Guard
+              Passive to Active - FastAPI Guard
             
           </span>
         </div>
@@ -1457,6 +1457,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Monitoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1476,7 +1504,7 @@
   <span class="md-ellipsis">
     
   
-    Security Monitoring
+    Passive to Active
   
 
     
@@ -1494,7 +1522,7 @@
   <span class="md-ellipsis">
     
   
-    Security Monitoring
+    Passive to Active
   
 
     
@@ -1520,10 +1548,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#basic-logging" class="md-nav__link">
+  <a href="#what-passive-mode-actually-does" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Basic Logging
+        What passive mode actually does
       
     </span>
   </a>
@@ -1531,10 +1559,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#passive-mode-for-penetration-detection" class="md-nav__link">
+  <a href="#step-1-observe" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Passive Mode for Penetration Detection
+        Step 1 — Observe
       
     </span>
   </a>
@@ -1542,10 +1570,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#configurable-log-levels" class="md-nav__link">
+  <a href="#step-2-preview-the-blast-radius" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configurable Log Levels
+        Step 2 — Preview the blast radius
       
     </span>
   </a>
@@ -1553,10 +1581,54 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#log-analysis" class="md-nav__link">
+  <a href="#step-3-verify-false-positives" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Log Analysis
+        Step 3 — Verify false positives
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-enforce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4 — Enforce
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-rollback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5 — Rollback
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#incremental-rollout-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Incremental rollout (optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-signals-live-quick-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the signals live (quick reference)
       
     </span>
   </a>
@@ -1567,34 +1639,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../passive-to-active/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Passive to Active
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -2480,10 +2524,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#basic-logging" class="md-nav__link">
+  <a href="#what-passive-mode-actually-does" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Basic Logging
+        What passive mode actually does
       
     </span>
   </a>
@@ -2491,10 +2535,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#passive-mode-for-penetration-detection" class="md-nav__link">
+  <a href="#step-1-observe" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Passive Mode for Penetration Detection
+        Step 1 — Observe
       
     </span>
   </a>
@@ -2502,10 +2546,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#configurable-log-levels" class="md-nav__link">
+  <a href="#step-2-preview-the-blast-radius" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configurable Log Levels
+        Step 2 — Preview the blast radius
       
     </span>
   </a>
@@ -2513,10 +2557,54 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#log-analysis" class="md-nav__link">
+  <a href="#step-3-verify-false-positives" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Log Analysis
+        Step 3 — Verify false positives
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-enforce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4 — Enforce
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-rollback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5 — Rollback
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#incremental-rollout-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Incremental rollout (optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-signals-live-quick-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the signals live (quick reference)
       
     </span>
   </a>
@@ -2543,53 +2631,140 @@
   
 
 
-<h1 id="security-monitoring">Security Monitoring<a class="headerlink" href="#security-monitoring" title="Permanent link">&para;</a></h1>
-<p>FastAPI Guard provides robust security logging capabilities that can be leveraged for monitoring and analytics. This guide covers how to work with the logs generated by FastAPI Guard and options for deeper security analytics.</p>
+<h1 id="passive-to-active">Passive to Active<a class="headerlink" href="#passive-to-active" title="Permanent link">&para;</a></h1>
+<p>FastAPI Guard can run in <strong>passive mode</strong> (detect and log, never block) or <strong>active mode</strong> (detect and block). On a high-traffic, latency- and security-sensitive service the risky moment is the flip: turning enforcement on without accidentally blocking legitimate traffic.</p>
+<p>This guide is a safe, reversible path for that flip: <strong>observe → preview → verify → enforce → rollback</strong>. Every step uses signals FastAPI Guard already produces — no new configuration beyond the <code>passive_mode</code> flag itself.</p>
+<p>The flip is a single boolean. <code>passive_mode=True</code> logs only; <code>passive_mode=False</code> blocks. Rollback is the same boolean flipped back — no data migration, no redeploy of rules.</p>
 <hr />
-<h2 id="basic-logging">Basic Logging<a class="headerlink" href="#basic-logging" title="Permanent link">&para;</a></h2>
-<p>By default, FastAPI Guard logs all security events to standard Python logging facilities. You can configure custom log paths using the <code>custom_log_file</code> parameter in the <code>SecurityConfig</code>.</p>
+<h2 id="what-passive-mode-actually-does">What passive mode actually does<a class="headerlink" href="#what-passive-mode-actually-does" title="Permanent link">&para;</a></h2>
+<p><code>passive_mode</code> lives on <code>SecurityConfig</code> (it is <code>False</code> by default — i.e. blocking is the default):</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">custom_log_file</span><span class="o">=</span><span class="s2">&quot;/path/to/security.log&quot;</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">enable_penetration_detection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">passive_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># detect + log, never block</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">)</span>
 </span></code></pre></div>
+<p>In passive mode, every check still runs and still produces its signal — it just doesn't deny the request. Two artifacts are emitted for every request that <em>would</em> have been blocked:</p>
+<ul>
+<li><strong>A log line prefixed <code>[PASSIVE MODE]</code></strong> (e.g. <code>[PASSIVE MODE] Penetration attempt detected from ...</code>). This is what you grep.</li>
+<li><strong>A telemetry event with <code>action_taken="logged_only"</code></strong> (instead of <code>"request_blocked"</code>). If you run the Guard Agent, these events are already shipped off-box to your dashboard, so "what would have been blocked?" is answerable without touching the host.</li>
+</ul>
+<p>That means the data you need to size the blast radius of going active <strong>already exists</strong> the moment you turn passive mode on.</p>
 <hr />
-<h2 id="passive-mode-for-penetration-detection">Passive Mode for Penetration Detection<a class="headerlink" href="#passive-mode-for-penetration-detection" title="Permanent link">&para;</a></h2>
-<p>When deploying in production environments, it's often best to start with passive mode to understand your traffic patterns before enabling blocking rules.</p>
+<h2 id="step-1-observe">Step 1 — Observe<a class="headerlink" href="#step-1-observe" title="Permanent link">&para;</a></h2>
+<p>Deploy with passive mode on and let it run long enough to cover a representative slice of traffic (a full business cycle — typically a few days, including any batch/cron peaks):</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">enable_penetration_detection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">passive_mode</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Log but don&#39;t block</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">enable_ip_banning</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">enable_rate_limiting</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">passive_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">)</span>
 </span></code></pre></div>
-<p>In passive mode, FastAPI Guard will detect potential penetration attempts, but instead of blocking the request, it will only log the incident with the prefix <code>[PASSIVE MODE]</code> in your logs. This helps identify false positives before enabling full blocking mode.</p>
-<p>When you are ready to turn enforcement on, follow <a href="../passive-to-active/">Passive to Active</a> — a step-by-step, reversible path that previews the blast radius before you flip the switch.</p>
+<p>Nothing is blocked. Everything that <em>would</em> be blocked is logged with <code>[PASSIVE MODE]</code> and emitted as a <code>logged_only</code> telemetry event.</p>
 <hr />
-<h2 id="configurable-log-levels">Configurable Log Levels<a class="headerlink" href="#configurable-log-levels" title="Permanent link">&para;</a></h2>
-<p>FastAPI Guard allows you to configure different log levels for normal and suspicious requests:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="c1"># Normal requests logged at INFO level (or None to disable)</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">log_request_level</span><span class="o">=</span><span class="s2">&quot;INFO&quot;</span><span class="p">,</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="c1"># Security events logged at WARNING level</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">log_suspicious_level</span><span class="o">=</span><span class="s2">&quot;WARNING&quot;</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">)</span>
+<h2 id="step-2-preview-the-blast-radius">Step 2 — Preview the blast radius<a class="headerlink" href="#step-2-preview-the-blast-radius" title="Permanent link">&para;</a></h2>
+<p>Before flipping, quantify what active mode <em>would</em> block. If you run the Guard Agent, the cleanest source is your dashboard: filter events to <code>action_taken="logged_only"</code> and group by reason and client IP.</p>
+<p>If you only have logs, this read-only recipe summarizes the would-block set straight from a <code>[PASSIVE MODE]</code> log file — counts by client IP and a total. It changes nothing; it only reads your log:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Usage: python would_block_preview.py /path/to/security.log</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">PASSIVE</span> <span class="o">=</span> <span class="s2">&quot;[PASSIVE MODE]&quot;</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">IP_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;from\s+(?P&lt;ip&gt;[0-9a-fA-F:.]+)&quot;</span><span class="p">)</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">by_ip</span><span class="p">:</span> <span class="n">collections</span><span class="o">.</span><span class="n">Counter</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">Counter</span><span class="p">()</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;replace&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">:</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>        <span class="k">if</span> <span class="n">PASSIVE</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>            <span class="k">continue</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>        <span class="n">total</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>        <span class="n">match</span> <span class="o">=</span> <span class="n">IP_RE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>        <span class="n">by_ip</span><span class="p">[</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;ip&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">match</span> <span class="k">else</span> <span class="s2">&quot;unknown&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;would-block events: </span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;distinct client IPs: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">by_ip</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="k">for</span> <span class="n">ip</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">by_ip</span><span class="o">.</span><span class="n">most_common</span><span class="p">(</span><span class="mi">20</span><span class="p">):</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">count</span><span class="si">:</span><span class="s2">&gt;6</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">ip</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
-<p>This separation allows:</p>
-<ul>
-<li>Quieter logs in production by disabling or reducing normal request logging</li>
-<li>Maintaining visibility for security events</li>
-<li>Different log routing based on severity</li>
-</ul>
-<p>Available log levels include: <code>"INFO"</code>, <code>"DEBUG"</code>, <code>"WARNING"</code>, <code>"ERROR"</code>, <code>"CRITICAL"</code>, and <code>None</code> (to disable).</p>
+<p>A small, concentrated set (a handful of scanner IPs) is the signal you want before flipping. A large, diffuse set spread across normal client IPs means you have false positives to resolve first (Step 3).</p>
 <hr />
-<h2 id="log-analysis">Log Analysis<a class="headerlink" href="#log-analysis" title="Permanent link">&para;</a></h2>
-<p>FastAPI Guard logs contain valuable security intelligence, including:</p>
+<h2 id="step-3-verify-false-positives">Step 3 — Verify false positives<a class="headerlink" href="#step-3-verify-false-positives" title="Permanent link">&para;</a></h2>
+<p>For each would-block source, decide: real threat, or legitimate traffic caught by a rule?</p>
 <ul>
-<li>IP addresses attempting suspicious actions</li>
-<li>Pattern matches indicating attack vectors (SQL injection, XSS, etc.)</li>
-<li>Geographic origins of traffic</li>
-<li>Rate limiting violations</li>
-<li>Cloud provider origins</li>
+<li><strong>Legitimate IPs</strong> → add them to the <code>whitelist</code>. An explicit whitelist match overrides the blacklist (dynamic IP bans still apply), so this is the precise tool for known-good clients and internal callers.</li>
+<li><strong>Legitimate-but-flagged endpoints</strong> → if a specific route trips penetration detection on expected payloads, scope enforcement with the per-route decorators rather than relaxing it globally (see <a href="#incremental-rollout-optional">Incremental rollout</a>).</li>
+<li><strong>Real threats</strong> → leave them to be blocked.</li>
 </ul>
-<p>You can use standard log analysis tools to process and visualize these logs.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">enable_penetration_detection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">passive_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">whitelist</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;203.0.113.10&quot;</span><span class="p">,</span> <span class="s2">&quot;10.0.0.0/8&quot;</span><span class="p">],</span>  <span class="c1"># vetted known-good</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>Re-run Step 2 after each adjustment. When the would-block set contains only traffic you are comfortable denying, you are ready to enforce.</p>
+<hr />
+<h2 id="step-4-enforce">Step 4 — Enforce<a class="headerlink" href="#step-4-enforce" title="Permanent link">&para;</a></h2>
+<p>Flip the single boolean:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">enable_penetration_detection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">enable_ip_banning</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">enable_rate_limiting</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">passive_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># now blocking</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>The same checks that were logging <code>[PASSIVE MODE]</code> now deny requests, and their telemetry switches from <code>action_taken="logged_only"</code> to <code>"request_blocked"</code>. Nothing else changes — the rules, thresholds and whitelist you vetted in passive mode are exactly what now enforces.</p>
+<p>Roll this out the way you would any behavior change: a canary instance first, watching your 4xx rate and the <code>request_blocked</code> event stream, before fleet-wide.</p>
+<hr />
+<h2 id="step-5-rollback">Step 5 — Rollback<a class="headerlink" href="#step-5-rollback" title="Permanent link">&para;</a></h2>
+<p>If active mode blocks something you did not anticipate, roll back by flipping the same boolean:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SecurityConfig</span><span class="p">(</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">passive_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># back to log-only, immediately</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>Rollback is immediate and total — passive mode resumes logging instead of blocking, with no other state to unwind. Then return to Step 3, resolve the false positive, and re-enforce.</p>
+<hr />
+<h2 id="incremental-rollout-optional">Incremental rollout (optional)<a class="headerlink" href="#incremental-rollout-optional" title="Permanent link">&para;</a></h2>
+<p><code>passive_mode</code> is global. If you would rather enforce in stages than flip everything at once, the per-route decorators let you turn real blocking on for specific routes while the rest of the app stays in passive mode — for example tightening IP access on a sensitive admin route first:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">guard</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityDecorator</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">guard_deco</span> <span class="o">=</span> <span class="n">SecurityDecorator</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>  <span class="c1"># config still has passive_mode=True</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/admin&quot;</span><span class="p">)</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">ip</span><span class="o">.</span><span class="n">whitelist</span><span class="p">([</span><span class="s2">&quot;10.0.0.0/8&quot;</span><span class="p">])</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">admin</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">}</span>
+</span></code></pre></div>
+<p>There is no per-check "active" flag — enforcement granularity is the global <code>passive_mode</code> flip plus the per-route decorators. Stage the routes you are confident about, then flip the global boolean once the remainder is verified.</p>
+<hr />
+<h2 id="where-the-signals-live-quick-reference">Where the signals live (quick reference)<a class="headerlink" href="#where-the-signals-live-quick-reference" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>What to look for</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Would-block log line</td>
+<td><code>[PASSIVE MODE]</code> prefix</td>
+<td>your application logs / <code>custom_log_file</code></td>
+</tr>
+<tr>
+<td>Would-block telemetry</td>
+<td><code>action_taken="logged_only"</code></td>
+<td>Guard Agent → dashboard</td>
+</tr>
+<tr>
+<td>Enforced telemetry</td>
+<td><code>action_taken="request_blocked"</code></td>
+<td>Guard Agent → dashboard (after the flip)</td>
+</tr>
+</tbody>
+</table>
+<p>See also <a href="../monitoring/">Security Monitoring</a> for log configuration and levels.</p>
 
 
 
