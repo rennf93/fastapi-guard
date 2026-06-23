@@ -70,6 +70,7 @@ nav:
       - Proxy Security: tutorial/security/proxy-security.md
       - Custom Patterns: tutorial/security/custom-patterns.md
       - Security Monitoring: tutorial/security/monitoring.md
+      - Passive to Active: tutorial/security/passive-to-active.md
     - Configuration:
       - Security Config: tutorial/configuration/security-config.md
       - CORS: tutorial/configuration/cors.md
