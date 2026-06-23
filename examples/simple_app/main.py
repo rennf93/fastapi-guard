@@ -344,6 +344,9 @@ app.add_middleware(SecurityMiddleware, config=security_config)
 # Initialize security decorator
 guard_decorator = SecurityDecorator(security_config)
 
+# Wire the decorator into the middleware so decorated-route rules actually fire
+app.state.guard_decorator = guard_decorator
+
 
 basic_router = APIRouter(prefix="/basic", tags=["Basic Features"])
 
