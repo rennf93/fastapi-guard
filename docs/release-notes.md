@@ -10,6 +10,21 @@ Release Notes
 
 ___
 
+v7.2.0 (2026-06-23)
+-------------------
+
+Agent-setup clarity, single-source exports, and adoption docs (v7.2.0)
+----------------------------------------------------------------------
+
+- **Added** — Clear, actionable agent-setup errors + opt-in strict mode. When `enable_agent=True` but the `guard-agent` package is missing, the middleware now surfaces `pip install fastapi-guard[agent]` instead of the misleading "invalid config / check `agent_api_key`" path — it catches `AgentPackageNotInstalledError` from guard-core 3.2.0. Agent-init failures degrade gracefully by default (they log, set `agent_degraded` — exposed via `agent_stats` — and fire the `on_error(stage="agent_init")` hook), while the new `SecurityConfig.agent_strict=True` re-raises for fail-fast deployments.
+- **Added** — `fastapi-guard[agent]` optional-dependency extra that installs `guard-agent`, so the agent is opt-in rather than a hidden requirement.
+- **Changed** — `guard.__all__` is now single-sourced from `guard_core.__all__` plus fastapi-guard's two locals (`SecurityMiddleware`, `__version__`) instead of being hand-duplicated, so the two export lists can no longer silently drift; a test enforces it.
+- **Docs** — New "Passive to Active" migration guide: a reversible observe → preview → verify → enforce → rollback path for turning enforcement on, including a read-only "would-block preview" to size the blast radius before flipping `passive_mode`.
+- **Docs** — Behavioral decorators now document the required wiring step. The behavioral tutorial and the `simple_app` example include `app.state.guard_decorator = guard_deco` — the step that makes decorator rules actually fire — plus how to verify violations (`decorator_violation` event) and trial safely with `passive_mode`.
+- **Compatibility** — Requires guard-core 3.2.0 or newer (the agent-setup clarity relies on `AgentPackageNotInstalledError`, introduced there). The test suite filters guard-core's new `ipinfo_*` `DeprecationWarning`.
+
+___
+
 v7.1.1 (2026-05-26)
 -------------------
 
