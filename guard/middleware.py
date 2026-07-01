@@ -28,6 +28,7 @@ from guard_core.utils import (
 )
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response as StarletteResponse
+from starlette.routing import Match
 from starlette.types import ASGIApp
 
 from guard.adapters import (
@@ -377,6 +378,27 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if not app or not hasattr(app, "routes"):
             return None
 
+        # This middleware is a BaseHTTPMiddleware, so it runs before the router
+        # and scope["route"] is unset here. Replicate Starlette's own matching
+        # against the app's routes so per-route decorator config resolves for
+        # routes with path parameters (e.g. "/items/{id}") and routes added via
+        # include_router. A plain ``r.path == request.url.path`` comparison never
+        # matches a templated path, which silently drops per-route config on
+        # every parameterised route.
+        for r in app.routes:
+            if not hasattr(r, "endpoint"):
+                continue
+            matches = getattr(r, "matches", None)
+            if matches is None:
+                continue
+            try:
+                match, _ = matches(request.scope)
+            except Exception:
+                continue
+            if match == Match.FULL:
+                return r
+
+        # Fallback for route objects that do not implement matches().
         path = request.url.path
         method = request.method
         for r in app.routes:

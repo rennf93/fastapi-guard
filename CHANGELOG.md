@@ -3,6 +3,16 @@ Release Notes
 
 ___
 
+v7.2.1 (2026-07-01)
+-------------------
+
+Per-route config resolves on parameterised and included routes (v7.2.1)
+-----------------------------------------------------------------------
+
+- **Fixed** — Per-route decorator config now resolves on routes with path parameters and routes added via `include_router`. `SecurityMiddleware` is a `BaseHTTPMiddleware`, so it runs before the router and `scope["route"]` is unset; it resolved the active route by exact-path string comparison (`r.path == request.url.path`), which never matches a templated path like `/items/{id}`. As a result every per-route decorator (`rate_limit`, `max_request_size`, `content_type_filter`, `custom_validation`, `detection_exclusion`, `suspicious_detection`, behavioral rules, …) silently did nothing on parameterised or router-included routes. Route resolution now replicates Starlette's own `route.matches(scope)` matching, so per-route config fires on those routes too. Static, non-parameterised routes are unaffected.
+
+___
+
 v7.2.0 (2026-06-23)
 -------------------
 
