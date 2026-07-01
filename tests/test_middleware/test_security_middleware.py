@@ -2052,6 +2052,98 @@ async def test_resolve_route_no_app_routes() -> None:
     assert result is None
 
 
+def _http_scope(app: FastAPI, method: str, path: str) -> dict[str, Any]:
+    return {
+        "type": "http",
+        "method": method,
+        "path": path,
+        "query_string": b"",
+        "headers": [],
+        "server": ("localhost", 8000),
+        "root_path": "",
+        "app": app,
+    }
+
+
+async def test_resolve_route_matches_path_parameter_route() -> None:
+    app = FastAPI()
+
+    @app.get("/items/{item_id}")
+    async def get_item(item_id: str) -> dict[str, str]:
+        return {"item_id": item_id}
+
+    middleware = SecurityMiddleware(app, config=SecurityConfig())
+
+    from starlette.requests import Request as StarletteRequest
+
+    request = StarletteRequest(_http_scope(app, "GET", "/items/42"))
+    route = middleware._resolve_route(request)
+    assert route is not None
+    assert route.endpoint is get_item
+
+
+async def test_resolve_route_attaches_decorator_config_to_parameterised_route() -> None:
+    from guard import SecurityDecorator
+
+    app = FastAPI()
+    config = SecurityConfig()
+    guard = SecurityDecorator(config)
+
+    @app.post("/items/{item_id}/action")
+    @guard.rate_limit(requests=5, window=60)
+    async def act(item_id: str) -> dict[str, bool]:
+        return {"ok": True}
+
+    app.state.guard_decorator = guard
+    middleware = SecurityMiddleware(app, config=config)
+
+    from starlette.requests import Request as StarletteRequest
+
+    request = StarletteRequest(_http_scope(app, "POST", "/items/7/action"))
+    route = middleware._resolve_route(request)
+    assert route is not None
+    assert hasattr(route.endpoint, "_guard_route_id")
+    route_config = guard.get_route_config(route.endpoint._guard_route_id)
+    assert route_config is not None
+    assert route_config.rate_limit == 5
+
+
+async def test_resolve_route_matches_included_router_route() -> None:
+    from fastapi import APIRouter
+
+    router = APIRouter()
+
+    @router.post("/api/things")
+    async def create_thing() -> dict[str, bool]:
+        return {"ok": True}
+
+    app = FastAPI()
+    app.include_router(router)
+    middleware = SecurityMiddleware(app, config=SecurityConfig())
+
+    from starlette.requests import Request as StarletteRequest
+
+    request = StarletteRequest(_http_scope(app, "POST", "/api/things"))
+    route = middleware._resolve_route(request)
+    assert route is not None
+    assert route.endpoint is create_thing
+
+
+async def test_resolve_route_ignores_method_mismatch_on_parameter_route() -> None:
+    app = FastAPI()
+
+    @app.get("/items/{item_id}")
+    async def get_item(item_id: str) -> dict[str, str]:
+        return {"item_id": item_id}
+
+    middleware = SecurityMiddleware(app, config=SecurityConfig())
+
+    from starlette.requests import Request as StarletteRequest
+
+    request = StarletteRequest(_http_scope(app, "DELETE", "/items/42"))
+    assert middleware._resolve_route(request) is None
+
+
 async def test_agent_stats_returns_disabled_when_agent_handler_unset() -> None:
     app = FastAPI()
     config = SecurityConfig(enable_agent=False)
