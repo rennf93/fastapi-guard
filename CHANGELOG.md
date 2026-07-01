@@ -3,6 +3,16 @@ Release Notes
 
 ___
 
+v7.2.2 (2026-07-01)
+-------------------
+
+include_router route resolution now descends the FastAPI wrapper (v7.2.2)
+------------------------------------------------------------------------
+
+- **Fixed** — Per-route decorator config now resolves on `include_router` routes under FastAPI >= 0.115. 7.2.1 resolved routes with `route.matches()` but stopped at FastAPI's `_IncludedRouter` wrapper: its `matches()` returns `Match.FULL` with an empty child-scope and the real routes nested inside. Older FastAPI flattened included routers onto the app (so `matches()` found the leaves directly and CI passed), but newer FastAPI keeps them inside the wrapper — so 7.2.1 resolved nothing there and every per-route decorator (`rate_limit`, `max_request_size`, `content_type_filter`, `custom_validation`, `detection_exclusion`, `suspicious_detection`, `usage_monitor`, `honeypot_detection`, behavioral rules) was still inert. Resolution now descends recursively into matched sub-routers/mounts (`.routes`, `original_router.routes`, `.app.routes`), so per-route config fires on `include_router` and path-parameter routes. Direct routes and single-level `include_router` (prefixed or not) are covered; deeply-nested prefixed routers remain a known limitation of the wrapper's child-scope handling. Supersedes the incomplete 7.2.1 fix.
+
+___
+
 v7.2.1 (2026-07-01)
 -------------------
 
