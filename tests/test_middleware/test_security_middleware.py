@@ -2144,6 +2144,59 @@ async def test_resolve_route_ignores_method_mismatch_on_parameter_route() -> Non
     assert middleware._resolve_route(request) is None
 
 
+async def test_resolve_route_matches_prefixed_included_router_route() -> None:
+    from fastapi import APIRouter
+
+    router = APIRouter(prefix="/api/mcp")
+
+    @router.post("/servers/{server_id}")
+    async def reconnect(server_id: str) -> dict[str, bool]:
+        return {"ok": True}
+
+    app = FastAPI()
+    app.include_router(router)
+    middleware = SecurityMiddleware(app, config=SecurityConfig())
+
+    from starlette.requests import Request as StarletteRequest
+
+    request = StarletteRequest(_http_scope(app, "POST", "/api/mcp/servers/9"))
+    route = middleware._resolve_route(request)
+    assert route is not None
+    assert route.endpoint is reconnect
+
+
+async def test_route_full_match_handles_missing_and_raising_matches() -> None:
+    app = FastAPI()
+    middleware = SecurityMiddleware(app, config=SecurityConfig())
+
+    class _NoMatches:
+        pass
+
+    class _RaisingMatches:
+        def matches(self, scope: Any) -> Any:
+            raise RuntimeError("boom")
+
+    assert middleware._route_full_match(_NoMatches(), {}) == (False, {})
+    assert middleware._route_full_match(_RaisingMatches(), {}) == (False, {})
+
+
+async def test_match_route_stops_at_max_recursion_depth() -> None:
+    from starlette.routing import Match
+
+    app = FastAPI()
+    middleware = SecurityMiddleware(app, config=SecurityConfig())
+
+    class _SelfNestingRouter:
+        def matches(self, scope: Any) -> Any:
+            return Match.FULL, {}
+
+        @property
+        def routes(self) -> Any:
+            return [self]
+
+    assert middleware._match_route([_SelfNestingRouter()], {"type": "http"}, 0) is None
+
+
 async def test_agent_stats_returns_disabled_when_agent_handler_unset() -> None:
     app = FastAPI()
     config = SecurityConfig(enable_agent=False)

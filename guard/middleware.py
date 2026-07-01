@@ -373,34 +373,53 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         route = request.scope.get("route")
         if route:
             return route
-
-        # This middleware is a BaseHTTPMiddleware, so it runs before the router
-        # and scope["route"] is unset here. Replicate Starlette's own matching
-        # against the app's routes so per-route decorator config resolves for
-        # routes with path parameters (e.g. "/items/{id}") and routes added via
-        # include_router. A plain ``r.path == request.url.path`` comparison never
-        # matches a templated path, which silently drops per-route config on
-        # every parameterised route.
         app = request.scope.get("app")
         routes = getattr(app, "routes", None)
         if not routes:
             return None
+        return self._match_route(routes, request.scope, 0)
+
+    def _match_route(self, routes: Any, scope: Any, depth: int) -> Any:
+        # This middleware is a BaseHTTPMiddleware, so it runs before the router
+        # and scope["route"] is unset. Replicate Starlette's matching, descending
+        # into sub-routers / mounts (FastAPI's include_router inserts a wrapper
+        # route whose real routes are nested inside), so per-route decorator
+        # config resolves for path-parameter and include_router routes, not only
+        # routes flattened directly onto the app.
         for r in routes:
-            if self._route_matches_request(r, request.scope):
+            matched, child = self._route_full_match(r, scope)
+            if not matched:
+                continue
+            if hasattr(r, "endpoint"):
                 return r
+            if depth >= 8:
+                continue
+            found = self._match_route(
+                self._sub_routes(r), {**scope, **child}, depth + 1
+            )
+            if found is not None:
+                return found
         return None
 
-    def _route_matches_request(self, route: Any, scope: Any) -> bool:
-        if not hasattr(route, "endpoint"):
-            return False
+    def _route_full_match(self, route: Any, scope: Any) -> tuple[bool, Any]:
         matches = getattr(route, "matches", None)
         if matches is None:
-            return False
+            return False, {}
         try:
-            match, _ = matches(scope)
+            match, child = matches(scope)
         except Exception:
-            return False
-        return bool(match == Match.FULL)
+            return False, {}
+        return match == Match.FULL, child
+
+    def _sub_routes(self, route: Any) -> Any:
+        included = getattr(route, "original_router", None)
+        mounted = getattr(route, "app", None)
+        return (
+            getattr(route, "routes", None)
+            or getattr(included, "routes", None)
+            or getattr(mounted, "routes", None)
+            or []
+        )
 
     def _populate_guard_state(
         self, guard_request: StarletteGuardRequest, request: Request
