@@ -374,10 +374,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if route:
             return route
 
-        app = request.scope.get("app")
-        if not app or not hasattr(app, "routes"):
-            return None
-
         # This middleware is a BaseHTTPMiddleware, so it runs before the router
         # and scope["route"] is unset here. Replicate Starlette's own matching
         # against the app's routes so per-route decorator config resolves for
@@ -385,32 +381,26 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # include_router. A plain ``r.path == request.url.path`` comparison never
         # matches a templated path, which silently drops per-route config on
         # every parameterised route.
-        for r in app.routes:
-            if not hasattr(r, "endpoint"):
-                continue
-            matches = getattr(r, "matches", None)
-            if matches is None:
-                continue
-            try:
-                match, _ = matches(request.scope)
-            except Exception:
-                continue
-            if match == Match.FULL:
-                return r
-
-        # Fallback for route objects that do not implement matches().
-        path = request.url.path
-        method = request.method
-        for r in app.routes:
-            if (
-                hasattr(r, "path")
-                and hasattr(r, "methods")
-                and r.path == path
-                and method in r.methods
-                and hasattr(r, "endpoint")
-            ):
+        app = request.scope.get("app")
+        routes = getattr(app, "routes", None)
+        if not routes:
+            return None
+        for r in routes:
+            if self._route_matches_request(r, request.scope):
                 return r
         return None
+
+    def _route_matches_request(self, route: Any, scope: Any) -> bool:
+        if not hasattr(route, "endpoint"):
+            return False
+        matches = getattr(route, "matches", None)
+        if matches is None:
+            return False
+        try:
+            match, _ = matches(scope)
+        except Exception:
+            return False
+        return bool(match == Match.FULL)
 
     def _populate_guard_state(
         self, guard_request: StarletteGuardRequest, request: Request
