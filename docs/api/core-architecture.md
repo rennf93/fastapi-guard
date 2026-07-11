@@ -122,7 +122,7 @@ Check Implementations
 Execution Order
 ---------------
 
-Checks execute in this order (defined in `middleware.py._build_security_pipeline()`):
+Checks execute in this order (defined in guard-core's `DEFAULT_CHECK_CLASSES`, `guard_core/core/checks/factory.py`):
 
 1. **RouteConfigCheck** - Extract route config and client IP
 2. **EmergencyModeCheck** - Emergency mode (highest priority)
@@ -615,14 +615,13 @@ class MyCustomCheck(SecurityCheck):
 **File**: `guard/middleware.py` in `_build_security_pipeline()` method
 
 ```python
+from guard_core.core.checks import build_default_pipeline
 from guard_core.core.checks.implementations.my_custom_check import MyCustomCheck
 
 def _build_security_pipeline(self) -> None:
-    checks = [
-        # ... existing checks
-        MyCustomCheck(self),  # Add your check
-    ]
-    self.security_pipeline = SecurityCheckPipeline(checks)
+    pipeline = build_default_pipeline(self)
+    pipeline.add_check(MyCustomCheck(self))
+    self.security_pipeline = pipeline
 ```
 
 3. Export (Optional)

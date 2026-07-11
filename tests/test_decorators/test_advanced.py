@@ -92,7 +92,7 @@ async def test_time_window_restrictions(
         ) as client:
             response = await client.get(
                 endpoint,
-                headers={"X-Forwarded-For": "127.0.0.1"},
+                headers={"X-Forwarded-For": "203.0.113.5"},
             )
             assert response.status_code == expected_status, description
 
@@ -134,14 +134,14 @@ async def test_suspicious_endpoints_response(advanced_decorator_app: FastAPI) ->
     ) as client:
         # Test suspicious enabled endpoint
         response = await client.get(
-            "/suspicious-enabled", headers={"X-Forwarded-For": "8.8.8.8"}
+            "/suspicious-enabled", headers={"X-Forwarded-For": "203.0.113.5"}
         )
         assert response.status_code == 200
         assert response.json()["message"] == "Suspicious detection enabled"
 
         # Test suspicious disabled endpoint
         response = await client.get(
-            "/suspicious-disabled", headers={"X-Forwarded-For": "8.8.8.8"}
+            "/suspicious-disabled", headers={"X-Forwarded-For": "203.0.113.5"}
         )
         assert response.status_code == 200
         assert response.json()["message"] == "Suspicious detection disabled"
@@ -201,7 +201,7 @@ async def test_honeypot_detection_basic_functionality(
             "/form-honeypot",
             data={"name": "John", "email": "john@example.com"},
             headers={
-                "X-Forwarded-For": "127.0.0.1",
+                "X-Forwarded-For": "203.0.113.5",
                 "Content-Type": "application/x-www-form-urlencoded",
             },
         )
@@ -211,7 +211,7 @@ async def test_honeypot_detection_basic_functionality(
         response = await client.post(
             "/json-honeypot",
             json={"name": "Jane", "message": "Hello"},
-            headers={"X-Forwarded-For": "127.0.0.1"},
+            headers={"X-Forwarded-For": "203.0.113.5"},
         )
         assert response.status_code == 200
 

@@ -151,7 +151,7 @@ async def test_content_filtering_endpoints_response(
         transport=ASGITransport(app=content_decorator_app), base_url="http://test"
     ) as client:
         method = "post" if endpoint in ["/content-filter", "/size-limit"] else "get"
-        headers = {"X-Forwarded-For": "8.8.8.8"}
+        headers = {"X-Forwarded-For": "203.0.113.5"}
 
         if endpoint == "/content-filter":
             headers["Content-Type"] = "application/json"

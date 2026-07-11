@@ -107,7 +107,7 @@ async def test_rate_limiting_endpoints_response(
     async with AsyncClient(
         transport=ASGITransport(app=rate_limiting_decorator_app), base_url="http://test"
     ) as client:
-        headers = {"X-Forwarded-For": "8.8.8.8"}
+        headers = {"X-Forwarded-For": "203.0.113.5"}
 
         response = await client.get(endpoint, headers=headers)
 

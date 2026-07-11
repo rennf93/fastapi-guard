@@ -56,6 +56,9 @@ New configuration fields for the enhanced Detection Engine:
 | `detection_slow_pattern_threshold` | float | 0.1 | Execution time to consider pattern slow (seconds) |
 | `detection_monitor_history_size` | int | 1000 | Number of performance metrics to keep in history |
 | `detection_max_tracked_patterns` | int | 1000 | Maximum patterns to track for performance |
+| `detection_scan_body` | bool | True | Scan the request body during penetration detection; when False, detection is restricted to the URL path, query params, and headers |
+| `detection_threat_score_threshold` | float | 1.0 | Anomaly score required to flag a request as a threat (0.0-10.0) |
+| `detection_max_body_inspect_bytes` | int | 262144 | Maximum request body size (bytes) read and inspected for detection; distinct from `detection_max_content_length` and `max_request_size` |
 
 IP Management Settings
 ----------------------
@@ -101,6 +104,7 @@ Cloud Provider Settings
 |-------|------|---------|-------------|
 | `ipinfo_token` | str \| None | None | IPInfo API token for geolocation (deprecated; use a custom `geo_ip_handler`) |
 | `ipinfo_db_path` | Path \| None | `Path("data/ipinfo/country_asn.mmdb")` | Path to the IPInfo database file (deprecated; use a custom `geo_ip_handler`) |
+| `geo_ip_db_max_age` | int | 86400 | Maximum age in seconds for the cached IPInfo/GeoIP database before re-download (3600-604800) |
 | `block_cloud_providers` | set[CloudProvider] \| None | None | Set of cloud provider names to block (`"AWS"`, `"GCP"`, `"Azure"`) |
 | `cloud_ip_refresh_interval` | int | 3600 | Interval in seconds between cloud IP range refreshes (60-86400) |
 

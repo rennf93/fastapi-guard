@@ -10,6 +10,17 @@ Release Notes
 
 ___
 
+v7.3.0 (2026-07-11)
+-------------------
+
+Security pipeline assembly delegated to guard-core's check factory (v7.3.0)
+---------------------------------------------------------------------------------
+
+- **Changed** — The security pipeline is now assembled by guard-core's `build_default_pipeline()`. New guard-core checks are picked up automatically; the middleware no longer hand-lists check classes.
+- **Compatibility** — guard-core's global IP whitelist/blacklist and country rules now apply on routes carrying per-route decorator config; previously, any decorated route silently bypassed every global IP and country rule. Per-route settings still override only the aspects they configure (IP lists, country rules), and everything else falls through to the global config. The decorator test suite's endpoint-response assertions set their placeholder client IP to `203.0.113.5`, an RFC 5737 (TEST-NET-3) documentation address added to the fixture's global whitelist — chosen so the fixture reads as an allowlisted external client rather than the localhost-spoofing `127.0.0.1` value — since those tests exercise decorator behavior, not IP security, and the old address only passed because of the bypass this closes.
+
+___
+
 v7.2.2 (2026-07-01)
 -------------------
 

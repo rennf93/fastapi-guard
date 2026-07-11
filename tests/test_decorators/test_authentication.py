@@ -181,7 +181,7 @@ async def test_missing_headers_blocked(
     async with AsyncClient(
         transport=ASGITransport(app=auth_decorator_app), base_url="http://test"
     ) as client:
-        headers = {"X-Forwarded-For": "127.0.0.1"}
+        headers = {"X-Forwarded-For": "203.0.113.5"}
         if endpoint == "/headers-multiple":
             headers["X-API-Version"] = "v2"  # Add one header but not the other
 
@@ -203,14 +203,14 @@ async def test_missing_headers_blocked(
     [
         (
             "/api-key-default",
-            {"X-Forwarded-For": "127.0.0.1", "X-API-Key": "test-key"},
+            {"X-Forwarded-For": "203.0.113.5", "X-API-Key": "test-key"},
             "API key required (default header)",
             "API key with header allowed",
         ),
         (
             "/headers-multiple",
             {
-                "X-Forwarded-For": "127.0.0.1",
+                "X-Forwarded-For": "203.0.113.5",
                 "X-API-Version": "v2",
                 "X-Client-ID": "test-client",
             },
@@ -246,7 +246,9 @@ async def test_authentication_endpoints_response(auth_decorator_app: FastAPI) ->
     ) as client:
         # Test secure endpoint with HTTPS
         response = await client.get(
-            "/secure", headers={"X-Forwarded-For": "8.8.8.8"}, follow_redirects=False
+            "/secure",
+            headers={"X-Forwarded-For": "203.0.113.5"},
+            follow_redirects=False,
         )
         assert response.status_code == 301  # HTTPS redirect
 
@@ -255,7 +257,7 @@ async def test_authentication_endpoints_response(auth_decorator_app: FastAPI) ->
             transport=ASGITransport(app=auth_decorator_app), base_url="https://test"
         ) as https_client:
             response = await https_client.get(
-                "/secure", headers={"X-Forwarded-For": "8.8.8.8"}
+                "/secure", headers={"X-Forwarded-For": "203.0.113.5"}
             )
             assert response.status_code == 200
             assert response.json()["message"] == "HTTPS required"
@@ -264,7 +266,7 @@ async def test_authentication_endpoints_response(auth_decorator_app: FastAPI) ->
         response = await client.get(
             "/auth-default",
             headers={
-                "X-Forwarded-For": "8.8.8.8",
+                "X-Forwarded-For": "203.0.113.5",
                 "Authorization": "Bearer test-token",
             },
         )
@@ -275,7 +277,7 @@ async def test_authentication_endpoints_response(auth_decorator_app: FastAPI) ->
         response = await client.get(
             "/auth-basic",
             headers={
-                "X-Forwarded-For": "8.8.8.8",
+                "X-Forwarded-For": "203.0.113.5",
                 "Authorization": "Basic dGVzdDp0ZXN0",  # test:test in base64
             },
         )
@@ -285,7 +287,7 @@ async def test_authentication_endpoints_response(auth_decorator_app: FastAPI) ->
         # Test headers single endpoint
         response = await client.get(
             "/headers-single",
-            headers={"X-Forwarded-For": "8.8.8.8", "X-API-Version": "v1"},
+            headers={"X-Forwarded-For": "203.0.113.5", "X-API-Version": "v1"},
         )
         assert response.status_code == 200
         assert response.json()["message"] == "Single header required"
@@ -293,7 +295,7 @@ async def test_authentication_endpoints_response(auth_decorator_app: FastAPI) ->
         # Test api-key-custom endpoint
         response = await client.post(
             "/api-key-custom",
-            headers={"X-Forwarded-For": "8.8.8.8", "Authorization": "test-key"},
+            headers={"X-Forwarded-For": "203.0.113.5", "Authorization": "test-key"},
         )
         assert response.status_code == 200
         assert response.json()["message"] == "API key required (custom header)"
