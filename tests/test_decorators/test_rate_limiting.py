@@ -36,6 +36,84 @@ async def rate_limiting_decorator_app(security_config: SecurityConfig) -> FastAP
     return app
 
 
+@pytest.fixture
+async def open_rate_limiting_decorator_app(security_config: SecurityConfig) -> FastAPI:
+    """Same routes as rate_limiting_decorator_app but with no global IP
+    whitelist, so a non-whitelisted client actually reaches the
+    rate_limit/geo_rate_limit decorators instead of being bypassed."""
+    app = FastAPI()
+
+    security_config.trusted_proxies = ["127.0.0.1"]
+    security_config.enable_penetration_detection = False
+    security_config.whitelist = []
+
+    decorator = SecurityDecorator(security_config)
+
+    @decorator.rate_limit(requests=10, window=60)
+    @app.get("/rate-limited")
+    async def rate_limited_endpoint() -> dict[str, str]:
+        return {"message": "Rate limited endpoint"}
+
+    @decorator.geo_rate_limit({"US": (100, 3600), "CN": (10, 3600), "*": (50, 3600)})
+    @app.get("/geo-rate-limited")
+    async def geo_rate_limited_endpoint() -> dict[str, str]:
+        return {"message": "Geo rate limited endpoint"}
+
+    app.add_middleware(SecurityMiddleware, config=security_config)
+    app.state.guard_decorator = decorator
+
+    return app
+
+
+@pytest.fixture
+async def open_rate_limited_app(security_config: SecurityConfig) -> FastAPI:
+    """Rate-limited route with no global IP whitelist, so non-whitelisted
+    clients pass the IP gate and actually reach the rate_limit decorator."""
+    app = FastAPI()
+
+    security_config.trusted_proxies = ["127.0.0.1"]
+    security_config.enable_penetration_detection = False
+    security_config.whitelist = []
+
+    decorator = SecurityDecorator(security_config)
+
+    @decorator.rate_limit(requests=2, window=60)
+    @app.get("/rate-limited-open")
+    async def rate_limited_open_endpoint() -> dict[str, str]:
+        return {"message": "Rate limited endpoint"}
+
+    app.add_middleware(SecurityMiddleware, config=security_config)
+    app.state.guard_decorator = decorator
+
+    return app
+
+
+@pytest.fixture
+async def route_whitelisted_rate_limited_app(
+    security_config: SecurityConfig,
+) -> FastAPI:
+    """Route grants IP access via require_ip while rate_limit still applies,
+    proving the route whitelist is not a rate-limit exemption (D1)."""
+    app = FastAPI()
+
+    security_config.trusted_proxies = ["127.0.0.1"]
+    security_config.enable_penetration_detection = False
+    security_config.whitelist = []
+
+    decorator = SecurityDecorator(security_config)
+
+    @decorator.require_ip(whitelist=["8.8.8.8"])
+    @decorator.rate_limit(requests=2, window=60)
+    @app.get("/route-whitelisted-rate-limited")
+    async def route_whitelisted_endpoint() -> dict[str, str]:
+        return {"message": "Route whitelisted endpoint"}
+
+    app.add_middleware(SecurityMiddleware, config=security_config)
+    app.state.guard_decorator = decorator
+
+    return app
+
+
 @pytest.mark.parametrize(
     "route_path,expected_rate_limit,expected_window,description",
     [
@@ -98,16 +176,20 @@ async def test_geo_rate_limit_decorator_applied(
     ],
 )
 async def test_rate_limiting_endpoints_response(
-    rate_limiting_decorator_app: FastAPI,
+    open_rate_limiting_decorator_app: FastAPI,
     endpoint: str,
     expected_message: str,
     description: str,
 ) -> None:
-    """Test calling rate limiting endpoints and their responses."""
+    """Test calling rate limiting endpoints and their responses from a
+    non-whitelisted client, so the request genuinely traverses the
+    rate_limit/geo_rate_limit decorators instead of being short-circuited
+    by is_whitelisted."""
     async with AsyncClient(
-        transport=ASGITransport(app=rate_limiting_decorator_app), base_url="http://test"
+        transport=ASGITransport(app=open_rate_limiting_decorator_app),
+        base_url="http://test",
     ) as client:
-        headers = {"X-Forwarded-For": "203.0.113.5"}
+        headers = {"X-Forwarded-For": "8.8.8.8"}
 
         response = await client.get(endpoint, headers=headers)
 
@@ -115,6 +197,61 @@ async def test_rate_limiting_endpoints_response(
         assert expected_message in response.text, (
             f"{description} should contain '{expected_message}'"
         )
+
+
+async def test_rate_limited_route_blocks_non_whitelisted_client_at_ip_gate(
+    rate_limiting_decorator_app: FastAPI,
+) -> None:
+    """A decorated route with no route ip_whitelist, but a GLOBAL whitelist
+    configured, returns 403 for a non-whitelisted client at the IP gate --
+    the rate_limit decorator never runs."""
+    async with AsyncClient(
+        transport=ASGITransport(app=rate_limiting_decorator_app), base_url="http://test"
+    ) as client:
+        response = await client.get(
+            "/rate-limited", headers={"X-Forwarded-For": "8.8.8.8"}
+        )
+
+        assert response.status_code == 403
+
+
+async def test_rate_limit_enforced_for_non_whitelisted_client(
+    open_rate_limited_app: FastAPI,
+) -> None:
+    """Without a global whitelist, a non-whitelisted client passes the IP
+    gate and is genuinely rate-limited by the decorator."""
+    async with AsyncClient(
+        transport=ASGITransport(app=open_rate_limited_app), base_url="http://test"
+    ) as client:
+        headers = {"X-Forwarded-For": "8.8.8.8"}
+
+        for _ in range(2):
+            response = await client.get("/rate-limited-open", headers=headers)
+            assert response.status_code == 200
+
+        response = await client.get("/rate-limited-open", headers=headers)
+        assert response.status_code == 429
+
+
+async def test_route_whitelisted_client_still_rate_limited(
+    route_whitelisted_rate_limited_app: FastAPI,
+) -> None:
+    """A route-whitelisted IP is granted IP access but is not exempt from
+    the route's rate_limit decorator (D1)."""
+    async with AsyncClient(
+        transport=ASGITransport(app=route_whitelisted_rate_limited_app),
+        base_url="http://test",
+    ) as client:
+        headers = {"X-Forwarded-For": "8.8.8.8"}
+
+        for _ in range(2):
+            response = await client.get(
+                "/route-whitelisted-rate-limited", headers=headers
+            )
+            assert response.status_code == 200
+
+        response = await client.get("/route-whitelisted-rate-limited", headers=headers)
+        assert response.status_code == 429
 
 
 async def test_rate_limiting_decorators_unit(security_config: SecurityConfig) -> None:

@@ -18,6 +18,7 @@ async def content_decorator_app(security_config: SecurityConfig) -> FastAPI:
 
     security_config.trusted_proxies = ["127.0.0.1"]
     security_config.enable_penetration_detection = False
+    security_config.whitelist = []
 
     decorator = SecurityDecorator(security_config)
 
@@ -102,6 +103,25 @@ async def test_content_filtering_decorators_applied(
             assert getattr(route_config, expected_attr) == expected_value, (
                 f"{description} should have correct {expected_attr}"
             )
+
+
+async def test_block_user_agents_blocks_matching_agent(
+    content_decorator_app: FastAPI,
+) -> None:
+    """A request whose User-Agent matches the decorator's block list is
+    rejected, proving block_user_agents actually runs."""
+    async with AsyncClient(
+        transport=ASGITransport(app=content_decorator_app), base_url="http://test"
+    ) as client:
+        response = await client.get(
+            "/block-agents",
+            headers={
+                "X-Forwarded-For": "8.8.8.8",
+                "User-Agent": "some-crawler/1.0",
+            },
+        )
+        assert response.status_code == 403
+        assert "Custom Forbidden" in response.text
 
 
 async def test_custom_validation_decorator_applied(
