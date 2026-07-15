@@ -203,7 +203,9 @@ async def test_security_bypass(decorator_app: FastAPI) -> None:
 
 
 async def test_multiple_decorators(decorator_app: FastAPI) -> None:
-    """Test multiple decorators on single endpoint."""
+    """Stacked decorators enforce every aspect independently (guard-core 3.5.0):
+    an ip_whitelist match grants the IP aspect only, so a route-blocked
+    country still denies the request."""
     with patch(
         "guard_core.handlers.ipinfo_handler.IPInfoManager.get_country"
     ) as mock_geo:
@@ -225,7 +227,7 @@ async def test_multiple_decorators(decorator_app: FastAPI) -> None:
                 "/multiple",
                 headers={"X-Forwarded-For": "192.168.1.100"},
             )
-            assert response.status_code == 200
+            assert response.status_code == 403
 
         mock_geo.return_value = "FR"
         async with AsyncClient(

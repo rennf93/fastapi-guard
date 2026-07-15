@@ -3,7 +3,7 @@ Release Notes
 
 ___
 
-v7.3.0 (2026-07-11)
+v7.3.0 (2026-07-15)
 -------------------
 
 Security pipeline assembly delegated to guard-core's check factory (v7.3.0)
