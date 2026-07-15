@@ -261,7 +261,7 @@ async def test_behavioral_endpoints_response(
             else "get"
         )
         response = await getattr(client, method)(
-            endpoint, headers={"X-Forwarded-For": "8.8.8.8"}
+            endpoint, headers={"X-Forwarded-For": "203.0.113.5"}
         )
 
         assert response.status_code == 200, f"{description} should return 200"

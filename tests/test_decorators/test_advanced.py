@@ -17,6 +17,7 @@ async def advanced_decorator_app(security_config: SecurityConfig) -> FastAPI:
 
     security_config.trusted_proxies = ["127.0.0.1"]
     security_config.enable_penetration_detection = False
+    security_config.whitelist = []
 
     decorator = SecurityDecorator(security_config)
 
@@ -92,7 +93,7 @@ async def test_time_window_restrictions(
         ) as client:
             response = await client.get(
                 endpoint,
-                headers={"X-Forwarded-For": "127.0.0.1"},
+                headers={"X-Forwarded-For": "203.0.113.5"},
             )
             assert response.status_code == expected_status, description
 
@@ -128,7 +129,9 @@ async def test_suspicious_detection_disabled(advanced_decorator_app: FastAPI) ->
 
 
 async def test_suspicious_endpoints_response(advanced_decorator_app: FastAPI) -> None:
-    """Test calling suspicious endpoints and their responses."""
+    """Test calling suspicious endpoints and their responses from a
+    non-whitelisted client, so SuspiciousActivityCheck genuinely runs
+    instead of being short-circuited by is_whitelisted."""
     async with AsyncClient(
         transport=ASGITransport(app=advanced_decorator_app), base_url="http://test"
     ) as client:
@@ -142,6 +145,40 @@ async def test_suspicious_endpoints_response(advanced_decorator_app: FastAPI) ->
         # Test suspicious disabled endpoint
         response = await client.get(
             "/suspicious-disabled", headers={"X-Forwarded-For": "8.8.8.8"}
+        )
+        assert response.status_code == 200
+        assert response.json()["message"] == "Suspicious detection disabled"
+
+
+async def test_suspicious_detection_enabled_blocks_malicious_request(
+    advanced_decorator_app: FastAPI,
+) -> None:
+    """A malicious request to a route with suspicious detection enabled is
+    blocked, proving the decorator actually scans the request."""
+    async with AsyncClient(
+        transport=ASGITransport(app=advanced_decorator_app), base_url="http://test"
+    ) as client:
+        response = await client.get(
+            "/suspicious-enabled",
+            params={"q": "UNION SELECT NULL--"},
+            headers={"X-Forwarded-For": "8.8.8.8"},
+        )
+        assert response.status_code == 400
+        assert "Suspicious activity detected" in response.text
+
+
+async def test_suspicious_detection_disabled_allows_malicious_request(
+    advanced_decorator_app: FastAPI,
+) -> None:
+    """The same malicious request passes on a route where suspicious
+    detection is explicitly disabled by the decorator."""
+    async with AsyncClient(
+        transport=ASGITransport(app=advanced_decorator_app), base_url="http://test"
+    ) as client:
+        response = await client.get(
+            "/suspicious-disabled",
+            params={"q": "UNION SELECT NULL--"},
+            headers={"X-Forwarded-For": "8.8.8.8"},
         )
         assert response.status_code == 200
         assert response.json()["message"] == "Suspicious detection disabled"
@@ -201,7 +238,7 @@ async def test_honeypot_detection_basic_functionality(
             "/form-honeypot",
             data={"name": "John", "email": "john@example.com"},
             headers={
-                "X-Forwarded-For": "127.0.0.1",
+                "X-Forwarded-For": "203.0.113.5",
                 "Content-Type": "application/x-www-form-urlencoded",
             },
         )
@@ -211,7 +248,7 @@ async def test_honeypot_detection_basic_functionality(
         response = await client.post(
             "/json-honeypot",
             json={"name": "Jane", "message": "Hello"},
-            headers={"X-Forwarded-For": "127.0.0.1"},
+            headers={"X-Forwarded-For": "203.0.113.5"},
         )
         assert response.status_code == 200
 

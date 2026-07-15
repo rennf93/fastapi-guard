@@ -147,8 +147,8 @@ This function analyzes various parts of the request (query params, body, path, h
 Parameters:
 
 - `request`: The FastAPI request object to analyze
-- `config`: Optional `SecurityConfig`. When supplied, its detection-exclusion fields (`excluded_detection_params`, `excluded_detection_body_fields`, `excluded_detection_headers`) and `enabled_detection_categories` are honored as global defaults.
-- `route_config`: Optional `RouteConfig` produced by a `SecurityDecorator` rule. Per-route exclusions and enabled categories override the global `config` values for the matched route.
+- `config`: Optional `SecurityConfig`. When supplied, its detection-exclusion fields (`excluded_detection_params`, `excluded_detection_body_fields`, `excluded_detection_headers`), `enabled_detection_categories`, and `detection_scan_body` are honored as global defaults.
+- `route_config`: Optional `RouteConfig` produced by a `SecurityDecorator` rule. Per-route exclusions, enabled categories, and `detection_scan_body` override the global `config` values for the matched route.
 
 Returns a `DetectionResult` dataclass:
 

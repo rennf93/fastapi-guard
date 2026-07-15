@@ -225,3 +225,5 @@ Configuration is applied in the following order of precedence:
 3. Default Settings (lowest priority)
 
 This allows route-specific overrides while maintaining global defaults.
+
+For IP and country access control, this priority applies per-aspect rather than as a blanket override: the global IP whitelist/blacklist and country rules always run on decorated routes. A route-level allow rule (`ip_whitelist` or `whitelist_countries`) suppresses the corresponding global gate. A route-level deny rule (`ip_blacklist` or `blocked_countries`) is additive and does not disable the global rules. Within the IP aspect, a route `ip_whitelist` match takes priority over that route's own `ip_blacklist` and over the global blacklist.

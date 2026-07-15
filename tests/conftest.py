@@ -66,7 +66,7 @@ def security_config() -> SecurityConfig:
         geo_ip_handler=IPInfoManager(IPINFO_TOKEN, None),
         enable_redis=False,
         enable_penetration_detection=False,
-        whitelist=["127.0.0.1"],
+        whitelist=["127.0.0.1", "203.0.113.5"],
         blacklist=["192.168.1.1"],
         blocked_countries=["CN"],
         blocked_user_agents=[r"badbot"],

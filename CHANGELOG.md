@@ -3,6 +3,19 @@ Release Notes
 
 ___
 
+v7.3.0 (2026-07-15)
+-------------------
+
+Security pipeline assembly delegated to guard-core's check factory (v7.3.0)
+---------------------------------------------------------------------------------
+
+- **Changed** — The security pipeline is now assembled by guard-core's `build_default_pipeline()`. New guard-core checks are picked up automatically; the middleware no longer hand-lists check classes.
+- **Compatibility (behavior change from guard-core 3.5.0)** — Global IP whitelist/blacklist and country rules now apply on routes carrying per-route decorator config; previously any decorated route silently bypassed every global IP and country rule. A client outside a configured global `whitelist` now receives `403` on decorated routes that previously served it. A route-level `@ip_whitelist` now grants access only, not trust: the matched request is still rate-limited, user-agent-filtered, cloud-provider-checked, attack-scanned, and country-checked, while global `whitelist` membership still confers full trust. The IP and country aspects are evaluated independently — a route `@ip_whitelist` match does not bypass country rules; only a route `@whitelist_countries` match overrides the global country gate. See the guard-core 3.5.0 changelog for the full description and migration guidance.
+- **Tests** — The decorator test suite now exercises the rate-limiting, user-agent, and suspicious-activity decorators through the enforced security pipeline using a non-whitelisted client, with explicit coverage for the new decorated-route `403` behavior and for a route `@ip_whitelist` client still being rate-limited. Previously these tests sent requests from a globally-whitelisted address, so the security pipeline short-circuited and the decorator logic was never exercised.
+- **Requires** — `guard-core>=3.5.0` (declared as unconstrained `guard-core` in pyproject; documented here for upgrade guidance). The pipeline factory (`build_default_pipeline`) and the decorated-route IP/country enforcement this release relies on ship in guard-core 3.5.0; installing against an older guard-core fails at middleware initialization with an `ImportError`.
+
+___
+
 v7.2.2 (2026-07-01)
 -------------------
 

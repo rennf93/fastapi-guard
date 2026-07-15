@@ -28,6 +28,8 @@ async def setup_patterns():
     )
 ```
 
+`add_pattern` checks the pattern for ReDoS safety before adding it. If the pattern is unsafe or malformed, it logs a warning and returns without adding the pattern or raising an exception.
+
 ___
 
 Pattern Types
