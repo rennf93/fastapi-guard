@@ -55,7 +55,6 @@ app = FastAPI(
 )
 
 app.add_middleware(SecurityMiddleware, config=security_config)
-SecurityMiddleware.configure_cors(app, security_config)
 app.state.guard_decorator = guard
 
 app.include_router(health_router)

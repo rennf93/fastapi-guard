@@ -29,6 +29,7 @@ Run with: uvicorn main:app --reload
 """
 
 import logging
+import os
 from datetime import datetime, timezone
 from ipaddress import ip_address
 from typing import Annotated, Any
@@ -261,8 +262,8 @@ security_config = SecurityConfig(
     log_format="json",
     # Redis Configuration
     enable_redis=True,
-    redis_url="redis://localhost:6379",
-    redis_prefix="fastapi_guard:",
+    redis_url=os.environ.get("REDIS_URL", "redis://localhost:6379"),
+    redis_prefix=os.environ.get("REDIS_PREFIX", "fastapi_guard:"),
     # HTTPS Enforcement
     enforce_https=False,  # Set to True in production
     # Custom Hooks
@@ -1647,7 +1648,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
         content=ErrorResponse(
             detail=exc.detail,
             error_code=f"HTTP_{exc.status_code}",
-        ).model_dump(),
+        ).model_dump(mode="json"),
     )
 
 
@@ -1659,7 +1660,7 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
         content=ErrorResponse(
             detail="Internal server error",
             error_code="INTERNAL_ERROR",
-        ).model_dump(),
+        ).model_dump(mode="json"),
     )
 
 

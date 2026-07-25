@@ -5,7 +5,7 @@ services:
         args:
           PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
       image: fastapi-guard-example-py${PYTHON_VERSION:-3.10}
-      command: uvicorn examples.main:app --host 0.0.0.0 --reload
+      command: uvicorn examples.simple_app.main:app --host 0.0.0.0 --reload
       ports:
         - "8000:8000"
       environment:
