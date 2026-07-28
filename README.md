@@ -206,6 +206,21 @@ Published on crates.io. **🚧 Placeholder crates — implementation in progress
 | [rocket-guard-rs](https://github.com/rennf93/rocket-guard-rs) | Rocket adapter | [![crates.io](https://img.shields.io/crates/v/rocket-guard-rs)](https://crates.io/crates/rocket-guard-rs) |
 | [tower-guard-rs](https://github.com/rennf93/tower-guard-rs) | Tower adapter | [![crates.io](https://img.shields.io/crates/v/tower-guard-rs)](https://crates.io/crates/tower-guard-rs) |
 
+### AI Coding Agents
+
+| Package | Role | PyPI |
+|---|---|---|
+| [guard-core-mcp](https://github.com/rennf93/guard-core-mcp) | MCP server — config validation, docs search, detection sandbox | [![PyPI](https://img.shields.io/pypi/v/guard-core-mcp)](https://pypi.org/project/guard-core-mcp/) |
+
+An MCP server that answers questions about FastAPI Guard from the version **installed in your project**, rather than from a model's memory of it. It validates a config against the real `SecurityConfig` model — catching silently-ignored typos like `redis_failopen` — looks up any field's type, default and description, searches the bundled docs, and runs a payload through the real detection engine to show whether it would be blocked and by which pattern.
+
+```bash
+uv add --dev guard-core-mcp
+claude mcp add guard-core -- uv run guard-core-mcp
+```
+
+Install it into the same environment as FastAPI Guard — it introspects what is actually installed there, so an isolated run (`uvx`) has nothing to read.
+
 ---
 
 ## Documentation
