@@ -11,8 +11,8 @@ jobs:
     steps:
     - uses: actions/first-interaction@v3
       with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-        issue-message: |
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        issue_message: |
             Thanks for opening your first issue on **fastapi-guard**!
 
             To help us triage quickly, please make sure your report includes:
@@ -29,7 +29,7 @@ jobs:
             - **Security vulnerability?** Do **not** open a public issue — please follow [SECURITY.md](../blob/master/SECURITY.md) and use GitHub's private vulnerability reporting.
 
             Thanks again — a maintainer will be with you soon.
-        pr-message: |
+        pr_message: |
             Thanks for opening your first pull request on **fastapi-guard**!
 
             Quick checklist before review (most of these are enforced by CI, but worth a glance):
