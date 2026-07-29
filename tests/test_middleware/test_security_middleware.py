@@ -2331,6 +2331,31 @@ async def test_resolve_route_matches_router_included_twice_at_different_prefixes
         assert route.endpoint is end
 
 
+async def test_process_response_wires_global_behavioral_rules(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = FastAPI()
+    config = SecurityConfig()
+    middleware = SecurityMiddleware(app, config=config)
+
+    from starlette.requests import Request as StarletteRequest
+
+    request = StarletteRequest(_http_scope(app, "GET", "/"))
+    response = Response(content="ok", status_code=200)
+    process_response = AsyncMock(return_value=StarletteGuardResponse(response))
+    monkeypatch.setattr(
+        middleware.response_factory, "process_response", process_response
+    )
+
+    await middleware._process_response(request, response, 0.01, None)
+
+    kwargs = process_response.await_args.kwargs
+    assert (
+        kwargs["process_global_behavioral_rules"]
+        == middleware.behavioral_processor.process_global_return_rules
+    )
+
+
 async def test_populate_guard_state_marks_only_unresolved_routes() -> None:
     app = FastAPI()
 

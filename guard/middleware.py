@@ -328,6 +328,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             response_time,
             route_config,
             process_behavioral_rules=self.behavioral_processor.process_return_rules,
+            process_global_behavioral_rules=(
+                self.behavioral_processor.process_global_return_rules
+            ),
         )
         return unwrap_response(result)
 
