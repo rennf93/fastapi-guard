@@ -360,7 +360,10 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             child_scope = {**scope, **child}
             if not self._first_visit(seen, r, child_scope):
                 continue
-            found = self._match_route(self._sub_routes(r), child_scope, seen)
+            sub_routes = self._sub_routes(r)
+            if not sub_routes:
+                return r
+            found = self._match_route(sub_routes, child_scope, seen)
             if found is not None:
                 return found
         return None
@@ -424,10 +427,14 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 guard_request.state.guard_decorator = app_decorator
 
         route = self._resolve_route(request)
-        if not route or not hasattr(route, "endpoint"):
+        if not route:
+            guard_request.state.guard_route_unresolved = True
             return
 
-        ep = route.endpoint
+        ep = getattr(route, "endpoint", None)
+        if ep is None:
+            return
+
         if hasattr(ep, "_guard_route_id"):
             guard_request.state.guard_route_id = ep._guard_route_id
         if hasattr(ep, "__module__") and hasattr(ep, "__qualname__"):

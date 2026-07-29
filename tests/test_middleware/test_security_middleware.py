@@ -2331,6 +2331,48 @@ async def test_resolve_route_matches_router_included_twice_at_different_prefixes
         assert route.endpoint is end
 
 
+async def test_populate_guard_state_marks_only_unresolved_routes() -> None:
+    app = FastAPI()
+
+    @app.get("/known")
+    async def known() -> dict[str, bool]:
+        return {"ok": True}
+
+    middleware = SecurityMiddleware(app, config=SecurityConfig())
+
+    from starlette.requests import Request as StarletteRequest
+
+    unmatched = StarletteRequest(_http_scope(app, "GET", "/missing"))
+    unmatched_guard = StarletteGuardRequest(unmatched)
+    middleware._populate_guard_state(unmatched_guard, unmatched)
+    assert unmatched_guard.state.guard_route_unresolved is True
+
+    matched = StarletteRequest(_http_scope(app, "GET", "/known"))
+    matched_guard = StarletteGuardRequest(matched)
+    middleware._populate_guard_state(matched_guard, matched)
+    assert not hasattr(matched_guard.state, "guard_route_unresolved")
+
+
+async def test_populate_guard_state_accepts_mount_to_routeless_app() -> None:
+    from starlette.responses import PlainTextResponse
+
+    async def raw_app(scope: Any, receive: Any, send: Any) -> None:
+        await PlainTextResponse("raw")(scope, receive, send)
+
+    app = FastAPI()
+    app.mount("/raw", raw_app)
+    middleware = SecurityMiddleware(app, config=SecurityConfig())
+
+    from starlette.requests import Request as StarletteRequest
+
+    request = StarletteRequest(_http_scope(app, "GET", "/raw/thing"))
+    guard_request = StarletteGuardRequest(request)
+    middleware._populate_guard_state(guard_request, request)
+
+    assert not hasattr(guard_request.state, "guard_route_unresolved")
+    assert not hasattr(guard_request.state, "guard_route_id")
+
+
 async def test_require_auth_enforced_on_deeply_nested_mounted_route() -> None:
     from guard import SecurityDecorator
 
