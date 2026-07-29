@@ -264,6 +264,7 @@ async def test_behavioral_rules_without_guard_decorator() -> None:
     middleware.guard_decorator = None
 
     mock_request = Mock()
+    mock_request.state.guard_decorator = None
     mock_route_config = Mock()
     mock_route_config.behavior_rules = [BehaviorRule("usage", threshold=5, window=3600)]
 
@@ -291,6 +292,7 @@ async def test_behavioral_usage_rules_with_decorator() -> None:
     }
     mock_request.method = "GET"
     mock_request.url.path = "/test"
+    mock_request.state.guard_decorator = mock_guard_decorator
 
     mock_route_config = Mock()
     usage_rule = BehaviorRule("usage", threshold=5, window=3600)
@@ -327,6 +329,7 @@ async def test_behavioral_return_rules_with_decorator() -> None:
     }
     mock_request.method = "GET"
     mock_request.url.path = "/test"
+    mock_request.state.guard_decorator = mock_guard_decorator
 
     mock_response = Mock()
     mock_route_config = Mock()
