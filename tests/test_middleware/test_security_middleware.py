@@ -2180,7 +2180,7 @@ async def test_route_full_match_handles_missing_and_raising_matches() -> None:
     assert middleware._route_full_match(_RaisingMatches(), {}) == (False, {})
 
 
-async def test_match_route_stops_at_max_recursion_depth() -> None:
+async def test_match_route_stops_on_self_nesting_router() -> None:
     from starlette.routing import Match
 
     app = FastAPI()
@@ -2194,7 +2194,175 @@ async def test_match_route_stops_at_max_recursion_depth() -> None:
         def routes(self) -> Any:
             return [self]
 
-    assert middleware._match_route([_SelfNestingRouter()], {"type": "http"}, 0) is None
+    matched = middleware._match_route([_SelfNestingRouter()], {"type": "http"}, set())
+    assert matched is None
+
+
+async def test_match_route_visits_duplicate_mount_subtrees_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from starlette.applications import Starlette
+    from starlette.responses import JSONResponse
+    from starlette.routing import Mount, Route
+
+    async def endpoint(request: Any) -> JSONResponse:
+        return JSONResponse({})
+
+    depth = 20
+    apps = [Starlette(routes=[Route("/end", endpoint)]) for _ in range(depth + 1)]
+    for i in range(depth):
+        for _ in range(2):
+            apps[i].router.routes.append(Mount("/x", app=apps[i + 1]))
+
+    root = apps[0]
+    middleware = SecurityMiddleware(root, config=SecurityConfig())
+
+    calls = 0
+    original = middleware._route_full_match
+
+    def counting_match(route: Any, scope: Any) -> tuple[bool, Any]:
+        nonlocal calls
+        calls += 1
+        return original(route, scope)
+
+    monkeypatch.setattr(middleware, "_route_full_match", counting_match)
+
+    from starlette.requests import Request as StarletteRequest
+
+    request = StarletteRequest(_http_scope(root, "GET", "/x" * depth + "/nope"))
+    assert middleware._resolve_route(request) is None
+    assert calls < 500
+
+
+async def test_resolve_route_matches_deeply_nested_mounted_apps() -> None:
+    depth = 12
+    apps = [FastAPI() for _ in range(depth + 1)]
+
+    @apps[-1].get("/secret")
+    async def secret() -> dict[str, bool]:
+        return {"secret": True}
+
+    for i in range(depth - 1, -1, -1):
+        apps[i].mount(f"/m{i}", apps[i + 1])
+
+    root = apps[0]
+    middleware = SecurityMiddleware(root, config=SecurityConfig())
+
+    from starlette.requests import Request as StarletteRequest
+
+    path = "".join(f"/m{i}" for i in range(depth)) + "/secret"
+    request = StarletteRequest(_http_scope(root, "GET", path))
+    route = middleware._resolve_route(request)
+    assert route is not None
+    assert route.endpoint is secret
+
+
+async def test_resolve_route_matches_deeply_nested_prefixed_routers() -> None:
+    from fastapi import APIRouter
+
+    depth = 12
+    routers = [APIRouter(prefix=f"/r{i}") for i in range(depth)]
+
+    @routers[-1].get("/secret")
+    async def secret() -> dict[str, bool]:
+        return {"secret": True}
+
+    for i in range(depth - 2, -1, -1):
+        routers[i].include_router(routers[i + 1])
+
+    app = FastAPI()
+    app.include_router(routers[0])
+    middleware = SecurityMiddleware(app, config=SecurityConfig())
+
+    from starlette.requests import Request as StarletteRequest
+
+    path = "".join(f"/r{i}" for i in range(depth)) + "/secret"
+    request = StarletteRequest(_http_scope(app, "GET", path))
+    route = middleware._resolve_route(request)
+    assert route is not None
+    assert route.endpoint is secret
+
+
+async def test_resolve_route_matches_mount_inside_prefixed_included_router() -> None:
+    from fastapi import APIRouter
+
+    sub = FastAPI()
+
+    @sub.get("/secret")
+    async def secret() -> dict[str, bool]:
+        return {"secret": True}
+
+    router = APIRouter()
+    router.mount("/sub", sub)
+    app = FastAPI()
+    app.include_router(router, prefix="/api")
+    middleware = SecurityMiddleware(app, config=SecurityConfig())
+
+    from starlette.requests import Request as StarletteRequest
+
+    request = StarletteRequest(_http_scope(app, "GET", "/api/sub/secret"))
+    route = middleware._resolve_route(request)
+    assert route is not None
+    assert route.endpoint is secret
+
+
+async def test_resolve_route_matches_router_included_twice_at_different_prefixes() -> (
+    None
+):
+    from fastapi import APIRouter
+
+    shared = APIRouter()
+
+    @shared.get("/end")
+    async def end() -> dict[str, bool]:
+        return {"ok": True}
+
+    app = FastAPI()
+    app.include_router(shared, prefix="/v1")
+    app.include_router(shared, prefix="/v2")
+    middleware = SecurityMiddleware(app, config=SecurityConfig())
+
+    from starlette.requests import Request as StarletteRequest
+
+    for prefix in ("/v1", "/v2"):
+        request = StarletteRequest(_http_scope(app, "GET", f"{prefix}/end"))
+        route = middleware._resolve_route(request)
+        assert route is not None
+        assert route.endpoint is end
+
+
+async def test_require_auth_enforced_on_deeply_nested_mounted_route() -> None:
+    from guard import SecurityDecorator
+
+    depth = 12
+    config = SecurityConfig(
+        enable_penetration_detection=False,
+        enforce_https=False,
+        enable_redis=False,
+        enable_rate_limiting=False,
+    )
+    guard = SecurityDecorator(config)
+    apps = [FastAPI() for _ in range(depth + 1)]
+
+    @guard.require_auth(type="bearer")
+    @apps[-1].get("/secret")
+    async def secret() -> dict[str, bool]:
+        return {"secret": True}
+
+    for i in range(depth - 1, -1, -1):
+        apps[i].mount(f"/m{i}", apps[i + 1])
+
+    root = apps[0]
+    root.add_middleware(SecurityMiddleware, config=config)
+    root.state.guard_decorator = guard
+
+    path = "".join(f"/m{i}" for i in range(depth)) + "/secret"
+    async with AsyncClient(
+        transport=ASGITransport(app=root), base_url="http://test"
+    ) as client:
+        response = await client.get(path)
+
+    assert response.status_code == 401
 
 
 async def test_agent_stats_returns_disabled_when_agent_handler_unset() -> None:

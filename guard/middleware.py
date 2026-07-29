@@ -339,29 +339,54 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         routes = getattr(app, "routes", None)
         if not routes:
             return None
-        return self._match_route(routes, request.scope, 0)
+        return self._match_route(routes, request.scope, set())
 
-    def _match_route(self, routes: Any, scope: Any, depth: int) -> Any:
+    def _match_route(self, routes: Any, scope: Any, seen: set[Any]) -> Any:
         # This middleware is a BaseHTTPMiddleware, so it runs before the router
         # and scope["route"] is unset. Replicate Starlette's matching, descending
         # into sub-routers / mounts (FastAPI's include_router inserts a wrapper
         # route whose real routes are nested inside), so per-route decorator
         # config resolves for path-parameter and include_router routes, not only
         # routes flattened directly onto the app.
+        if not self._first_visit(seen, routes, scope):
+            return None
         for r in routes:
             matched, child = self._route_full_match(r, scope)
             if not matched:
                 continue
-            if hasattr(r, "endpoint"):
+            r = self._unwrap_candidate(r)
+            if getattr(r, "endpoint", None) is not None:
                 return r
-            if depth >= 8:
+            child_scope = {**scope, **child}
+            if not self._first_visit(seen, r, child_scope):
                 continue
-            found = self._match_route(
-                self._sub_routes(r), {**scope, **child}, depth + 1
-            )
+            found = self._match_route(self._sub_routes(r), child_scope, seen)
             if found is not None:
                 return found
         return None
+
+    def _first_visit(self, seen: set[Any], node: Any, scope: Any) -> bool:
+        # Replaces a fixed depth cap, which silently abandoned the walk and left
+        # deeply nested routes unresolved. Marking the route and its sub-route
+        # collection stops mount cycles and keeps a graph that reaches the same
+        # collection by many paths linear rather than exponential. Ids are safe as
+        # keys: every collection walked is owned by a live app, router or route
+        # held on the call stack, so none can be freed and recycled mid-walk.
+        key = (id(node), scope.get("path"), scope.get("root_path"))
+        if key in seen:
+            return False
+        seen.add(key)
+        return True
+
+    def _unwrap_candidate(self, route: Any) -> Any:
+        # FastAPI's include machinery matches through _EffectiveRouteContext proxies
+        # that hold the prefix-corrected route; that inner route is what carries the
+        # endpoint and the sub-routes, and its child scope is already applied here.
+        return (
+            getattr(route, "starlette_route", None)
+            or getattr(route, "original_route", None)
+            or route
+        )
 
     def _route_full_match(self, route: Any, scope: Any) -> tuple[bool, Any]:
         matches = getattr(route, "matches", None)
@@ -374,6 +399,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         return match == Match.FULL, child
 
     def _sub_routes(self, route: Any) -> Any:
+        # FastAPI's _IncludedRouter keeps sub-routes un-prefixed and only applies the
+        # combined include prefix in effective_candidates(); descending into
+        # original_router.routes instead resolves nothing past one nesting level.
+        candidates = getattr(route, "effective_candidates", None)
+        if callable(candidates):
+            return candidates()
         included = getattr(route, "original_router", None)
         mounted = getattr(route, "app", None)
         return (

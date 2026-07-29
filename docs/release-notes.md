@@ -10,6 +10,20 @@ Release Notes
 
 ___
 
+v7.3.1 (2026-07-29)
+-------------------
+
+Per-route checks now resolve through unbounded mount and router nesting (v7.3.1)
+--------------------------------------------------------------------------------
+
+- **Security** — Fixes [GHSA-f2vm-w8gq-h378](https://github.com/rennf93/fastapi-guard/security/advisories/GHSA-f2vm-w8gq-h378) (CWE-287, per-route authentication bypass, CVSS 7.4). `SecurityMiddleware._match_route()` capped its recursive walk of the route tree at a hardcoded depth of 8 and silently gave up beyond it, so an endpoint mounted 9 or more `Mount` levels deep never resolved, `request.state.guard_route_id` was never set, and guard-core's route-config resolver returned `None` — which every per-route check reads as "no policy to enforce". An endpoint protected by `@require_auth` was served to any unauthenticated client, and by the same path so were `@rate_limit`, `@require_headers`, `@require_referrer`, `@custom_validation`, `@time_window`, per-route IP restrictions, and request size / content-type limits. The arbitrary depth cap is replaced by cycle detection over the descent chain — the condition it was approximating — so nesting is now unbounded while a self-nesting router still terminates.
+- **Security** — The same bypass reached a second, more common topology: routers nested two or more levels deep via `include_router`, previously recorded in 7.2.2 as "deeply-nested prefixed routers remain a known limitation". FastAPI's `_IncludedRouter` keeps its sub-routes un-prefixed and applies the combined include prefix only in `effective_candidates()`, so descending into `original_router.routes` compared a request path like `/r0/r1/secret` against a route registered as `/r1/secret` and matched nothing. Resolution now descends through `effective_candidates()` where available — falling back to the previous attribute walk on FastAPI versions without it — and unwraps the `_EffectiveRouteContext` proxies it yields. Per-route decorators consequently fire at any include depth, and also on `Mount`s and plain Starlette `Route`s registered on an included router, which `include_router(router, prefix=...)` over `router.mount(...)` had likewise left unresolved.
+- **Note** — The fail-open half of the advisory belongs to guard-core: `get_route_config()` returns `None` both when a route carries no per-route config and when route resolution failed, and every per-route check collapses those two states into "nothing to enforce". This release removes the two resolution failures that made it reachable from fastapi-guard; distinguishing "unresolved" from "unconfigured" is guard-core's to fix.
+- **Performance** — Traversal is bounded by marking each route and sub-route collection as visited per request scope rather than by a fixed depth, so a graph reaching the same collection along many paths is walked once instead of exponentially often. An app with two overlapping sibling mounts per level resolves a non-matching 24-level path in 0.2 ms, against 99 s for a depth-capped walk without the marking. The one graph shape that still recurses without bound manufactures fresh sub-route objects on every access, which is not constructible through public FastAPI or Starlette APIs; it raises `RecursionError` and surfaces as `500` rather than as a silently unchecked route.
+- **Tests** — Route resolution and end-to-end `@require_auth` enforcement are now covered at 12 nested `Mount` levels and at 12 nested prefixed routers, plus a `Mount` inside a prefixed included router, alongside the existing self-nesting-router termination test.
+
+___
+
 v7.3.0 (2026-07-15)
 -------------------
 
