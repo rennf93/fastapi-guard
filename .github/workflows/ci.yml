@@ -16,7 +16,7 @@ on:
       - 'pytest.ini'
       - 'reqs.pip'
       - 'tests/**'
-  pull_request_target:
+  pull_request:
     branches:
       - master
     paths:
