@@ -212,6 +212,33 @@ def limited_endpoint():
 
 ___
 
+Routers and Mounted Applications
+---------------------------------
+
+Decorators fire wherever the route lives. `SecurityMiddleware` runs before FastAPI's router, so it matches the request against the app's route table itself, descending through `include_router()` wrappers and `mount()`ed sub-applications to find the endpoint that will handle the request.
+
+```python
+admin = APIRouter(prefix="/admin")
+billing = APIRouter(prefix="/billing")
+
+@billing.get("/invoices")
+@guard_deco.require_auth(type="bearer")
+def invoices():
+    return {"invoices": []}
+
+admin.include_router(billing)
+app.include_router(admin, prefix="/v1")   # /v1/admin/billing/invoices
+```
+
+There is no nesting limit. Routers included into routers, sub-applications mounted into sub-applications, and any mix of the two all resolve, and the decorator on `invoices` is enforced at whatever depth it ends up.
+
+!!! warning "Versions before 7.3.1"
+    Route resolution stopped after eight levels of mounts, and never descended past one level of `include_router()`. Decorators on routes below those limits silently did nothing — including `require_auth`, which meant an endpoint served unauthenticated. See [GHSA-f2vm-w8gq-h378](https://github.com/rennf93/fastapi-guard/security/advisories/GHSA-f2vm-w8gq-h378). If you compose your app from nested routers or mounts, upgrade.
+
+A request that reaches a mounted application guard-core does not route for — `StaticFiles`, a WSGI app, any opaque ASGI app — has no endpoint to decorate, so per-route checks do not apply to it and global `SecurityConfig` settings govern instead.
+
+___
+
 Best Practices
 --------------
 

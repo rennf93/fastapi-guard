@@ -34,6 +34,7 @@ Core Security Settings
 | `enable_rate_limiting` | bool | True | Enable/disable rate limiting functionality |
 | `enable_penetration_detection` | bool | True | Enable penetration attempt detection |
 | `fail_secure` | bool | True | Block the request when a security check raises an unexpected exception |
+| `route_resolution_strict` | bool | False | Block with 500 when the middleware could not resolve the request's route, instead of running the pipeline with no per-route config. Also turns unserved paths into 500s rather than 404s. Requires guard-core >= 3.7.0 |
 | `auto_ban_threshold` | int | 10 | Number of suspicious requests before auto-ban |
 | `auto_ban_duration` | int | 3600 | Auto-ban duration in seconds |
 | `rate_limit` | int | 10 | Maximum requests per `rate_limit_window` |
