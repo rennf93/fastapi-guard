@@ -1475,6 +1475,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#prerequisite-your-app-server-must-not-pre-resolve-the-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisite: Your App Server Must Not Pre-Resolve the Client
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#secure-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2579,6 +2590,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#prerequisite-your-app-server-must-not-pre-resolve-the-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisite: Your App Server Must Not Pre-Resolve the Client
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#secure-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2730,6 +2752,16 @@
 <li>False attribution in security logs</li>
 <li>Bypassing rate limiting and IP bans</li>
 </ul>
+<hr />
+<h2 id="prerequisite-your-app-server-must-not-pre-resolve-the-client">Prerequisite: Your App Server Must Not Pre-Resolve the Client<a class="headerlink" href="#prerequisite-your-app-server-must-not-pre-resolve-the-client" title="Permanent link">&para;</a></h2>
+<p>FastAPI Guard reads the connecting IP from <code>request.client.host</code>, which is whatever your ASGI server put in <code>scope["client"]</code> — by the time a request reaches <code>SecurityMiddleware</code>, the server has already run. Several ASGI/WSGI servers rewrite that value themselves from <code>X-Forwarded-For</code> before any application code runs. uvicorn is the clearest example: it defaults to <code>proxy_headers=True</code> with <code>forwarded_allow_ips="127.0.0.1"</code>, so a reverse proxy connecting from loopback (a same-host <code>proxy_pass</code>, the common case) has its <code>X-Forwarded-For</code> applied to <code>scope["client"]</code> upstream of FastAPI Guard.</p>
+<p>When that happens, <code>trusted_proxies</code> unset does <strong>not</strong> mean "<code>X-Forwarded-For</code> is never trusted" — the server already trusted it, so an attacker's own forged header value becomes the connecting IP as far as rate limiting, IP bans, and every other check are concerned. guard-core detects the fingerprint of this condition (the connecting IP appearing inside its own <code>X-Forwarded-For</code> chain, which a real proxy never produces) and logs one warning naming the fix, but it cannot recover the true peer once the server has already overwritten it.</p>
+<p><strong>Fix</strong>: disable the server's own forwarded-header handling and let <code>trusted_proxies</code> be the single authority:</p>
+<ul>
+<li>uvicorn: <code>--no-proxy-headers</code> on the CLI, or <code>proxy_headers=False</code> in <code>uvicorn.run(...)</code>.</li>
+<li>Gunicorn, Hypercorn, and other WSGI/ASGI servers have equivalent forwarded-header/proxy-trust settings — disable them the same way.</li>
+</ul>
+<p>With the server's own handling off, its access log will show the proxy's address rather than the original client — that's expected, since <code>X-Forwarded-For</code> is no longer applied before the request reaches your application.</p>
 <hr />
 <h2 id="secure-configuration">Secure Configuration<a class="headerlink" href="#secure-configuration" title="Permanent link">&para;</a></h2>
 <p>FastAPI Guard implements a secure-by-default approach where X-Forwarded-For headers are only trusted from explicitly configured trusted proxies:</p>
