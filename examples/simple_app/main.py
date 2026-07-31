@@ -30,6 +30,7 @@ Run with: uvicorn main:app --reload
 
 import logging
 import os
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from ipaddress import ip_address
 from typing import Annotated, Any
@@ -58,6 +59,8 @@ from guard import (
     SecurityMiddleware,
     cloud_handler,
 )
+from guard.lifespan import make_lifespan
+from guard.status import add_status_route
 
 # Configure logging
 # FastAPI Guard uses its own logger hierarchy under "fastapi_guard" namespace
@@ -330,17 +333,39 @@ security_config = SecurityConfig(
     # agent_project_id="test-project",
 )
 
+@asynccontextmanager
+async def app_lifespan(app: FastAPI) -> Any:
+    logger.info("FastAPI Guard Example starting up...")
+    logger.info("Security features enabled:")
+    logger.info(f"  - Rate limiting: {security_config.enable_rate_limiting}")
+    logger.info(f"  - IP banning: {security_config.enable_ip_banning}")
+    logger.info(
+        f"  - Penetration detection: {security_config.enable_penetration_detection}"
+    )
+    logger.info(f"  - Redis: {security_config.enable_redis}")
+    logger.info(f"  - Agent: {security_config.enable_agent}")
+    yield
+    logger.info("FastAPI Guard Example shutting down...")
+
+
 # Initialize FastAPI app
+# make_lifespan(app_lifespan) runs SecurityMiddleware.initialize() at ASGI startup
+# (instead of deferring it to the first request) and then runs app_lifespan's own
+# startup/shutdown logging; see docs/tutorial/first-steps.md
 app = FastAPI(
     title="FastAPI Guard Comprehensive Example",
     description=__doc__,
     version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=make_lifespan(app_lifespan),
 )
 
 # Add security middleware
 app.add_middleware(SecurityMiddleware, config=security_config)
+
+# Opt-in readiness probe: GET /_guard/status reports cloud-IP/geo-IP warmup state
+add_status_route(app)
 
 # Initialize security decorator
 guard_decorator = SecurityDecorator(security_config)
@@ -1674,24 +1699,6 @@ app.include_router(content_router)
 app.include_router(advanced_router)
 app.include_router(admin_router)
 app.include_router(test_router)
-
-
-@app.on_event("startup")
-async def startup_event() -> None:
-    logger.info("FastAPI Guard Example starting up...")
-    logger.info("Security features enabled:")
-    logger.info(f"  - Rate limiting: {security_config.enable_rate_limiting}")
-    logger.info(f"  - IP banning: {security_config.enable_ip_banning}")
-    logger.info(
-        f"  - Penetration detection: {security_config.enable_penetration_detection}"
-    )
-    logger.info(f"  - Redis: {security_config.enable_redis}")
-    logger.info(f"  - Agent: {security_config.enable_agent}")
-
-
-@app.on_event("shutdown")
-async def shutdown_event() -> None:
-    logger.info("FastAPI Guard Example shutting down...")
 
 
 if __name__ == "__main__":
