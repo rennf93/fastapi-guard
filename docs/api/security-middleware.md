@@ -221,7 +221,24 @@ app = FastAPI(lifespan=make_lifespan(my_lifespan))
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
-The lifespan helpers warm guard-core's singletons (cloud-IP cache, IP ban store, suspicious patterns, Redis pool) AND populate a shared-state registry so the live request-handling middleware adopts the spawned instance's pipeline, agent handler, and event bus by reference. This guarantees `composite_handler.start()` runs exactly once per config — no duplicate OTEL `set_tracer_provider already set` warning, no leaked agent worker tasks.
+If a host framework owns the `lifespan` slot and only exposes its own startup-hook API — NiceGUI's `app.on_startup`, for example — await `guard_startup(app)` from that hook instead:
+
+```python
+from nicegui import app
+from guard.lifespan import guard_startup
+from guard.middleware import SecurityMiddleware
+from guard import SecurityConfig
+
+config = SecurityConfig(enable_redis=True, redis_url="redis://localhost:6379")
+app.add_middleware(SecurityMiddleware, config=config)
+
+
+@app.on_startup
+async def _warm_up_guard() -> None:
+    await guard_startup(app)
+```
+
+These warm-up helpers warm guard-core's singletons (cloud-IP cache, IP ban store, suspicious patterns, Redis pool) AND populate a shared-state registry so the live request-handling middleware adopts the spawned instance's pipeline, agent handler, and event bus by reference. This guarantees `composite_handler.start()` runs exactly once per config — no duplicate OTEL `set_tracer_provider already set` warning, no leaked agent worker tasks. `guard_startup` performs exactly what `guard_lifespan` does on entry, so it shares the same idempotency: a second call finds the state already registered and adopts it instead of re-initializing.
 
 mark_initialized
 ----------------
@@ -232,6 +249,21 @@ def mark_initialized(self) -> None:
 ```
 
 `mark_initialized` is the public setter the lifespan helpers call after they finish warming or adopting state. It flips the internal initialization flag so the first request does not re-trigger lazy init. User code rarely needs to call this directly; the lifespan helpers handle it.
+
+get_initialization_status
+--------------------------
+
+```python
+def get_initialization_status(self) -> dict[str, Any]:
+    """
+    Report cloud-provider and geo-IP warmup state.
+
+    Delegates to guard-core's HandlerInitializer.get_initialization_status()
+    and JSON-encodes the result (datetimes become ISO 8601 strings).
+    """
+```
+
+Synchronous and dependency-free — safe to call from a health check or warmup probe on every hit. See [Initialization Status](../tutorial/configuration/security-config.md#initialization-status) for the response shape and `guard.status.add_status_route` for an opt-in HTTP wrapper around it.
 
 set_decorator_handler
 ---------------------
@@ -414,7 +446,7 @@ app = FastAPI(lifespan=guard_lifespan)
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
-`guard_lifespan` runs the full initialization sequence at ASGI startup so the first request hits a pre-warmed middleware. Use `make_lifespan(existing)` to compose with your own lifespan context manager.
+`guard_lifespan` runs the full initialization sequence at ASGI startup so the first request hits a pre-warmed middleware. Use `make_lifespan(existing)` to compose with your own lifespan context manager, or `guard_startup(app)` from a host framework's own startup hook (e.g. NiceGUI's `app.on_startup`) when it owns the `lifespan` slot and you cannot pass one in — see [Eager Initialization](../tutorial/first-steps.md#eager-initialization-with-fastapi-lifespan) for all three.
 
 ___
 

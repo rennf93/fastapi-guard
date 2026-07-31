@@ -10,6 +10,21 @@ Release Notes
 
 ___
 
+v7.4.0 (2026-07-31)
+-------------------
+
+Initialization-status probe and a closed lifespan-discoverability trap (v7.4.0)
+--------------------------------------------------------------------------------
+
+- **Added** — `SecurityMiddleware.get_initialization_status()` reports cloud-provider and geo-IP warmup readiness. It delegates to guard-core's `HandlerInitializer.get_initialization_status()` and JSON-encodes the result, so `datetime` values serialize as ISO 8601 strings. `guard.status.add_status_route(app, path="/_guard/status")` is an opt-in helper that wires it as a `GET` route — nothing is registered unless you call it. Cheap enough to back a Kubernetes/ALB warmup probe. Requires `guard-core>=3.8.0`.
+- **Added** — `guard.lifespan.guard_startup(app)`: a public, awaitable warm-up entry point for host frameworks — NiceGUI, Chainlit, Gradio, and similar — that own the ASGI `lifespan` slot internally and only expose their own startup-hook registration API (e.g. NiceGUI's `app.on_startup`). It performs exactly what `guard_lifespan` does on entry (locate the middleware, adopt or build warm state, initialize, mark initialized, register state) by reusing the same private helper rather than duplicating it, and shares its idempotency guarantee: the shared-state registry is keyed by `id(config)`, so a second call finds the state already registered and adopts it instead of re-initializing or re-fetching anything.
+- **Fixed** — `SecurityMiddleware` now warns when it initializes lazily on the first request while `SecurityConfig.lazy_init=False` is set. That combination previously failed silently: `lazy_init` only governs guard-core's own Redis-gated background warmup, not whether `SecurityMiddleware.initialize()` itself runs at ASGI startup versus on the first request — that timing is controlled entirely by whether `guard_lifespan` / `make_lifespan` / `guard_startup` is wired in. A user who set `lazy_init=False` and wired none of them reasonably expected boot-time initialization and instead hit a confusing "uninitialized" state on their first request. The new warning names the mismatch explicitly; initialization behavior is unchanged.
+- **Changed (example)** — `examples/simple_app/main.py` now wires `make_lifespan`, composed with the example's own startup/shutdown logging (previously registered via `@app.on_event`, which had gone silently inert now that Starlette no longer reads `on_startup`/`on_shutdown` once an explicit `lifespan` is set), and demonstrates `add_status_route`. The flagship example now shows the fully-correct eager-init-plus-readiness-probe setup instead of leaving it to be inferred from docs alone.
+- **Docs** — The boot-time-initialization precondition — previously one sentence at the bottom of `first-steps.md` and never mentioned next to `lazy_init` itself, which wasn't documented in `security-config.md` at all — is now a prominent warning admonition, cross-linked from `lazy_init`'s (new) entry in the configuration reference. Both docs now present all three initialization-wiring tiers in order: `guard_lifespan` (you own the app), `make_lifespan` (you have a lifespan to compose with), `guard_startup` (the host framework owns the lifespan slot).
+- **Compatibility** — Additive only. No change to middleware dispatch ordering or to what is blocked vs. allowed by any existing check — locked in by a new regression test covering a representative blocked and allowed request. `get_initialization_status` / `add_status_route` require `guard-core>=3.8.0` (unreleased at time of writing; tracked at rennf93/guard-core#50). `guard-core` remains an unconstrained dependency in `pyproject.toml` per this project's convention, so installing against an older guard-core only raises `AttributeError` when those two new entry points are actually called — not at import time, and not for any of this release's other changes.
+
+___
+
 v7.3.1 (2026-07-29)
 -------------------
 

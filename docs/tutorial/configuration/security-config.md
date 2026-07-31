@@ -83,6 +83,36 @@ Redis Settings
 | `enable_redis` | bool | True | Enable/disable Redis for distributed state management |
 | `redis_url` | str \| None | "redis://localhost:6379" | Redis URL for distributed state management |
 | `redis_prefix` | str | "guard_core:" | Prefix for Redis keys to avoid collisions with other apps |
+| `lazy_init` | bool | True | When Redis is enabled, defers cloud-IP/geo-IP warmup to a background task instead of blocking `initialize()`; has no effect without Redis. Whether `initialize()` itself runs at ASGI startup or on the first request is a separate concern controlled by lifespan wiring — see [Eager Initialization](../first-steps.md#eager-initialization-with-fastapi-lifespan) and [Initialization Status](#initialization-status) below |
+
+Initialization Status
+----------------------
+
+`SecurityMiddleware.get_initialization_status()` reports whether cloud-provider IP ranges and the geo-IP database are ready, cheap enough to poll from a Kubernetes/ALB warmup probe:
+
+```python
+status = middleware.get_initialization_status()
+# {
+#     "cloud_providers": {
+#         "AWS": {"ready": True, "last_refreshed": "2026-07-31T12:00:00+00:00", "entries": 3421},
+#         ...
+#     },
+#     "geo_ip": {"ready": True, "last_refreshed": "2026-07-31T12:00:00+00:00", "entries": 494},
+# }
+```
+
+`geo_ip` is `None` when no `geo_ip_handler` is configured. The dict is already JSON-serializable (`datetime` values are ISO 8601 strings).
+
+To expose it over HTTP, opt in with `add_status_route`:
+
+```python
+from guard.status import add_status_route
+
+app.add_middleware(SecurityMiddleware, config=config)
+add_status_route(app)  # GET /_guard/status
+```
+
+Nothing is registered unless you call `add_status_route` yourself. The route is excluded from the OpenAPI schema by default; since the response reveals which cloud providers/geo-IP you block and roughly how populated those caches are, treat it like any other operational endpoint and restrict it at the network/reverse-proxy layer if that's more than your deployment wants to expose publicly.
 
 Agent Settings
 --------------

@@ -102,7 +102,13 @@ ___
 Eager initialization with FastAPI lifespan
 ------------------------------------------
 
-Without lifespan wiring, fastapi-guard initializes lazily on the **first request** — the Redis connection, cloud-IP fetches, pipeline build, and agent / OTEL / Logfire startup all happen there. The first caller pays the full initialization cost.
+!!! warning "`lazy_init=False` alone does not give you boot-time initialization"
+    Without lifespan wiring, fastapi-guard initializes lazily on the **first request** — the Redis connection, cloud-IP fetches, pipeline build, and agent / OTEL / Logfire startup all happen there, no matter how `SecurityConfig.lazy_init` is set. `lazy_init` only controls whether that initialization (whenever it happens) awaits cloud-IP/geo-IP warmup inline or backgrounds it — see [`lazy_init`](configuration/security-config.md#redis-settings). Getting initialization to run at ASGI startup instead of on the first request requires wiring one of the three hooks below.
+
+Without any of them, the first caller pays the full initialization cost, and a middleware that then reports itself as uninitialized on that first request is expected, not a bug.
+
+You own the app: `guard_lifespan`
+----------------------------------
 
 With `guard_lifespan`, all of that work runs at ASGI startup, and the first request hits a pre-warmed middleware:
 
@@ -117,6 +123,9 @@ config = SecurityConfig(enable_redis=True, redis_url="redis://localhost:6379")
 app = FastAPI(lifespan=guard_lifespan)
 app.add_middleware(SecurityMiddleware, config=config)
 ```
+
+You have your own lifespan to compose with: `make_lifespan`
+--------------------------------------------------------------
 
 If you already have a custom lifespan, compose them with `make_lifespan`:
 
@@ -136,6 +145,31 @@ async def my_lifespan(app):
 app = FastAPI(lifespan=make_lifespan(my_lifespan))
 app.add_middleware(SecurityMiddleware, config=config)
 ```
+
+The host framework owns the lifespan: `guard_startup`
+---------------------------------------------------------
+
+Frameworks that wrap FastAPI — [NiceGUI](https://nicegui.io/), Chainlit, Gradio, and similar — own the `lifespan` slot internally and don't let you compose one in. They instead expose their own startup-hook registration API. For those, await `guard_startup(app)` from that hook:
+
+```python
+from nicegui import app, ui
+from guard.lifespan import guard_startup
+from guard.middleware import SecurityMiddleware
+from guard_core.models import SecurityConfig
+
+config = SecurityConfig(enable_redis=True, redis_url="redis://localhost:6379")
+app.add_middleware(SecurityMiddleware, config=config)
+
+
+@app.on_startup
+async def _warm_up_guard() -> None:
+    await guard_startup(app)
+
+
+ui.run()
+```
+
+`guard_startup` performs exactly what `guard_lifespan` does on entry — it is safe to call more than once (a second call adopts the already-warmed state instead of re-initializing) and is the supported approach whenever you cannot pass `lifespan=` to `FastAPI(...)` yourself.
 
 OTEL and Logfire users benefit the most: without the lifespan helper their providers initialize on the first request; with it, providers are set at app boot, and the shared-state registry guarantees no duplicate `set_tracer_provider` call from the spawned-vs-live instance mismatch.
 

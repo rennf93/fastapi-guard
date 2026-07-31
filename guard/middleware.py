@@ -4,6 +4,7 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any, cast
 
 from fastapi import Request, Response
+from fastapi.encoders import jsonable_encoder
 from guard_core.core.behavioral import BehavioralContext, BehavioralProcessor
 from guard_core.core.bypass import BypassContext, BypassHandler
 from guard_core.core.checks.pipeline import SecurityCheckPipeline
@@ -130,6 +131,17 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     def mark_initialized(self) -> None:
         self._initialized = True
 
+    def _warn_if_eager_init_not_honored(self) -> None:
+        if self.config.lazy_init:
+            return
+        self.logger.warning(
+            "lazy_init=False was set, but SecurityMiddleware is initializing on "
+            "the first request instead of at ASGI startup because no lifespan "
+            "hook warmed it. Wire guard.lifespan.guard_lifespan (or "
+            "make_lifespan/guard_startup) into the app to get true boot-time "
+            "initialization."
+        )
+
     async def _ensure_initialized(self) -> None:
         if self._is_initialized():
             return
@@ -149,6 +161,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 self._initialized = True
                 return
 
+            self._warn_if_eager_init_not_honored()
             await self.initialize()
             register_state(
                 self.config,
@@ -638,3 +651,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             )
             self.metrics_collector = self.handler_initializer.build_metrics_collector()
             self._build_event_dependent_contexts()
+
+    def get_initialization_status(self) -> dict[str, Any]:
+        status = self.handler_initializer.get_initialization_status()
+        return cast(dict[str, Any], jsonable_encoder(status))

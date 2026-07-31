@@ -13,7 +13,7 @@ from guard._middleware_state import (
     clear_state_registry,
     get_state,
 )
-from guard.lifespan import guard_lifespan, make_lifespan
+from guard.lifespan import guard_lifespan, guard_startup, make_lifespan
 from guard.middleware import SecurityMiddleware
 
 
@@ -302,3 +302,75 @@ def test_warm_adoption_uses_same_object_references() -> None:
     assert state.response_factory is not None
     assert state.bypass_handler is not None
     assert state.behavioral_processor is not None
+
+
+async def test_guard_startup_initializes_with_no_lifespan_wired() -> None:
+    config = SecurityConfig(enable_redis=False)
+    app = FastAPI()
+    app.add_middleware(SecurityMiddleware, config=config)
+
+    assert get_state(config) is None
+
+    await guard_startup(app)
+
+    state = get_state(config)
+    assert state is not None
+    assert state.security_pipeline is not None
+    assert state.handler_initializer is not None
+
+
+async def test_guard_startup_no_middleware_no_ops() -> None:
+    app = FastAPI()
+    await guard_startup(app)
+
+
+async def test_guard_startup_is_idempotent() -> None:
+    config = SecurityConfig(enable_redis=False)
+    app = FastAPI()
+    app.add_middleware(SecurityMiddleware, config=config)
+
+    initialize_calls: list[SecurityMiddleware] = []
+    original_initialize = SecurityMiddleware.initialize
+
+    async def tracking_initialize(self: SecurityMiddleware) -> None:
+        initialize_calls.append(self)
+        await original_initialize(self)
+
+    with patch.object(SecurityMiddleware, "initialize", tracking_initialize):
+        await guard_startup(app)
+        await guard_startup(app)
+        await guard_startup(app)
+
+    assert len(initialize_calls) == 1
+
+
+async def test_guard_startup_matches_guard_lifespan_state_shape() -> None:
+    config_direct = SecurityConfig(enable_redis=False)
+    app_direct = FastAPI()
+    app_direct.add_middleware(SecurityMiddleware, config=config_direct)
+    await guard_startup(app_direct)
+    state_direct = get_state(config_direct)
+
+    config_lifespan = SecurityConfig(enable_redis=False)
+    app_lifespan = FastAPI(lifespan=guard_lifespan)
+    app_lifespan.add_middleware(SecurityMiddleware, config=config_lifespan)
+    async with guard_lifespan(app_lifespan):
+        state_lifespan = get_state(config_lifespan)
+
+    assert state_direct is not None
+    assert state_lifespan is not None
+    for field in (
+        "security_pipeline",
+        "event_bus",
+        "metrics_collector",
+        "response_factory",
+        "validator",
+        "bypass_handler",
+        "behavioral_processor",
+        "handler_initializer",
+    ):
+        direct_value = getattr(state_direct, field)
+        lifespan_value = getattr(state_lifespan, field)
+        assert direct_value is not None
+        assert lifespan_value is not None
+        assert type(direct_value) is type(lifespan_value)
