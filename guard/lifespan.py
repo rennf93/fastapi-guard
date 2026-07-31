@@ -60,6 +60,12 @@ async def guard_lifespan(app: Any) -> AsyncIterator[None]:
     yield
 
 
+async def guard_startup(app: Any) -> None:
+    middleware = _find_security_middleware(app)
+    if middleware is not None:
+        await _warm_middleware_or_adopt(middleware)
+
+
 def make_lifespan(
     existing_lifespan: Callable[[Any], AbstractAsyncContextManager[None]] | None = None,
 ) -> Callable[[Any], AbstractAsyncContextManager[None]]:
