@@ -12,7 +12,9 @@ EXAMPLE_MAIN = (
 def test_example_app_still_starts_with_lifespan_and_status_route(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("REDIS_URL", os.environ.get("REDIS_URL", "redis://localhost:6379"))
+    monkeypatch.setenv(
+        "REDIS_URL", os.environ.get("REDIS_URL", "redis://localhost:6379")
+    )
     monkeypatch.setenv("IPINFO_TOKEN", os.environ.get("IPINFO_TOKEN", "test_token"))
 
     spec = importlib.util.spec_from_file_location("simple_app_main", EXAMPLE_MAIN)

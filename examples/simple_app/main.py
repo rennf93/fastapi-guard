@@ -333,6 +333,7 @@ security_config = SecurityConfig(
     # agent_project_id="test-project",
 )
 
+
 @asynccontextmanager
 async def app_lifespan(app: FastAPI) -> Any:
     logger.info("FastAPI Guard Example starting up...")

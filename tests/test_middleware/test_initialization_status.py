@@ -56,5 +56,7 @@ def test_get_initialization_status_serializes_datetimes() -> None:
 
     encoded = json.dumps(status)
     assert "2026-07-31" in encoded
-    assert status["cloud_providers"]["AWS"]["last_refreshed"] == refreshed_at.isoformat()
+    assert (
+        status["cloud_providers"]["AWS"]["last_refreshed"] == refreshed_at.isoformat()
+    )
     assert status["geo_ip"]["last_refreshed"] == refreshed_at.isoformat()
