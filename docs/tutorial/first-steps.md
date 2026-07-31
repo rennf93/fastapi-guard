@@ -107,7 +107,8 @@ Eager initialization with FastAPI lifespan
 
 Without any of them, the first caller pays the full initialization cost, and a middleware that then reports itself as uninitialized on that first request is expected, not a bug.
 
-### You own the app: `guard_lifespan`
+You own the app: `guard_lifespan`
+----------------------------------
 
 With `guard_lifespan`, all of that work runs at ASGI startup, and the first request hits a pre-warmed middleware:
 
@@ -123,7 +124,8 @@ app = FastAPI(lifespan=guard_lifespan)
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
-### You have your own lifespan to compose with: `make_lifespan`
+You have your own lifespan to compose with: `make_lifespan`
+--------------------------------------------------------------
 
 If you already have a custom lifespan, compose them with `make_lifespan`:
 
@@ -144,7 +146,8 @@ app = FastAPI(lifespan=make_lifespan(my_lifespan))
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
-### The host framework owns the lifespan: `guard_startup`
+The host framework owns the lifespan: `guard_startup`
+---------------------------------------------------------
 
 Frameworks that wrap FastAPI — [NiceGUI](https://nicegui.io/), Chainlit, Gradio, and similar — own the `lifespan` slot internally and don't let you compose one in. They instead expose their own startup-hook registration API. For those, await `guard_startup(app)` from that hook:
 
