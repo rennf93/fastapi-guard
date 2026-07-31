@@ -1,5 +1,6 @@
 from typing import Any
 
+from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from guard.lifespan import _find_security_middleware
@@ -13,7 +14,7 @@ def add_status_route(app: Any, path: str = "/_guard/status") -> None:
             "app.add_middleware(SecurityMiddleware, config=...)"
         )
 
-    async def guard_initialization_status() -> JSONResponse:
+    async def guard_initialization_status(request: Request) -> JSONResponse:
         return JSONResponse(middleware.get_initialization_status())
 
     app.add_route(
