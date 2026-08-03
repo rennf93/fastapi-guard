@@ -169,7 +169,7 @@ config = SecurityConfig(
 )
 ```
 
-The buffer/flush defaults (100 events, 30s) are safe. Do not raise `agent_buffer_size` toward thousands while shortening `agent_flush_interval` — see [the agent integration reference](references/agent-integration.md) for the 413 requeue footgun.
+The buffer/flush defaults (100 events, 30s) are safe. Do not raise `agent_buffer_size` toward thousands while shortening `agent_flush_interval` — see [the agent integration reference](references/agent-integration.md) for the 256 KiB ingestion cap and 413 split-or-drop behavior.
 
 ## Exports
 

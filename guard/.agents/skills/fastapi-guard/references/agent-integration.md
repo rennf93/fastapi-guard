@@ -48,14 +48,10 @@ A flush sends the whole buffer as a single POST to `/api/v1/events` (or `/api/v1
 * `enable_dynamic_rules` / `dynamic_rule_interval` (`bool` / `int`, default `False` / `300`): pull rule updates from the SaaS.
 * `on_error` (`Callable | None`): best-effort callback `(stage, exception, context)` for `agent_init`, `geoip`, `transport_send`, `encryption` failures.
 
-## Buffer/flush footgun (413 requeue loop)
+## Buffer/flush sizing vs the 256 KiB ingestion cap
 
-Do not raise `agent_buffer_size` toward thousands while shortening `agent_flush_interval`. The SaaS ingestion endpoint caps request bodies at 256 KiB, so a large buffer combined with a short interval produces a batch that always 413s. Keep the defaults (100 / 30s) or tune toward a smaller buffer and longer interval.
+Do not raise `agent_buffer_size` toward thousands while shortening `agent_flush_interval`. The SaaS ingestion endpoint caps request bodies at 256 KiB, so a large buffer combined with a short interval can produce a batch that exceeds the cap and 413s. Keep the defaults (100 / 30s) or tune toward a smaller buffer and longer interval so a full batch stays well under 256 KiB.
 
-Mechanism, verified against `guard-agent`:
+If a batch does 413, guard-agent no longer requeues it: the transport raises `PayloadTooLargeError`, and `send_events`/`send_metrics` split the batch in half and retry each half recursively until each sub-batch is under the cap, or drop a single still-over-cap item with a warning and fire the `on_error` hook. Other permanent rejections (400/404/422) are likewise dropped with a warning, not requeued. Dropped and split batches are confirmed, so their Redis keys are deleted and the client never re-flushes them. Transient failures still return `False` and requeue with capped backoff as before.
 
-1. The transport layer treats 413 as non-retryable. `_NON_RETRYABLE_STATUS_CODES = (400, 404, 413, 422)`; a 413 raises `PermanentClientError` and `_send_with_retry` drops the batch within that call (logs "Dropping ... batch; non-retryable 413", returns `False`). It does not retry inside the transport.
-2. The client layer treats that `False` as a partial failure: `requeue_events_in_memory` puts the whole batch back in the in-memory buffer and the Redis keys are retained, then a retry-after is set with backoff (capped at 300s).
-3. On the next flush, the same oversized batch is serialized, encrypted, and POSTed again, 413s again, and is requeued again. There is no split and no client-side drop, so the batch recurs until the Redis TTL (3600s) evicts it.
-
-So the loop is not infinite in the tight sense (backoff up to 300s, bounded by Redis TTL of 1h), but the batch is never split or dropped at the client, so each cycle wastes serialize + encrypt + POST and the events never land. The fix is sizing: pick a buffer small enough that a full batch stays under 256 KiB (the defaults do), and a `agent_flush_interval` long enough that the buffer fills gradually.
+Before the split-or-drop fix, a 413 was flattened to a generic `False` and the client requeued the whole oversized batch on every flush (serialize, encrypt, POST, 413, requeue), bounded only by the Redis TTL of 1h, wasting CPU and never landing the events. Sizing is still the primary defense; split-or-drop is the safety net.
