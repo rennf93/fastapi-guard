@@ -49,11 +49,13 @@ Option 1: Using the built-in IPInfoHandler
 config = SecurityConfig(
     geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required when using country filtering
     blocked_countries=["CN", "RU"],  # Block specific countries
-    whitelist_countries=["US", "CA"],
+    whitelist_countries=["US", "CA"],  # Exempt from blocked_countries (not a restrict-to list)
     db_path="custom/ipinfo.db",  # Optional custom database path
     block_cloud_providers={"AWS", "GCP"}  # Case-sensitive provider names
 )
 ```
+
+These options are shown together for reference; they are independent and you normally set only the ones you need. In particular, `whitelist_countries` at this global level **exempts** countries from `blocked_countries` — it does not restrict traffic to those countries. See [Country Whitelisting](#country-whitelisting) below for the exact semantics and how to restrict access to a set of countries.
 
 Option 2: Providing a custom geographical IP handler
 ----------------------------------------------------
@@ -86,7 +88,7 @@ class CustomGeoIPHandler:
 config = SecurityConfig(
     geo_ip_handler=CustomGeoIPHandler(),
     blocked_countries=["CN", "RU"],  # Block specific countries
-    whitelist_countries=["US", "CA"],
+    whitelist_countries=["US", "CA"],  # Exempt from blocked_countries (not a restrict-to list)
     db_path="custom/ipinfo.db",  # Optional custom database path
     block_cloud_providers={"AWS", "GCP"}  # Case-sensitive provider names
 )
@@ -116,19 +118,35 @@ ___
 Country Whitelisting
 --------------------
 
-Only allow requests from specific countries:
+At the global `SecurityConfig` level, `whitelist_countries` is an **exemption** from `blocked_countries`, not a restrict-to list. A country in `whitelist_countries` is always allowed — it wins even if it also appears in `blocked_countries` — and a country in **neither** list is still allowed. With no `blocked_countries` set, `whitelist_countries` has no effect on its own.
+
+Use it to carve safe countries out of a block list:
 
 ```python
 config = SecurityConfig(
     geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required when using country filtering
-    whitelist_countries=[
-        "US",  # United States
-        "CA",  # Canada
-        "GB",  # United Kingdom
-        "AU"   # Australia
-    ]
+    blocked_countries=["CN", "RU"],
+    whitelist_countries=["US", "CA"],  # always allowed, even if also in blocked_countries
 )
 ```
+
+Here CN and RU are blocked, US and CA are guaranteed allowed (redundant in this example since neither is in the block list), and every other country (DE, GB, BR, …) is also allowed. `whitelist_countries` does **not** block countries that are not listed.
+
+To **restrict** access to specific countries — allow only a set and block everyone else, including unknown/missing countries — use the route-level `allow_countries` decorator instead. The global `whitelist_countries` is exemption-only by design; `allow_countries` is a true allow-list:
+
+```python
+from guard import SecurityConfig, SecurityDecorator
+
+config = SecurityConfig(geo_ip_handler=IPInfoManager("your_ipinfo_token_here"))
+guard_deco = SecurityDecorator(config)
+
+@app.get("/api/us-only")
+@guard_deco.allow_countries(["US", "CA"])
+def us_only_endpoint():
+    return {"data": "US and Canada only — all other countries blocked"}
+```
+
+See [Access Control Decorators](../decorators/access-control.md#allow-only-specific-countries) for the full route-level API. `block_cloud_providers` is independent of both: a cloud-provider IP is blocked regardless of country, even a whitelisted one.
 
 ___
 
