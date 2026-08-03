@@ -1,6 +1,7 @@
 ---
 name: fastapi-guard
 description: Production-ready security middleware for FastAPI. Use when adding IP filtering, rate limiting, per-route security decorators, route-resolution strict mode, global behavior rules, passive/log-only mode, or Guard Agent SaaS telemetry to a FastAPI app. Covers SecurityMiddleware setup, SecurityConfig tuning, and the guard-agent buffer/flush footgun.
+
 ---
 
 # FastAPI Guard
@@ -177,7 +178,7 @@ The buffer/flush defaults (100 events, 30s) are safe. Do not raise `agent_buffer
 
 ## Tooling
 
-* Docs: https://rennf93.github.io/fastapi-guard/latest/
-* Playground: https://playground.guard-core.com
-* Dashboard: https://app.guard-core.com
+* Docs: <https://rennf93.github.io/fastapi-guard/latest/>
+* Playground: <https://playground.guard-core.com>
+* Dashboard: <https://app.guard-core.com>
 * Use `uv` for package management and Ruff for linting when applicable.
