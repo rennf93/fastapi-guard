@@ -3,6 +3,22 @@ Release Notes
 
 ___
 
+v7.4.1 (2026-08-03)
+-------------------
+
+Library-skills skill and internal gate debt cleanup (v7.4.1)
+------------------------------------------------------------
+
+### Added
+
+- **Library-skills skill** embedded at `guard/.agents/skills/fastapi-guard/SKILL.md` so `uvx library-skills --claude` discovers fastapi-guard from the installed wheel.
+
+### Internal
+
+- Cleared pre-existing mypy gate debt in tests and examples and excluded scratch dirs from mypy. No behavior change.
+
+___
+
 v7.4.0 (2026-07-31)
 -------------------
 
