@@ -44,7 +44,6 @@ from fastapi import (
     HTTPException,
     Query,
     Request,
-    Response,
     WebSocket,
     WebSocketDisconnect,
     status,
@@ -54,11 +53,14 @@ from pydantic import BaseModel, Field
 
 from guard import (
     BehaviorRule,
+    GuardRequest,
+    GuardResponse,
     SecurityConfig,
     SecurityDecorator,
     SecurityMiddleware,
     cloud_handler,
 )
+from guard.adapters import StarletteGuardResponse
 from guard.lifespan import make_lifespan
 from guard.status import add_status_route
 
@@ -216,18 +218,20 @@ class CspReportWrapper(BaseModel):
         populate_by_name = True
 
 
-async def custom_request_check(request: Request) -> Response | None:
+async def custom_request_check(request: GuardRequest) -> GuardResponse | None:
     if "debug" in request.query_params and request.query_params["debug"] == "true":
-        client_host = request.client.host if request.client else "unknown"
+        client_host = request.client_host or "unknown"
         logger.warning(f"Blocked debug request from {client_host}")
-        return JSONResponse(
-            status_code=status.HTTP_403_FORBIDDEN,
-            content={"detail": "Debug mode not allowed"},
+        return StarletteGuardResponse(
+            JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={"detail": "Debug mode not allowed"},
+            )
         )
     return None
 
 
-async def custom_response_modifier(response: Response) -> Response:
+async def custom_response_modifier(response: GuardResponse) -> GuardResponse:
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
@@ -1221,12 +1225,14 @@ async def check_referrer(request: Request) -> MessageResponse:
     )
 
 
-async def custom_validator(request: Request) -> Response | None:
+async def custom_validator(request: GuardRequest) -> GuardResponse | None:
     user_agent = request.headers.get("user-agent", "").lower()
     if "suspicious-pattern" in user_agent:
-        return JSONResponse(
-            status_code=403,
-            content={"detail": "Suspicious user agent detected"},
+        return StarletteGuardResponse(
+            JSONResponse(
+                status_code=403,
+                content={"detail": "Suspicious user agent detected"},
+            )
         )
     return None
 

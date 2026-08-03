@@ -18,6 +18,7 @@ from guard_core.protocols import GuardRequest, GuardResponse
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 from redis.exceptions import RedisError
+from starlette.applications import Starlette
 
 from guard.adapters import StarletteGuardRequest, StarletteGuardResponse
 from guard.middleware import SecurityMiddleware
@@ -1036,7 +1037,7 @@ async def test_redis_initialization_without_ipinfo_and_cloud(
     """Test Redis initialization in SecurityMiddleware"""
     app = FastAPI()
 
-    security_config_redis.blocked_countries = []
+    security_config_redis.blocked_countries = frozenset()
 
     middleware = SecurityMiddleware(app, config=security_config_redis)
 
@@ -1695,7 +1696,7 @@ async def test_ipv6_rate_limiting(
     config.enable_rate_limiting = True
     config.trusted_proxies = ["127.0.0.1"]
     config.whitelist = []
-    config.blocked_countries = []
+    config.blocked_countries = frozenset()
     config.enable_penetration_detection = False
 
     app.add_middleware(SecurityMiddleware, config=config)
@@ -1864,7 +1865,7 @@ async def test_real_ipv6_connection(
     config.enable_rate_limiting = True
     config.whitelist = []
     config.blacklist = ["2001:db8::2"]
-    config.blocked_countries = []
+    config.blocked_countries = frozenset()
     config.enable_penetration_detection = False
 
     middleware = SecurityMiddleware(app=Mock(), config=config)
@@ -2052,7 +2053,7 @@ async def test_resolve_route_no_app_routes() -> None:
     assert result is None
 
 
-def _http_scope(app: FastAPI, method: str, path: str) -> dict[str, Any]:
+def _http_scope(app: Starlette, method: str, path: str) -> dict[str, Any]:
     return {
         "type": "http",
         "method": method,
@@ -2201,7 +2202,6 @@ async def test_match_route_stops_on_self_nesting_router() -> None:
 async def test_match_route_visits_duplicate_mount_subtrees_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from starlette.applications import Starlette
     from starlette.responses import JSONResponse
     from starlette.routing import Mount, Route
 
@@ -2349,7 +2349,9 @@ async def test_process_response_wires_global_behavioral_rules(
 
     await middleware._process_response(request, response, 0.01, None)
 
-    kwargs = process_response.await_args.kwargs
+    awaited = process_response.await_args
+    assert awaited is not None
+    kwargs = awaited.kwargs
     assert (
         kwargs["process_global_behavioral_rules"]
         == middleware.behavioral_processor.process_global_return_rules

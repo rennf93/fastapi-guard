@@ -50,7 +50,9 @@ def test_geo_ip_handler_without_country_rules_warns_via_reexported_config() -> N
 def test_geo_ip_handler_with_country_rules_does_not_warn() -> None:
     with warnings.catch_warnings(record=True) as records:
         warnings.simplefilter("always")
-        SecurityConfig(geo_ip_handler=_StubGeoIPHandler(), blocked_countries=["US"])
+        SecurityConfig(
+            geo_ip_handler=_StubGeoIPHandler(), blocked_countries=frozenset({"US"})
+        )
 
     inert_warnings = [r for r in records if "never be consulted" in str(r.message)]
     assert inert_warnings == []
