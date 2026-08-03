@@ -233,12 +233,14 @@ config = SecurityConfig(enable_redis=True, redis_url="redis://localhost:6379")
 app.add_middleware(SecurityMiddleware, config=config)
 
 
-@app.on_startup
 async def _warm_up_guard() -> None:
     await guard_startup(app)
+
+
+app.on_startup(_warm_up_guard)
 ```
 
-These warm-up helpers warm guard-core's singletons (cloud-IP cache, IP ban store, suspicious patterns, Redis pool) AND populate a shared-state registry so the live request-handling middleware adopts the spawned instance's pipeline, agent handler, and event bus by reference. This guarantees `composite_handler.start()` runs exactly once per config — no duplicate OTEL `set_tracer_provider already set` warning, no leaked agent worker tasks. `guard_startup` performs exactly what `guard_lifespan` does on entry, so it shares the same idempotency: a second call finds the state already registered and adopts it instead of re-initializing.
+NiceGUI's `app.on_startup` takes the handler as an argument; it is not a decorator, so `@app.on_startup` is wrong (it returns `None` and rebinds your function). It runs once at app boot, from NiceGUI's FastAPI lifespan, before the server accepts connections, not per client (per client is `app.on_connect`). These warm-up helpers warm guard-core's singletons (cloud-IP cache, IP ban store, suspicious patterns, Redis pool) AND populate a shared-state registry so the live request-handling middleware adopts the spawned instance's pipeline, agent handler, and event bus by reference. This guarantees `composite_handler.start()` runs exactly once per config — no duplicate OTEL `set_tracer_provider already set` warning, no leaked agent worker tasks. `guard_startup` performs exactly what `guard_lifespan` does on entry, so it shares the same idempotency: a second call finds the state already registered and adopts it instead of re-initializing, which keeps the once-at-boot goal safe even under NiceGUI's reload/restart.
 
 mark_initialized
 ----------------

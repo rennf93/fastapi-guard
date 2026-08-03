@@ -1,21 +1,24 @@
 import os
 
-from fastapi import Request, Response, status
+from fastapi import status
 from fastapi.responses import JSONResponse
 
-from guard import SecurityConfig, SecurityDecorator
+from guard import GuardRequest, GuardResponse, SecurityConfig, SecurityDecorator
+from guard.adapters import StarletteGuardResponse
 
 
-async def custom_request_check(request: Request) -> Response | None:
+async def custom_request_check(request: GuardRequest) -> GuardResponse | None:
     if "debug" in request.query_params and request.query_params["debug"] == "true":
-        return JSONResponse(
-            status_code=status.HTTP_403_FORBIDDEN,
-            content={"detail": "Debug mode not allowed"},
+        return StarletteGuardResponse(
+            JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={"detail": "Debug mode not allowed"},
+            )
         )
     return None
 
 
-async def custom_response_modifier(response: Response) -> Response:
+async def custom_response_modifier(response: GuardResponse) -> GuardResponse:
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"

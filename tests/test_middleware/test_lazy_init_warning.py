@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 import pytest
 from fastapi import FastAPI
@@ -11,7 +12,7 @@ from guard.middleware import SecurityMiddleware
 WARNING_SUBSTRING = "lazy_init=False was set"
 
 
-def _app_with_health_route(config: SecurityConfig, **fastapi_kwargs: object) -> FastAPI:
+def _app_with_health_route(config: SecurityConfig, **fastapi_kwargs: Any) -> FastAPI:
     app = FastAPI(**fastapi_kwargs)
     app.add_middleware(SecurityMiddleware, config=config)
 

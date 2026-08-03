@@ -1,10 +1,12 @@
 from typing import Any
 
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from app.models import MessageResponse
 from app.security import guard
+from guard import GuardRequest, GuardResponse
+from guard.adapters import StarletteGuardResponse
 
 router = APIRouter(prefix="/content", tags=["Content Filtering"])
 
@@ -83,12 +85,14 @@ async def check_referrer(request: Request) -> MessageResponse:
     )
 
 
-async def custom_validator(request: Request) -> Response | None:
+async def custom_validator(request: GuardRequest) -> GuardResponse | None:
     user_agent = request.headers.get("user-agent", "").lower()
     if "suspicious-pattern" in user_agent:
-        return JSONResponse(
-            status_code=403,
-            content={"detail": "Suspicious user agent detected"},
+        return StarletteGuardResponse(
+            JSONResponse(
+                status_code=403,
+                content={"detail": "Suspicious user agent detected"},
+            )
         )
     return None
 

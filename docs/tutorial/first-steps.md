@@ -161,15 +161,16 @@ config = SecurityConfig(enable_redis=True, redis_url="redis://localhost:6379")
 app.add_middleware(SecurityMiddleware, config=config)
 
 
-@app.on_startup
 async def _warm_up_guard() -> None:
     await guard_startup(app)
 
 
+app.on_startup(_warm_up_guard)
+
 ui.run()
 ```
 
-`guard_startup` performs exactly what `guard_lifespan` does on entry — it is safe to call more than once (a second call adopts the already-warmed state instead of re-initializing) and is the supported approach whenever you cannot pass `lifespan=` to `FastAPI(...)` yourself.
+NiceGUI's `app.on_startup` takes the handler as an argument; it is not a decorator, so `@app.on_startup` is wrong (it returns `None` and rebinds your function). It runs once at app boot, from NiceGUI's FastAPI lifespan, before the server accepts connections, not per client (per client is `app.on_connect`). `guard_startup` performs exactly what `guard_lifespan` does on entry, so it is safe to call more than once: a second call adopts the already-warmed state instead of re-initializing, which keeps the once-at-boot goal safe even under NiceGUI's reload/restart. It is the supported approach whenever you cannot pass `lifespan=` to `FastAPI(...)` yourself.
 
 OTEL and Logfire users benefit the most: without the lifespan helper their providers initialize on the first request; with it, providers are set at app boot, and the shared-state registry guarantees no duplicate `set_tracer_provider` call from the spawned-vs-live instance mismatch.
 

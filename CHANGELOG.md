@@ -3,6 +3,26 @@ Release Notes
 
 ___
 
+v7.4.1 (2026-08-03)
+-------------------
+
+Library-skills skill and internal gate debt cleanup (v7.4.1)
+------------------------------------------------------------
+
+### Added
+
+- **Library-skills skill** embedded at `guard/.agents/skills/fastapi-guard/SKILL.md` so `uvx library-skills --claude` discovers fastapi-guard from the installed wheel.
+
+### Fixed
+
+- **Docs**: Corrected the NiceGUI startup example in `first-steps.md` and `security-middleware.md`. `app.on_startup` takes the handler as an argument (it is not a decorator), so `@app.on_startup` was wrong/misleading (it returns `None` and rebinds the function). The examples now call `app.on_startup(_warm_up_guard)` and note the hook runs once at app boot from NiceGUI's FastAPI lifespan (not per client; per client is `app.on_connect`), with `guard_startup`'s idempotency keeping the once-at-boot goal safe under reload/restart.
+
+### Internal
+
+- Cleared pre-existing mypy gate debt in tests and examples and excluded scratch dirs from mypy. No behavior change.
+
+___
+
 v7.4.0 (2026-07-31)
 -------------------
 
