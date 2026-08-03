@@ -168,7 +168,7 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
-exclude = ["vulture_whitelist.py", ".venv"]
+exclude = ["vulture_whitelist.py", ".venv", "manual_testing", "ZZZ"]
 
 
 [tool.pymarkdown.plugins.md007]
