@@ -149,6 +149,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             if self._is_initialized():
                 return
 
+            from guard._decorator_adoption import adopt_app_state_decorator
             from guard._middleware_state import (
                 MiddlewareState,
                 get_state,
@@ -162,7 +163,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 return
 
             self._warn_if_eager_init_not_honored()
-            self._adopt_app_state_decorator(request)
+            self.guard_decorator = adopt_app_state_decorator(
+                self.guard_decorator, request
+            )
             await self.initialize()
             register_state(
                 self.config,
@@ -180,15 +183,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 ),
             )
             self._initialized = True
-
-    def _adopt_app_state_decorator(self, request: Request | None) -> None:
-        if self.guard_decorator is not None or request is None:
-            return
-        scope = getattr(request, "scope", None)
-        if not isinstance(scope, dict):
-            return
-        state = getattr(scope.get("app"), "state", None)
-        self.guard_decorator = getattr(state, "guard_decorator", None)
 
     def _adopt_warm_state(self, state: "MiddlewareState") -> None:
         self.security_pipeline = cast(SecurityCheckPipeline, state.security_pipeline)
