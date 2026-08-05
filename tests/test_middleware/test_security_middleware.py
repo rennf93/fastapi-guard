@@ -1130,6 +1130,7 @@ async def test_rate_limiting_with_redis(security_config_redis: SecurityConfig) -
     security_config_redis.rate_limit = 2
     security_config_redis.rate_limit_window = 10
     security_config_redis.whitelist = []
+    security_config_redis.blocked_countries = frozenset()
 
     rate_handler = rate_limit_handler(security_config_redis)
     await rate_handler.reset()
@@ -1143,22 +1144,17 @@ async def test_rate_limiting_with_redis(security_config_redis: SecurityConfig) -
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
-        # NOTE: should be allowed
         response = await client.get("/")
         assert response.status_code == status.HTTP_200_OK
 
-        # NOTE: should be allowed
         response = await client.get("/")
         assert response.status_code == status.HTTP_200_OK
 
-        # NOTE: should be rate limited because count > limit
         response = await client.get("/")
         assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
 
-        # Reset redis keys
         await rate_handler.reset()
 
-        # NOTE: should be allowed again
         response = await client.get("/")
         assert response.status_code == status.HTTP_200_OK
 
