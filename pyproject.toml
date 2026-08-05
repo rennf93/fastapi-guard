@@ -145,9 +145,6 @@ addopts = "--cov=guard --cov-branch --cov-report=term-missing"
 markers = [
     "asyncio: mark tests as async"
 ]
-filterwarnings = [
-    "ignore:ipinfo_.* is deprecated:DeprecationWarning",
-]
 
 [tool.coverage.run]
 branch = true
