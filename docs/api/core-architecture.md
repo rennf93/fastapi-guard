@@ -302,9 +302,9 @@ Shared-State Registry
 
 **Location**: `guard/_middleware_state.py`
 
-A module-local registry keyed by `id(config)` holds a `MiddlewareState` dataclass with the live `security_pipeline`, `composite_handler`, `event_bus`, `metrics_collector`, `response_factory`, `validator`, `bypass_handler`, `behavioral_processor`, `handler_initializer`, and `agent_handler`.
+A module-local registry keyed by `(id(config), id(decorator))` holds a `MiddlewareState` dataclass with the live `security_pipeline`, `composite_handler`, `event_bus`, `metrics_collector`, `response_factory`, `validator`, `bypass_handler`, `behavioral_processor`, `handler_initializer`, and `agent_handler`.
 
-The lifespan helpers (`guard_lifespan`, `make_lifespan`) and the lazy-init fallback path both write to this registry after `SecurityMiddleware.initialize()` succeeds. Subsequent `SecurityMiddleware` instances constructed against the same `SecurityConfig` skip rebuilding their pipeline and adopt the registered components by reference via `_adopt_warm_state()`.
+The lifespan helpers (`guard_lifespan`, `make_lifespan`) and the lazy-init fallback path both write to this registry after `SecurityMiddleware.initialize()` succeeds. A subsequent `SecurityMiddleware` instance adopts the registered components by reference via `_adopt_warm_state()` only when it resolves both the same `SecurityConfig` and the same decorator handler; otherwise it builds its own pipeline. The decorator is part of the key because the pipeline is derived from the registered per-route configuration, so two apps sharing one `SecurityConfig` but decorating different routes must not share a pipeline.
 
 This is the mechanism that guarantees `composite_handler.start()` — which sets the OTEL/Logfire global tracer providers and starts the agent worker tasks — runs exactly once per config across the spawned-vs-live middleware instances Starlette produces when a lifespan is in use.
 
