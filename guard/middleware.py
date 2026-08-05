@@ -156,19 +156,20 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 register_state,
             )
 
-            warm = get_state(self.config)
+            self.guard_decorator = adopt_app_state_decorator(
+                self.guard_decorator, request
+            )
+            warm = get_state(self.config, self.guard_decorator)
             if warm is not None:
                 self._adopt_warm_state(warm)
                 self._initialized = True
                 return
 
             self._warn_if_eager_init_not_honored()
-            self.guard_decorator = adopt_app_state_decorator(
-                self.guard_decorator, request
-            )
             await self.initialize()
             register_state(
                 self.config,
+                self.guard_decorator,
                 MiddlewareState(
                     security_pipeline=self.security_pipeline,
                     composite_handler=self.handler_initializer.composite_handler,
