@@ -18,15 +18,19 @@ class MiddlewareState:
     agent_handler: Any
 
 
-_STATE_REGISTRY: dict[int, MiddlewareState] = {}
+_STATE_REGISTRY: dict[tuple[int, int], MiddlewareState] = {}
 
 
-def get_state(config: Any) -> MiddlewareState | None:
-    return _STATE_REGISTRY.get(id(config))
+def _state_key(config: Any, decorator: Any) -> tuple[int, int]:
+    return (id(config), id(decorator))
 
 
-def register_state(config: Any, state: MiddlewareState) -> None:
-    _STATE_REGISTRY[id(config)] = state
+def get_state(config: Any, decorator: Any = None) -> MiddlewareState | None:
+    return _STATE_REGISTRY.get(_state_key(config, decorator))
+
+
+def register_state(config: Any, decorator: Any, state: MiddlewareState) -> None:
+    _STATE_REGISTRY[_state_key(config, decorator)] = state
 
 
 def clear_state_registry() -> None:

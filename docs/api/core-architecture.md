@@ -142,6 +142,11 @@ Checks execute in this order (defined in guard-core's `DEFAULT_CHECK_CLASSES`, `
 16. **SuspiciousActivityCheck** - Threat detection
 17. **CustomRequestCheck** - Custom checks
 
+Pipeline Construction Skips Checks Configuration Can Never Trigger
+---------------------------------------------------------------------
+
+`build_default_pipeline()` (`guard_core/core/checks/factory.py`) filters `DEFAULT_CHECK_CLASSES` through each check's `applies_to(config, route_configs)` classmethod before instantiating anything, so a check that configuration can never trigger is never built rather than merely skipped per request. `RequestSizeContentCheck`, `RequiredHeadersCheck`, `AuthenticationCheck`, `ReferrerCheck`, `CustomValidatorsCheck`, and `TimeWindowCheck` decide purely from per-route decorator settings, so guard-core can only skip them when it can enumerate the registered route configuration. `route_configs` comes from the middleware's `guard_decorator` attribute; when no decorator handler is registered it is `None`, `applies_to()` treats route configuration as unknown, and every route-driven check is kept, so this optimization can only be lost, never the protection those checks provide. See [Decorator Visibility Shapes the Pipeline](security-middleware.md) for how `SecurityMiddleware` resolves `guard_decorator` before this filtering runs.
+
 Implementation Details
 ----------------------
 
@@ -302,9 +307,9 @@ Shared-State Registry
 
 **Location**: `guard/_middleware_state.py`
 
-A module-local registry keyed by `id(config)` holds a `MiddlewareState` dataclass with the live `security_pipeline`, `composite_handler`, `event_bus`, `metrics_collector`, `response_factory`, `validator`, `bypass_handler`, `behavioral_processor`, `handler_initializer`, and `agent_handler`.
+A module-local registry keyed by `(id(config), id(decorator))` holds a `MiddlewareState` dataclass with the live `security_pipeline`, `composite_handler`, `event_bus`, `metrics_collector`, `response_factory`, `validator`, `bypass_handler`, `behavioral_processor`, `handler_initializer`, and `agent_handler`.
 
-The lifespan helpers (`guard_lifespan`, `make_lifespan`) and the lazy-init fallback path both write to this registry after `SecurityMiddleware.initialize()` succeeds. Subsequent `SecurityMiddleware` instances constructed against the same `SecurityConfig` skip rebuilding their pipeline and adopt the registered components by reference via `_adopt_warm_state()`.
+The lifespan helpers (`guard_lifespan`, `make_lifespan`) and the lazy-init fallback path both write to this registry after `SecurityMiddleware.initialize()` succeeds. A subsequent `SecurityMiddleware` instance adopts the registered components by reference via `_adopt_warm_state()` only when it resolves both the same `SecurityConfig` and the same decorator handler; otherwise it builds its own pipeline. The decorator is part of the key because the pipeline is derived from the registered per-route configuration, so two apps sharing one `SecurityConfig` but decorating different routes must not share a pipeline.
 
 This is the mechanism that guarantees `composite_handler.start()` — which sets the OTEL/Logfire global tracer providers and starts the agent worker tasks — runs exactly once per config across the spawned-vs-live middleware instances Starlette produces when a lifespan is in use.
 
@@ -692,7 +697,7 @@ Pipeline Optimization
 ----------------------
 
 - **Early Termination**: Pipeline stops at first blocking check
-- **Conditional Checks**: Some checks skip execution based on config
+- **Conditional Checks**: Pipeline construction skips checks that configuration and decorator-registered routes can never trigger, so they are never built rather than merely returning early (see Execution Order above)
 - **Cached Results**: Some checks cache results per request
 
 Modular Benefits

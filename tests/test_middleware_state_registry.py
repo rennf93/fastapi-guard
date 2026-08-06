@@ -8,6 +8,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from guard_core.models import SecurityConfig
+from starlette.requests import Request
 
 from guard._middleware_state import (
     clear_state_registry,
@@ -15,6 +16,22 @@ from guard._middleware_state import (
 )
 from guard.lifespan import guard_lifespan, guard_startup, make_lifespan
 from guard.middleware import SecurityMiddleware
+
+
+def _request_scoped_to(app: FastAPI, path: str) -> Request:
+    return Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": path,
+            "query_string": b"",
+            "headers": [],
+            "server": ("localhost", 8000),
+            "root_path": "",
+            "state": {},
+            "app": app,
+        }
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -374,3 +391,70 @@ async def test_guard_startup_matches_guard_lifespan_state_shape() -> None:
         assert direct_value is not None
         assert lifespan_value is not None
         assert type(direct_value) is type(lifespan_value)
+
+
+async def test_second_middleware_with_different_decorator_builds_own_pipeline() -> None:
+    from guard import SecurityDecorator
+
+    config = SecurityConfig(enable_redis=False)
+
+    app_a = FastAPI()
+    decorator_a = SecurityDecorator(config)
+
+    @decorator_a.rate_limit(requests=10, window=60)
+    @app_a.get("/rate-limited")
+    async def rate_limited() -> dict[str, bool]:
+        return {"ok": True}
+
+    app_a.state.guard_decorator = decorator_a
+    middleware_a = SecurityMiddleware(app_a, config=config)
+
+    app_b = FastAPI()
+    decorator_b = SecurityDecorator(config)
+
+    @decorator_b.require_auth()
+    @app_b.get("/needs-auth")
+    async def needs_auth() -> dict[str, bool]:
+        return {"ok": True}
+
+    app_b.state.guard_decorator = decorator_b
+    middleware_b = SecurityMiddleware(app_b, config=config)
+
+    await middleware_a._ensure_initialized(_request_scoped_to(app_a, "/rate-limited"))
+    await middleware_b._ensure_initialized(_request_scoped_to(app_b, "/needs-auth"))
+
+    assert middleware_a.security_pipeline is not None
+    assert middleware_b.security_pipeline is not None
+    check_names_a = set(middleware_a.security_pipeline.get_check_names())
+    check_names_b = set(middleware_b.security_pipeline.get_check_names())
+
+    assert "authentication" not in check_names_a
+    assert "authentication" in check_names_b
+
+
+async def test_guard_lifespan_adopts_app_state_decorator_before_building_pipeline() -> (
+    None
+):
+    from guard import SecurityDecorator
+
+    config = SecurityConfig(enable_redis=False)
+    app = FastAPI()
+    decorator = SecurityDecorator(config)
+
+    @decorator.rate_limit(requests=10, window=60)
+    @app.get("/rate-limited")
+    async def rate_limited() -> dict[str, bool]:
+        return {"ok": True}
+
+    app.state.guard_decorator = decorator
+    middleware = SecurityMiddleware(app, config=config)
+
+    with patch("guard.lifespan._find_security_middleware", return_value=middleware):
+        async with guard_lifespan(app):
+            pass
+
+    assert middleware.guard_decorator is decorator
+    assert middleware.security_pipeline is not None
+    check_names = set(middleware.security_pipeline.get_check_names())
+    assert "rate_limit" in check_names
+    assert "authentication" not in check_names

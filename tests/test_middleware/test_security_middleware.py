@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 import time
 from typing import Any
 from unittest.mock import ANY, AsyncMock, Mock, patch
@@ -23,8 +22,6 @@ from starlette.applications import Starlette
 from guard.adapters import StarletteGuardRequest, StarletteGuardResponse
 from guard.middleware import SecurityMiddleware
 
-IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
-
 
 @pytest.mark.asyncio
 async def test_rate_limiting() -> None:
@@ -34,7 +31,6 @@ async def test_rate_limiting() -> None:
     """
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         enable_penetration_detection=False,
         rate_limit=2,
         rate_limit_window=1,
@@ -73,7 +69,6 @@ async def test_ip_whitelist_blacklist() -> None:
     """
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         whitelist=["127.0.0.1"],
         blacklist=["192.168.1.1"],
         enable_penetration_detection=False,
@@ -107,7 +102,6 @@ async def test_user_agent_filtering() -> None:
     """
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         enable_penetration_detection=False,
         blocked_user_agents=[r"badbot"],
     )
@@ -136,7 +130,6 @@ async def test_rate_limiting_multiple_ips(reset_state: None) -> None:
     """
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         rate_limit=2,
         rate_limit_window=1,
         enable_rate_limiting=True,
@@ -182,14 +175,12 @@ async def test_middleware_multiple_configs() -> None:
     """
     app = FastAPI()
     config1 = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         blocked_user_agents=[r"badbot"],
         enable_penetration_detection=False,
         trusted_proxies=["127.0.0.1"],
     )
 
     config2 = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         whitelist=["127.0.0.1"],
         blacklist=["192.168.1.1"],
         enable_penetration_detection=False,
@@ -231,7 +222,6 @@ async def test_custom_request_check() -> None:
         return None
 
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         enable_penetration_detection=False,
         custom_request_check=custom_check,
     )
@@ -260,7 +250,6 @@ async def test_custom_error_responses() -> None:
     """
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         blacklist=["192.168.1.3"],
         custom_error_responses={
             403: "Custom Forbidden",
@@ -401,7 +390,6 @@ async def test_custom_response_modifier_parameterized(
         return None
 
     config_args: dict[str, Any] = {
-        "ipinfo_token": IPINFO_TOKEN,
         "enable_penetration_detection": False,
         "blacklist": ["192.168.1.5"],
         "custom_response_modifier": custom_modifier,
@@ -520,7 +508,6 @@ async def test_memoryview_response_handling() -> None:
 async def test_cors_configuration() -> None:
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         enable_penetration_detection=False,
         enable_cors=True,
         cors_allow_origins=["https://example.com"],
@@ -555,7 +542,6 @@ async def test_cors_configuration() -> None:
 async def test_cors_configuration_missing_expose_headers() -> None:
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         enable_penetration_detection=False,
         enable_cors=True,
         cors_allow_origins=["https://example.com"],
@@ -587,7 +573,6 @@ async def test_cors_configuration_missing_expose_headers() -> None:
 async def test_cloud_ip_blocking() -> None:
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         enable_penetration_detection=False,
         block_cloud_providers={"AWS", "GCP", "Azure"},
     )
@@ -619,7 +604,6 @@ async def test_cloud_ip_blocking() -> None:
 async def test_cloud_ip_refresh() -> None:
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         block_cloud_providers={"AWS", "GCP", "Azure"},
         enable_penetration_detection=False,
     )
@@ -671,7 +655,6 @@ async def test_cleanup_rate_limits(security_middleware: SecurityMiddleware) -> N
 async def test_excluded_paths() -> None:
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         enable_penetration_detection=False,
         exclude_paths=["/health"],
     )
@@ -694,7 +677,6 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
     """Test cloud IP blocking with refresh functionality"""
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         block_cloud_providers={"AWS", "GCP", "Azure"},
         enable_redis=False,
         enable_penetration_detection=False,
@@ -759,7 +741,6 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
 async def test_refresh_cloud_ips_without_any_cloud() -> None:
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         enable_penetration_detection=False,
         block_cloud_providers=None,
     )
@@ -777,7 +758,6 @@ async def test_refresh_cloud_ips_without_any_cloud() -> None:
 async def test_cors_disabled() -> None:
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         enable_penetration_detection=False,
         enable_cors=False,
     )
@@ -790,7 +770,6 @@ async def test_https_enforcement_with_xforwarded_proto() -> None:
     """Test HTTPS enforcement with X-Forwarded-Proto header."""
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         enable_penetration_detection=False,
         enforce_https=True,
         trusted_proxies=["127.0.0.1"],
@@ -829,7 +808,6 @@ async def test_cleanup_expired_request_times() -> None:
     """Test cleanup of expired request times"""
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         enable_penetration_detection=False,
         rate_limit=2,
         rate_limit_window=1,
@@ -860,9 +838,7 @@ async def test_cleanup_expired_request_times() -> None:
 async def test_penetration_detection_disabled() -> None:
     """Test when penetration detection is disabled"""
     app = FastAPI()
-    config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN, enable_penetration_detection=False
-    )
+    config = SecurityConfig(enable_penetration_detection=False)
 
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -889,7 +865,6 @@ async def test_cloud_ip_blocking_with_logging() -> None:
     """Test cloud IP blocking with logging functionality"""
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         block_cloud_providers={"AWS", "GCP", "Azure"},
         whitelist=[],  # IP passes via patched is_ip_allowed
         blacklist=[],  # Empty blacklist
@@ -1129,7 +1104,6 @@ async def test_rate_limiting_disabled() -> None:
     """Test when rate limiting is disabled"""
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         enable_penetration_detection=False,
         enable_rate_limiting=False,
     )
@@ -1156,6 +1130,7 @@ async def test_rate_limiting_with_redis(security_config_redis: SecurityConfig) -
     security_config_redis.rate_limit = 2
     security_config_redis.rate_limit_window = 10
     security_config_redis.whitelist = []
+    security_config_redis.blocked_countries = frozenset()
 
     rate_handler = rate_limit_handler(security_config_redis)
     await rate_handler.reset()
@@ -1169,22 +1144,17 @@ async def test_rate_limiting_with_redis(security_config_redis: SecurityConfig) -
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
-        # NOTE: should be allowed
         response = await client.get("/")
         assert response.status_code == status.HTTP_200_OK
 
-        # NOTE: should be allowed
         response = await client.get("/")
         assert response.status_code == status.HTTP_200_OK
 
-        # NOTE: should be rate limited because count > limit
         response = await client.get("/")
         assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
 
-        # Reset redis keys
         await rate_handler.reset()
 
-        # NOTE: should be allowed again
         response = await client.get("/")
         assert response.status_code == status.HTTP_200_OK
 
@@ -1223,7 +1193,6 @@ async def test_passive_mode_penetration_detection() -> None:
     """Test penetration detection in passive mode"""
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         passive_mode=True,
         whitelist=[],
     )
@@ -1300,7 +1269,6 @@ async def test_sliding_window_rate_limiting() -> None:
     """Test that sliding window rate limiting works correctly"""
     app = FastAPI()
     config = SecurityConfig(
-        ipinfo_token=IPINFO_TOKEN,
         enable_penetration_detection=False,
         rate_limit=3,
         rate_limit_window=1,
@@ -2151,8 +2119,8 @@ async def test_resolve_route_matches_prefixed_included_router_route() -> None:
     router = APIRouter(prefix="/api/mcp")
 
     @router.post("/servers/{server_id}")
-    async def reconnect(server_id: str) -> dict[str, bool]:
-        return {"ok": True}
+    async def reconnect(server_id: str) -> dict[str, str | bool]:
+        return {"ok": True, "server_id": server_id}
 
     app = FastAPI()
     app.include_router(router)
