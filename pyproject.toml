@@ -170,7 +170,7 @@ exclude = ["vulture_whitelist.py", ".venv", "manual_testing", "ZZZ"]
 
 
 [tool.pymarkdown.system]
-exclude_path = ".venv,.git,.github,data,guard,tests,.claude,CLAUDE.md,.cursor,.kiro,ZZZ"
+exclude_path = ".venv,.git,.github,data,tests,.claude,CLAUDE.md,.cursor,.kiro,ZZZ"
 
 [tool.pymarkdown.plugins.md007]
 # MD007 - Unordered list indentation (set to 2 spaces)
