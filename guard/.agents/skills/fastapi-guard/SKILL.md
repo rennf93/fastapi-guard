@@ -15,6 +15,7 @@ Security middleware for FastAPI: IP filtering, rate limiting, signature-based at
 * IP filtering: `whitelist` (restrictive) and `blacklist` (CIDR/IP); see [the IP filtering reference](references/ip-filtering.md).
 * Rate limiting: `enable_rate_limiting`, `rate_limit`, `rate_limit_window`, `endpoint_rate_limits`; see [the rate limiting reference](references/rate-limiting.md).
 * Per-route rules: compose `SecurityDecorator` decorators (`@guard.rate_limit(...)`, `@guard.ip_filter(...)`, etc.).
+* Decorator visibility shrinks the pipeline: checks that only decorators can trigger (auth, referrer, required headers, custom validators, time window, request size/content type) run only when the middleware can see the registered route config, via `set_decorator_handler` or `app.state.guard_decorator`; see [the route resolution reference](references/route-resolution.md).
 * Strict routing: `route_resolution_strict=True` blocks unresolved routes instead of passing them through; see [the route resolution reference](references/route-resolution.md).
 * Global behavior rules: `global_behavior_rules` apply to every route (e.g. 404 watchers); see [the route resolution reference](references/route-resolution.md).
 * Passive mode: `passive_mode=True` logs but never blocks; see [Passive Mode](#passive-mode).
@@ -51,16 +52,18 @@ from guard.lifespan import guard_lifespan
 
 config = SecurityConfig(enable_rate_limiting=True)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with guard_lifespan(app, config):
+    async with guard_lifespan(app):
         yield
+
 
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
-`SecurityMiddleware` is a Starlette `BaseHTTPMiddleware`. Construct one `SecurityConfig` and pass the same instance to both the middleware and the lifespan.
+`SecurityMiddleware` is a Starlette `BaseHTTPMiddleware`. Construct one `SecurityConfig` and pass the same instance to both the middleware and the lifespan. `guard_lifespan`, `make_lifespan`, and `guard_startup` all warm the same shared-state registry, keyed on both the `SecurityConfig` instance and the resolved decorator handler: a second `SecurityMiddleware` built from the same `config` only adopts the first instance's pipeline and handlers when it also resolves to the same decorator handler, and builds its own otherwise. This matters once the pipeline is derived from route config (see [the route resolution reference](references/route-resolution.md)): two instances sharing one `SecurityConfig` but decorating different routes must not share a pipeline, or the second app would silently inherit checks the first app's routes eliminated.
 
 ## Per-Route Security Decorators
 
