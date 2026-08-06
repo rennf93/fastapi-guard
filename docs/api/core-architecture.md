@@ -142,6 +142,11 @@ Checks execute in this order (defined in guard-core's `DEFAULT_CHECK_CLASSES`, `
 16. **SuspiciousActivityCheck** - Threat detection
 17. **CustomRequestCheck** - Custom checks
 
+Pipeline Construction Skips Checks Configuration Can Never Trigger
+---------------------------------------------------------------------
+
+`build_default_pipeline()` (`guard_core/core/checks/factory.py`) filters `DEFAULT_CHECK_CLASSES` through each check's `applies_to(config, route_configs)` classmethod before instantiating anything, so a check that configuration can never trigger is never built rather than merely skipped per request. `RequestSizeContentCheck`, `RequiredHeadersCheck`, `AuthenticationCheck`, `ReferrerCheck`, `CustomValidatorsCheck`, and `TimeWindowCheck` decide purely from per-route decorator settings, so guard-core can only skip them when it can enumerate the registered route configuration. `route_configs` comes from the middleware's `guard_decorator` attribute; when no decorator handler is registered it is `None`, `applies_to()` treats route configuration as unknown, and every route-driven check is kept, so this optimization can only be lost, never the protection those checks provide. See [Decorator Visibility Shapes the Pipeline](security-middleware.md) for how `SecurityMiddleware` resolves `guard_decorator` before this filtering runs.
+
 Implementation Details
 ----------------------
 
@@ -692,7 +697,7 @@ Pipeline Optimization
 ----------------------
 
 - **Early Termination**: Pipeline stops at first blocking check
-- **Conditional Checks**: Some checks skip execution based on config
+- **Conditional Checks**: Pipeline construction skips checks that configuration and decorator-registered routes can never trigger, so they are never built rather than merely returning early (see Execution Order above)
 - **Cached Results**: Some checks cache results per request
 
 Modular Benefits

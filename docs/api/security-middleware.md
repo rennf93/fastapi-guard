@@ -242,6 +242,11 @@ app.on_startup(_warm_up_guard)
 
 NiceGUI's `app.on_startup` takes the handler as an argument; it is not a decorator, so `@app.on_startup` is wrong (it returns `None` and rebinds your function). It runs once at app boot, from NiceGUI's FastAPI lifespan, before the server accepts connections, not per client (per client is `app.on_connect`). These warm-up helpers warm guard-core's singletons (cloud-IP cache, IP ban store, suspicious patterns, Redis pool) AND populate a shared-state registry so the live request-handling middleware adopts the spawned instance's pipeline, agent handler, and event bus by reference. This guarantees `composite_handler.start()` runs exactly once per config — no duplicate OTEL `set_tracer_provider already set` warning, no leaked agent worker tasks. `guard_startup` performs exactly what `guard_lifespan` does on entry, so it shares the same idempotency: a second call finds the state already registered and adopts it instead of re-initializing, which keeps the once-at-boot goal safe even under NiceGUI's reload/restart.
 
+Decorator Visibility Shapes the Pipeline
+------------------------------------------
+
+guard-core 3.10.0 builds `security_pipeline` from the effective configuration in `_build_security_pipeline()` and skips checks that configuration can never trigger. Six of those checks are driven purely by per-route decorators, and guard-core can only skip them when it can enumerate the registered route configuration through the middleware's `guard_decorator` attribute. `_ensure_initialized()` resolves `self.guard_decorator` from `app.state.guard_decorator` via `adopt_app_state_decorator()` before it calls `initialize()`, and the three startup paths above (`guard_lifespan`, `make_lifespan`, `guard_startup`) resolve it the same way through the same underlying `resolve_app_state_decorator()` helper before they warm or adopt state. When no decorator handler can be found, route configuration is treated as unknown and every route-driven check is kept, so this resolution step can only lose the smaller pipeline, never the protection those checks provide. This is a separate mechanism from behavioral rule firing (see [Behavioral Analysis Decorators](../tutorial/decorators/behavioral.md)), which re-reads `app.state.guard_decorator` on every request rather than once at initialization.
+
 mark_initialized
 ----------------
 
