@@ -13,6 +13,7 @@ from guard_core.handlers.ipinfo_handler import IPInfoManager
 from guard_core.handlers.ratelimit_handler import rate_limit_handler
 from guard_core.handlers.redis_handler import redis_handler
 from guard_core.models import SecurityConfig
+from guard_core.utils import IpAccessResult
 from guard_core.protocols import GuardRequest, GuardResponse
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
@@ -866,7 +867,7 @@ async def test_cloud_ip_blocking_with_logging() -> None:
     app = FastAPI()
     config = SecurityConfig(
         block_cloud_providers={"AWS", "GCP", "Azure"},
-        whitelist=[],  # IP passes via patched is_ip_allowed
+        whitelist=[],  # IP passes via patched check_ip_access
         blacklist=[],  # Empty blacklist
         trusted_proxies=["13.59.255.255"],  # Trust the IP as proxy
         enable_penetration_detection=False,
@@ -886,9 +887,9 @@ async def test_cloud_ip_blocking_with_logging() -> None:
             "guard_core.core.checks.implementations.cloud_provider.log_activity"
         ) as mock_log,
         patch(
-            "guard_core.core.checks.implementations.ip_security.is_ip_allowed",
+            "guard_core.core.checks.implementations.ip_security.check_ip_access",
             new_callable=AsyncMock,
-            return_value=True,
+            return_value=IpAccessResult(allowed=True, reason=""),
         ),
     ):
 
@@ -933,9 +934,9 @@ async def test_cloud_ip_blocking_with_logging() -> None:
     with (
         patch.object(cloud_handler, "is_cloud_ip", return_value=False),
         patch(
-            "guard_core.core.checks.implementations.ip_security.is_ip_allowed",
+            "guard_core.core.checks.implementations.ip_security.check_ip_access",
             new_callable=AsyncMock,
-            return_value=True,
+            return_value=IpAccessResult(allowed=True, reason=""),
         ),
     ):
 
