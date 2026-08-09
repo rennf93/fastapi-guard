@@ -39,6 +39,7 @@ async def test_guard_lifespan_initializes_and_marks(
     middleware.bypass_handler = MagicMock()
     middleware.behavioral_processor = MagicMock()
     middleware.agent_handler = None
+    middleware.guard_decorator = None
 
     with patch("guard.lifespan._find_security_middleware", return_value=middleware):
         async with guard_lifespan(app):
@@ -95,6 +96,7 @@ async def test_make_lifespan_initializes_then_runs_existing() -> None:
     middleware.bypass_handler = MagicMock()
     middleware.behavioral_processor = MagicMock()
     middleware.agent_handler = None
+    middleware.guard_decorator = None
 
     app = FastAPI()
     combined = make_lifespan(existing)
@@ -123,6 +125,7 @@ async def test_make_lifespan_no_existing_lifespan() -> None:
     middleware.bypass_handler = MagicMock()
     middleware.behavioral_processor = MagicMock()
     middleware.agent_handler = None
+    middleware.guard_decorator = None
 
     app = FastAPI()
     combined = make_lifespan(None)

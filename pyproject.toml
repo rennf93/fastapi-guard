@@ -1,6 +1,6 @@
 [project]
 name = "fastapi_guard"
-version = "7.4.1"
+version = "7.5.0"
 description = "Production-ready security middleware for FastAPI — IP filtering, rate limiting, penetration detection, and 20+ per-route security decorators."
 authors = [
     {name = "Renzo Franceschini", email = "rennf93@users.noreply.github.com"}
@@ -61,6 +61,7 @@ dev = [
     "deptry",
     "guard-agent",
     "httpx",
+    "httpx2",
     "matplotlib",
     "mkdocs",
     "mkdocstrings",
@@ -144,9 +145,6 @@ addopts = "--cov=guard --cov-branch --cov-report=term-missing"
 markers = [
     "asyncio: mark tests as async"
 ]
-filterwarnings = [
-    "ignore:ipinfo_.* is deprecated:DeprecationWarning",
-]
 
 [tool.coverage.run]
 branch = true
@@ -170,6 +168,9 @@ warn_no_return = true
 warn_unreachable = true
 exclude = ["vulture_whitelist.py", ".venv", "manual_testing", "ZZZ"]
 
+
+[tool.pymarkdown.system]
+exclude_path = ".venv,.git,.github,data,tests,.claude,CLAUDE.md,.cursor,.kiro,ZZZ"
 
 [tool.pymarkdown.plugins.md007]
 # MD007 - Unordered list indentation (set to 2 spaces)
@@ -269,6 +270,7 @@ per_rule_ignores = { "DEP002" = [
     "aiohttp",
     "guard-core",
     "httpx",
+    "httpx2",
     "bandit",
     "deptry",
     "guard-agent",
