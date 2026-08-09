@@ -160,12 +160,12 @@ config = SecurityConfig(
     rate_limit_window=60,  # seconds
     auto_ban_threshold=5,  # ban after 5 suspicious requests
     block_cloud_providers={"AWS", "GCP", "Azure"},
-    whitelist_countries={"US", "CA", "GB"},
-    geo_ip_handler=None,  # required when whitelist_countries/blocked_countries is set
 )
 
 app.add_middleware(SecurityMiddleware, config=config)
 ```
+
+Country-based blocking (`whitelist_countries`/`blocked_countries`) needs a `geo_ip_handler` too (e.g. `geo_ip_handler=IPInfoManager("your_ipinfo_token")`); see [Geolocation](tutorial/ip-management/geolocation/).
 
 Note: `SecurityConfig` is a Pydantic model that silently ignores unknown keyword arguments rather than raising, so a typo'd field name (e.g. `allowed_countries` instead of `whitelist_countries`, or `enable_security_headers` instead of the `security_headers` dict) configures nothing and gives no error. `guard-core-mcp` (see the AI Coding Agents section below) validates a config against the real model and catches exactly this class of mistake.
 

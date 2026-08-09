@@ -147,7 +147,7 @@ ___
 Watching the Pipeline Shrink
 -----------------------------
 
-Both examples wire `make_lifespan`, so `guard-core`'s `guard_core` logger prints a summary line at startup showing exactly which checks were built and how many were skipped for that config — see [First Steps: Eager initialization](../first-steps.md#eager-initialization-with-fastapi-lifespan) and each example's own README for the real captured line.
+Both examples wire `make_lifespan`, so `guard-core`'s `guard_core` logger prints a summary line at startup showing exactly which checks were built and how many were skipped for that config, see [First Steps: Eager initialization](../first-steps.md#eager-initialization-with-fastapi-lifespan) and each example's own README for the real captured line.
 
 ___
 

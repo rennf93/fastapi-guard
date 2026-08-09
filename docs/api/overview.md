@@ -108,7 +108,7 @@ ___
 Configuration Model
 -------------------
 
-The `SecurityConfig` class is the central configuration point. It is a Pydantic model, not a hand-written `__init__`; the fields below (with their real defaults) are a subset shown for orientation — see [Security Config](../tutorial/configuration/security-config.md) for the complete field list:
+The `SecurityConfig` class is the central configuration point. It is a Pydantic model, not a hand-written `__init__`; the fields below (with their real defaults) are a subset shown for orientation, see [Security Config](../tutorial/configuration/security-config.md) for the complete field list:
 
 ```python
 class SecurityConfig(BaseModel):

@@ -186,12 +186,14 @@ ___
 Logger Namespace Hierarchy
 ---------------------------
 
-All security logging comes from guard-core's `guard_core` namespace, whether the app uses fastapi-guard or another framework adapter:
+All security logging comes from guard-core's `guard_core` namespace, whether the app uses fastapi-guard or another framework adapter. This is every `logging.getLogger(...)` call reachable in guard-core's source as of this writing (every module that opens its own logger names it `guard_core` or a `guard_core.<dotted module path>` child, so this list only grows the same way; it is not filtered for relevance):
 
 ```diagram
-guard_core                       # Root logger; the pipeline-init summary and
-│                                 # per-request logging use this logger directly
-├── guard_core.handlers          # Handler components
+guard_core                             # Root logger; the pipeline-init summary and
+│                                       # per-request logging use this logger directly
+├── guard_core.utils                   # Background agent-event-send failures
+├── guard_core.enricher
+├── guard_core.handlers                # Handler components
 │   ├── guard_core.handlers.redis
 │   ├── guard_core.handlers.cloud
 │   ├── guard_core.handlers.ipinfo
@@ -201,14 +203,17 @@ guard_core                       # Root logger; the pipeline-init summary and
 │   ├── guard_core.handlers.suspatterns
 │   ├── guard_core.handlers.security_headers
 │   └── guard_core.handlers.dynamic_rule
-├── guard_core.decorators        # Decorator components
+├── guard_core.decorators              # Decorator components
 │   └── guard_core.decorators.base
-├── guard_core.detection_engine  # Detection engine components
+├── guard_core.detection_engine        # Detection engine components
 │   └── guard_core.detection_engine.compiler
-├── guard_core.core.initialization
-├── guard_core.core.checks.pipeline
-├── guard_core.core.responses.factory
-└── guard_core.enricher
+└── guard_core.core                    # Internal core modules
+    ├── guard_core.core.initialization
+    ├── guard_core.core.checks.pipeline
+    ├── guard_core.core.responses.factory
+    └── guard_core.core.events
+        ├── guard_core.core.events.metrics
+        └── guard_core.core.events.middleware_events
 ```
 
 This namespace isolation ensures:
