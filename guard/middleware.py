@@ -142,20 +142,24 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             "initialization."
         )
 
-    async def _ensure_initialized(self) -> None:
+    async def _ensure_initialized(self, request: Request | None = None) -> None:
         if self._is_initialized():
             return
         async with self._init_lock:
             if self._is_initialized():
                 return
 
+            from guard._decorator_adoption import adopt_app_state_decorator
             from guard._middleware_state import (
                 MiddlewareState,
                 get_state,
                 register_state,
             )
 
-            warm = get_state(self.config)
+            self.guard_decorator = adopt_app_state_decorator(
+                self.guard_decorator, request
+            )
+            warm = get_state(self.config, self.guard_decorator)
             if warm is not None:
                 self._adopt_warm_state(warm)
                 self._initialized = True
@@ -165,6 +169,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             await self.initialize()
             register_state(
                 self.config,
+                self.guard_decorator,
                 MiddlewareState(
                     security_pipeline=self.security_pipeline,
                     composite_handler=self.handler_initializer.composite_handler,
@@ -255,13 +260,14 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         return {"enabled": True, "degraded": self.agent_degraded, **handler_stats}
 
     def _build_security_pipeline(self) -> None:
-        from guard_core.core.checks import build_default_pipeline
+        from guard_core.core.checks import DEFAULT_CHECK_CLASSES, build_default_pipeline
 
         pipeline = build_default_pipeline(self)
         self.security_pipeline = pipeline
         self.logger.info(
-            f"Security pipeline initialized with {len(pipeline)} "
-            f"checks: {pipeline.get_check_names()}"
+            f"Security pipeline initialized with {len(pipeline)} checks: "
+            f"{pipeline.get_check_names()} "
+            f"({len(DEFAULT_CHECK_CLASSES) - len(pipeline)} skipped)"
         )
 
     def _configure_security_headers(self, config: SecurityConfig) -> None:
@@ -534,7 +540,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        await self._ensure_initialized()
+        await self._ensure_initialized(request)
 
         guard_request = StarletteGuardRequest(request)
         wrapped_call_next = wrap_call_next(call_next, request)

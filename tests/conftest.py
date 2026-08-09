@@ -90,7 +90,6 @@ def security_config() -> SecurityConfig:
 @pytest.fixture
 async def security_middleware() -> AsyncGenerator[SecurityMiddleware, None]:
     config = SecurityConfig(
-        geo_ip_handler=IPInfoManager(IPINFO_TOKEN),
         enable_penetration_detection=False,
         whitelist=[],
         blacklist=[],
@@ -142,7 +141,6 @@ def security_config_redis(ipinfo_db_path: Path) -> SecurityConfig:
 async def redis_cleanup() -> None:
     """Clean Redis test keys before each test"""
     config = SecurityConfig(
-        geo_ip_handler=IPInfoManager(IPINFO_TOKEN, None),
         redis_url=REDIS_URL,
         redis_prefix=REDIS_PREFIX,
     )
@@ -160,7 +158,6 @@ async def reset_rate_limiter() -> None:
         redis_url=REDIS_URL,
         redis_prefix=REDIS_PREFIX,
         enable_redis=True,
-        geo_ip_handler=IPInfoManager(IPINFO_TOKEN, None),
     )
     rate_limit = rate_limit_handler(config)
     await rate_limit.reset()

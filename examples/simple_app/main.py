@@ -49,7 +49,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import HTMLResponse, JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from guard import (
     BehaviorRule,
@@ -84,13 +84,14 @@ class MessageResponse(BaseModel):
     message: str
     details: dict[str, Any] | None = None
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "message": "Success",
                 "details": {"info": "Additional information"},
             }
         }
+    )
 
 
 class IPInfoResponse(BaseModel):
@@ -102,8 +103,8 @@ class IPInfoResponse(BaseModel):
     is_cloud: bool | None = None
     cloud_provider: str | None = None
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "ip": "8.8.8.8",
                 "country": "US",
@@ -114,6 +115,7 @@ class IPInfoResponse(BaseModel):
                 "cloud_provider": "Google",
             }
         }
+    )
 
 
 class StatsResponse(BaseModel):
@@ -124,8 +126,8 @@ class StatsResponse(BaseModel):
     suspicious_activities: list[dict[str, Any]]
     active_rules: dict[str, Any]
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "total_requests": 1000,
                 "blocked_requests": 50,
@@ -137,6 +139,7 @@ class StatsResponse(BaseModel):
                 "active_rules": {"rate_limit": 10, "auto_ban_threshold": 5},
             }
         }
+    )
 
 
 class ErrorResponse(BaseModel):
@@ -144,14 +147,15 @@ class ErrorResponse(BaseModel):
     error_code: str | None = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "detail": "Access denied",
                 "error_code": "ACCESS_DENIED",
                 "timestamp": "2024-01-20T10:30:00Z",
             }
         }
+    )
 
 
 class AuthResponse(BaseModel):
@@ -175,13 +179,14 @@ class HealthResponse(BaseModel):
     status: str
     timestamp: datetime
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "status": "healthy",
                 "timestamp": "2024-01-20T10:30:00Z",
             }
         }
+    )
 
 
 class CspViolationReport(BaseModel):
@@ -198,9 +203,9 @@ class CspViolationReport(BaseModel):
     line_number: int | None = Field(None, alias="line-number")
     column_number: int | None = Field(None, alias="column-number")
 
-    class Config:
-        populate_by_name = True
-        json_schema_extra = {
+    model_config = ConfigDict(
+        populate_by_name=True,
+        json_schema_extra={
             "example": {
                 "blocked-uri": "https://evil.com/script.js",
                 "document-uri": "https://example.com/page",
@@ -208,14 +213,14 @@ class CspViolationReport(BaseModel):
                 "source-file": "https://example.com/page",
                 "line-number": 42,
             }
-        }
+        },
+    )
 
 
 class CspReportWrapper(BaseModel):
     csp_report: CspViolationReport = Field(alias="csp-report")
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 async def custom_request_check(request: GuardRequest) -> GuardResponse | None:

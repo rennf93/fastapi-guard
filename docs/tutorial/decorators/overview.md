@@ -212,6 +212,14 @@ def limited_endpoint():
 
 ___
 
+Decorator Visibility Shapes the Security Pipeline
+----------------------------------------------------
+
+!!! info "Pipeline visibility (guard-core 3.10.0+)"
+    Wiring `app.state.guard_decorator` does more than route decorator settings to the middleware. guard-core 3.10.0 builds the security pipeline from the effective configuration and skips checks that configuration can never trigger. Six of those checks (including `require_auth`, `require_referrer`, and `time_window`) are driven purely by per-route decorator settings, and guard-core can only skip them when it can enumerate the registered route configuration through the middleware's `guard_decorator`. `SecurityMiddleware` resolves `app.state.guard_decorator` before it builds the pipeline, and `guard_lifespan`, `make_lifespan`, and `guard_startup` all resolve it the same way at startup. When no decorator handler can be found, route configuration is treated as unknown and every route-driven check is kept, so a missed wiring step can only lose the smaller pipeline, never the protection those checks provide. This is separate from [behavioral rule firing](behavioral.md), which uses the same wiring but evaluates rules on every request rather than shaping which checks exist.
+
+___
+
 Routers and Mounted Applications
 ---------------------------------
 

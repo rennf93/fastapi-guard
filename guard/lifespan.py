@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import Any
 
+from guard._decorator_adoption import resolve_app_state_decorator
 from guard._middleware_state import MiddlewareState, get_state, register_state
 from guard.middleware import SecurityMiddleware
 
@@ -26,6 +27,7 @@ def _find_security_middleware(app: Any) -> SecurityMiddleware | None:
 def _register_state_from_middleware(middleware: SecurityMiddleware) -> None:
     register_state(
         middleware.config,
+        middleware.guard_decorator,
         MiddlewareState(
             security_pipeline=middleware.security_pipeline,
             composite_handler=middleware.handler_initializer.composite_handler,
@@ -41,8 +43,9 @@ def _register_state_from_middleware(middleware: SecurityMiddleware) -> None:
     )
 
 
-async def _warm_middleware_or_adopt(middleware: SecurityMiddleware) -> None:
-    warm = get_state(middleware.config)
+async def _warm_middleware_or_adopt(middleware: SecurityMiddleware, app: Any) -> None:
+    middleware.guard_decorator = resolve_app_state_decorator(app)
+    warm = get_state(middleware.config, middleware.guard_decorator)
     if warm is not None:
         middleware._adopt_warm_state(warm)
         middleware.mark_initialized()
@@ -56,14 +59,14 @@ async def _warm_middleware_or_adopt(middleware: SecurityMiddleware) -> None:
 async def guard_lifespan(app: Any) -> AsyncIterator[None]:
     middleware = _find_security_middleware(app)
     if middleware is not None:
-        await _warm_middleware_or_adopt(middleware)
+        await _warm_middleware_or_adopt(middleware, app)
     yield
 
 
 async def guard_startup(app: Any) -> None:
     middleware = _find_security_middleware(app)
     if middleware is not None:
-        await _warm_middleware_or_adopt(middleware)
+        await _warm_middleware_or_adopt(middleware, app)
 
 
 def make_lifespan(
@@ -73,7 +76,7 @@ def make_lifespan(
     async def combined(app: Any) -> AsyncIterator[None]:
         middleware = _find_security_middleware(app)
         if middleware is not None:
-            await _warm_middleware_or_adopt(middleware)
+            await _warm_middleware_or_adopt(middleware, app)
         if existing_lifespan is not None:
             async with existing_lifespan(app):
                 yield
