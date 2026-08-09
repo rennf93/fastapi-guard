@@ -21,7 +21,7 @@ FastAPI Guard is a comprehensive security middleware for FastAPI applications, p
   - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/ip-management/geolocation/
 - **Cloud Providers**: Block requests from AWS, GCP, Azure IP ranges
   - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/ip-management/cloud-providers/
-- **Rate Limiting**: Multiple strategies (fixed window, sliding window, token bucket)
+- **Rate Limiting**: Global, per-endpoint, and geographic limits on a sliding-window-log algorithm
   - Docs: https://rennf93.github.io/fastapi-guard/latest/tutorial/ip-management/rate-limiter/
 
 #### Security Decorators
@@ -110,27 +110,11 @@ Complete API documentation for all classes and functions:
 
 ## Key Features Explained
 
-### Rate Limiting Strategies
-1. **Fixed Window**: Simple time-based windows
-2. **Sliding Window**: Smooth rate limiting across time
-3. **Token Bucket**: Burst handling with gradual refill
-4. **Leaky Bucket**: Smooth traffic shaping
+### Rate Limiting
+A single sliding-window-log algorithm (per-client request timestamps, evaluated against `rate_limit`/`rate_limit_window`), backed by an in-memory deque or a Redis Lua script when `enable_redis=True`. There is no per-route selectable strategy (no fixed-window/token-bucket/leaky-bucket config option); `endpoint_rate_limits` and the `@guard.rate_limit(...)` decorator only override the request-count/window pair for that route.
 
 ### Attack Detection Patterns
-- SQL Injection (UNION, SELECT, DROP, etc.)
-- Cross-Site Scripting (XSS) via script tags and event handlers
-- Command Injection (shell commands, pipe operators)
-- Path Traversal (../, directory escaping)
-- LDAP Injection
-- XML/XXE Injection
-- Server-Side Request Forgery (SSRF)
-- NoSQL Injection
-
-### Prompt Injection Defense (LLM Security)
-- **Basic Level**: Simple pattern detection
-- **Standard Level**: Format manipulation detection
-- **Strict Level**: Canary token verification
-- **Paranoid Level**: Maximum protection with zero-trust approach
+Categories enabled by default (`enabled_detection_categories`): `sqli`, `xss`, `cmd_injection`, `path_traversal`/`dir_traversal`, `ldap`, `nosql`, `ssrf`, `xml` (includes XXE-style payloads), `http_split`, `file_inclusion`, `file_upload`, `template`, `proto_pollution`, `sensitive_file`, `cms_probing`, `recon`, `code_injection`. Each category can be disabled individually via `enabled_detection_categories`.
 
 ### Security Headers Managed
 - Content-Security-Policy (CSP)
@@ -172,15 +156,18 @@ app = FastAPI()
 config = SecurityConfig(
     whitelist=["192.168.1.1"],
     blacklist=["10.0.0.1"],
-    rate_limit=100,  # requests per minute
+    rate_limit=100,  # requests per rate_limit_window
+    rate_limit_window=60,  # seconds
     auto_ban_threshold=5,  # ban after 5 suspicious requests
-    block_cloud_providers={"AWS", "GCP", "AZURE"},
-    allowed_countries=["US", "CA", "GB"],
-    enable_security_headers=True,
+    block_cloud_providers={"AWS", "GCP", "Azure"},
+    whitelist_countries={"US", "CA", "GB"},
+    geo_ip_handler=None,  # required when whitelist_countries/blocked_countries is set
 )
 
 app.add_middleware(SecurityMiddleware, config=config)
 ```
+
+Note: `SecurityConfig` is a Pydantic model that silently ignores unknown keyword arguments rather than raising, so a typo'd field name (e.g. `allowed_countries` instead of `whitelist_countries`, or `enable_security_headers` instead of the `security_headers` dict) configures nothing and gives no error. `guard-core-mcp` (see the AI Coding Agents section below) validates a config against the real model and catches exactly this class of mistake.
 
 ## Use Cases
 
@@ -240,10 +227,7 @@ Combine middleware for baseline security with decorators for enhanced route-spec
 - Configurable detection sensitivity
 
 ### Benchmarks
-- Middleware overhead: ~1-2ms per request
-- Rate limiting: Sub-millisecond with in-memory, ~2-3ms with Redis
-- Pattern detection: ~0.5-1ms for basic patterns
-- IP geolocation: ~0.1-0.5ms (cached)
+No published fixed-number benchmarks; overhead depends heavily on which checks your config builds into the pipeline (see [the security pipeline log line](tutorial/first-steps/#eager-initialization-with-fastapi-lifespan)) and whether Redis is in the request path. The repository ships a load-test harness at `examples/testing/stress_test.py` (`make stress-test` / `make high-load-stress-test`) to measure this against your own config.
 
 ## Configuration Best Practices
 
@@ -278,7 +262,7 @@ Combine middleware for baseline security with decorators for enhanced route-spec
 ### Community
 - **Issues**: https://github.com/rennf93/fastapi-guard/issues
 - **Discussions**: https://github.com/rennf93/fastapi-guard/discussions
-- **Contributing**: https://github.com/rennf93/fastapi-guard/blob/main/CONTRIBUTING.md
+- **Contributing**: https://github.com/rennf93/fastapi-guard/blob/master/CONTRIBUTING.md
 - **Security Policy**: https://github.com/rennf93/fastapi-guard/security/policy
 
 ### FastAPI Resources

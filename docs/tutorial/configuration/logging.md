@@ -15,7 +15,7 @@ ___
 Basic Logging Setup
 -------------------
 
-FastAPI Guard uses a hierarchical logging namespace (`fastapi_guard`) with automatic console output and optional file logging:
+FastAPI Guard uses guard-core's hierarchical logging namespace (`guard_core`) with automatic console output and optional file logging:
 
 ```python
 config = SecurityConfig(
@@ -30,7 +30,7 @@ config = SecurityConfig(
 
 - Console output is **always enabled** for visibility
 - File logging is **optional** and only enabled when `custom_log_file` is set
-- All FastAPI Guard components use the `fastapi_guard.*` namespace
+- All logging comes from guard-core's `guard_core.*` namespace; fastapi-guard is a thin adapter and does not introduce its own logger namespace
 
 ___
 
@@ -74,14 +74,14 @@ config = SecurityConfig(
 When `log_format="json"` is set, all log output (both console and file) uses structured JSON:
 
 ```json
-{"timestamp": "2026-03-14 08:30:00,123", "level": "INFO", "logger": "fastapi_guard", "message": "Request from 192.168.1.1"}
-{"timestamp": "2026-03-14 08:30:01,456", "level": "WARNING", "logger": "fastapi_guard", "message": "Suspicious activity detected from 10.0.0.5"}
+{"timestamp": "2026-03-14 08:30:00,123", "level": "INFO", "logger": "guard_core", "message": "Request from 192.168.1.1"}
+{"timestamp": "2026-03-14 08:30:01,456", "level": "WARNING", "logger": "guard_core", "message": "Suspicious activity detected from 10.0.0.5"}
 ```
 
 The default `log_format="text"` preserves the human-readable format:
 
 ```text
-[fastapi_guard] 2026-03-14 08:30:00 - INFO - Request from 192.168.1.1
+[guard_core] 2026-03-14 08:30:00 - INFO - Request from 192.168.1.1
 ```
 
 ___
@@ -117,11 +117,11 @@ logger = setup_custom_logging(None)
 # Console + file logging
 logger = setup_custom_logging("security.log")
 
-# The logger uses the "fastapi_guard" namespace
-# All handlers automatically use sub-namespaces like:
-# - "fastapi_guard.handlers.redis"
-# - "fastapi_guard.handlers.cloud"
-# - "fastapi_guard.handlers.ipban"
+# The logger uses the "guard_core" namespace
+# Individual handlers use sub-namespaces like:
+# - "guard_core.handlers.redis"
+# - "guard_core.handlers.cloud"
+# - "guard_core.handlers.ipban"
 ```
 
 **Note:** The function is synchronous (not async) and handles directory creation automatically.
@@ -186,27 +186,34 @@ ___
 Logger Namespace Hierarchy
 ---------------------------
 
-FastAPI Guard uses a hierarchical namespace structure for organized logging:
+All security logging comes from guard-core's `guard_core` namespace, whether the app uses fastapi-guard or another framework adapter:
 
 ```diagram
-fastapi_guard                    # Root logger for all FastAPI Guard components
-├── fastapi_guard.handlers       # Handler components
-│   ├── fastapi_guard.handlers.redis
-│   ├── fastapi_guard.handlers.cloud
-│   ├── fastapi_guard.handlers.ipinfo
-│   ├── fastapi_guard.handlers.ipban
-│   ├── fastapi_guard.handlers.ratelimit
-│   ├── fastapi_guard.handlers.behavior
-│   ├── fastapi_guard.handlers.suspatterns
-│   └── fastapi_guard.handlers.dynamic_rule
-├── fastapi_guard.decorators     # Decorator components
-│   └── fastapi_guard.decorators.base
-└── fastapi_guard.detection_engine  # Detection engine components
+guard_core                       # Root logger; the pipeline-init summary and
+│                                 # per-request logging use this logger directly
+├── guard_core.handlers          # Handler components
+│   ├── guard_core.handlers.redis
+│   ├── guard_core.handlers.cloud
+│   ├── guard_core.handlers.ipinfo
+│   ├── guard_core.handlers.ipban
+│   ├── guard_core.handlers.ratelimit
+│   ├── guard_core.handlers.behavior
+│   ├── guard_core.handlers.suspatterns
+│   ├── guard_core.handlers.security_headers
+│   └── guard_core.handlers.dynamic_rule
+├── guard_core.decorators        # Decorator components
+│   └── guard_core.decorators.base
+├── guard_core.detection_engine  # Detection engine components
+│   └── guard_core.detection_engine.compiler
+├── guard_core.core.initialization
+├── guard_core.core.checks.pipeline
+├── guard_core.core.responses.factory
+└── guard_core.enricher
 ```
 
 This namespace isolation ensures:
 
-- FastAPI Guard logs are separate from your application logs
+- guard-core's logs are separate from your application logs
 - You can configure log levels for specific components
 - Test frameworks can capture logs via propagation
 - No interference with user-defined loggers
@@ -295,11 +302,11 @@ import logging
 from guard import SecurityConfig
 
 # Configure specific component log levels
-logging.getLogger("fastapi_guard.handlers.redis").setLevel(logging.DEBUG)
-logging.getLogger("fastapi_guard.handlers.ipban").setLevel(logging.INFO)
-logging.getLogger("fastapi_guard.detection_engine").setLevel(logging.WARNING)
+logging.getLogger("guard_core.handlers.redis").setLevel(logging.DEBUG)
+logging.getLogger("guard_core.handlers.ipban").setLevel(logging.INFO)
+logging.getLogger("guard_core.detection_engine").setLevel(logging.WARNING)
 
-# This works because FastAPI Guard uses hierarchical namespaces
+# This works because guard-core uses hierarchical namespaces
 config = SecurityConfig(
     custom_log_file="security.log",
     # ... other settings
@@ -318,7 +325,7 @@ from guard import SecurityConfig, SecurityMiddleware
 app_logger = logging.getLogger("myapp")
 app_logger.setLevel(logging.INFO)
 
-# FastAPI Guard logs are isolated under "fastapi_guard" namespace
+# guard-core's logs are isolated under the "guard_core" namespace
 # No interference with your app logs
 app = FastAPI()
 
@@ -328,7 +335,7 @@ config = SecurityConfig(
 
 app.add_middleware(SecurityMiddleware, config=config)
 
-# Your app logs and FastAPI Guard logs remain separate
+# Your app logs and guard-core's security logs remain separate
 app_logger.info("Application started")  # Goes to "myapp" logger
-# Security events go to "fastapi_guard" logger
+# Security events go to the "guard_core" logger
 ```

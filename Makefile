@@ -55,7 +55,7 @@ restart: stop start-example
 # Lint code
 .PHONY: lint
 lint:
-	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "echo 'Formatting w/ Ruff...' ; echo '' ; ruff format . ; echo '' ; echo '' ; echo 'Linting w/ Ruff...' ; echo '' ; ruff check . ; echo '' ; echo '' ; echo 'Type checking w/ Mypy...' ; echo '' ; mypy . ; echo '' ; echo '' ; echo 'Finding dead code w/ Vulture...' ; echo '' ; vulture"
+	@COMPOSE_BAKE=true docker compose run --rm --no-deps fastapi-guard sh -c "echo 'Formatting w/ Ruff...' && echo '' && ruff format . && echo '' && echo '' && echo 'Linting w/ Ruff...' && echo '' && ruff check . && echo '' && echo '' && echo 'Type checking w/ Mypy...' && echo '' && mypy . && echo '' && echo '' && echo 'Finding dead code w/ Vulture...' && echo '' && vulture"
 	@docker compose down --rmi all --remove-orphans -v
 	@docker system prune -f
 

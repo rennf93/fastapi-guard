@@ -83,6 +83,16 @@ All endpoints from simple_app are available, organized into route modules:
 - `/admin/*` - Ban/unban, stats, emergency mode
 - `/test/*` - XSS, SQL injection, path traversal, command injection
 
+## Watching the security pipeline shrink
+
+`lifespan=make_lifespan(lifespan)` in `app/main.py` runs `SecurityMiddleware.initialize()` at ASGI startup instead of on the first request, and `app.state.guard_decorator = guard` is set before that runs, so the middleware can see every decorated route. Watch the console (or `docker compose logs fastapi-guard-example`) right after startup for a line from the `guard_core` logger:
+
+```text
+Security pipeline initialized with 16 checks: ['route_config', 'https_enforcement', 'request_logging', 'request_size_content', 'required_headers', 'authentication', 'referrer', 'custom_validators', 'time_window', 'cloud_ip_refresh', 'ip_security', 'cloud_provider', 'user_agent', 'rate_limit', 'suspicious_activity', 'custom_request'] (1 skipped)
+```
+
+That is the real output captured from this app on `guard-core` 3.10.0+: 16 of the 17 built-in checks were built into the pipeline (`emergency_mode` was skipped because this config sets neither `emergency_mode` nor `enable_dynamic_rules`). The skip count depends on your config and which routes carry decorators.
+
 ## Cleanup
 
 ```bash

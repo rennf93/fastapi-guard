@@ -148,6 +148,7 @@ Provides content and request filtering decorators.
 - `@guard_deco.max_request_size(size_bytes)` - Limit request size
 - `@guard_deco.require_referrer(allowed_domains=[])` - Require specific referrers
 - `@guard_deco.custom_validation(validator)` - Add custom validation logic
+- `@guard_deco.detection_exclusion(headers=None, params=None, body_fields=None, categories=None, scan_body=None)` - Exclude specific headers/params/body fields or detection categories from penetration detection on this route
 
 . AdvancedMixin
 -------------

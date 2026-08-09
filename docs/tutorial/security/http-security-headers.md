@@ -465,7 +465,7 @@ Enable Logging
 import logging
 
 # Configure logging for security headers
-logging.getLogger("fastapi_guard.handlers.security_headers").setLevel(logging.DEBUG)
+logging.getLogger("guard_core.handlers.security_headers").setLevel(logging.DEBUG)
 
 config = SecurityConfig(
     custom_log_file="security.log",

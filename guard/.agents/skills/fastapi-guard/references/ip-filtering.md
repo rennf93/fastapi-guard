@@ -38,7 +38,7 @@ config = SecurityConfig(
 )
 ```
 
-Country rules require a geo IP handler. Set `geo_ip_handler` when `whitelist_countries` or `blocked_countries` is configured. The built-in `IPInfoManager` is deprecated; provide a custom `GeoIPHandler` instead. `ipinfo_token` and `ipinfo_db_path` are deprecated for the same reason.
+Country rules require a geo IP handler. Set `geo_ip_handler` when `whitelist_countries` or `blocked_countries` is configured, either to a custom `GeoIPHandler` implementation or to `IPInfoManager(token=...)` directly. The `ipinfo_token` and `ipinfo_db_path` config fields are deprecated (they exist only so `geo_ip_handler` can be auto-constructed as an `IPInfoManager` when omitted); pass `geo_ip_handler=IPInfoManager(...)` explicitly instead of those two fields.
 
 If country rules are set but no handler is available, the middleware raises a configuration error at construction time.
 
