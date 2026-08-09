@@ -26,9 +26,11 @@ app = FastAPI()
 config = SecurityConfig()
 guard_deco = SecurityDecorator(config)
 
+
 @app.get("/api/public")
 def public_endpoint():
     return {"message": "This uses global security settings"}
+
 
 @app.get("/api/restricted")
 @guard_deco.rate_limit(requests=5, window=300)
@@ -148,7 +150,7 @@ config = SecurityConfig(
     enable_ip_banning=True,
     enable_rate_limiting=True,
     rate_limit=100,
-    rate_limit_window=3600
+    rate_limit_window=3600,
 )
 
 # Create decorator instance
@@ -167,11 +169,12 @@ app.state.guard_decorator = guard_deco
 ```python
 @app.post("/api/login")
 @guard_deco.require_https()
-@guard_deco.rate_limit(requests=5, window=300)    # Stricter limit for login
+@guard_deco.rate_limit(requests=5, window=300)  # Stricter limit for login
 @guard_deco.suspicious_detection(enabled=True)
 def login(credentials: dict):
     # Login logic here
     return {"token": "jwt_token"}
+
 
 @app.get("/api/admin")
 @guard_deco.require_ip(whitelist=["10.0.0.0/8"])  # Internal network only
@@ -198,10 +201,12 @@ This allows flexible overrides where routes can customize their security while m
 # Global: 100 requests/hour
 config = SecurityConfig(rate_limit=100, rate_limit_window=3600)
 
+
 @app.get("/api/public")
 def public_endpoint():
     # Uses global: 100 requests/hour
     return {"data": "public"}
+
 
 @app.get("/api/limited")
 @guard_deco.rate_limit(requests=10, window=300)  # Override: 10 requests/5min
@@ -229,13 +234,15 @@ Decorators fire wherever the route lives. `SecurityMiddleware` runs before FastA
 admin = APIRouter(prefix="/admin")
 billing = APIRouter(prefix="/billing")
 
+
 @billing.get("/invoices")
 @guard_deco.require_auth(type="bearer")
 def invoices():
     return {"invoices": []}
 
+
 admin.include_router(billing)
-app.include_router(admin, prefix="/v1")   # /v1/admin/billing/invoices
+app.include_router(admin, prefix="/v1")  # /v1/admin/billing/invoices
 ```
 
 There is no nesting limit. Routers included into routers, sub-applications mounted into sub-applications, and any mix of the two all resolve, and the decorator on `invoices` is enforced at whatever depth it ends up.
@@ -257,11 +264,11 @@ Apply decorators from most specific to most general:
 
 ```python
 @app.post("/api/admin/sensitive")
-@guard_deco.require_https()                         # Security requirement
-@guard_deco.require_auth(type="bearer")             # Authentication
-@guard_deco.require_ip(whitelist=["10.0.0.0/8"])    # Access control
-@guard_deco.rate_limit(requests=5, window=3600)     # Rate limiting
-@guard_deco.suspicious_detection(enabled=True)      # Monitoring
+@guard_deco.require_https()  # Security requirement
+@guard_deco.require_auth(type="bearer")  # Authentication
+@guard_deco.require_ip(whitelist=["10.0.0.0/8"])  # Access control
+@guard_deco.rate_limit(requests=5, window=3600)  # Rate limiting
+@guard_deco.suspicious_detection(enabled=True)  # Monitoring
 def admin_endpoint():
     return {"status": "admin action"}
 ```

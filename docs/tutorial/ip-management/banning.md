@@ -34,6 +34,7 @@ You can also manually ban IPs using the `IPBanManager`:
 ```python
 from guard import ip_ban_manager
 
+
 @app.post("/admin/ban/{ip}")
 async def ban_ip(ip: str, duration: int = 3600):
     await ip_ban_manager.ban_ip(ip, duration)

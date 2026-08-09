@@ -100,16 +100,13 @@ from guard import SecurityConfig, SecurityMiddleware
 config = SecurityConfig(
     enable_redis=True,
     redis_url="redis://localhost:6379",
-
     rate_limit=100,
     rate_limit_window=60,
     auto_ban_threshold=5,
     auto_ban_duration=300,
-
     enable_penetration_detection=True,
     enable_ip_banning=True,
     enable_rate_limiting=True,
-
     blocked_user_agents=["badbot", "scrapy", "nikto"],
 )
 
@@ -164,18 +161,16 @@ config = SecurityConfig(
     rate_limit_window=60,
     auto_ban_threshold=5,
     enable_penetration_detection=True,
-
     # SaaS telemetry
     enable_agent=True,
     agent_api_key=os.environ["GUARD_API_KEY"],
     agent_project_id=os.environ["GUARD_PROJECT_ID"],
     agent_endpoint="https://api.guard-core.com",
-    agent_buffer_size=5000,
+    agent_buffer_size=100,
     agent_flush_interval=2,
     agent_enable_events=True,
     agent_enable_metrics=True,
     agent_guard_version=_GUARD_VERSION,  # so SaaS can attribute events to wrapper version
-
     # Optional — pull dynamic rule updates from the dashboard
     enable_dynamic_rules=True,
     dynamic_rule_interval=60,
@@ -225,13 +220,12 @@ except ImportError:
 config = SecurityConfig(
     enable_redis=True,
     redis_url="redis://localhost:6379",
-
     enable_agent=True,
-    agent_api_key=os.environ["GUARD_API_KEY_W_ENCRYPTION"],      # encryption-enforced key
+    agent_api_key=os.environ["GUARD_API_KEY_W_ENCRYPTION"],  # encryption-enforced key
     agent_project_id=os.environ["GUARD_PROJECT_ID"],
     agent_endpoint="https://api.guard-core.com",
     agent_project_encryption_key=os.environ["GUARD_PROJECT_ENCRYPTION_KEY"],
-    agent_buffer_size=5000,
+    agent_buffer_size=100,
     agent_flush_interval=2,
     agent_guard_version=_GUARD_VERSION,
 )
@@ -264,7 +258,7 @@ Configuration reference — agent fields on `SecurityConfig`
 | `agent_api_key` | `str \| None` | `None` | Required when `enable_agent=True`. |
 | `agent_project_id` | `str \| None` | `None` | The `proj_*` ID from the dashboard. Required for dashboard attribution. |
 | `agent_endpoint` | `str` | `https://api.guard-core.com` | Override only for self-hosted Guard Core deploys. |
-| `agent_buffer_size` | `int` | `100` | In-memory event buffer cap. Set to `5000` for production traffic. The SaaS accepts batches up to 10,000 events / 5,000 metrics; nginx default is 1MB so set `client_max_body_size` ≥ 16m on any reverse proxy in front of the SaaS. |
+| `agent_buffer_size` | `int` | `100` | In-memory event buffer cap. The SaaS caps request bodies at 256 KiB, and a flush serializes the whole buffer into one POST, so keep this at the default (or lower for verbose events) instead of raising it toward thousands; prefer a shorter `agent_flush_interval` for lower latency. See [the agent integration reference](https://github.com/rennf93/fastapi-guard/blob/master/guard/.agents/skills/fastapi-guard/references/agent-integration.md) for the split-or-drop behavior if a batch does 413. |
 | `agent_flush_interval` | `int` | `30` | Seconds between automatic buffer flushes. `2` is a reasonable production setting. |
 | `agent_enable_events` | `bool` | `True` | Ship security events. |
 | `agent_enable_metrics` | `bool` | `True` | Ship request metrics. |
@@ -297,8 +291,8 @@ Fix for both: stop creating `AgentConfig`/`guard_agent()` manually. Configure `a
 `nginx 413 Request Entity Too Large` on `/api/v1/events/encrypted`
 -----------------------------------------------------------------
 
-Cause: `client_max_body_size` is the nginx default (1m) and your encrypted bodies are 2-5MB.
-Fix: set `client_max_body_size 16m;` in your nginx server block for the Guard Core API (or your custom self-hosted endpoint).
+Cause: `agent_buffer_size` was raised well past the default, so a flush now serializes a batch bigger than nginx's default `client_max_body_size` (1m) can pass through. The SaaS itself caps ingestion bodies at 256 KiB regardless, so a batch this large would 413 there too even with a larger nginx limit.
+Fix: bring `agent_buffer_size` back toward the default (100, or lower for verbose events) instead of raising nginx's `client_max_body_size`, see the `agent_buffer_size` row above.
 
 `HASH_PEPPER is required to compute peppered hashes`
 ---------------------------------------------------

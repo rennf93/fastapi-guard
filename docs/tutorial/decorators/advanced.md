@@ -25,10 +25,13 @@ from guard import SecurityDecorator
 
 guard_deco = SecurityDecorator(config)
 
+
 @app.get("/api/reports")
 @guard_deco.time_window("09:00", "17:00", "EST")
 def generate_reports():
-    return {"message": "Reports are only available during business hours (9 AM - 5 PM EST)"}
+    return {
+        "message": "Reports are only available during business hours (9 AM - 5 PM EST)"
+    }
 ```
 
 . Maintenance Window
@@ -137,7 +140,7 @@ This endpoint is only accessible during specific hours and is protected by a hon
 @app.post("/api/admin/config")
 @guard_deco.time_window("10:00", "16:00", "UTC")
 @guard_deco.honeypot_detection(trap_fields=["admin_email_confirm"])
-@guard_deco.require_auth(type="bearer") # From authentication decorators
+@guard_deco.require_auth(type="bearer")  # From authentication decorators
 def update_admin_config(config_data: dict):
     return {"status": "Configuration updated"}
 ```

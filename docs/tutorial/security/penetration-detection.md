@@ -23,13 +23,11 @@ config = SecurityConfig(
     enable_penetration_detection=True,
     auto_ban_threshold=5,  # Ban after 5 suspicious requests
     auto_ban_duration=3600,  # Ban duration in seconds
-
     # Detection Engine configuration
     detection_compiler_timeout=2.0,  # Pattern matching timeout
     detection_max_content_length=10000,  # Max content to analyze
     detection_preserve_attack_patterns=True,  # Preserve attacks during truncation
     detection_semantic_threshold=0.7,  # Semantic detection threshold (0.0-1.0)
-
     # Performance monitoring
     detection_anomaly_threshold=3.0,  # Standard deviations for anomaly
     detection_slow_pattern_threshold=0.1,  # Slow pattern threshold (seconds)
@@ -82,7 +80,7 @@ from guard import sus_patterns_handler
 result = await sus_patterns_handler.detect(
     content="SELECT * FROM users WHERE id=1 OR 1=1",
     ip_address="192.168.1.100",
-    context="query_param"
+    context="query_param",
 )
 
 if result["is_threat"]:
@@ -115,6 +113,7 @@ You can use the penetration detection directly in your routes:
 ```python
 from guard_core.utils import detect_penetration_attempt
 
+
 @app.post("/api/data")
 async def submit_data(request: Request):
     # Legacy method (still supported)
@@ -122,7 +121,7 @@ async def submit_data(request: Request):
     if is_suspicious:
         return JSONResponse(
             status_code=400,
-            content={"error": f"Suspicious activity detected: {trigger_info}"}
+            content={"error": f"Suspicious activity detected: {trigger_info}"},
         )
     # Process legitimate request
     return {"status": "success"}
@@ -133,13 +132,12 @@ For more control, use the enhanced detection API:
 ```python
 from guard import sus_patterns_handler
 
+
 @app.post("/api/secure")
 async def secure_endpoint(request: Request, data: dict):
     # Check request body with enhanced detection
     result = await sus_patterns_handler.detect(
-        content=json.dumps(data),
-        ip_address=request.client.host,
-        context="request_body"
+        content=json.dumps(data), ip_address=request.client.host, context="request_body"
     )
 
     if result["is_threat"] and result["threat_score"] > 0.8:
@@ -147,7 +145,7 @@ async def secure_endpoint(request: Request, data: dict):
         threat_types = [t.get("attack_type", t["type"]) for t in result["threats"]]
         return JSONResponse(
             status_code=403,
-            content={"error": f"Threat detected: {', '.join(threat_types)}"}
+            content={"error": f"Threat detected: {', '.join(threat_types)}"},
         )
 
     # Process request
@@ -162,10 +160,7 @@ Logging Suspicious Activity
 Configure logging for suspicious activities:
 
 ```python
-config = SecurityConfig(
-    custom_log_file="security.log",
-    log_level="WARNING"
-)
+config = SecurityConfig(custom_log_file="security.log", log_level="WARNING")
 ```
 
 Example log output:
@@ -238,13 +233,12 @@ from guard import sus_patterns_handler
 # Add custom pattern
 await sus_patterns_handler.add_pattern(
     r"(?i)exec\s*\(\s*['\"].*['\"]\s*\)",  # Detect exec() calls
-    custom=True
+    custom=True,
 )
 
 # Remove pattern
 await sus_patterns_handler.remove_pattern(
-    r"(?i)exec\s*\(\s*['\"].*['\"]\s*\)",
-    custom=True
+    r"(?i)exec\s*\(\s*['\"].*['\"]\s*\)", custom=True
 )
 
 # Get all patterns

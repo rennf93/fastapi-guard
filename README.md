@@ -52,13 +52,12 @@ app = FastAPI()
 
 config = SecurityConfig(
     enable_rate_limiting=True,
-    rate_limit=30,
+    rate_limit=100,
     rate_limit_window=60,
     enable_ip_banning=True,
     auto_ban_threshold=5,
     auto_ban_duration=86400,
     custom_log_file="security.log",
-    rate_limit=100,
     enforce_https=True,
     enable_cors=True,
     cors_allow_origins=["*"],
@@ -87,6 +86,7 @@ from guard import SecurityConfig, SecurityDecorator
 config = SecurityConfig()
 guard = SecurityDecorator(config)
 
+
 @app.get("/api/payments")
 @guard.require_auth(type="bearer")
 @guard.rate_limit(requests=10, window=60)
@@ -101,7 +101,7 @@ async def process_payment():
 - **Access** --- `require_ip`, `block_countries`, `allow_countries`, `block_clouds`, `bypass`
 - **Auth** --- `require_https`, `require_auth`, `api_key_auth`, `require_headers`
 - **Rate Limiting** --- `rate_limit`, `geo_rate_limit`
-- **Content** --- `block_user_agents`, `content_type_filter`, `max_request_size`, `require_referrer`, `custom_validation`
+- **Content** --- `block_user_agents`, `content_type_filter`, `max_request_size`, `require_referrer`, `custom_validation`, `detection_exclusion`
 - **Behavioral** --- `usage_monitor`, `return_monitor`, `suspicious_frequency`, `behavior_analysis`
 - **Advanced** --- `time_window`, `honeypot_detection`, `suspicious_detection`
 
@@ -133,7 +133,7 @@ security_config = SecurityConfig(
     agent_api_key="your-api-key",
     agent_endpoint="https://api.guard-core.com",
     agent_project_id="your-project-id",
-    agent_buffer_size=5000,
+    agent_buffer_size=100,
     agent_flush_interval=2,
     agent_enable_events=True,
     agent_enable_metrics=True,

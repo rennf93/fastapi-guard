@@ -108,26 +108,22 @@ ___
 Configuration Model
 -------------------
 
-The `SecurityConfig` class is the central configuration point:
+The `SecurityConfig` class is the central configuration point. It is a Pydantic model, not a hand-written `__init__`; the fields below (with their real defaults) are a subset shown for orientation, see [Security Config](../tutorial/configuration/security-config.md) for the complete field list:
 
 ```python
-class SecurityConfig:
-    def __init__(
-        self,
-        geo_ip_handler: GeoIPHandler | None = None,
-        whitelist: list[str] | None = None,
-        blacklist: list[str] = [],
-        blocked_countries: list[str] = [],
-        whitelist_countries: list[str] = [],
-        blocked_user_agents: list[str] = [],
-        auto_ban_threshold: int = 5,
-        auto_ban_duration: int = 3600,
-        rate_limit: int = 100,
-        rate_limit_window: int = 60,
-        enable_cors: bool = False,
-        # ... other parameters
-    ):
-        # ... initialization
+class SecurityConfig(BaseModel):
+    geo_ip_handler: GeoIPHandler | None = None
+    whitelist: list[str] | None = None
+    blacklist: list[str] = []
+    blocked_countries: frozenset[str] = frozenset()
+    whitelist_countries: frozenset[str] = frozenset()
+    blocked_user_agents: list[str] = []
+    auto_ban_threshold: int = 10
+    auto_ban_duration: int = 3600
+    rate_limit: int = 10
+    rate_limit_window: int = 60
+    enable_cors: bool = False
+    # ... other fields
 ```
 
 ___
@@ -178,6 +174,7 @@ from guard import SecurityDecorator
 
 config = SecurityConfig()
 guard_deco = SecurityDecorator(config)
+
 
 # Apply to routes
 @app.get("/api/sensitive")

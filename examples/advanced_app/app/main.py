@@ -22,6 +22,7 @@ from app.routes import (
 )
 from app.security import guard, security_config
 from guard import SecurityMiddleware
+from guard.lifespan import make_lifespan
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,7 +52,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    lifespan=lifespan,
+    lifespan=make_lifespan(lifespan),
 )
 
 app.add_middleware(SecurityMiddleware, config=security_config)

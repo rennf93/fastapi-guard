@@ -45,6 +45,7 @@ app = FastAPI()
 config = SecurityConfig()
 guard_deco = SecurityDecorator(config)
 
+
 @app.get("/api/sensitive")
 @guard_deco.rate_limit(requests=5, window=300)
 @guard_deco.require_ip(whitelist=["10.0.0.0/8"])
@@ -148,6 +149,7 @@ Provides content and request filtering decorators.
 - `@guard_deco.max_request_size(size_bytes)` - Limit request size
 - `@guard_deco.require_referrer(allowed_domains=[])` - Require specific referrers
 - `@guard_deco.custom_validation(validator)` - Add custom validation logic
+- `@guard_deco.detection_exclusion(headers=None, params=None, body_fields=None, categories=None, scan_body=None)` - Exclude specific headers/params/body fields or detection categories from penetration detection on this route
 
 . AdvancedMixin
 -------------
@@ -197,11 +199,12 @@ config = SecurityConfig(
     enable_ip_banning=True,
     enable_rate_limiting=True,
     rate_limit=100,
-    rate_limit_window=3600
+    rate_limit_window=3600,
 )
 
 # Create decorator instance
 guard_deco = SecurityDecorator(config)
+
 
 # Apply decorators to routes
 @guard_deco.rate_limit(requests=10, window=300)  # Override: 10 requests/5min
@@ -210,10 +213,12 @@ def limited_endpoint():
     # Uses decorator-specific rate limiting
     return {"data": "limited"}
 
+
 @app.get("/api/public")
 def public_endpoint():
     # Uses global rate limiting (100 requests/hour)
     return {"data": "public"}
+
 
 # Add global middleware
 app.add_middleware(SecurityMiddleware, config=config)
@@ -234,11 +239,11 @@ Apply decorators in logical order, with more specific restrictions first:
 
 ```python
 @app.post("/api/admin/sensitive")
-@guard_deco.require_https()                        # Security requirement
-@guard_deco.require_auth(type="bearer")            # Authentication
-@guard_deco.require_ip(whitelist=["10.0.0.0/8"])   # Access control
-@guard_deco.rate_limit(requests=5, window=3600)    # Rate limiting
-@guard_deco.suspicious_detection(enabled=True)     # Monitoring
+@guard_deco.require_https()  # Security requirement
+@guard_deco.require_auth(type="bearer")  # Authentication
+@guard_deco.require_ip(whitelist=["10.0.0.0/8"])  # Access control
+@guard_deco.rate_limit(requests=5, window=3600)  # Rate limiting
+@guard_deco.suspicious_detection(enabled=True)  # Monitoring
 def admin_endpoint():
     return {"status": "admin action"}
 ```
@@ -265,7 +270,7 @@ Combine geographic and cloud provider controls:
 ```python
 @app.get("/api/restricted")
 @guard_deco.allow_countries(["US", "CA", "GB"])  # Allow specific countries
-@guard_deco.block_clouds(["AWS", "GCP"])         # Block cloud providers
+@guard_deco.block_clouds(["AWS", "GCP"])  # Block cloud providers
 def restricted_endpoint():
     return {"data": "geo-restricted"}
 ```

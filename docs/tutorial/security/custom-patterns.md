@@ -20,12 +20,10 @@ Add your own patterns to the detection system:
 ```python
 from guard import sus_patterns_handler
 
+
 async def setup_patterns():
     # Add custom pattern
-    await sus_patterns_handler.add_pattern(
-        r"malicious_pattern.*",
-        custom=True
-    )
+    await sus_patterns_handler.add_pattern(r"malicious_pattern.*", custom=True)
 ```
 
 `add_pattern` checks the pattern for ReDoS safety before adding it. If the pattern is unsafe or malformed, it logs a warning and returns without adding the pattern or raising an exception.
@@ -39,22 +37,13 @@ You can add patterns for different types of attacks:
 
 ```python
 # Custom XSS pattern
-await sus_patterns_handler.add_pattern(
-    r"<script\s*src=.*>",
-    custom=True
-)
+await sus_patterns_handler.add_pattern(r"<script\s*src=.*>", custom=True)
 
 # Custom SQL injection pattern
-await sus_patterns_handler.add_pattern(
-    r";\s*DROP\s+TABLE",
-    custom=True
-)
+await sus_patterns_handler.add_pattern(r";\s*DROP\s+TABLE", custom=True)
 
 # Custom file path pattern
-await sus_patterns_handler.add_pattern(
-    r"\.\.\/.*\/etc\/passwd",
-    custom=True
-)
+await sus_patterns_handler.add_pattern(r"\.\.\/.*\/etc\/passwd", custom=True)
 ```
 
 ___
@@ -66,10 +55,7 @@ Remove or modify existing patterns:
 
 ```python
 # Remove a custom pattern
-success = await sus_patterns_handler.remove_pattern(
-    r"malicious_pattern.*",
-    custom=True
-)
+success = await sus_patterns_handler.remove_pattern(r"malicious_pattern.*", custom=True)
 if success:
     print("Pattern removed successfully")
 else:
@@ -104,12 +90,13 @@ Test your patterns against requests:
 ```python
 from guard_core.utils import detect_penetration_attempt
 
+
 @app.post("/test/patterns")
 async def test_patterns(request: Request):
     is_suspicious, trigger_info = await detect_penetration_attempt(request)
     return {
         "suspicious": is_suspicious,
         "trigger_info": trigger_info,
-        "request_body": await request.body()
+        "request_body": await request.body(),
     }
 ```

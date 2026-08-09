@@ -27,6 +27,7 @@ from guard import SecurityDecorator
 
 guard_deco = SecurityDecorator(config)
 
+
 @app.get("/api/internal")
 @guard_deco.require_ip(whitelist=["192.168.1.0/24", "10.0.0.1"])
 def internal_endpoint():
@@ -54,7 +55,7 @@ Use both whitelist and blacklist together:
 @app.get("/api/restricted")
 @guard_deco.require_ip(
     whitelist=["192.168.0.0/16"],  # Allow internal network
-    blacklist=["192.168.1.100"]    # Except this specific IP
+    blacklist=["192.168.1.100"],  # Except this specific IP
 )
 def restricted_endpoint():
     return {"data": "Carefully controlled access"}
@@ -90,6 +91,7 @@ Restrict access to certain countries only:
 def us_only_endpoint():
     return {"data": "US-only content"}
 
+
 @app.get("/api/eu-only")
 @guard_deco.allow_countries(["GB", "DE", "FR", "IT", "ES", "NL"])
 def eu_only_endpoint():
@@ -106,6 +108,7 @@ Create region-specific endpoints:
 @guard_deco.allow_countries(["US", "CA", "MX"])
 def north_america_endpoint():
     return {"data": "North America region"}
+
 
 @app.get("/api/asia-pacific")
 @guard_deco.allow_countries(["JP", "KR", "AU", "SG", "IN"])
@@ -187,6 +190,7 @@ def public_health_check():
 def metrics():
     return {"metrics": "data"}
 
+
 # Public API documentation - bypass geographic restrictions
 @app.get("/docs-public")
 @guard_deco.bypass(["countries", "clouds"])
@@ -206,9 +210,9 @@ Stack multiple access control decorators for comprehensive protection:
 
 ```python
 @app.post("/api/admin/sensitive")
-@guard_deco.require_ip(whitelist=["10.0.0.0/8"])       # Internal network only
-@guard_deco.allow_countries(["US", "CA"])              # North America only
-@guard_deco.block_clouds(["AWS", "GCP"])               # No cloud providers
+@guard_deco.require_ip(whitelist=["10.0.0.0/8"])  # Internal network only
+@guard_deco.allow_countries(["US", "CA"])  # North America only
+@guard_deco.block_clouds(["AWS", "GCP"])  # No cloud providers
 def ultra_secure_endpoint():
     return {"data": "Maximum security endpoint"}
 ```
@@ -219,22 +223,24 @@ def ultra_secure_endpoint():
 ```python
 # High-security financial endpoint
 @app.post("/api/financial/transfer")
-@guard_deco.require_ip(whitelist=["192.168.1.0/24"])   # Company network only
-@guard_deco.allow_countries(["US"])                    # US jurisdiction only
-@guard_deco.block_clouds()                             # No cloud/automation
+@guard_deco.require_ip(whitelist=["192.168.1.0/24"])  # Company network only
+@guard_deco.allow_countries(["US"])  # US jurisdiction only
+@guard_deco.block_clouds()  # No cloud/automation
 def financial_transfer():
     return {"status": "transfer initiated"}
 
+
 # Medium-security user data
 @app.get("/api/user/profile")
-@guard_deco.block_countries(["CN", "RU", "IR"])       # Block certain countries
-@guard_deco.block_clouds(["AWS", "GCP"])              # Block major clouds
+@guard_deco.block_countries(["CN", "RU", "IR"])  # Block certain countries
+@guard_deco.block_clouds(["AWS", "GCP"])  # Block major clouds
 def user_profile():
     return {"profile": "user data"}
 
+
 # Low-security public content
 @app.get("/api/public/content")
-@guard_deco.block_clouds(["DigitalOcean"])            # Block only specific providers
+@guard_deco.block_clouds(["DigitalOcean"])  # Block only specific providers
 def public_content():
     return {"content": "public information"}
 ```
@@ -255,6 +261,7 @@ Allow broader access if primary regions fail:
 def primary_endpoint():
     return {"region": "primary"}
 
+
 @app.get("/api/fallback")
 @guard_deco.allow_countries(["GB", "DE", "AU"])
 def fallback_endpoint():
@@ -269,12 +276,14 @@ Different geographic rules for different times:
 ```python
 from datetime import datetime
 
+
 # Business hours: strict geographic controls
 @app.get("/api/business-hours")
 @guard_deco.allow_countries(["US"])
 @guard_deco.time_window("09:00", "17:00", "EST")
 def business_hours_endpoint():
     return {"data": "business hours access"}
+
 
 # After hours: more lenient
 @app.get("/api/after-hours")
@@ -300,9 +309,7 @@ Access control decorators return specific HTTP status codes:
 ```python
 # The middleware will use custom error messages if configured
 config = SecurityConfig(
-    custom_error_responses={
-        403: "Access denied: Geographic restrictions apply"
-    }
+    custom_error_responses={403: "Access denied: Geographic restrictions apply"}
 )
 ```
 
@@ -379,10 +386,7 @@ Troubleshooting
 
 ```python
 # Enable detailed logging to see why access was denied
-config = SecurityConfig(
-    log_suspicious_level="DEBUG",
-    log_request_level="INFO"
-)
+config = SecurityConfig(log_suspicious_level="DEBUG", log_request_level="INFO")
 
 # Check logs for messages like:
 # "IP not allowed by route config: 203.0.113.1"

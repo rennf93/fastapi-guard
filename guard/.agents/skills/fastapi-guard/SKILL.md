@@ -177,7 +177,7 @@ The buffer/flush defaults (100 events, 30s) are safe. Do not raise `agent_buffer
 
 ## Exports
 
-`guard` re-exports the public surface from `guard_core`: `SecurityMiddleware`, `SecurityConfig`, `SecurityDecorator`, `RouteConfig`, `BehaviorRule`, `BehaviorTracker`, `IPBanManager`, `RateLimitManager`, `RedisManager`, `GeoIPHandler`, `GuardRequest`, `GuardResponse`, `GuardResponseFactory`, `SecurityHeadersManager`, `CloudManager`, and the singletons `cloud_handler`, `ip_ban_manager`, `rate_limit_handler`, `redis_handler`, `security_headers_manager`, `sus_patterns_handler`.
+`guard` re-exports the public surface from `guard_core`: `SecurityMiddleware`, `SecurityConfig`, `SecurityDecorator`, `RouteConfig`, `BehaviorRule`, `BehaviorTracker`, `IPBanManager`, `IPInfoManager`, `RateLimitManager`, `RedisManager`, `RedisHandlerProtocol`, `GeoIPHandler`, `GuardRequest`, `GuardResponse`, `GuardResponseFactory`, `SecurityHeadersManager`, `CloudManager`, and the singletons `cloud_handler`, `ip_ban_manager`, `rate_limit_handler`, `redis_handler`, `security_headers_manager`, `sus_patterns_handler`.
 
 ## Tooling
 
