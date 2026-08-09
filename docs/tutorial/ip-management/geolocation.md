@@ -47,11 +47,13 @@ Option 1: Using the built-in IPInfoHandler
 
 ```python
 config = SecurityConfig(
-    geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required when using country filtering
+    geo_ip_handler=IPInfoManager(
+        "your_ipinfo_token_here"
+    ),  # NOTE: Required when using country filtering
     blocked_countries=["CN", "RU"],  # Block specific countries
     whitelist_countries=["US", "CA"],
     db_path="custom/ipinfo.db",  # Optional custom database path
-    block_cloud_providers={"AWS", "GCP"}  # Case-sensitive provider names
+    block_cloud_providers={"AWS", "GCP"},  # Case-sensitive provider names
 )
 ```
 
@@ -59,7 +61,6 @@ Option 2: Providing a custom geographical IP handler
 ----------------------------------------------------
 
 ```python
-
 class CustomGeoIPHandler:
     """
     Your custom class.
@@ -88,7 +89,7 @@ config = SecurityConfig(
     blocked_countries=["CN", "RU"],  # Block specific countries
     whitelist_countries=["US", "CA"],
     db_path="custom/ipinfo.db",  # Optional custom database path
-    block_cloud_providers={"AWS", "GCP"}  # Case-sensitive provider names
+    block_cloud_providers={"AWS", "GCP"},  # Case-sensitive provider names
 )
 ```
 
@@ -101,13 +102,15 @@ Block requests from specific countries using ISO 3166-1 alpha-2 country codes:
 
 ```python
 config = SecurityConfig(
-    geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required when using country filtering
+    geo_ip_handler=IPInfoManager(
+        "your_ipinfo_token_here"
+    ),  # NOTE: Required when using country filtering
     blocked_countries=[
         "CN",  # China
         "RU",  # Russia
         "IR",  # Iran
-        "KP"   # North Korea
-    ]
+        "KP",  # North Korea
+    ],
 )
 ```
 
@@ -120,13 +123,15 @@ Only allow requests from specific countries:
 
 ```python
 config = SecurityConfig(
-    geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required when using country filtering
+    geo_ip_handler=IPInfoManager(
+        "your_ipinfo_token_here"
+    ),  # NOTE: Required when using country filtering
     whitelist_countries=[
         "US",  # United States
         "CA",  # Canada
         "GB",  # United Kingdom
-        "AU"   # Australia
-    ]
+        "AU",  # Australia
+    ],
 )
 ```
 
@@ -140,8 +145,11 @@ You can also use the `IPInfoManager` directly for custom geolocation logic:
 ```python
 from guard import IPInfoManager
 
-ipinfo_db = IPInfoManager(token="your_ipinfo_token_here")  # NOTE: Required when using custom geolocation
+ipinfo_db = IPInfoManager(
+    token="your_ipinfo_token_here"
+)  # NOTE: Required when using custom geolocation
 await ipinfo_db.initialize()
+
 
 @app.get("/country/{ip}")
 async def get_ip_country(ip: str):

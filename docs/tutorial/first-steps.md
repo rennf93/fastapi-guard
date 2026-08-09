@@ -31,12 +31,14 @@ Create a `SecurityConfig` instance with your desired settings:
 
 ```python
 config = SecurityConfig(
-    geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),  # NOTE: Required for geolocation
+    geo_ip_handler=IPInfoManager(
+        "your_ipinfo_token_here"
+    ),  # NOTE: Required for geolocation
     enable_redis=True,  # Enable Redis integration
     redis_url="redis://localhost:6379",  # Redis URL
     rate_limit=100,  # Max requests per minute
     auto_ban_threshold=5,  # Ban after 5 suspicious requests
-    custom_log_file="security.log"  # Custom log file
+    custom_log_file="security.log",  # Custom log file
 )
 ```
 
@@ -74,10 +76,11 @@ config = SecurityConfig(
     blacklist=["10.0.0.1", "2001:db8::2"],
     blocked_countries=["AR", "IT"],
     rate_limit=100,
-    custom_log_file="security.log"
+    custom_log_file="security.log",
 )
 
 app.add_middleware(SecurityMiddleware, config=config)
+
 
 @app.get("/")
 async def root():

@@ -25,7 +25,9 @@ class IPInfoManager:
     reader: Reader | None = None
     redis_handler: Any = None
 
-    def __new__(cls: type["IPInfoManager"], token: str, db_path: Path | None = None) -> "IPInfoManager":
+    def __new__(
+        cls: type["IPInfoManager"], token: str, db_path: Path | None = None
+    ) -> "IPInfoManager":
         if not token:
             raise ValueError("IPInfo token is required!")
 
@@ -106,7 +108,7 @@ from pathlib import Path
 # Initialize with custom database location
 ipinfo_db = IPInfoManager(
     token="your_token",
-    db_path=Path("/custom/path/ipinfo.db") # default is ./data/ipinfo/country_asn.mmdb
+    db_path=Path("/custom/path/ipinfo.db"),  # default is ./data/ipinfo/country_asn.mmdb
 )
 await ipinfo_db.initialize()
 

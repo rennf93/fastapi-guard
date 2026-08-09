@@ -35,11 +35,7 @@ add_pattern
 
 ```python
 @classmethod
-async def add_pattern(
-    cls,
-    pattern: str,
-    custom: bool = False
-) -> None:
+async def add_pattern(cls, pattern: str, custom: bool = False) -> None:
     """
     Add a new pattern to the detection system.
 
@@ -58,11 +54,7 @@ remove_pattern
 
 ```python
 @classmethod
-async def remove_pattern(
-    cls,
-    pattern: str,
-    custom: bool = False
-) -> bool:
+async def remove_pattern(cls, pattern: str, custom: bool = False) -> bool:
     """
     Remove a pattern from the detection system.
 
@@ -96,13 +88,16 @@ Pattern Retrieval Methods
 async def get_default_patterns(cls) -> list[str]:
     """Get only the default patterns loaded from YAML files."""
 
+
 @classmethod
 async def get_custom_patterns(cls) -> list[str]:
     """Get only the custom patterns added at runtime."""
 
+
 @classmethod
 async def get_all_patterns(cls) -> list[str]:
     """Get all registered patterns (default + custom)."""
+
 
 @classmethod
 async def get_default_compiled_patterns(
@@ -110,11 +105,13 @@ async def get_default_compiled_patterns(
 ) -> list[tuple[re.Pattern, frozenset[str], str]]:
     """Default compiled patterns with their contexts and category label."""
 
+
 @classmethod
 async def get_custom_compiled_patterns(
     cls,
 ) -> list[tuple[re.Pattern, frozenset[str], str]]:
     """Custom compiled patterns with their contexts and category label."""
+
 
 @classmethod
 async def get_all_compiled_patterns(
@@ -186,7 +183,7 @@ async def detect(
     content: str,
     ip_address: str,
     context: str = "unknown",
-    correlation_id: str | None = None
+    correlation_id: str | None = None,
 ) -> dict[str, Any]:
     """
     Perform comprehensive threat detection with detection engine.
@@ -215,7 +212,7 @@ async def detect_pattern_match(
     content: str,
     ip_address: str,
     context: str = "unknown",
-    correlation_id: str | None = None
+    correlation_id: str | None = None,
 ) -> tuple[bool, str | None]:
     """
     Legacy detection method for backward compatibility.
@@ -290,28 +287,28 @@ The `detect()` method returns a comprehensive result dictionary:
 
 ```python
 {
-    "is_threat": bool,              # True if any threat detected
-    "threat_score": float,          # 0.0-1.0, highest threat score
-    "threats": [                    # List of detected threats
+    "is_threat": bool,  # True if any threat detected
+    "threat_score": float,  # 0.0-1.0, highest threat score
+    "threats": [  # List of detected threats
         {
-            "type": "regex",        # Detection type
-            "pattern": str,         # Pattern that matched
-            "execution_time": float # Time to execute pattern
+            "type": "regex",  # Detection type
+            "pattern": str,  # Pattern that matched
+            "execution_time": float,  # Time to execute pattern
         },
         {
-            "type": "semantic",     # Heuristic detection
-            "score": float,         # Threat score
-            "attack_types": dict,   # Attack type probabilities
-            "confidence": str       # low/medium/high
-        }
+            "type": "semantic",  # Heuristic detection
+            "score": float,  # Threat score
+            "attack_types": dict,  # Attack type probabilities
+            "confidence": str,  # low/medium/high
+        },
     ],
-    "context": str,                 # Where content came from
-    "original_length": int,         # Original content length
-    "processed_length": int,        # After preprocessing
-    "execution_time": float,        # Total detection time
-    "detection_method": str,        # "enhanced" or "legacy"
-    "timeouts": list[str],         # Patterns that timed out
-    "correlation_id": str | None    # Request correlation ID
+    "context": str,  # Where content came from
+    "original_length": int,  # Original content length
+    "processed_length": int,  # After preprocessing
+    "execution_time": float,  # Total detection time
+    "detection_method": str,  # "enhanced" or "legacy"
+    "timeouts": list[str],  # Patterns that timed out
+    "correlation_id": str | None,  # Request correlation ID
 }
 ```
 
@@ -327,15 +324,11 @@ Basic Pattern Management
 from guard import sus_patterns_handler
 
 # Add custom pattern
-await sus_patterns_handler.add_pattern(
-    r"(?i)malicious.*pattern",
-    custom=True
-)
+await sus_patterns_handler.add_pattern(r"(?i)malicious.*pattern", custom=True)
 
 # Remove pattern
 success = await sus_patterns_handler.remove_pattern(
-    r"(?i)malicious.*pattern",
-    custom=True
+    r"(?i)malicious.*pattern", custom=True
 )
 
 # Get all patterns
@@ -351,7 +344,7 @@ result = await sus_patterns_handler.detect(
     content="SELECT * FROM users WHERE id=1 OR 1=1",
     ip_address="192.168.1.100",
     context="query_param:search",
-    correlation_id="req-123"
+    correlation_id="req-123",
 )
 
 if result["is_threat"]:

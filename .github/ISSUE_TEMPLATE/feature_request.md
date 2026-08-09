@@ -42,9 +42,7 @@ from guard import SecurityConfig
 app = FastAPI()
 
 # Your feature example here
-security_config = SecurityConfig(
-    new_feature=SomeConfiguration(...)
-)
+security_config = SecurityConfig(new_feature=SomeConfiguration(...))
 
 app.add_middleware(SecurityMiddleware, config=security_config)
 ```

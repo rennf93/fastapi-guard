@@ -69,7 +69,9 @@ set_key
 -------
 
 ```python
-async def set_key(self, namespace: str, key: str, value: Any, ttl: int | None = None) -> bool | None:
+async def set_key(
+    self, namespace: str, key: str, value: Any, ttl: int | None = None
+) -> bool | None:
     """Set namespaced key with optional TTL"""
 ```
 
@@ -92,6 +94,7 @@ from guard import SecurityConfig
 
 config = SecurityConfig(redis_url="redis://localhost:6379")
 redis = RedisManager(config)
+
 
 async def example():
     await redis.initialize()

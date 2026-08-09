@@ -77,9 +77,9 @@ List of IP addresses or CIDR ranges that are allowed to set X-Forwarded-For head
 ```python
 config = SecurityConfig(
     trusted_proxies=[
-        "10.0.0.1",         # Single IP
-        "192.168.1.0/24",   # CIDR range
-        "172.16.0.0/16"     # Another CIDR range
+        "10.0.0.1",  # Single IP
+        "192.168.1.0/24",  # CIDR range
+        "172.16.0.0/16",  # Another CIDR range
     ]
 )
 ```
@@ -94,7 +94,7 @@ Controls how the client IP is extracted from the X-Forwarded-For header:
 ```python
 config = SecurityConfig(
     trusted_proxies=["10.0.0.1"],
-    trusted_proxy_depth=2  # Assumes two proxies in the chain
+    trusted_proxy_depth=2,  # Assumes two proxies in the chain
 )
 ```
 
@@ -112,7 +112,7 @@ Whether to trust the X-Forwarded-Proto header for HTTPS detection:
 ```python
 config = SecurityConfig(
     trusted_proxies=["10.0.0.1"],
-    trust_x_forwarded_proto=True  # Trust X-Forwarded-Proto from trusted proxies
+    trust_x_forwarded_proto=True,  # Trust X-Forwarded-Proto from trusted proxies
 )
 ```
 
@@ -129,8 +129,8 @@ Single Reverse Proxy
 ```python
 config = SecurityConfig(
     trusted_proxies=["10.0.0.1"],  # Your Nginx/HAProxy IP
-    trusted_proxy_depth=1,         # One proxy
-    trust_x_forwarded_proto=True   # Trust HTTPS status from proxy
+    trusted_proxy_depth=1,  # One proxy
+    trust_x_forwarded_proto=True,  # Trust HTTPS status from proxy
 )
 ```
 
@@ -140,11 +140,11 @@ Load Balancer + Proxy
 ```python
 config = SecurityConfig(
     trusted_proxies=[
-        "10.0.0.1",         # Load balancer IP
-        "192.168.1.0/24"    # Internal proxy subnet
+        "10.0.0.1",  # Load balancer IP
+        "192.168.1.0/24",  # Internal proxy subnet
     ],
     trusted_proxy_depth=2,  # Two proxies in chain
-    trust_x_forwarded_proto=True
+    trust_x_forwarded_proto=True,
 )
 ```
 
@@ -154,10 +154,10 @@ Cloud Provider Load Balancer
 ```python
 config = SecurityConfig(
     trusted_proxies=[
-        "10.0.0.0/8"        # Cloud provider's internal IP range
+        "10.0.0.0/8"  # Cloud provider's internal IP range
     ],
     trusted_proxy_depth=1,
-    trust_x_forwarded_proto=True
+    trust_x_forwarded_proto=True,
 )
 ```
 

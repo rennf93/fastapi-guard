@@ -44,7 +44,7 @@ config = SecurityConfig(
     # Log normal requests as INFO (or set to None to disable)
     log_request_level="INFO",
     # Log suspicious activity as WARNING
-    log_suspicious_level="WARNING"
+    log_suspicious_level="WARNING",
 )
 ```
 
@@ -65,10 +65,7 @@ Structured JSON Logging
 FastAPI Guard supports structured JSON log output for integration with log aggregation systems like ELK, Datadog, or CloudWatch:
 
 ```python
-config = SecurityConfig(
-    log_format="json",
-    custom_log_file="security.log"
-)
+config = SecurityConfig(log_format="json", custom_log_file="security.log")
 ```
 
 When `log_format="json"` is set, all log output (both console and file) uses structured JSON:
@@ -96,7 +93,7 @@ config = SecurityConfig(
     # Disable normal request logging (default)
     log_request_level=None,
     # Keep security event logging enabled
-    log_suspicious_level="WARNING"
+    log_suspicious_level="WARNING",
 )
 ```
 
@@ -141,10 +138,7 @@ await log_activity(request, logger)
 
 # Log suspicious activity
 await log_activity(
-    request,
-    logger,
-    log_type="suspicious",
-    reason="Suspicious IP address detected"
+    request, logger, log_type="suspicious", reason="Suspicious IP address detected"
 )
 
 # Log penetration attempt in passive mode
@@ -154,16 +148,11 @@ await log_activity(
     log_type="suspicious",
     reason="SQL injection attempt detected",
     passive_mode=True,
-    trigger_info="Detected pattern: ' OR 1=1 --"
+    trigger_info="Detected pattern: ' OR 1=1 --",
 )
 
 # Log with specific level
-await log_activity(
-    request,
-    logger,
-    level="ERROR",
-    reason="Authentication failure"
-)
+await log_activity(request, logger, level="ERROR", reason="Authentication failure")
 ```
 
 ___
@@ -259,13 +248,10 @@ app = FastAPI()
 config = SecurityConfig(
     # File + console logging for audit trail
     custom_log_file="/var/log/fastapi-guard/security.log",
-
     # Disable normal request logging to reduce noise
     log_request_level=None,
-
     # Keep security events at WARNING level
     log_suspicious_level="WARNING",
-
     # Other security settings...
     enable_redis=True,
     enable_penetration_detection=True,
@@ -287,11 +273,9 @@ app = FastAPI()
 config = SecurityConfig(
     # Console-only output for development
     custom_log_file=None,  # No file logging
-
     # Enable all logging for debugging
     log_request_level="INFO",
     log_suspicious_level="WARNING",
-
     # Other settings...
     passive_mode=True,  # Log-only mode for testing
 )

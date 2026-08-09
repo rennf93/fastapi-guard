@@ -18,10 +18,9 @@ from guard import SecurityConfig
 config = SecurityConfig(
     # Enable/disable penetration detection
     enable_penetration_detection=True,  # Default: True
-
     # Auto-ban settings for suspicious activity
-    auto_ban_threshold=5,        # Ban after N suspicious requests
-    auto_ban_duration=3600,      # Ban duration in seconds (1 hour)
+    auto_ban_threshold=5,  # Ban after N suspicious requests
+    auto_ban_duration=3600,  # Ban duration in seconds (1 hour)
 )
 ```
 
@@ -32,14 +31,12 @@ Fine-tune the detection engine components:
 ```python
 config = SecurityConfig(
     # Pattern compilation and execution
-    detection_compiler_timeout=2.0,      # Timeout for pattern matching (seconds)
-
+    detection_compiler_timeout=2.0,  # Timeout for pattern matching (seconds)
     # Content preprocessing
     detection_max_content_length=10000,  # Max characters to analyze
     detection_preserve_attack_patterns=True,  # Preserve attacks during truncation
-
     # Semantic analysis
-    detection_semantic_threshold=0.7,    # Threat score threshold (0.0-1.0)
+    detection_semantic_threshold=0.7,  # Threat score threshold (0.0-1.0)
 )
 ```
 
@@ -50,14 +47,12 @@ Configure performance tracking and optimization:
 ```python
 config = SecurityConfig(
     # Anomaly detection
-    detection_anomaly_threshold=3.0,     # Standard deviations for anomaly
-
+    detection_anomaly_threshold=3.0,  # Standard deviations for anomaly
     # Pattern performance
     detection_slow_pattern_threshold=0.1,  # Slow pattern threshold (seconds)
-
     # Monitoring history
-    detection_monitor_history_size=1000,   # Number of metrics to keep
-    detection_max_tracked_patterns=1000,   # Maximum patterns to track
+    detection_monitor_history_size=1000,  # Number of metrics to keep
+    detection_max_tracked_patterns=1000,  # Maximum patterns to track
 )
 ```
 
@@ -78,34 +73,29 @@ config = SecurityConfig(
     auto_ban_threshold=5,
     auto_ban_duration=3600,
     passive_mode=False,  # Set to True for monitoring without blocking
-
     # Detection engine optimization
     detection_compiler_timeout=2.0,
     detection_max_content_length=10000,
     detection_preserve_attack_patterns=True,
     detection_semantic_threshold=0.7,
-
     # Performance monitoring
     detection_anomaly_threshold=3.0,
     detection_slow_pattern_threshold=0.1,
     detection_monitor_history_size=1000,
     detection_max_tracked_patterns=1000,
-
     # Redis integration (optional)
     use_redis=True,
     redis_host="localhost",
     redis_port=6379,
     redis_db=0,
-
     # Agent integration (optional)
     enable_agent=True,
     agent_api_key="your-api-key",
     agent_enable_events=True,
     agent_enable_metrics=True,
-
     # Logging
     custom_log_file="security.log",
-    log_level="WARNING"
+    log_level="WARNING",
 )
 
 app.add_middleware(SecurityMiddleware, config=config)
@@ -121,16 +111,14 @@ For applications requiring maximum security with stricter detection:
 high_security_config = SecurityConfig(
     # Strict detection settings
     enable_penetration_detection=True,
-    auto_ban_threshold=3,            # Lower threshold
-    auto_ban_duration=7200,          # Longer ban (2 hours)
-
+    auto_ban_threshold=3,  # Lower threshold
+    auto_ban_duration=7200,  # Longer ban (2 hours)
     # Tighter detection parameters
-    detection_compiler_timeout=1.0,   # Shorter timeout
+    detection_compiler_timeout=1.0,  # Shorter timeout
     detection_max_content_length=5000,  # Analyze less content
-    detection_semantic_threshold=0.5,   # More sensitive detection
-
+    detection_semantic_threshold=0.5,  # More sensitive detection
     # Aggressive monitoring
-    detection_anomaly_threshold=2.0,    # More sensitive to anomalies
+    detection_anomaly_threshold=2.0,  # More sensitive to anomalies
     detection_slow_pattern_threshold=0.05,  # Stricter performance
 )
 ```
@@ -143,18 +131,16 @@ For high-traffic applications prioritizing performance:
 performance_config = SecurityConfig(
     # Balanced detection
     enable_penetration_detection=True,
-    auto_ban_threshold=10,           # Higher threshold
-    auto_ban_duration=1800,          # Shorter ban (30 minutes)
-
+    auto_ban_threshold=10,  # Higher threshold
+    auto_ban_duration=1800,  # Shorter ban (30 minutes)
     # Performance-focused settings
-    detection_compiler_timeout=3.0,   # Longer timeout allowed
+    detection_compiler_timeout=3.0,  # Longer timeout allowed
     detection_max_content_length=2000,  # Analyze less content
-    detection_semantic_threshold=0.8,   # Less sensitive
-
+    detection_semantic_threshold=0.8,  # Less sensitive
     # Relaxed monitoring
-    detection_anomaly_threshold=4.0,    # Less sensitive
+    detection_anomaly_threshold=4.0,  # Less sensitive
     detection_slow_pattern_threshold=0.2,  # More tolerant
-    detection_monitor_history_size=500,    # Smaller history
+    detection_monitor_history_size=500,  # Smaller history
 )
 ```
 
@@ -166,18 +152,15 @@ For development and testing environments:
 dev_config = SecurityConfig(
     # Enable detection but in passive mode
     enable_penetration_detection=True,
-    passive_mode=True,               # Log but don't block
-
+    passive_mode=True,  # Log but don't block
     # Verbose settings for debugging
-    detection_compiler_timeout=5.0,   # Generous timeout
+    detection_compiler_timeout=5.0,  # Generous timeout
     detection_max_content_length=50000,  # Large content analysis
-
     # Full monitoring
     detection_monitor_history_size=5000,  # Large history
-
     # Detailed logging
     log_level="DEBUG",
-    custom_log_file="security-debug.log"
+    custom_log_file="security-debug.log",
 )
 ```
 
@@ -247,10 +230,7 @@ from guard import sus_patterns_handler
 await sus_patterns_handler.configure_semantic_threshold(0.8)
 
 # Add custom patterns
-await sus_patterns_handler.add_pattern(
-    r"(?i)custom_threat_pattern",
-    custom=True
-)
+await sus_patterns_handler.add_pattern(r"(?i)custom_threat_pattern", custom=True)
 
 # Check component status
 status = await sus_patterns_handler.get_component_status()
@@ -298,10 +278,10 @@ FASTAPI_GUARD_DETECTION_SLOW_PATTERN_THRESHOLD=0.1
 stats = await sus_patterns_handler.get_performance_stats()
 
 # Analyze configuration effectiveness
-if stats['summary']['average_time'] > 0.05:
+if stats["summary"]["average_time"] > 0.05:
     print("Consider optimizing configuration for better performance")
 
-if stats['summary']['timeout_rate'] > 0.01:
+if stats["summary"]["timeout_rate"] > 0.01:
     print("High timeout rate - consider increasing compiler_timeout")
 ```
 
@@ -338,7 +318,7 @@ config.detection_semantic_threshold = 0.8
 
 # Review problematic patterns
 stats = await sus_patterns_handler.get_performance_stats()
-for pattern in stats['problematic_patterns']:
+for pattern in stats["problematic_patterns"]:
     print(f"Review pattern: {pattern}")
 ```
 

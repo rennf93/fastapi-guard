@@ -29,9 +29,7 @@ Basic Configuration
 Enable cloud provider IP blocking:
 
 ```python
-config = SecurityConfig(
-    block_cloud_providers={"AWS", "GCP", "Azure"}
-)
+config = SecurityConfig(block_cloud_providers={"AWS", "GCP", "Azure"})
 ```
 
 ___
@@ -105,11 +103,9 @@ Check if an IP belongs to a cloud provider:
 ```python
 from guard import cloud_handler
 
+
 @app.get("/check-cloud/{ip}")
 async def check_cloud_ip(ip: str):
-    is_cloud = cloud_handler.is_cloud_ip(
-        ip,
-        providers={"AWS", "GCP", "Azure"}
-    )
+    is_cloud = cloud_handler.is_cloud_ip(ip, providers={"AWS", "GCP", "Azure"})
     return {"ip": ip, "is_cloud": is_cloud}
 ```

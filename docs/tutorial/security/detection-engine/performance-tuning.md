@@ -26,8 +26,8 @@ stats = await sus_patterns_handler.get_performance_stats()
 
 # Key metrics to monitor
 print(f"Average execution time: {stats['summary']['average_time']}s")
-print(f"Timeout rate: {stats['summary']['timeout_rate']*100}%")
-print(f"Match rate: {stats['summary']['match_rate']*100}%")
+print(f"Timeout rate: {stats['summary']['timeout_rate'] * 100}%")
+print(f"Match rate: {stats['summary']['match_rate'] * 100}%")
 print(f"Slow patterns: {len(stats['slow_patterns'])}")
 print(f"Problematic patterns: {len(stats['problematic_patterns'])}")
 ```
@@ -54,9 +54,9 @@ Target performance levels for different scenarios:
 slow_patterns = monitor.get_slow_patterns(threshold=0.05)
 
 for pattern_info in slow_patterns:
-    pattern = pattern_info['pattern']
-    avg_time = pattern_info['average_time']
-    
+    pattern = pattern_info["pattern"]
+    avg_time = pattern_info["average_time"]
+
     if avg_time > 0.1:
         # Consider removing or optimizing
         print(f"Critical: {pattern} - {avg_time}s average")
@@ -100,7 +100,7 @@ pattern = r"(?:SELECT|INSERT|UPDATE).*(?:FROM|INTO)"
 # For high-traffic APIs
 config = SecurityConfig(
     detection_max_content_length=2000,  # Analyze less content
-    detection_preserve_attack_patterns=True  # Still preserve threats
+    detection_preserve_attack_patterns=True,  # Still preserve threats
 )
 
 # For form submissions
@@ -137,6 +137,7 @@ async def health_check():
     # Skip semantic analysis for health checks
     return {"status": "ok"}
 
+
 @app.post("/api/data")
 async def process_data(request: Request):
     # Full analysis for data endpoints
@@ -167,7 +168,7 @@ config = SecurityConfig(
 config = SecurityConfig(
     use_redis=True,
     redis_pool_size=20,  # Increase pool for high traffic
-    redis_ttl=3600,      # Shorter TTL for dynamic patterns
+    redis_ttl=3600,  # Shorter TTL for dynamic patterns
 )
 ```
 
@@ -178,7 +179,7 @@ config = SecurityConfig(
 compiler = sus_patterns_handler._compiler
 cache_stats = compiler.get_cache_stats()
 
-if cache_stats['hit_rate'] < 0.8:
+if cache_stats["hit_rate"] < 0.8:
     # Increase cache size
     compiler.max_cache_size = 2000
 ```
@@ -218,11 +219,9 @@ class DynamicTimeoutMiddleware:
 async def parallel_pattern_check(content: str, patterns: list):
     tasks = []
     for pattern in patterns:
-        task = asyncio.create_task(
-            check_pattern_async(content, pattern)
-        )
+        task = asyncio.create_task(check_pattern_async(content, pattern))
         tasks.append(task)
-    
+
     results = await asyncio.gather(*tasks)
     return any(results)
 ```
@@ -235,22 +234,23 @@ async def parallel_pattern_check(content: str, patterns: list):
 import asyncio
 from datetime import datetime
 
+
 async def monitor_performance():
     while True:
         stats = await sus_patterns_handler.get_performance_stats()
-        
+
         # Alert on performance degradation
-        if stats['summary']['average_time'] > 0.05:
+        if stats["summary"]["average_time"] > 0.05:
             logger.warning(
                 f"Performance degradation detected: "
                 f"{stats['summary']['average_time']}s average"
             )
-        
+
         # Check for anomalies
         anomalies = monitor.get_anomalies()
         if anomalies:
             logger.error(f"Pattern anomalies detected: {len(anomalies)}")
-        
+
         await asyncio.sleep(60)  # Check every minute
 ```
 
@@ -261,20 +261,20 @@ async def monitor_performance():
 @app.get("/metrics/detection-engine")
 async def get_detection_metrics():
     stats = await sus_patterns_handler.get_performance_stats()
-    
+
     return {
         "performance": {
-            "average_execution_ms": stats['summary']['average_time'] * 1000,
-            "p95_execution_ms": stats['summary'].get('p95_time', 0) * 1000,
-            "timeout_rate": stats['summary']['timeout_rate'],
-            "total_executions": stats['summary']['total_executions']
+            "average_execution_ms": stats["summary"]["average_time"] * 1000,
+            "p95_execution_ms": stats["summary"].get("p95_time", 0) * 1000,
+            "timeout_rate": stats["summary"]["timeout_rate"],
+            "total_executions": stats["summary"]["total_executions"],
         },
         "patterns": {
-            "total": len(stats['all_patterns']),
-            "slow": len(stats['slow_patterns']),
-            "problematic": len(stats['problematic_patterns'])
+            "total": len(stats["all_patterns"]),
+            "slow": len(stats["slow_patterns"]),
+            "problematic": len(stats["problematic_patterns"]),
         },
-        "health": calculate_health_score(stats)
+        "health": calculate_health_score(stats),
     }
 ```
 
@@ -286,15 +286,13 @@ async def get_detection_metrics():
 # 1. Check for runaway patterns
 problematic = monitor.get_problematic_patterns()
 for pattern in problematic:
-    if pattern['timeout_rate'] > 0.05:
+    if pattern["timeout_rate"] > 0.05:
         # Remove or fix pattern
-        await sus_patterns_handler.remove_pattern(
-            pattern['pattern'], 
-            custom=True
-        )
+        await sus_patterns_handler.remove_pattern(pattern["pattern"], custom=True)
 
 # 2. Reduce concurrent execution
 config.detection_max_concurrent = 10  # Limit parallel checks
+
 
 # 3. Implement circuit breaker
 class CircuitBreaker:
@@ -311,8 +309,9 @@ class CircuitBreaker:
 # 1. Reduce history size
 config = SecurityConfig(
     detection_monitor_history_size=500,  # Smaller history
-    detection_max_tracked_patterns=500   # Track fewer patterns
+    detection_max_tracked_patterns=500,  # Track fewer patterns
 )
+
 
 # 2. Clear old data periodically
 async def cleanup_task():
@@ -321,8 +320,10 @@ async def cleanup_task():
         compiler.clear_unused_cache()
         await asyncio.sleep(3600)  # Every hour
 
+
 # 3. Monitor memory usage
 import psutil
+
 process = psutil.Process()
 memory_mb = process.memory_info().rss / 1024 / 1024
 ```
@@ -334,10 +335,11 @@ memory_mb = process.memory_info().rss / 1024 / 1024
 class SamplingMiddleware:
     def __init__(self, sample_rate=0.1):
         self.sample_rate = sample_rate
-    
+
     async def should_analyze(self, request):
         # Only analyze sample of requests
         return random.random() < self.sample_rate
+
 
 # 2. Priority queue for critical paths
 critical_paths = {"/api/payment", "/api/auth"}
@@ -357,18 +359,18 @@ else:
 # Weekly pattern review
 async def audit_patterns():
     stats = await sus_patterns_handler.get_performance_stats()
-    
+
     # Remove ineffective patterns
-    for pattern in stats['all_patterns']:
-        if pattern['match_rate'] < 0.0001 and pattern['age_days'] > 30:
+    for pattern in stats["all_patterns"]:
+        if pattern["match_rate"] < 0.0001 and pattern["age_days"] > 30:
             logger.info(f"Removing ineffective pattern: {pattern['pattern']}")
-            await sus_patterns_handler.remove_pattern(pattern['pattern'])
-    
+            await sus_patterns_handler.remove_pattern(pattern["pattern"])
+
     # Optimize slow patterns
-    for pattern in stats['slow_patterns']:
-        optimized = optimize_pattern(pattern['pattern'])
-        if optimized != pattern['pattern']:
-            await sus_patterns_handler.remove_pattern(pattern['pattern'])
+    for pattern in stats["slow_patterns"]:
+        optimized = optimize_pattern(pattern["pattern"])
+        if optimized != pattern["pattern"]:
+            await sus_patterns_handler.remove_pattern(pattern["pattern"])
             await sus_patterns_handler.add_pattern(optimized, custom=True)
 ```
 
@@ -379,6 +381,7 @@ async def audit_patterns():
 import asyncio
 import time
 
+
 async def load_test():
     test_contents = [
         "normal request data",
@@ -386,24 +389,22 @@ async def load_test():
         "<script>alert('xss')</script>",
         # Add more test cases
     ]
-    
+
     start = time.time()
     tasks = []
-    
+
     for _ in range(1000):
         for content in test_contents:
             task = sus_patterns_handler.detect(
-                content=content,
-                ip_address="127.0.0.1",
-                context="load_test"
+                content=content, ip_address="127.0.0.1", context="load_test"
             )
             tasks.append(task)
-    
+
     results = await asyncio.gather(*tasks)
     elapsed = time.time() - start
-    
+
     print(f"Processed {len(tasks)} requests in {elapsed:.2f}s")
-    print(f"Average: {elapsed/len(tasks)*1000:.2f}ms per request")
+    print(f"Average: {elapsed / len(tasks) * 1000:.2f}ms per request")
 ```
 
 ### 3. Gradual Rollout

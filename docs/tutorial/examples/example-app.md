@@ -164,37 +164,31 @@ app = FastAPI(title="My API with Security")
 
 config = SecurityConfig(
     geo_ip_handler=IPInfoManager("your_ipinfo_token_here"),
-
     # Rate limiting
     rate_limit=100,  # Allow 100 requests
     rate_limit_window=60,  # per minute
-
     # IP filtering
     whitelist=["127.0.0.1", "192.168.1.0/24"],  # Office network
-
     # Geolocation
     blocked_countries=["XX", "YY"],  # Block specific countries
-
     # Logging configuration
-    log_request_level="INFO",       # Log normal requests as INFO (for development)
+    log_request_level="INFO",  # Log normal requests as INFO (for development)
     # log_request_level=None,       # Or disable for production
-    log_suspicious_level="WARNING", # Keep suspicious activity at WARNING level
-
+    log_suspicious_level="WARNING",  # Keep suspicious activity at WARNING level
     # Penetration detection with passive mode
     enable_penetration_detection=True,
     passive_mode=True,  # Don't block, just log
-
     # Auto-banning (will only be logged in passive mode)
     enable_ip_banning=True,
     auto_ban_threshold=5,  # Number of suspicious requests before ban
     auto_ban_duration=3600,  # Ban duration in seconds (1 hour)
-
     # Redis for distributed deployment (optional)
     enable_redis=True,
     redis_url="redis://localhost:6379",
 )
 
 app.add_middleware(SecurityMiddleware, config=config)
+
 
 @app.get("/")
 def read_root():

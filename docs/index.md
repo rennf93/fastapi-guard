@@ -39,7 +39,7 @@ config = SecurityConfig(
     geo_ip_handler=IPInfoManager("your_token_here"),
     enable_redis=False,
     rate_limit=100,
-    auto_ban_threshold=5
+    auto_ban_threshold=5,
 )
 
 app.add_middleware(SecurityMiddleware, config=config)
@@ -178,7 +178,6 @@ config = SecurityConfig(
     rate_limit=100,
     auto_ban_threshold=5,
     enable_penetration_detection=True,
-
     # Telemetry — that's it
     enable_agent=True,
     agent_api_key="YOUR_API_KEY",

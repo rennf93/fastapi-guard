@@ -18,10 +18,7 @@ Basic CORS Setup
 Enable CORS with default settings:
 
 ```python
-config = SecurityConfig(
-    enable_cors=True,
-    cors_allow_origins=["*"]
-)
+config = SecurityConfig(enable_cors=True, cors_allow_origins=["*"])
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
@@ -35,15 +32,12 @@ Configure specific CORS settings:
 ```python
 config = SecurityConfig(
     enable_cors=True,
-    cors_allow_origins=[
-        "https://example.com",
-        "https://api.example.com"
-    ],
+    cors_allow_origins=["https://example.com", "https://api.example.com"],
     cors_allow_methods=["GET", "POST", "PUT", "DELETE"],
     cors_allow_headers=["*"],
     cors_allow_credentials=True,
     cors_expose_headers=["X-Custom-Header"],
-    cors_max_age=600
+    cors_max_age=600,
 )
 app.add_middleware(SecurityMiddleware, config=config)
 ```
@@ -58,10 +52,7 @@ Use patterns to match multiple origins:
 ```python
 config = SecurityConfig(
     enable_cors=True,
-    cors_allow_origins=[
-        "https://*.example.com",
-        "https://*.api.example.com"
-    ]
+    cors_allow_origins=["https://*.example.com", "https://*.api.example.com"],
 )
 app.add_middleware(SecurityMiddleware, config=config)
 ```
@@ -79,7 +70,7 @@ config = SecurityConfig(
     cors_allow_credentials=True,
     cors_allow_origins=[
         "https://app.example.com"  # Must be specific origin when using credentials
-    ]
+    ],
 )
 app.add_middleware(SecurityMiddleware, config=config)
 ```
@@ -94,14 +85,8 @@ Configure custom headers for CORS:
 ```python
 config = SecurityConfig(
     enable_cors=True,
-    cors_allow_headers=[
-        "Authorization",
-        "Content-Type",
-        "X-Custom-Header"
-    ],
-    cors_expose_headers=[
-        "X-Custom-Response-Header"
-    ]
+    cors_allow_headers=["Authorization", "Content-Type", "X-Custom-Header"],
+    cors_expose_headers=["X-Custom-Response-Header"],
 )
 app.add_middleware(SecurityMiddleware, config=config)
 ```

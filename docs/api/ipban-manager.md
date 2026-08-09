@@ -122,7 +122,7 @@ app = FastAPI()
 
 config = SecurityConfig(
     auto_ban_threshold=5,  # Ban after 5 suspicious requests
-    auto_ban_duration=3600  # Ban for 1 hour
+    auto_ban_duration=3600,  # Ban for 1 hour
 )
 
 app.add_middleware(SecurityMiddleware, config=config)

@@ -21,10 +21,7 @@ Class Definition
 ```python
 class SecurityMiddleware(BaseHTTPMiddleware):
     def __init__(
-        self,
-        app: Callable[[Request], Awaitable[Response]],
-        *,
-        config: SecurityConfig
+        self, app: Callable[[Request], Awaitable[Response]], *, config: SecurityConfig
     ):
         """
         Initialize the SecurityMiddleware.
@@ -120,9 +117,7 @@ dispatch
 
 ```python
 async def dispatch(
-    self,
-    request: Request,
-    call_next: Callable[[Request], Awaitable[Response]]
+    self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
     """
     Main request handler that orchestrates security checks.
@@ -153,9 +148,7 @@ create_error_response
 
 ```python
 async def create_error_response(
-    self,
-    status_code: int,
-    default_message: str
+    self, status_code: int, default_message: str
 ) -> Response:
     """
     Create standardized error responses.
@@ -354,9 +347,7 @@ Enable Redis in SecurityConfig:
 
 ```python
 config = SecurityConfig(
-    enable_redis=True,
-    redis_url="redis://prod:6379/0",
-    redis_prefix="prod_security:"
+    enable_redis=True, redis_url="redis://prod:6379/0", redis_prefix="prod_security:"
 )
 ```
 
@@ -401,11 +392,7 @@ from guard import SecurityConfig
 
 app = FastAPI()
 
-config = SecurityConfig(
-    rate_limit=100,
-    enforce_https=True,
-    enable_cors=True
-)
+config = SecurityConfig(rate_limit=100, enforce_https=True, enable_cors=True)
 
 app.add_middleware(SecurityMiddleware, config=config)
 ```
@@ -424,11 +411,13 @@ app = FastAPI()
 config = SecurityConfig(rate_limit=100)
 guard_deco = SecurityDecorator(config)
 
+
 # Apply decorators to routes
 @app.get("/api/limited")
 @guard_deco.rate_limit(requests=10, window=300)
 def limited_endpoint():
     return {"data": "limited"}
+
 
 # Add middleware and set decorator
 app.add_middleware(SecurityMiddleware, config=config)
@@ -444,10 +433,7 @@ from guard.lifespan import guard_lifespan
 from guard.middleware import SecurityMiddleware
 from guard import SecurityConfig
 
-config = SecurityConfig(
-    enable_redis=True,
-    redis_url="redis://localhost:6379"
-)
+config = SecurityConfig(enable_redis=True, redis_url="redis://localhost:6379")
 
 app = FastAPI(lifespan=guard_lifespan)
 app.add_middleware(SecurityMiddleware, config=config)

@@ -48,19 +48,10 @@ from guard import BehaviorTracker, BehaviorRule
 tracker = BehaviorTracker(config)
 
 # Define rules
-usage_rule = BehaviorRule(
-    rule_type="usage",
-    threshold=10,
-    window=3600,
-    action="ban"
-)
+usage_rule = BehaviorRule(rule_type="usage", threshold=10, window=3600, action="ban")
 
 return_rule = BehaviorRule(
-    rule_type="return_pattern",
-    threshold=3,
-    pattern="win",
-    window=86400,
-    action="alert"
+    rule_type="return_pattern", threshold=3, pattern="win", window=86400, action="alert"
 )
 
 # Track usage
@@ -109,28 +100,19 @@ For `return_pattern` rules, the following pattern formats are supported:
 
 ```python
 # Usage monitoring
-usage_rule = BehaviorRule(
-    rule_type="usage",
-    threshold=50,
-    window=3600,
-    action="ban"
-)
+usage_rule = BehaviorRule(rule_type="usage", threshold=50, window=3600, action="ban")
 
 # Return pattern monitoring
 win_rule = BehaviorRule(
-    rule_type="return_pattern",
-    threshold=3,
-    pattern="win",
-    window=86400,
-    action="ban"
+    rule_type="return_pattern", threshold=3, pattern="win", window=86400, action="ban"
 )
 
 # Frequency detection
 freq_rule = BehaviorRule(
     rule_type="frequency",
     threshold=30,  # 30 requests
-    window=300,    # in 5 minutes
-    action="alert"
+    window=300,  # in 5 minutes
+    action="alert",
 )
 ```
 
@@ -145,6 +127,7 @@ The Behavior Manager integrates seamlessly with the decorator system:
 from guard import SecurityDecorator
 
 guard_deco = SecurityDecorator(config)
+
 
 @app.get("/api/rewards")
 @guard_deco.usage_monitor(max_calls=10, window=3600, action="ban")
@@ -183,7 +166,7 @@ json_rule = BehaviorRule(
     threshold=5,
     pattern="json:result.reward.rarity==legendary",
     window=86400,
-    action="ban"
+    action="ban",
 )
 
 # Regex pattern
@@ -192,7 +175,7 @@ regex_rule = BehaviorRule(
     threshold=10,
     pattern="regex:(win|victory|success)",
     window=3600,
-    action="alert"
+    action="alert",
 )
 
 # Status code pattern
@@ -201,7 +184,7 @@ status_rule = BehaviorRule(
     threshold=100,
     pattern="status:200",
     window=3600,
-    action="log"
+    action="log",
 )
 ```
 
@@ -212,9 +195,12 @@ status_rule = BehaviorRule(
 # Apply multiple rules to an endpoint
 rules = [
     BehaviorRule("usage", threshold=20, window=3600, action="ban"),
-    BehaviorRule("return_pattern", threshold=5, pattern="win", window=86400, action="alert"),
-    BehaviorRule("frequency", threshold=60, window=300, action="throttle")
+    BehaviorRule(
+        "return_pattern", threshold=5, pattern="win", window=86400, action="alert"
+    ),
+    BehaviorRule("frequency", threshold=60, window=300, action="throttle"),
 ]
+
 
 @guard_deco.behavior_analysis(rules)
 def complex_endpoint():
@@ -290,10 +276,7 @@ Monitoring and Debugging
 Enable detailed logging for behavioral analysis:
 
 ```python
-config = SecurityConfig(
-    log_suspicious_level="DEBUG",
-    log_request_level="INFO"
-)
+config = SecurityConfig(log_suspicious_level="DEBUG", log_request_level="INFO")
 
 # Logs will include:
 # - Behavioral rule violations

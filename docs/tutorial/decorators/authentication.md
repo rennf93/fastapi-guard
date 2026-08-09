@@ -25,6 +25,7 @@ from guard import SecurityDecorator
 
 guard_deco = SecurityDecorator(config)
 
+
 @app.post("/api/login")
 @guard_deco.require_https()
 def login(credentials: dict):
@@ -37,6 +38,7 @@ def login(credentials: dict):
 ```python
 # Global HTTPS enforcement
 config = SecurityConfig(enforce_https=True)
+
 
 # Route-specific override (still enforced due to global setting)
 @app.get("/api/public")
@@ -53,6 +55,7 @@ def public_endpoint():
 @guard_deco.require_https()
 def payment_endpoint(payment_data: dict):
     return {"status": "payment processed securely"}
+
 
 @app.post("/api/user/password")
 @guard_deco.require_https()
@@ -85,6 +88,7 @@ def user_profile():
 @guard_deco.require_auth(type="bearer")
 def admin_endpoint():
     return {"admin": "data"}
+
 
 @app.get("/api/service")
 @guard_deco.require_auth(type="basic")
@@ -129,6 +133,7 @@ def api_key_endpoint():
 def custom_key_endpoint():
     return {"data": "custom header auth"}
 
+
 @app.get("/api/service-key")
 @guard_deco.api_key_auth(header_name="Authorization-Key")
 def service_key_endpoint():
@@ -158,10 +163,9 @@ Enforce specific headers for authentication and security:
 
 ```python
 @app.get("/api/secure")
-@guard_deco.require_headers({
-    "X-Requested-With": "XMLHttpRequest",
-    "X-CSRF-Token": "required"
-})
+@guard_deco.require_headers(
+    {"X-Requested-With": "XMLHttpRequest", "X-CSRF-Token": "required"}
+)
 def secure_endpoint():
     return {"data": "csrf protected"}
 ```
@@ -171,10 +175,9 @@ def secure_endpoint():
 
 ```python
 @app.get("/api/v2/data")
-@guard_deco.require_headers({
-    "Accept": "application/vnd.api+json",
-    "API-Version": "2.0"
-})
+@guard_deco.require_headers(
+    {"Accept": "application/vnd.api+json", "API-Version": "2.0"}
+)
 def versioned_endpoint():
     return {"data": "version 2.0", "format": "json-api"}
 ```
@@ -184,11 +187,13 @@ def versioned_endpoint():
 
 ```python
 @app.get("/api/client-specific")
-@guard_deco.require_headers({
-    "X-Client-ID": "required",
-    "X-Client-Version": "required",
-    "User-Agent": "required"
-})
+@guard_deco.require_headers(
+    {
+        "X-Client-ID": "required",
+        "X-Client-Version": "required",
+        "User-Agent": "required",
+    }
+)
 def client_endpoint():
     return {"data": "client identified"}
 ```
@@ -205,13 +210,15 @@ Stack multiple authentication decorators for comprehensive security:
 
 ```python
 @app.post("/api/admin/critical")
-@guard_deco.require_https()                          # Secure connection
-@guard_deco.require_auth(type="bearer")              # Bearer token
+@guard_deco.require_https()  # Secure connection
+@guard_deco.require_auth(type="bearer")  # Bearer token
 @guard_deco.api_key_auth(header_name="X-Admin-Key")  # Admin API key
-@guard_deco.require_headers({
-    "X-CSRF-Token": "required",                      # CSRF protection
-    "X-Request-ID": "required"                       # Request tracking
-})
+@guard_deco.require_headers(
+    {
+        "X-CSRF-Token": "required",  # CSRF protection
+        "X-Request-ID": "required",  # Request tracking
+    }
+)
 def critical_admin_endpoint():
     return {"status": "critical operation completed"}
 ```
@@ -223,10 +230,12 @@ def critical_admin_endpoint():
 @app.post("/api/service/webhook")
 @guard_deco.require_https()
 @guard_deco.api_key_auth(header_name="X-Service-Key")
-@guard_deco.require_headers({
-    "X-Signature": "required",    # Webhook signature
-    "Content-Type": "application/json"
-})
+@guard_deco.require_headers(
+    {
+        "X-Signature": "required",  # Webhook signature
+        "Content-Type": "application/json",
+    }
+)
 def webhook_endpoint():
     return {"status": "webhook processed"}
 ```
@@ -238,11 +247,13 @@ def webhook_endpoint():
 @app.get("/api/mobile/data")
 @guard_deco.require_https()
 @guard_deco.require_auth(type="bearer")
-@guard_deco.require_headers({
-    "X-App-Version": "required",
-    "X-Device-ID": "required",
-    "Accept": "application/json"
-})
+@guard_deco.require_headers(
+    {
+        "X-App-Version": "required",
+        "X-Device-ID": "required",
+        "Accept": "application/json",
+    }
+)
 def mobile_endpoint():
     return {"data": "mobile app data"}
 ```
@@ -258,10 +269,9 @@ Authentication Flow Examples
 ```python
 @app.post("/auth/login")
 @guard_deco.require_https()
-@guard_deco.require_headers({
-    "Content-Type": "application/json",
-    "X-CSRF-Token": "required"
-})
+@guard_deco.require_headers(
+    {"Content-Type": "application/json", "X-CSRF-Token": "required"}
+)
 def login(credentials: dict):
     # Validate credentials
     return {"token": "jwt_token", "expires": "3600"}
@@ -274,9 +284,7 @@ def login(credentials: dict):
 @app.post("/auth/refresh")
 @guard_deco.require_https()
 @guard_deco.require_auth(type="bearer")
-@guard_deco.require_headers({
-    "X-Refresh-Token": "required"
-})
+@guard_deco.require_headers({"X-Refresh-Token": "required"})
 def refresh_token():
     return {"token": "new_jwt_token", "expires": "3600"}
 ```
@@ -287,9 +295,7 @@ def refresh_token():
 ```python
 @app.post("/auth/logout")
 @guard_deco.require_auth(type="bearer")
-@guard_deco.require_headers({
-    "X-CSRF-Token": "required"
-})
+@guard_deco.require_headers({"X-CSRF-Token": "required"})
 def logout():
     return {"status": "logged out"}
 ```
@@ -318,9 +324,7 @@ def public_status():
 @app.get("/api/partner/data")
 @guard_deco.require_https()
 @guard_deco.api_key_auth(header_name="X-Partner-Key")
-@guard_deco.require_headers({
-    "X-Partner-ID": "required"
-})
+@guard_deco.require_headers({"X-Partner-ID": "required"})
 def partner_data():
     return {"data": "partner exclusive"}
 ```
@@ -333,10 +337,9 @@ def partner_data():
 @guard_deco.require_https()
 @guard_deco.require_auth(type="bearer")
 @guard_deco.api_key_auth(header_name="X-Internal-Key")
-@guard_deco.require_headers({
-    "X-Service-Name": "required",
-    "X-Request-Context": "required"
-})
+@guard_deco.require_headers(
+    {"X-Service-Name": "required", "X-Request-Context": "required"}
+)
 def internal_admin():
     return {"data": "internal admin access"}
 ```
@@ -361,7 +364,7 @@ config = SecurityConfig(
     custom_error_responses={
         400: "Missing required authentication headers",
         401: "Invalid authentication credentials",
-        403: "Insufficient privileges for this operation"
+        403: "Insufficient privileges for this operation",
     }
 )
 ```
@@ -446,6 +449,7 @@ from fastapi.security import HTTPBearer
 
 security = HTTPBearer()
 
+
 @app.get("/api/integrated")
 @guard_deco.require_https()
 @guard_deco.require_headers({"X-Client-ID": "required"})
@@ -466,10 +470,12 @@ Test your authentication decorators:
 import pytest
 from fastapi.testclient import TestClient
 
+
 def test_https_required():
     # Should redirect HTTP to HTTPS
     response = client.get("/api/secure", base_url="http://testserver")
     assert response.status_code == 301
+
 
 def test_api_key_required():
     # Should reject without API key
@@ -477,10 +483,7 @@ def test_api_key_required():
     assert response.status_code == 400
 
     # Should accept with valid API key
-    response = client.get(
-        "/api/key-protected",
-        headers={"X-API-Key": "valid-key"}
-    )
+    response = client.get("/api/key-protected", headers={"X-API-Key": "valid-key"})
     assert response.status_code == 200
 ```
 

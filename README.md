@@ -86,6 +86,7 @@ from guard import SecurityConfig, SecurityDecorator
 config = SecurityConfig()
 guard = SecurityDecorator(config)
 
+
 @app.get("/api/payments")
 @guard.require_auth(type="bearer")
 @guard.rate_limit(requests=10, window=60)

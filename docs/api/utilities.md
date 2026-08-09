@@ -20,25 +20,24 @@ setup_custom_logging
 
 ```python
 def setup_custom_logging(
-    log_file: str | None = None,
-    log_format: str = "text"
+    log_file: str | None = None, log_format: str = "text"
 ) -> logging.Logger:
     """
     Setup custom logging for FastAPI Guard.
-    
+
     Configures a hierarchical logger that outputs to both console and file.
     Console output is ALWAYS enabled for visibility.
     File output is optional for persistence.
-    
+
     Args:
         log_file: Optional path to log file. If None, only console output is enabled.
                   If provided, creates the directory if it doesn't exist.
         log_format: Output format for log records. "text" (default) uses a
                     human-readable formatter; "json" emits structured JSON.
-    
+
     Returns:
         logging.Logger: Configured logger with namespace "guard_core"
-    
+
     Note: This function is synchronous (not async).
     """
 ```
@@ -54,7 +53,7 @@ async def log_activity(
     reason: str = "",
     passive_mode: bool = False,
     trigger_info: str = "",
-    level: Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None = "WARNING"
+    level: Literal["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"] | None = "WARNING",
 ):
     """
     Universal logging function for all types of requests and activities.
@@ -82,10 +81,7 @@ is_user_agent_allowed
 ---------------------
 
 ```python
-async def is_user_agent_allowed(
-    user_agent: str,
-    config: SecurityConfig
-) -> bool:
+async def is_user_agent_allowed(user_agent: str, config: SecurityConfig) -> bool:
     """
     Check if user agent is allowed.
     """
@@ -96,9 +92,7 @@ check_ip_country
 
 ```python
 async def check_ip_country(
-    request: str | Request,
-    config: SecurityConfig,
-    geo_ip_handler: GeoIPHandler
+    request: str | Request, config: SecurityConfig, geo_ip_handler: GeoIPHandler
 ) -> bool:
     """
     Check if IP is from a blocked country.
@@ -110,9 +104,7 @@ is_ip_allowed
 
 ```python
 async def is_ip_allowed(
-    ip: str,
-    config: SecurityConfig,
-    geo_ip_handler: GeoIPHandler | None = None
+    ip: str, config: SecurityConfig, geo_ip_handler: GeoIPHandler | None = None
 ) -> bool:
     """
     Check if IP address is allowed.
@@ -179,6 +171,7 @@ Example usage:
 from fastapi import Request
 from guard_core.utils import detect_penetration_attempt
 
+
 @app.post("/api/submit")
 async def submit_data(request: Request):
     result = await detect_penetration_attempt(request)
@@ -191,11 +184,15 @@ async def submit_data(request: Request):
         return {"error": "Suspicious activity detected"}
     return {"success": True}
 
+
 @app.post("/api/critical")
 async def critical_endpoint(request: Request, security_config: SecurityConfig):
     result = await detect_penetration_attempt(request, config=security_config)
     if result.is_threat:
-        return {"error": "Security check failed", "categories": result.threat_categories}
+        return {
+            "error": "Security check failed",
+            "categories": result.threat_categories,
+        }
     return {"success": True}
 ```
 
@@ -206,7 +203,7 @@ extract_client_ip
 async def extract_client_ip(
     request: Request,
     config: SecurityConfig,
-    agent_handler: AgentHandlerProtocol | None = None
+    agent_handler: AgentHandlerProtocol | None = None,
 ) -> str:
     """
     Securely extract the client IP address from the request, considering trusted proxies.
@@ -233,7 +230,7 @@ Usage Examples
 from guard_core.utils import (
     setup_custom_logging,
     log_activity,
-    detect_penetration_attempt
+    detect_penetration_attempt,
 )
 
 # Setup logging (synchronous function)
@@ -248,10 +245,7 @@ await log_activity(request, logger)
 
 # Log suspicious activity
 await log_activity(
-    request,
-    logger,
-    log_type="suspicious",
-    reason="Suspicious pattern detected"
+    request, logger, log_type="suspicious", reason="Suspicious pattern detected"
 )
 
 # Check for penetration attempts

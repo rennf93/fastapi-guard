@@ -18,9 +18,7 @@ Basic Logging
 By default, FastAPI Guard logs all security events to standard Python logging facilities. You can configure custom log paths using the `custom_log_file` parameter in the `SecurityConfig`.
 
 ```python
-config = SecurityConfig(
-    custom_log_file="/path/to/security.log"
-)
+config = SecurityConfig(custom_log_file="/path/to/security.log")
 ```
 
 ___
@@ -33,7 +31,7 @@ When deploying in production environments, it's often best to start with passive
 ```python
 config = SecurityConfig(
     enable_penetration_detection=True,
-    passive_mode=True  # Log but don't block
+    passive_mode=True,  # Log but don't block
 )
 ```
 
@@ -53,7 +51,7 @@ config = SecurityConfig(
     # Normal requests logged at INFO level (or None to disable)
     log_request_level="INFO",
     # Security events logged at WARNING level
-    log_suspicious_level="WARNING"
+    log_suspicious_level="WARNING",
 )
 ```
 

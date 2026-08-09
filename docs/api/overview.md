@@ -175,6 +175,7 @@ from guard import SecurityDecorator
 config = SecurityConfig()
 guard_deco = SecurityDecorator(config)
 
+
 # Apply to routes
 @app.get("/api/sensitive")
 @guard_deco.rate_limit(requests=5, window=300)

@@ -100,16 +100,13 @@ from guard import SecurityConfig, SecurityMiddleware
 config = SecurityConfig(
     enable_redis=True,
     redis_url="redis://localhost:6379",
-
     rate_limit=100,
     rate_limit_window=60,
     auto_ban_threshold=5,
     auto_ban_duration=300,
-
     enable_penetration_detection=True,
     enable_ip_banning=True,
     enable_rate_limiting=True,
-
     blocked_user_agents=["badbot", "scrapy", "nikto"],
 )
 
@@ -164,7 +161,6 @@ config = SecurityConfig(
     rate_limit_window=60,
     auto_ban_threshold=5,
     enable_penetration_detection=True,
-
     # SaaS telemetry
     enable_agent=True,
     agent_api_key=os.environ["GUARD_API_KEY"],
@@ -175,7 +171,6 @@ config = SecurityConfig(
     agent_enable_events=True,
     agent_enable_metrics=True,
     agent_guard_version=_GUARD_VERSION,  # so SaaS can attribute events to wrapper version
-
     # Optional — pull dynamic rule updates from the dashboard
     enable_dynamic_rules=True,
     dynamic_rule_interval=60,
@@ -225,9 +220,8 @@ except ImportError:
 config = SecurityConfig(
     enable_redis=True,
     redis_url="redis://localhost:6379",
-
     enable_agent=True,
-    agent_api_key=os.environ["GUARD_API_KEY_W_ENCRYPTION"],      # encryption-enforced key
+    agent_api_key=os.environ["GUARD_API_KEY_W_ENCRYPTION"],  # encryption-enforced key
     agent_project_id=os.environ["GUARD_PROJECT_ID"],
     agent_endpoint="https://api.guard-core.com",
     agent_project_encryption_key=os.environ["GUARD_PROJECT_ENCRYPTION_KEY"],

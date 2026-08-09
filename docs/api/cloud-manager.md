@@ -74,11 +74,7 @@ refresh_async
 -------------
 
 ```python
-async def refresh_async(
-    self,
-    providers: set[str] = _ALL_PROVIDERS,
-    ttl: int = 3600
-):
+async def refresh_async(self, providers: set[str] = _ALL_PROVIDERS, ttl: int = 3600):
     """
     Async refresh of IP ranges with Redis caching.
 
@@ -93,10 +89,7 @@ initialize_redis
 
 ```python
 async def initialize_redis(
-    self,
-    redis_handler: Any,
-    providers: set[str] = _ALL_PROVIDERS,
-    ttl: int = 3600
+    self, redis_handler: Any, providers: set[str] = _ALL_PROVIDERS, ttl: int = 3600
 ):
     """
     Initialize Redis integration and load IP ranges.
@@ -128,11 +121,7 @@ is_cloud_ip
 -----------
 
 ```python
-def is_cloud_ip(
-    self,
-    ip: str,
-    providers: set[str]
-) -> bool:
+def is_cloud_ip(self, ip: str, providers: set[str]) -> bool:
     """
     Check if an IP belongs to specified cloud providers.
 
@@ -157,10 +146,7 @@ from guard import cloud_handler
 is_aws = cloud_handler.is_cloud_ip("54.239.28.85", {"AWS"})
 
 # Check multiple providers
-is_cloud = cloud_handler.is_cloud_ip(
-    "35.186.224.25",
-    {"AWS", "GCP", "Azure"}
-)
+is_cloud = cloud_handler.is_cloud_ip("35.186.224.25", {"AWS", "GCP", "Azure"})
 
 # Refresh IP ranges manually if needed
 await cloud_handler.refresh()  # Raises RuntimeError when Redis is enabled
