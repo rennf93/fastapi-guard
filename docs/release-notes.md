@@ -10,6 +10,20 @@ Release Notes
 
 ___
 
+v7.5.1 (2026-08-09)
+-------------------
+
+Advanced example now initializes at startup, a lint gate that could not fail, and corrected agent buffer guidance (v7.5.1)
+--------------------------------------------------------------------------------------------------------------------------
+
+- **Fixed** - **The advanced example never initialized its middleware at startup.** `examples/advanced_app/app/main.py` wired a plain `lifespan` that only logged, so `SecurityMiddleware.initialize()` ran lazily on the first request instead of at startup. Its sibling `examples/simple_app/main.py` used `make_lifespan` correctly, so the two examples disagreed about the supported startup path and the advanced one modelled the pattern the tutorial steers readers away from. It now uses `make_lifespan` while keeping its own lifespan body intact.
+- **Fixed** - **Both examples now show what the pipeline actually built.** The middleware's `Security pipeline initialized with N checks: [...] (M skipped)` startup line is surfaced in both example apps, so a reader can see the effect of guard-core 3.10.0's config-derived pipeline on their own configuration rather than inferring it.
+- **Fixed** - **`make lint` could not fail.** The target chained its tools with `;` instead of `&&`, so only the last command determined the exit code. `ruff check` and `mypy` failures were discarded, which is how a real import-sorting violation reached CI while `make lint` reported success locally. The chain now uses `&&`. Separately `ruff format` ran without `--check`, so it rewrote files in place and returned 0 unconditionally; that step could never fail either. It now runs with `--check`, and the formatting drift this exposed across 46 Markdown files is applied in its own commit.
+- **Fixed** - **`agent_buffer_size` guidance was wrong and contradicted the in-wheel skill.** The documentation recommended `5000` for production traffic and cited a batch limit of 10,000 events and 5,000 metrics. Read against guard-agent's source, the 256 KiB request body cap is real and enforced server side, no client side batch count limit exists anywhere in the agent, and the quoted figure has no basis in code. The skill already said to keep the default of 100. Every surface now agrees on 100 and explains the body size cap that motivates it.
+- **Documentation** - **Accuracy sweep against 7.5.0.** Roughly 20 further corrections across the README, `docs/`, the in-wheel skill and the example apps, each verified against the code as shipped rather than against neighbouring documentation. This covers the logger namespace diagram, which omitted three loggers that genuinely fire, `SecurityConfig` default values quoted in prose, the `detection_exclusion` signature, and links to files that do not exist at the paths given. Every fenced Python example in the touched files was executed rather than eyeballed.
+
+___
+
 v7.5.0 (2026-08-05)
 -------------------
 
