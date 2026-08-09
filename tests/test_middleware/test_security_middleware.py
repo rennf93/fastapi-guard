@@ -13,8 +13,8 @@ from guard_core.handlers.ipinfo_handler import IPInfoManager
 from guard_core.handlers.ratelimit_handler import rate_limit_handler
 from guard_core.handlers.redis_handler import redis_handler
 from guard_core.models import SecurityConfig
-from guard_core.utils import IpAccessResult
 from guard_core.protocols import GuardRequest, GuardResponse
+from guard_core.utils import IpAccessResult
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 from redis.exceptions import RedisError
