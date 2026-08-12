@@ -32,6 +32,33 @@
 
 ---
 
+<table align="center">
+<tr>
+<td align="center" width="50%">
+
+### 📋 Using this in production?
+
+**[Tell me what is working and what is not →](https://forms.gle/ZpjkQgT7KGWgRoQP7)**
+
+Six minutes. It decides what gets built next.<br>
+Anonymous unless you choose otherwise.
+
+</td>
+<td align="center" width="50%">
+
+### 📊 State of FastAPI Security 2026
+
+**[Take the survey →](https://forms.gle/7npRKzN8BZLfZj326)**
+
+Five minutes, nothing to sign up for.<br>
+Results published publicly, free for everyone.
+
+</td>
+</tr>
+</table>
+
+---
+
 ## Quick Start
 
 ```bash
