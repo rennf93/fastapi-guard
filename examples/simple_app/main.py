@@ -331,7 +331,7 @@ security_config = SecurityConfig(
         "/openapi.json",
         "/favicon.ico",
         "/static",
-        "/health",
+        "/basic/health",
     ],
     # Advanced Configuration
     passive_mode=False,  # Set to True for log-only mode

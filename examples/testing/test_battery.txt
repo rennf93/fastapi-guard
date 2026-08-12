@@ -1,12 +1,11 @@
 # Basic access
-
 curl http://0.0.0.0:8000/
 curl http://0.0.0.0:8000/docs
 curl http://0.0.0.0:8000/redoc
-curl http://0.0.0.0:8000/test
+curl http://0.0.0.0:8000/basic/health
 
 
-# Rate limit (5 requests allowed)
+# Rate limit (30 requests allowed per 60s, configured via rate_limit/rate_limit_window)
 for i in {1..5}; do
     curl http://0.0.0.0:8000/
     echo "Request $i"
@@ -14,44 +13,38 @@ for i in {1..5}; do
 done
 
 
-# Auto-ban (threshold=5)
-for i in {1..5}; do
-    curl "http://0.0.0.0:8000/test?input=<script>alert(1)</script>";
-    echo "";
-    sleep 0.1;
-done
-
-
 # Whitelist Tests
-curl http://0.0.0.0:8000/  # Should work (0.0.0.0)
+curl http://0.0.0.0:8000/  # Should work (loopback via 0.0.0.0)
 curl -H "X-Forwarded-For: 0.0.0.0" http://0.0.0.0:8000/
 curl -H "X-Forwarded-For: 192.168.0.1" http://0.0.0.0:8000/
 curl -H "X-Forwarded-For: 10.0.0.100" http://0.0.0.0:8000/
 
-# User Agent Tests
-
 
 # XSS Tests
-curl "http://0.0.0.0:8000/test?input=<script>alert(1)</script>"
-curl "http://0.0.0.0:8000/test?input=javascript:alert(1)"
-curl "http://0.0.0.0:8000/test?input=<img%20src=x%20onerror=alert(1)>"
+curl -X POST -H "Content-Type: application/json" -d '"<script>alert(1)</script>"' http://0.0.0.0:8000/test/xss-test
+curl -X POST -H "Content-Type: application/json" -d '"javascript:alert(1)"' http://0.0.0.0:8000/test/xss-test
+curl -X POST -H "Content-Type: application/json" -d '"<img src=x onerror=alert(1)>"' http://0.0.0.0:8000/test/xss-test
 
 
 # SQL Injection Tests
-curl "http://0.0.0.0:8000/test?query=SELECT%20*%20FROM%20users"
-curl "http://0.0.0.0:8000/test?query=UNION%20SELECT%20password%20FROM%20users"
-curl "http://0.0.0.0:8000/test?query=1%27%20OR%20%271%27%3D%271"
+curl -X POST "http://0.0.0.0:8000/test/sql-injection?query=SELECT%20*%20FROM%20users"
+curl -X POST "http://0.0.0.0:8000/test/sql-injection?query=UNION%20SELECT%20password%20FROM%20users"
+curl -X POST "http://0.0.0.0:8000/test/sql-injection?query=1%27%20OR%20%271%27%3D%271"
 
 
 # Path Traversal Tests
-curl "http://0.0.0.0:8000/test?path=../../../etc/passwd"
-curl "http://0.0.0.0:8000/test?path=..\..\windows\win.ini"
+curl --path-as-is "http://0.0.0.0:8000/test/path-traversal/../../../etc/passwd"
+curl --path-as-is "http://0.0.0.0:8000/test/path-traversal/..\..\windows\win.ini"
 
 
 # Command Injection Tests
-curl "http://0.0.0.0:8000/test?cmd=;ls;pwd;"
-curl "http://0.0.0.0:8000/test?cmd=|cat%20/etc/passwd"
-curl "http://0.0.0.0:8000/test?cmd=\$(whoami)"
+curl -X POST -H "Content-Type: application/json" -d '"; ls -la"' http://0.0.0.0:8000/test/command-injection
+curl -X POST -H "Content-Type: application/json" -d '"| cat /etc/passwd"' http://0.0.0.0:8000/test/command-injection
+curl -X POST -H "Content-Type: application/json" -d '"$(whoami)"' http://0.0.0.0:8000/test/command-injection
+
+
+# Mixed Attack Test
+curl -X POST -H "Content-Type: application/json" -d '{"input":"<script>alert(1)</script>","query":"1'"'"' OR '"'"'1'"'"'='"'"'1","path":"../../etc/passwd","cmd":"; ls"}' http://0.0.0.0:8000/test/mixed-attack
 
 
 # AWS IP Test
@@ -65,3 +58,10 @@ curl -H "X-Forwarded-For: 35.190.0.0" http://0.0.0.0:8000/
 # AZ IP Test
 curl -H "X-Forwarded-For: 52.183.224.0" http://0.0.0.0:8000/
 
+
+# Auto-ban (threshold=5): by this point the suspicious-activity hits from the XSS/SQLi/path-traversal/command-injection sections above have almost certainly already crossed auto_ban_threshold=5 and 127.0.0.1 is banned for the life of the server process. Every command below (and any retry of the sections above) will return "IP has been banned" (403) regardless of payload until the process is restarted. That IS the auto-ban feature working, not a bug in this file.
+for i in {1..5}; do
+    curl -X POST -H "Content-Type: application/json" -d '"<script>alert(1)</script>"' http://0.0.0.0:8000/test/xss-test;
+    echo "";
+    sleep 0.1;
+done

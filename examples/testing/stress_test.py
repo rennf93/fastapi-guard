@@ -224,7 +224,7 @@ class FastAPIGuardStressTest:
 
     async def test_health_check(self, session: aiohttp.ClientSession) -> RequestResult:
         """Test health check (excluded from security checks)."""
-        url = f"{self.base_url}/health"
+        url = f"{self.base_url}/basic/health"
         return await self.make_request(session, "GET", url, "basic")
 
     # ==================== Rate Limiting Tests ====================
