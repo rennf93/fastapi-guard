@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -524,7 +525,7 @@ async def test_route_specific_middleware_validations(
     mock_request.url.path = "/test"
     mock_request.headers = test_case["headers"]
     mock_request.query_params = {}
-    mock_request.state.client_ip = "127.0.0.1"
+    mock_request.state = SimpleNamespace(client_ip="127.0.0.1")
 
     async def mock_call_next(request: Request) -> Response:
         return Response("ok", status_code=200)
@@ -558,7 +559,7 @@ async def test_route_specific_rate_limit_with_redis() -> None:
     mock_request.url.path = "/test"
     mock_request.headers = {}
     mock_request.query_params = {}
-    mock_request.state.client_ip = "127.0.0.1"
+    mock_request.state = SimpleNamespace(client_ip="127.0.0.1")
     mock_request.state.is_whitelisted = False
 
     async def mock_call_next(request: Request) -> Response:

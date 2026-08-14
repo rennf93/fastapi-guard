@@ -70,10 +70,10 @@ async def test_ip_whitelist_blacklist() -> None:
     """
     app = FastAPI()
     config = SecurityConfig(
-        whitelist=["127.0.0.1"],
-        blacklist=["192.168.1.1"],
+        whitelist=("127.0.0.1",),
+        blacklist=("192.168.1.1",),
         enable_penetration_detection=False,
-        trusted_proxies=["127.0.0.1"],
+        trusted_proxies=("127.0.0.1",),
     )
 
     app.add_middleware(SecurityMiddleware, config=config)
@@ -134,10 +134,10 @@ async def test_rate_limiting_multiple_ips(reset_state: None) -> None:
         rate_limit=2,
         rate_limit_window=1,
         enable_rate_limiting=True,
-        whitelist=[],
-        blacklist=[],
+        whitelist=(),
+        blacklist=(),
         enable_penetration_detection=False,
-        trusted_proxies=["127.0.0.1"],
+        trusted_proxies=("127.0.0.1",),
     )
 
     app.add_middleware(SecurityMiddleware, config=config)
@@ -178,14 +178,14 @@ async def test_middleware_multiple_configs() -> None:
     config1 = SecurityConfig(
         blocked_user_agents=[r"badbot"],
         enable_penetration_detection=False,
-        trusted_proxies=["127.0.0.1"],
+        trusted_proxies=("127.0.0.1",),
     )
 
     config2 = SecurityConfig(
-        whitelist=["127.0.0.1"],
-        blacklist=["192.168.1.1"],
+        whitelist=("127.0.0.1",),
+        blacklist=("192.168.1.1",),
         enable_penetration_detection=False,
-        trusted_proxies=["127.0.0.1"],
+        trusted_proxies=("127.0.0.1",),
     )
 
     app.add_middleware(SecurityMiddleware, config=config1)
@@ -251,7 +251,7 @@ async def test_custom_error_responses() -> None:
     """
     app = FastAPI()
     config = SecurityConfig(
-        blacklist=["192.168.1.3"],
+        blacklist=("192.168.1.3",),
         custom_error_responses={
             403: "Custom Forbidden",
             429: "Custom Too Many Requests",
@@ -260,7 +260,7 @@ async def test_custom_error_responses() -> None:
         rate_limit_window=1,
         auto_ban_threshold=10,
         enable_penetration_detection=False,
-        trusted_proxies=["127.0.0.1"],
+        trusted_proxies=("127.0.0.1",),
     )
 
     app.add_middleware(SecurityMiddleware, config=config)
@@ -575,7 +575,7 @@ async def test_cloud_ip_blocking() -> None:
     app = FastAPI()
     config = SecurityConfig(
         enable_penetration_detection=False,
-        block_cloud_providers={"AWS", "GCP", "Azure"},
+        block_cloud_providers=frozenset({"AWS", "GCP", "Azure"}),
     )
 
     app.add_middleware(SecurityMiddleware, config=config)
@@ -605,7 +605,7 @@ async def test_cloud_ip_blocking() -> None:
 async def test_cloud_ip_refresh() -> None:
     app = FastAPI()
     config = SecurityConfig(
-        block_cloud_providers={"AWS", "GCP", "Azure"},
+        block_cloud_providers=frozenset({"AWS", "GCP", "Azure"}),
         enable_penetration_detection=False,
     )
     middleware = SecurityMiddleware(app, config=config)
@@ -678,7 +678,7 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
     """Test cloud IP blocking with refresh functionality"""
     app = FastAPI()
     config = SecurityConfig(
-        block_cloud_providers={"AWS", "GCP", "Azure"},
+        block_cloud_providers=frozenset({"AWS", "GCP", "Azure"}),
         enable_redis=False,
         enable_penetration_detection=False,
     )
@@ -773,7 +773,7 @@ async def test_https_enforcement_with_xforwarded_proto() -> None:
     config = SecurityConfig(
         enable_penetration_detection=False,
         enforce_https=True,
-        trusted_proxies=["127.0.0.1"],
+        trusted_proxies=("127.0.0.1",),
         trust_x_forwarded_proto=True,
     )
 
@@ -866,10 +866,10 @@ async def test_cloud_ip_blocking_with_logging() -> None:
     """Test cloud IP blocking with logging functionality"""
     app = FastAPI()
     config = SecurityConfig(
-        block_cloud_providers={"AWS", "GCP", "Azure"},
-        whitelist=[],  # IP passes via patched check_ip_access
-        blacklist=[],  # Empty blacklist
-        trusted_proxies=["13.59.255.255"],  # Trust the IP as proxy
+        block_cloud_providers=frozenset({"AWS", "GCP", "Azure"}),
+        whitelist=(),  # IP passes via patched check_ip_access
+        blacklist=(),  # Empty blacklist
+        trusted_proxies=("13.59.255.255",),  # Trust the IP as proxy
         enable_penetration_detection=False,
     )
     middleware = SecurityMiddleware(app, config=config)
@@ -971,7 +971,7 @@ async def test_redis_initialization(security_config_redis: SecurityConfig) -> No
     """Test Redis initialization in SecurityMiddleware"""
     app = FastAPI()
 
-    security_config_redis.block_cloud_providers = {"AWS"}
+    security_config_redis.block_cloud_providers = frozenset({"AWS"})
     security_config_redis.lazy_init = False
 
     middleware = SecurityMiddleware(app, config=security_config_redis)
@@ -1130,7 +1130,7 @@ async def test_rate_limiting_with_redis(security_config_redis: SecurityConfig) -
     app = FastAPI()
     security_config_redis.rate_limit = 2
     security_config_redis.rate_limit_window = 10
-    security_config_redis.whitelist = []
+    security_config_redis.whitelist = ()
     security_config_redis.blocked_countries = frozenset()
 
     rate_handler = rate_limit_handler(security_config_redis)
@@ -1195,7 +1195,7 @@ async def test_passive_mode_penetration_detection() -> None:
     app = FastAPI()
     config = SecurityConfig(
         passive_mode=True,
-        whitelist=[],
+        whitelist=(),
     )
     middleware = SecurityMiddleware(app, config=config)
 
@@ -1208,7 +1208,7 @@ async def test_passive_mode_penetration_detection() -> None:
 
     with (
         patch(
-            "guard_core.core.checks.implementations.suspicious_activity.detect_penetration_patterns",
+            "guard_core.core.checks.implementations.suspicious_activity.get_cached_detection_result",
             new_callable=AsyncMock,
             return_value=DetectionResult(
                 is_threat=True, trigger_info="SQL injection attempt"
@@ -1250,7 +1250,7 @@ async def test_passive_mode_penetration_detection() -> None:
         assert response.status_code == status.HTTP_200_OK
         assert call_next_called, "call_next should be called in passive mode"
 
-        assert mock_detect.called, "detect_penetration_patterns should be called"
+        assert mock_detect.called, "get_cached_detection_result should be called"
 
         mock_log.assert_any_call(
             ANY,
@@ -1663,8 +1663,8 @@ async def test_ipv6_rate_limiting(
     config.rate_limit = 2
     config.rate_limit_window = 1
     config.enable_rate_limiting = True
-    config.trusted_proxies = ["127.0.0.1"]
-    config.whitelist = []
+    config.trusted_proxies = ("127.0.0.1",)
+    config.whitelist = ()
     config.blocked_countries = frozenset()
     config.enable_penetration_detection = False
 
@@ -1701,10 +1701,10 @@ async def test_ipv6_whitelist_blacklist(security_config_redis: SecurityConfig) -
     """
     app = FastAPI()
     config = security_config_redis
-    config.whitelist = ["::1", "2001:db8::1"]
-    config.blacklist = ["2001:db8::dead:beef"]
+    config.whitelist = ("::1", "2001:db8::1")
+    config.blacklist = ("2001:db8::dead:beef",)
     config.enable_penetration_detection = False
-    config.trusted_proxies = ["127.0.0.1", "::1"]
+    config.trusted_proxies = ("127.0.0.1", "::1")
 
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -1743,10 +1743,10 @@ async def test_ipv6_cidr_whitelist_blacklist(
     """
     app = FastAPI()
     config = security_config_redis
-    config.whitelist = ["2001:db8::/32"]
-    config.blacklist = ["2001:db8:dead::/48"]
+    config.whitelist = ("2001:db8::/32",)
+    config.blacklist = ("2001:db8:dead::/48",)
     config.enable_penetration_detection = False
-    config.trusted_proxies = ["127.0.0.1", "::1"]
+    config.trusted_proxies = ("127.0.0.1", "::1")
 
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -1782,10 +1782,10 @@ async def test_mixed_ipv4_ipv6_handling(security_config_redis: SecurityConfig) -
     """
     app = FastAPI()
     config = security_config_redis
-    config.whitelist = ["127.0.0.1", "::1", "192.168.1.0/24", "2001:db8::/32"]
-    config.blacklist = ["192.168.1.100", "2001:db8:dead::beef"]
+    config.whitelist = ("127.0.0.1", "::1", "192.168.1.0/24", "2001:db8::/32")
+    config.blacklist = ("192.168.1.100", "2001:db8:dead::beef")
     config.enable_penetration_detection = False
-    config.trusted_proxies = ["127.0.0.1", "::1"]
+    config.trusted_proxies = ("127.0.0.1", "::1")
 
     app.add_middleware(SecurityMiddleware, config=config)
 
@@ -1832,8 +1832,8 @@ async def test_real_ipv6_connection(
     config.rate_limit = 3
     config.rate_limit_window = 10
     config.enable_rate_limiting = True
-    config.whitelist = []
-    config.blacklist = ["2001:db8::2"]
+    config.whitelist = ()
+    config.blacklist = ("2001:db8::2",)
     config.blocked_countries = frozenset()
     config.enable_penetration_detection = False
 
@@ -1899,7 +1899,7 @@ async def test_emergency_mode_passive(security_config: SecurityConfig) -> None:
     app = FastAPI()
     security_config.emergency_mode = True
     security_config.passive_mode = True
-    security_config.trusted_proxies = ["127.0.0.1"]
+    security_config.trusted_proxies = ("127.0.0.1",)
 
     @app.get("/test")
     async def test_endpoint() -> dict[str, str]:

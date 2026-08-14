@@ -246,9 +246,9 @@ async def custom_response_modifier(response: GuardResponse) -> GuardResponse:
 
 security_config = SecurityConfig(
     # IP Configuration
-    blacklist=["192.168.100.0/24"],  # Example blacklisted subnet
+    blacklist=("192.168.100.0/24",),  # Example blacklisted subnet
     # Proxy Configuration
-    trusted_proxies=["127.0.0.1", "10.0.0.0/8"],
+    trusted_proxies=("127.0.0.1", "10.0.0.0/8"),
     trusted_proxy_depth=2,
     trust_x_forwarded_proto=True,
     # Geographical Filtering (requires ipinfo_token OR custom implementation)
@@ -256,7 +256,7 @@ security_config = SecurityConfig(
     # blocked_countries=["XX"],  # Example: block country code XX
     # whitelist_countries=[],  # Allow all countries by default
     # Cloud Provider Blocking
-    block_cloud_providers={"AWS", "GCP", "Azure"},
+    block_cloud_providers=frozenset({"AWS", "GCP", "Azure"}),
     # User Agent Filtering
     blocked_user_agents=["badbot", "evil-crawler", "sqlmap"],
     # Rate Limiting
@@ -797,7 +797,7 @@ async def monitor_usage_patterns() -> MessageResponse:
     },
 )
 @guard_decorator.return_monitor(
-    pattern="404", max_occurrences=3, window=60, action="ban"
+    pattern="status:404", max_occurrences=3, window=60, action="ban"
 )
 async def monitor_return_patterns(status_code: int) -> MessageResponse:
     if status_code == 404:
@@ -846,7 +846,7 @@ async def detect_suspicious_frequency() -> MessageResponse:
         BehaviorRule(rule_type="frequency", threshold=10, window=60, action="throttle"),
         BehaviorRule(
             rule_type="return_pattern",
-            pattern="404",
+            pattern="status:404",
             threshold=5,
             window=60,
             action="ban",

@@ -27,12 +27,12 @@ async def custom_response_modifier(response: GuardResponse) -> GuardResponse:
 
 
 security_config = SecurityConfig(
-    whitelist=[],
-    blacklist=["192.168.100.0/24"],
-    trusted_proxies=["172.16.0.0/12", "10.0.0.0/8"],
+    whitelist=(),
+    blacklist=("192.168.100.0/24",),
+    trusted_proxies=("172.16.0.0/12", "10.0.0.0/8"),
     trusted_proxy_depth=1,
     trust_x_forwarded_proto=True,
-    block_cloud_providers={"AWS", "GCP", "Azure"},
+    block_cloud_providers=frozenset({"AWS", "GCP", "Azure"}),
     blocked_user_agents=["badbot", "evil-crawler", "sqlmap"],
     enable_rate_limiting=True,
     rate_limit=30,

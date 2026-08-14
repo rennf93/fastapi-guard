@@ -17,8 +17,9 @@ async def behavioral_decorator_app(security_config: SecurityConfig) -> FastAPI:
     """Create FastAPI app with behavioral decorator integration."""
     app = FastAPI()
 
-    security_config.trusted_proxies = ["127.0.0.1"]
+    security_config.trusted_proxies = ("127.0.0.1",)
     security_config.enable_penetration_detection = False
+    security_config.behavior_scan_response_body = True
 
     decorator = SecurityDecorator(security_config)
 
@@ -273,6 +274,7 @@ async def test_behavioral_endpoints_response(
 
 async def test_behavioral_decorators_unit(security_config: SecurityConfig) -> None:
     """Unit tests for behavioral decorators."""
+    security_config.behavior_scan_response_body = True
     decorator = SecurityDecorator(security_config)
 
     mock_func = Mock()
@@ -349,3 +351,13 @@ async def test_behavioral_decorators_unit(security_config: SecurityConfig) -> No
     assert route_config4.behavior_rules[0].threshold == 150  # 0.5 * 300
     assert route_config4.behavior_rules[0].window == 300
     assert route_config4.behavior_rules[0].action == "throttle"
+
+
+async def test_return_monitor_body_pattern_without_scan_flag_raises(
+    security_config: SecurityConfig,
+) -> None:
+    decorator = SecurityDecorator(security_config)
+    with pytest.raises(ValueError, match="behavior_scan_response_body is False"):
+        decorator.return_monitor(
+            pattern="win", max_occurrences=3, window=86400, action="ban"
+        )

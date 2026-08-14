@@ -1,10 +1,20 @@
-from collections.abc import Awaitable, Callable, Mapping, MutableMapping
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, MutableMapping
 from typing import Any, cast
 
 from guard_core.protocols.request_protocol import GuardRequest
 from guard_core.protocols.response_protocol import GuardResponse
 from starlette.requests import Request
-from starlette.responses import RedirectResponse, Response
+from starlette.responses import RedirectResponse, Response, StreamingResponse
+from starlette.types import Message
+
+
+async def _replay_then_continue(
+    captured: list[Any], stream: AsyncIterator[Any]
+) -> AsyncIterator[Any]:
+    for chunk in captured:
+        yield chunk
+    async for chunk in stream:
+        yield chunk
 
 
 class StarletteGuardRequest:
@@ -47,6 +57,40 @@ class StarletteGuardRequest:
     async def body(self) -> bytes:
         return await self._request.body()
 
+    async def read_body_prefix(self, max_bytes: int) -> bytes:
+        if max_bytes <= 0:
+            return b""
+        cached = getattr(self._request, "_body", None)
+        if cached is not None:
+            return bytes(cached[:max_bytes])
+        if self._request._stream_consumed:
+            return b""
+
+        original_receive = self._request._receive
+        replay_buffer: list[Message] = []
+
+        async def replaying_receive() -> Message:
+            if replay_buffer:
+                return replay_buffer.pop(0)
+            return await original_receive()
+
+        self._request._receive = replaying_receive
+
+        collected: list[bytes] = []
+        received = 0
+        while received < max_bytes:
+            message = await original_receive()
+            replay_buffer.append(message)
+            if message["type"] != "http.request":
+                break
+            chunk = message.get("body", b"")
+            if chunk:
+                collected.append(chunk[: max_bytes - received])
+                received += len(chunk)
+            if not message.get("more_body", False):
+                break
+        return b"".join(collected)
+
     @property
     def state(self) -> Any:
         return self._request.state
@@ -71,6 +115,35 @@ class StarletteGuardResponse:
     @property
     def body(self) -> bytes | None:
         return bytes(self._response.body)
+
+    async def read_body_prefix(self, max_bytes: int) -> bytes:
+        if max_bytes <= 0:
+            return b""
+        materialized = getattr(self._response, "body", None)
+        if materialized is not None:
+            return bytes(materialized)[:max_bytes]
+        iterator = getattr(self._response, "body_iterator", None)
+        if iterator is None:
+            return b""
+
+        stream = aiter(iterator)
+        captured: list[Any] = []
+        streaming = cast(StreamingResponse, self._response)
+        streaming.body_iterator = _replay_then_continue(captured, stream)
+
+        try:
+            first_chunk = await anext(stream)
+        except StopAsyncIteration:
+            return b""
+        captured.append(first_chunk)
+
+        if isinstance(first_chunk, bytes):
+            raw = first_chunk
+        elif isinstance(first_chunk, memoryview):
+            raw = bytes(first_chunk)
+        else:
+            raw = str(first_chunk).encode("utf-8", errors="replace")
+        return raw[:max_bytes]
 
 
 class StarletteResponseFactory:

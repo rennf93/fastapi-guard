@@ -40,7 +40,7 @@ Core Security Settings
 | `rate_limit` | int | 10 | Maximum requests per `rate_limit_window` |
 | `rate_limit_window` | int | 60 | Rate limiting time window (seconds) |
 | `enforce_https` | bool | False | Whether to enforce HTTPS connections |
-| `exclude_paths` | list[str] | `["/docs", "/redoc", "/openapi.json", "/openapi.yaml", "/favicon.ico", "/static"]` | Paths to exclude from security checks |
+| `exclude_paths` | list[str] | `["/docs", "/redoc", "/openapi.json", "/openapi.yaml", "/favicon.ico", "/static"]` | Paths exempted from detection and behavioral tracking; IP bans, blacklists, blocked countries, blocked cloud providers, and rate limits still apply |
 
 Detection Engine Settings
 -------------------------
@@ -66,14 +66,16 @@ IP Management Settings
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `whitelist` | list[str] \| None | None | Allowed IP addresses or CIDR ranges |
-| `blacklist` | list[str] | [] | Blocked IP addresses or CIDR ranges |
+| `whitelist` | tuple[str, ...] \| None | None | Allowed IP addresses or CIDR ranges |
+| `blacklist` | tuple[str, ...] | () | Blocked IP addresses or CIDR ranges |
 | `whitelist_countries` | frozenset[str] | `frozenset()` | Country codes that are always allowed |
 | `blocked_countries` | frozenset[str] | `frozenset()` | Country codes that are always blocked |
 | `blocked_user_agents` | list[str] | [] | Blocked user agents |
-| `trusted_proxies` | list[str] | [] | Trusted proxy IPs or CIDR ranges for X-Forwarded-For |
+| `trusted_proxies` | tuple[str, ...] | () | Trusted proxy IPs or CIDR ranges for X-Forwarded-For |
 | `trusted_proxy_depth` | int | 1 | How many proxies to expect in the X-Forwarded-For chain |
 | `trust_x_forwarded_proto` | bool | False | Trust X-Forwarded-Proto header for HTTPS detection |
+
+Construction still accepts plain lists for `whitelist`, `blacklist`, and `trusted_proxies`, but the stored values are immutable tuples, so in-place mutation (`.append()`, item assignment) raises; reassign a new value instead.
 
 Redis Settings
 --------------
@@ -136,8 +138,10 @@ Cloud Provider Settings
 | `ipinfo_token` | str \| None | None | IPInfo API token for geolocation (deprecated; use a custom `geo_ip_handler`) |
 | `ipinfo_db_path` | Path \| None | `Path("data/ipinfo/country_asn.mmdb")` | Path to the IPInfo database file (deprecated; use a custom `geo_ip_handler`) |
 | `geo_ip_db_max_age` | int | 86400 | Maximum age in seconds for the cached IPInfo/GeoIP database before re-download (3600-604800) |
-| `block_cloud_providers` | set[CloudProvider] \| None | None | Set of cloud provider names to block (`"AWS"`, `"GCP"`, `"Azure"`) |
+| `block_cloud_providers` | frozenset[str] \| None | None | Set of cloud provider names to block (`"AWS"`, `"GCP"`, `"Azure"`) |
 | `cloud_ip_refresh_interval` | int | 3600 | Interval in seconds between cloud IP range refreshes (60-86400) |
+
+Construction still accepts a plain `set` for `block_cloud_providers`, but the stored value is an immutable `frozenset`, so in-place mutation (`.add()`, `.remove()`) raises; reassign a new value instead.
 
 Security Headers Settings
 ------------------------
@@ -356,7 +360,7 @@ The models include custom validators for complex fields:
 
 ```python
 @field_validator("whitelist", "blacklist")
-def validate_ip_lists(cls, v: list[str] | None) -> list[str] | None:
+def validate_ip_lists(cls, v: tuple[str, ...] | None) -> tuple[str, ...] | None:
     if v is None:
         return None
     validated = []
@@ -368,7 +372,7 @@ def validate_ip_lists(cls, v: list[str] | None) -> list[str] | None:
                 validated.append(str(ip_address(entry)))
         except ValueError:
             raise ValueError(f"Invalid IP or CIDR range: {entry}") from None
-    return validated
+    return tuple(validated)
 
 
 @model_validator(mode="after")

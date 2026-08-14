@@ -28,9 +28,9 @@ Ten `SecurityConfig` fields control telemetry:
 
 | Field | Type | Default | Purpose |
 |---|---|---|---|
-| `muted_event_types` | `set[str]` | `set()` | Suppress these event types from every exporter. |
-| `muted_metric_types` | `set[str]` | `set()` | Suppress these metric types from every exporter. |
-| `muted_check_logs` | `set[str]` | `set()` | Suppress pipeline + in-check log output for these checks. |
+| `muted_event_types` | `frozenset[str]` | `frozenset()` | Suppress these event types from every exporter. |
+| `muted_metric_types` | `frozenset[str]` | `frozenset()` | Suppress these metric types from every exporter. |
+| `muted_check_logs` | `frozenset[str]` | `frozenset()` | Suppress pipeline + in-check log output for these checks. |
 | `enable_otel` | `bool` | `False` | Enable OpenTelemetry span/metric export (requires `guard-core[otel]`). |
 | `otel_service_name` | `str` | `"guard-core"` | Service name for OpenTelemetry resource. |
 | `otel_exporter_endpoint` | `str \| None` | `None` | OTLP/HTTP endpoint. `None` uses OTel's default (`localhost:4318`). |
