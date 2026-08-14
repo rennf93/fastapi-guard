@@ -9,11 +9,11 @@ from guard.middleware import SecurityMiddleware
 async def test_blacklisted_ip_still_blocked_and_whitelisted_ip_still_allowed() -> None:
     app = FastAPI()
     config = SecurityConfig(
-        whitelist=["127.0.0.1"],
-        blacklist=["203.0.113.99"],
+        whitelist=("127.0.0.1",),
+        blacklist=("203.0.113.99",),
         enable_penetration_detection=False,
         enable_redis=False,
-        trusted_proxies=["127.0.0.1"],
+        trusted_proxies=("127.0.0.1",),
     )
     app.add_middleware(SecurityMiddleware, config=config)
 

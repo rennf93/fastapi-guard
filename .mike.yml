@@ -2,6 +2,7 @@ version_selector: true
 title_switch: true
 versions_file: docs/versions/versions.json
 versions:
+  - 7.6.0
   - 7.5.1
   - 7.5.0
   - 7.4.1
@@ -54,4 +55,4 @@ versions:
   - 0.3.2
   - latest
 aliases:
-  latest: 7.5.1
+  latest: 7.6.0

@@ -17,8 +17,9 @@ async def behavioral_decorator_app(security_config: SecurityConfig) -> FastAPI:
     """Create FastAPI app with behavioral decorator integration."""
     app = FastAPI()
 
-    security_config.trusted_proxies = ["127.0.0.1"]
+    security_config.trusted_proxies = ("127.0.0.1",)
     security_config.enable_penetration_detection = False
+    security_config.behavior_scan_response_body = True
 
     decorator = SecurityDecorator(security_config)
 
@@ -273,6 +274,7 @@ async def test_behavioral_endpoints_response(
 
 async def test_behavioral_decorators_unit(security_config: SecurityConfig) -> None:
     """Unit tests for behavioral decorators."""
+    security_config.behavior_scan_response_body = True
     decorator = SecurityDecorator(security_config)
 
     mock_func = Mock()

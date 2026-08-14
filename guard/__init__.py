@@ -4,6 +4,8 @@ import guard_core
 from guard_core import (
     BehaviorRule as BehaviorRule,
     BehaviorTracker as BehaviorTracker,
+    BoundedBodyReader as BoundedBodyReader,
+    BoundedResponseBodyReader as BoundedResponseBodyReader,
     CloudManager as CloudManager,
     GeoIPHandler as GeoIPHandler,
     GuardRequest as GuardRequest,

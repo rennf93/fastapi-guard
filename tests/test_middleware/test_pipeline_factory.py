@@ -17,7 +17,7 @@ def _fully_enabled_config() -> SecurityConfig:
         emergency_mode=True,
         enforce_https=True,
         log_request_level="INFO",
-        block_cloud_providers={"AWS"},
+        block_cloud_providers=frozenset({"AWS"}),
         blocked_user_agents=["badbot"],
         custom_request_check=_custom_check,
     )

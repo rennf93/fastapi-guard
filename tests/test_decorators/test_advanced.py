@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -15,9 +16,9 @@ async def advanced_decorator_app(security_config: SecurityConfig) -> FastAPI:
     """Create FastAPI app with advanced decorator integration."""
     app = FastAPI()
 
-    security_config.trusted_proxies = ["127.0.0.1"]
+    security_config.trusted_proxies = ("127.0.0.1",)
     security_config.enable_penetration_detection = False
-    security_config.whitelist = []
+    security_config.whitelist = ()
 
     decorator = SecurityDecorator(security_config)
 
@@ -269,10 +270,13 @@ async def test_honeypot_form_detection(security_config: SecurityConfig) -> None:
 
     mock_request = AsyncMock()
     mock_request.method = "POST"
-    mock_request.headers.get = lambda key, default="": (
-        "application/x-www-form-urlencoded" if key == "content-type" else default
-    )
-    mock_request.body.return_value = b"bot_trap=filled"
+    mock_request.state = SimpleNamespace()
+    form_body = b"bot_trap=filled"
+    mock_request.headers.get = lambda key, default="": {
+        "content-type": "application/x-www-form-urlencoded",
+        "content-length": str(len(form_body)),
+    }.get(key, default)
+    mock_request.body.return_value = form_body
 
     result = await validator(mock_request)
     assert result.status_code == 403
@@ -319,10 +323,13 @@ async def test_honeypot_json_detection(security_config: SecurityConfig) -> None:
 
     mock_request = AsyncMock()
     mock_request.method = "POST"
-    mock_request.headers.get = lambda key, default="": (
-        "application/json" if key == "content-type" else default
-    )
-    mock_request.body.return_value = b'{"spam_check": "filled"}'
+    mock_request.state = SimpleNamespace()
+    json_body = b'{"spam_check": "filled"}'
+    mock_request.headers.get = lambda key, default="": {
+        "content-type": "application/json",
+        "content-length": str(len(json_body)),
+    }.get(key, default)
+    mock_request.body.return_value = json_body
 
     result = await validator(mock_request)
     assert result.status_code == 403

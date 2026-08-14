@@ -110,6 +110,8 @@ Return Pattern Monitoring
 
 Detect when the same IP receives specific responses too frequently:
 
+**Body-content `return_pattern` rules changed behavior in 3.12.0.** Before fastapi-guard 7.6.0, patterns like `"win"`, `json:...`, and `regex:...` never matched in production, since the response body was unreadable through the middleware and the failure was silent. As of guard-core 3.12.0 with fastapi-guard >= 7.6.0 they work, but stay opt-in: every example below needs `SecurityConfig(behavior_scan_response_body=True)`, or guard-core raises `ValueError` at construction naming the pattern. Streaming responses are scanned only on their first streamed chunk (up to `behavior_max_response_body_inspect_bytes`); non-streaming responses are scanned whole, up to the same cap.
+
 . Win/Success Pattern Detection
 ----------------------------
 
@@ -204,7 +206,7 @@ ___
 Complex Behavioral Analysis
 ---------------------------
 
-Combine multiple behavioral rules for comprehensive protection:
+Combine multiple behavioral rules for comprehensive protection. The `return_pattern` rules below match response body content (`"win"`, `"critical_hit"`, `"profit"`), so pair `guard_deco`'s `SecurityConfig` with `behavior_scan_response_body=True`; body-content patterns also require fastapi-guard >= 7.6.0's bounded response-body reader, or guard-core raises `ValueError` at construction naming the pattern.
 
 . Multi-Rule Analysis
 -------------------
@@ -278,6 +280,8 @@ def strict_endpoint():
 . Alert Action
 ------------
 
+The pattern below matches response body content (`"suspicious_pattern"`), so pair it with `SecurityConfig(behavior_scan_response_body=True)`; body-content patterns also require fastapi-guard >= 7.6.0's bounded response-body reader, or guard-core raises `ValueError` at construction naming the pattern.
+
 ```python
 @guard_deco.return_monitor(
     "suspicious_pattern", max_occurrences=3, window=3600, action="alert"
@@ -326,6 +330,8 @@ def success_monitored():
 
 . Complex JSON Patterns
 ---------------------
+
+Both examples below inspect the response body, so they require `behavior_scan_response_body=True` on the `SecurityConfig` and fastapi-guard >= 7.6.0; without the flag, guard-core raises `ValueError` at construction naming the pattern.
 
 ```python
 @guard_deco.return_monitor(
@@ -377,7 +383,7 @@ Start with monitoring, then escalate to blocking:
 . Monitor Valuable Operations
 ---------------------------
 
-Focus on endpoints that provide value to attackers:
+Focus on endpoints that provide value to attackers. The `return_monitor` example below matches response body content (`"rare_reward"`), so pair it with `SecurityConfig(behavior_scan_response_body=True)`; body-content patterns also require fastapi-guard >= 7.6.0's bounded response-body reader, or guard-core raises `ValueError` at construction naming the pattern.
 
 ```python
 # High-value endpoints

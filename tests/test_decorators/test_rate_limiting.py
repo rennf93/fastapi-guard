@@ -15,7 +15,7 @@ async def rate_limiting_decorator_app(security_config: SecurityConfig) -> FastAP
     """Create FastAPI app with rate limiting decorator integration."""
     app = FastAPI()
 
-    security_config.trusted_proxies = ["127.0.0.1"]
+    security_config.trusted_proxies = ("127.0.0.1",)
     security_config.enable_penetration_detection = False
 
     decorator = SecurityDecorator(security_config)
@@ -43,9 +43,9 @@ async def open_rate_limiting_decorator_app(security_config: SecurityConfig) -> F
     rate_limit/geo_rate_limit decorators instead of being bypassed."""
     app = FastAPI()
 
-    security_config.trusted_proxies = ["127.0.0.1"]
+    security_config.trusted_proxies = ("127.0.0.1",)
     security_config.enable_penetration_detection = False
-    security_config.whitelist = []
+    security_config.whitelist = ()
 
     decorator = SecurityDecorator(security_config)
 
@@ -71,9 +71,9 @@ async def open_rate_limited_app(security_config: SecurityConfig) -> FastAPI:
     clients pass the IP gate and actually reach the rate_limit decorator."""
     app = FastAPI()
 
-    security_config.trusted_proxies = ["127.0.0.1"]
+    security_config.trusted_proxies = ("127.0.0.1",)
     security_config.enable_penetration_detection = False
-    security_config.whitelist = []
+    security_config.whitelist = ()
 
     decorator = SecurityDecorator(security_config)
 
@@ -96,9 +96,9 @@ async def route_whitelisted_rate_limited_app(
     proving the route whitelist is not a rate-limit exemption (D1)."""
     app = FastAPI()
 
-    security_config.trusted_proxies = ["127.0.0.1"]
+    security_config.trusted_proxies = ("127.0.0.1",)
     security_config.enable_penetration_detection = False
-    security_config.whitelist = []
+    security_config.whitelist = ()
 
     decorator = SecurityDecorator(security_config)
 

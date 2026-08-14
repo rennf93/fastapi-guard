@@ -16,9 +16,9 @@ async def content_decorator_app(security_config: SecurityConfig) -> FastAPI:
     """Create FastAPI app with content filtering decorator integration."""
     app = FastAPI()
 
-    security_config.trusted_proxies = ["127.0.0.1"]
+    security_config.trusted_proxies = ("127.0.0.1",)
     security_config.enable_penetration_detection = False
-    security_config.whitelist = []
+    security_config.whitelist = ()
 
     decorator = SecurityDecorator(security_config)
 
@@ -280,7 +280,7 @@ async def test_referrer_passive_mode(security_config: SecurityConfig) -> None:
     """Test referrer check in passive mode."""
     app = FastAPI()
     security_config.passive_mode = True
-    security_config.trusted_proxies = ["127.0.0.1"]
+    security_config.trusted_proxies = ("127.0.0.1",)
 
     decorator = SecurityDecorator(security_config)
 

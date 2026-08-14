@@ -41,10 +41,13 @@ The main class responsible for tracking and analyzing user behavior patterns.
 . Example Usage
 ---------------
 
+`return_rule` below matches response body content (`pattern="win"`), so `config` needs `behavior_scan_response_body=True`; body-content patterns also require fastapi-guard >= 7.6.0's bounded response-body reader, or guard-core raises `ValueError` at construction naming the pattern.
+
 ```python
-from guard import BehaviorTracker, BehaviorRule
+from guard import BehaviorTracker, BehaviorRule, SecurityConfig
 
 # Create tracker
+config = SecurityConfig(behavior_scan_response_body=True)
 tracker = BehaviorTracker(config)
 
 # Define rules
@@ -98,6 +101,8 @@ For `return_pattern` rules, the following pattern formats are supported:
 . Example Rules
 ---------------
 
+`win_rule` matches response body content (`pattern="win"`), so pair it with `SecurityConfig(behavior_scan_response_body=True)`; body-content patterns also require fastapi-guard >= 7.6.0's bounded response-body reader, or guard-core raises `ValueError` at construction naming the pattern.
+
 ```python
 # Usage monitoring
 usage_rule = BehaviorRule(rule_type="usage", threshold=50, window=3600, action="ban")
@@ -121,11 +126,12 @@ ___
 Integration with Decorators
 ----------------------------
 
-The Behavior Manager integrates seamlessly with the decorator system:
+The Behavior Manager integrates seamlessly with the decorator system. The `return_monitor` pattern below matches response body content (`"rare_item"`), so `config` needs `behavior_scan_response_body=True`; body-content patterns also require fastapi-guard >= 7.6.0's bounded response-body reader, or guard-core raises `ValueError` at construction naming the pattern.
 
 ```python
-from guard import SecurityDecorator
+from guard import SecurityConfig, SecurityDecorator
 
+config = SecurityConfig(behavior_scan_response_body=True)
 guard_deco = SecurityDecorator(config)
 
 
@@ -159,6 +165,8 @@ Advanced Usage
 . Custom Pattern Matching
 --------------------------
 
+`json_rule` and `regex_rule` below match response body content, so pair them with `SecurityConfig(behavior_scan_response_body=True)`; body-content patterns also require fastapi-guard >= 7.6.0's bounded response-body reader, or guard-core raises `ValueError` at construction naming the pattern.
+
 ```python
 # JSON path pattern
 json_rule = BehaviorRule(
@@ -190,6 +198,8 @@ status_rule = BehaviorRule(
 
 . Multiple Rule Analysis
 ------------------------
+
+The `return_pattern` rule below matches response body content (`pattern="win"`), so it needs the `guard_deco` config's `behavior_scan_response_body=True` (see above) and fastapi-guard >= 7.6.0's bounded response-body reader; otherwise guard-core raises `ValueError` at construction naming the pattern.
 
 ```python
 # Apply multiple rules to an endpoint
@@ -244,7 +254,7 @@ BehaviorRule("usage", threshold=30, window=3600, action="ban")
 . Monitor Return Patterns Carefully
 -----------------------------------
 
-Focus on patterns that indicate abuse:
+Focus on patterns that indicate abuse. All three examples below match response body content, so pair `guard_deco`'s `SecurityConfig` with `behavior_scan_response_body=True`; body-content patterns also require fastapi-guard >= 7.6.0's bounded response-body reader, or guard-core raises `ValueError` at construction naming the pattern.
 
 ```python
 # Gaming/gambling endpoints

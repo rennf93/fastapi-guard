@@ -42,7 +42,7 @@ async def monitor_usage_patterns() -> MessageResponse:
         404: {"description": "Resource not found"},
     },
 )
-@guard.return_monitor(pattern="404", max_occurrences=3, window=60, action="ban")
+@guard.return_monitor(pattern="status:404", max_occurrences=3, window=60, action="ban")
 async def monitor_return_patterns(status_code: int) -> MessageResponse:
     if status_code == 404:
         raise HTTPException(status_code=404, detail="Not found")
@@ -88,7 +88,7 @@ async def detect_suspicious_frequency() -> MessageResponse:
         BehaviorRule(rule_type="frequency", threshold=10, window=60, action="throttle"),
         BehaviorRule(
             rule_type="return_pattern",
-            pattern="404",
+            pattern="status:404",
             threshold=5,
             window=60,
             action="ban",

@@ -66,8 +66,8 @@ def security_config() -> SecurityConfig:
         geo_ip_handler=IPInfoManager(IPINFO_TOKEN, None),
         enable_redis=False,
         enable_penetration_detection=False,
-        whitelist=["127.0.0.1", "203.0.113.5"],
-        blacklist=["192.168.1.1"],
+        whitelist=("127.0.0.1", "203.0.113.5"),
+        blacklist=("192.168.1.1",),
         blocked_countries=frozenset({"CN"}),
         blocked_user_agents=[r"badbot"],
         auto_ban_threshold=3,
@@ -91,8 +91,8 @@ def security_config() -> SecurityConfig:
 async def security_middleware() -> AsyncGenerator[SecurityMiddleware, None]:
     config = SecurityConfig(
         enable_penetration_detection=False,
-        whitelist=[],
-        blacklist=[],
+        whitelist=(),
+        blacklist=(),
         auto_ban_threshold=10,
         auto_ban_duration=300,
     )
@@ -116,8 +116,8 @@ def security_config_redis(ipinfo_db_path: Path) -> SecurityConfig:
         redis_url=REDIS_URL,
         redis_prefix=REDIS_PREFIX,
         enable_penetration_detection=False,
-        whitelist=["127.0.0.1"],
-        blacklist=["192.168.1.1"],
+        whitelist=("127.0.0.1",),
+        blacklist=("192.168.1.1",),
         blocked_countries=frozenset({"CN"}),
         blocked_user_agents=[r"badbot"],
         auto_ban_threshold=3,
