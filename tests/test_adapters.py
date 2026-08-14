@@ -1,4 +1,5 @@
 import asyncio
+import tracemalloc
 from collections.abc import AsyncIterator, Callable
 from typing import cast
 
@@ -430,3 +431,43 @@ async def test_response_read_body_prefix_without_body_or_iterator() -> None:
 
     guard_response = StarletteGuardResponse(cast(Response, _BareResponse()))
     assert await guard_response.read_body_prefix(1024) == b""
+
+
+async def test_read_body_prefix_bounds_aggregation_for_oversized_message() -> None:
+    oversized = b"x" * (8 * 1024 * 1024)
+    receive, _ = _scripted_receive(
+        [{"type": "http.request", "body": oversized, "more_body": False}]
+    )
+    request = Request(_post_scope(), receive)
+    guard_request = StarletteGuardRequest(request)
+
+    tracemalloc.start()
+    prefix = await guard_request.read_body_prefix(4096)
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
+    assert prefix == oversized[:4096]
+    assert peak < 1024 * 1024
+    assert await request.body() == oversized
+
+
+async def test_read_body_prefix_transient_copies_stay_below_body_size() -> None:
+    first = b"y" * (4 * 1024 * 1024)
+    second = b"z" * (4 * 1024 * 1024)
+    receive, _ = _scripted_receive(
+        [
+            {"type": "http.request", "body": first, "more_body": True},
+            {"type": "http.request", "body": second, "more_body": False},
+        ]
+    )
+    request = Request(_post_scope(), receive)
+    guard_request = StarletteGuardRequest(request)
+
+    tracemalloc.start()
+    prefix = await guard_request.read_body_prefix(5 * 1024 * 1024)
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
+    assert prefix == (first + second)[: 5 * 1024 * 1024]
+    assert peak < 8 * 1024 * 1024
+    assert await request.body() == first + second

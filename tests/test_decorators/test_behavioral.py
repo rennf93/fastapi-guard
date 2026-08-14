@@ -351,3 +351,13 @@ async def test_behavioral_decorators_unit(security_config: SecurityConfig) -> No
     assert route_config4.behavior_rules[0].threshold == 150  # 0.5 * 300
     assert route_config4.behavior_rules[0].window == 300
     assert route_config4.behavior_rules[0].action == "throttle"
+
+
+async def test_return_monitor_body_pattern_without_scan_flag_raises(
+    security_config: SecurityConfig,
+) -> None:
+    decorator = SecurityDecorator(security_config)
+    with pytest.raises(ValueError, match="behavior_scan_response_body is False"):
+        decorator.return_monitor(
+            pattern="win", max_occurrences=3, window=86400, action="ban"
+        )

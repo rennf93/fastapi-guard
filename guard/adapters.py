@@ -84,12 +84,12 @@ class StarletteGuardRequest:
             if message["type"] != "http.request":
                 break
             chunk = message.get("body", b"")
-            received += len(chunk)
             if chunk:
-                collected.append(chunk)
+                collected.append(chunk[: max_bytes - received])
+                received += len(chunk)
             if not message.get("more_body", False):
                 break
-        return b"".join(collected)[:max_bytes]
+        return b"".join(collected)
 
     @property
     def state(self) -> Any:
