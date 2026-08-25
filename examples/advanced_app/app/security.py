@@ -26,6 +26,10 @@ async def custom_response_modifier(response: GuardResponse) -> GuardResponse:
     return response
 
 
+def demo_auth_verifier(request: GuardRequest, credential: str) -> dict[str, str]:
+    return {"user": "demo", "credential": credential}
+
+
 security_config = SecurityConfig(
     whitelist=(),
     blacklist=("192.168.100.0/24",),
@@ -49,6 +53,7 @@ security_config = SecurityConfig(
     enforce_https=False,
     custom_request_check=custom_request_check,
     custom_response_modifier=custom_response_modifier,
+    auth_verifier=demo_auth_verifier,
     security_headers={
         "enabled": True,
         "csp": {

@@ -18,6 +18,9 @@ async def auth_decorator_app(security_config: SecurityConfig) -> FastAPI:
     security_config.trusted_proxies = ("127.0.0.1",)
     security_config.enforce_https = False
     security_config.enable_penetration_detection = False
+    security_config.auth_verifier = lambda request, credential: (
+        {"user": "ok"} if credential else None
+    )
 
     decorator = SecurityDecorator(security_config)
 
@@ -183,7 +186,7 @@ async def test_missing_headers_blocked(
     ) as client:
         headers = {"X-Forwarded-For": "203.0.113.5"}
         if endpoint == "/headers-multiple":
-            headers["X-API-Version"] = "v2"  # Add one header but not the other
+            headers["X-API-Version"] = "v2"
 
         method = (
             "post"
@@ -244,15 +247,13 @@ async def test_authentication_endpoints_response(auth_decorator_app: FastAPI) ->
     async with AsyncClient(
         transport=ASGITransport(app=auth_decorator_app), base_url="http://test"
     ) as client:
-        # Test secure endpoint with HTTPS
         response = await client.get(
             "/secure",
             headers={"X-Forwarded-For": "203.0.113.5"},
             follow_redirects=False,
         )
-        assert response.status_code == 301  # HTTPS redirect
+        assert response.status_code == 301
 
-        # Test secure endpoint with HTTPS (using https base_url)
         async with AsyncClient(
             transport=ASGITransport(app=auth_decorator_app), base_url="https://test"
         ) as https_client:
@@ -262,7 +263,6 @@ async def test_authentication_endpoints_response(auth_decorator_app: FastAPI) ->
             assert response.status_code == 200
             assert response.json()["message"] == "HTTPS required"
 
-        # Test auth default endpoint with Bearer token
         response = await client.get(
             "/auth-default",
             headers={
@@ -273,18 +273,16 @@ async def test_authentication_endpoints_response(auth_decorator_app: FastAPI) ->
         assert response.status_code == 200
         assert response.json()["message"] == "Auth required (default)"
 
-        # Test auth basic endpoint with Basic auth
         response = await client.get(
             "/auth-basic",
             headers={
                 "X-Forwarded-For": "203.0.113.5",
-                "Authorization": "Basic dGVzdDp0ZXN0",  # test:test in base64
+                "Authorization": "Basic dGVzdDp0ZXN0",
             },
         )
         assert response.status_code == 200
         assert response.json()["message"] == "Basic auth required"
 
-        # Test headers single endpoint
         response = await client.get(
             "/headers-single",
             headers={"X-Forwarded-For": "203.0.113.5", "X-API-Version": "v1"},
@@ -292,7 +290,6 @@ async def test_authentication_endpoints_response(auth_decorator_app: FastAPI) ->
         assert response.status_code == 200
         assert response.json()["message"] == "Single header required"
 
-        # Test api-key-custom endpoint
         response = await client.post(
             "/api-key-custom",
             headers={"X-Forwarded-For": "203.0.113.5", "Authorization": "test-key"},
@@ -309,7 +306,6 @@ async def test_authentication_decorators_unit(security_config: SecurityConfig) -
     mock_func.__name__ = mock_func.__qualname__ = "test_func"
     mock_func.__module__ = "test_module"
 
-    # Test require_https
     https_decorator = decorator.require_https()
     decorated_func = https_decorator(mock_func)
 
@@ -318,7 +314,6 @@ async def test_authentication_decorators_unit(security_config: SecurityConfig) -
     assert route_config is not None
     assert route_config.require_https is True
 
-    # Test require_auth default
     auth_decorator = decorator.require_auth()
     decorated_func2 = auth_decorator(mock_func)
 
@@ -327,7 +322,6 @@ async def test_authentication_decorators_unit(security_config: SecurityConfig) -
     assert route_config2 is not None
     assert route_config2.auth_required == "bearer"
 
-    # Test require_auth custom
     auth_custom_decorator = decorator.require_auth(type="digest")
     decorated_func3 = auth_custom_decorator(mock_func)
 
@@ -336,7 +330,6 @@ async def test_authentication_decorators_unit(security_config: SecurityConfig) -
     assert route_config3 is not None
     assert route_config3.auth_required == "digest"
 
-    # Test api_key_auth default
     api_key_decorator = decorator.api_key_auth()
     decorated_func4 = api_key_decorator(mock_func)
 
@@ -346,7 +339,6 @@ async def test_authentication_decorators_unit(security_config: SecurityConfig) -
     assert route_config4.api_key_required is True
     assert route_config4.required_headers["X-API-Key"] == "required"
 
-    # Test api_key_auth custom
     api_key_custom_decorator = decorator.api_key_auth(header_name="X-Custom-Key")
     decorated_func5 = api_key_custom_decorator(mock_func)
 
@@ -356,7 +348,6 @@ async def test_authentication_decorators_unit(security_config: SecurityConfig) -
     assert route_config5.api_key_required is True
     assert route_config5.required_headers["X-Custom-Key"] == "required"
 
-    # Test require_headers
     headers_decorator = decorator.require_headers(
         {"X-Test": "value", "X-Other": "required"}
     )
@@ -374,14 +365,12 @@ async def test_authentication_failures_blocked(auth_decorator_app: FastAPI) -> N
     async with AsyncClient(
         transport=ASGITransport(app=auth_decorator_app), base_url="http://test"
     ) as client:
-        # Test auth default endpoint without Bearer token
         response = await client.get(
             "/auth-default", headers={"X-Forwarded-For": "8.8.8.8"}
         )
         assert response.status_code == 401
         assert "Authentication required" in response.text
 
-        # Test auth default endpoint with invalid Bearer token format
         response = await client.get(
             "/auth-default",
             headers={
@@ -392,14 +381,12 @@ async def test_authentication_failures_blocked(auth_decorator_app: FastAPI) -> N
         assert response.status_code == 401
         assert "Authentication required" in response.text
 
-        # Test auth basic endpoint without Basic auth
         response = await client.get(
             "/auth-basic", headers={"X-Forwarded-For": "8.8.8.8"}
         )
         assert response.status_code == 401
         assert "Authentication required" in response.text
 
-        # Test auth basic endpoint with invalid Basic auth format
         response = await client.get(
             "/auth-basic",
             headers={
@@ -429,7 +416,6 @@ async def test_auth_passive_mode(security_config: SecurityConfig) -> None:
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
-        # Missing auth - should pass in passive mode
         response = await client.get(
             "/auth-test", headers={"X-Forwarded-For": "8.8.8.8"}
         )

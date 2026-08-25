@@ -70,14 +70,60 @@ Authentication Requirements
 
 Enforce different types of authentication:
 
+Verifier Contract and Fail-Closed Behavior
+------------------------------------------
+
+Since guard-core 3.13.0 (fastapi-guard 7.7.0), `require_auth` and `api_key_auth` are real authentication. A request only passes when a verifier accepts the credential. A verifier is a callable with the signature:
+
+```python
+def verifier(request, credential) -> Principal | None: ...
+```
+
+- `request` is the guard request. The FastAPI `Request` you inject in the endpoint shares the same `state` object, so anything the verifier stashes is visible in the endpoint.
+- `credential` is the extracted credential: the bearer/basic token for `require_auth`, or the API-key header value for `api_key_auth`.
+- Return a truthy principal (any object) to accept. The principal is stashed on `request.state.auth_principal` and is readable in the endpoint.
+- Return `None` (or any falsy value) to reject with 401.
+- Raise, and the request is rejected with 401. Verifiers must not leak exception details to the client.
+
+In ASGI (fastapi-guard) the verifier may be sync or async; async verifiers are awaited. A verifier is resolved per route: a `verifier=` argument to `require_auth` or `api_key_auth` overrides the global `SecurityConfig.auth_verifier`. If neither is set, the request is rejected with 401 fail-closed. A bare `Bearer`/`Basic` prefix or any API-key header value no longer passes on its own.
+
+Set a global verifier once and every decorated route uses it:
+
+```python
+config = SecurityConfig(
+    auth_verifier=lambda request, credential: {"user": "demo"} if credential else None,
+)
+guard_deco = SecurityDecorator(config)
+```
+
+The fenced examples below assume that global verifier is set, unless they pass `verifier=` explicitly.
+
 . Bearer Token Authentication
 --------------------------
 
 ```python
+async def verify_bearer(request, credential):
+    if credential == "valid-token":
+        return {"user": "alice", "scopes": ["read"]}
+    return None
+
+
 @app.get("/api/profile")
-@guard_deco.require_auth(type="bearer")
+@guard_deco.require_auth(type="bearer", verifier=verify_bearer)
 def user_profile():
     return {"profile": "user data"}
+```
+
+The principal returned by the verifier is available in the endpoint on `request.state.auth_principal`:
+
+```python
+from fastapi import Request
+
+
+@app.get("/api/me")
+@guard_deco.require_auth(type="bearer", verifier=verify_bearer)
+def who_am_i(request: Request):
+    return {"principal": request.state.auth_principal}
 ```
 
 . Multiple Authentication Types
@@ -106,6 +152,22 @@ def service_endpoint():
 def secure_admin():
     return {"data": "doubly secure"}
 ```
+
+___
+
+Presence-Only Header Gate (NOT Authentication)
+---------------------------------------------
+
+If you only ever wanted a header-presence and scheme-prefix gate, and do not need authentication, use `require_authorization_header`. It is the renamed old behavior of `require_auth`: it checks that the `Authorization` header is present and starts with the given scheme, and nothing more. No verifier is consulted, no principal is stashed, and `request.state.auth_principal` is unset. A missing `Authorization` header is rejected with `401`.
+
+```python
+@app.get("/api/presence")
+@guard_deco.require_authorization_header(scheme="bearer")
+def presence_gate():
+    return {"data": "header was present"}
+```
+
+`require_authorization_header` is mutually exclusive with `require_auth` and `api_key_auth`. Combining them on the same route raises `ValueError` at decoration time, because a presence-only gate is not authentication and an authenticated route must not also be gated as presence-only.
 
 ___
 
@@ -346,13 +408,54 @@ def internal_admin():
 
 ___
 
+Migration from pre-7.7.0
+------------------------
+
+Before 7.7.0, `require_auth(type="bearer")` and `api_key_auth(header_name=...)` accepted any `Bearer`/`Basic` prefix or any API-key header value without validation. That behavior was an authentication check in name only. As of 7.7.0 those routes return 401 until a verifier is wired. There is no deprecation runway; the break is immediate. Do one of the following:
+
+. Add a verifier per route
+-------------------------
+
+Pass a `verifier=` callable that validates the credential and returns a principal:
+
+```python
+@guard_deco.require_auth(type="bearer", verifier=verify_bearer)
+def protected():
+    return {"data": "authenticated"}
+```
+
+. Set a global verifier
+---------------------
+
+Set `SecurityConfig.auth_verifier` once and every decorated route uses it unless a per-route `verifier=` overrides it:
+
+```python
+config = SecurityConfig(auth_verifier=verify_token)
+guard_deco = SecurityDecorator(config)
+```
+
+. Switch to a presence-only gate
+-----------------------------
+
+If you only wanted a header-presence/scheme-prefix gate and do not need authentication, switch to `require_authorization_header`. It preserves the old behavior exactly:
+
+```python
+@guard_deco.require_authorization_header(scheme="bearer")
+def presence_gate():
+    return {"data": "header was present"}
+```
+
+Options 1 and 2 turn the decorator into real authentication. Option 3 keeps the old presence-only behavior.
+
+___
+
 Error Handling
 --------------
 
 Authentication decorators return specific HTTP status codes:
 
 - **400 Bad Request**: Missing required headers
-- **401 Unauthorized**: Invalid or missing authentication
+- **401 Unauthorized**: Missing or invalid authentication, no verifier configured, or the verifier denied the credential (raised or returned a falsy value)
 - **403 Forbidden**: Valid auth but insufficient permissions
 - **301/302 Redirect**: HTTP to HTTPS redirect
 
@@ -406,17 +509,15 @@ Never transmit credentials over unencrypted connections:
 . Validate Header Content
 -----------------------
 
-Don't just check for presence, validate the content:
+Do not stop at presence. `require_auth` and `api_key_auth` run the verifier you wire, so the verifier is the validation site for the credential. `require_headers` only checks presence, so for any header whose value matters, pair it with a verifier or validate the value in the endpoint:
 
 ```python
-# The middleware handles presence validation
-@guard_deco.require_headers({"X-API-Key": "required"})
-
-# Your application code should validate the actual key value
-def validate_api_key(request):
-    api_key = request.headers.get("X-API-Key")
-    return api_key in valid_keys
+@guard_deco.api_key_auth(header_name="X-API-Key", verifier=verify_api_key)
+def api_key_endpoint():
+    return {"data": "verified"}
 ```
+
+`require_authorization_header` is presence-only by design and does not validate the credential; use it only when presence is all you need.
 
 . Use Appropriate Authentication for Each Endpoint
 ----------------------------------------------

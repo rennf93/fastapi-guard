@@ -10,6 +10,18 @@ Release Notes
 
 ___
 
+v7.7.0 (2026-08-24)
+-------------------
+
+Lockstep release tracking guard-core 3.13.0: detection hardening and the breaking auth-verifier requirement (v7.7.0)
+--------------------------------------------------------------------------------------------------------------------
+
+- **Security (auth-verifier, breaking)** - `require_auth(type="bearer", verifier=None)` and `api_key_auth(header_name=..., verifier=None)` now require a resolvable verifier, supplied per route via `verifier=` or globally via `SecurityConfig.auth_verifier`; without one the request is rejected with 401 fail-closed. Previously a bare Bearer/Basic prefix or any API-key header value was accepted without validation. The old presence-only behavior is now the separate decorator `require_authorization_header(scheme="bearer")`, documented as NOT authentication and mutually exclusive with the two auth decorators. The verifier contract is `verifier(request, credential) -> Principal | None` (sync or async in ASGI, sync-only in WSGI), and the authenticated principal lands on `request.state.auth_principal`. See GHSA-x96c-fcg2-x2f9, CWE-287.
+- **Compatibility (lockstep)** - fastapi-guard 7.7.0 tracks guard-core 3.13.0; guard-core remains an unconstrained dependency in `pyproject.toml` per project policy so fresh installs already resolve 3.13.0; this release is what makes that pairing whole. See guard-core 3.13.0's release notes (its CHANGELOG.md 3.13.0 section / release notes) for the full list, which covers the ReDoS validation backstop, the scan-window mechanism, a new deserialization category (CWE-502), all-category ingestion-bypass closures, and detection widenings.
+- **Adapter** - fastapi-guard itself adds no new security logic: it re-exports guard-core's surface unchanged, and the auth methods ride on the already-re-exported `SecurityDecorator`, so there is no adapter-side code change beyond the version and dependency pairing.
+
+___
+
 v7.6.0 (2026-08-14)
 -------------------
 

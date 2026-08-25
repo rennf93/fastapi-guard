@@ -73,7 +73,9 @@ Compose rules at the endpoint level with `SecurityDecorator`:
 from fastapi import FastAPI
 from guard import SecurityConfig, SecurityDecorator
 
-config = SecurityConfig()
+config = SecurityConfig(
+    auth_verifier=lambda request, credential: {"user": "demo"} if credential else None,
+)
 guard = SecurityDecorator(config)
 
 app = FastAPI()
@@ -82,10 +84,12 @@ app.add_middleware(SecurityMiddleware, config=config)
 
 @app.get("/api/payments")
 @guard.rate_limit(max_requests=10, window_seconds=60)
-@guard.require_auth
+@guard.require_auth(type="bearer")
 async def list_payments():
     return []
 ```
+
+`require_auth` and `api_key_auth` require a verifier: a callable `verifier(request, credential) -> Principal | None` supplied per route via `verifier=` or globally via `SecurityConfig.auth_verifier`. Without one the request is rejected with 401 fail-closed. The principal lands on `request.state.auth_principal`. For a presence-only `Authorization` header gate that is NOT authentication, use `@guard.require_authorization_header(scheme="bearer")`; it is mutually exclusive with `require_auth` and `api_key_auth`.
 
 Decorators are composable and stack top-down. Each one writes a per-route `RouteConfig` that the middleware resolves at request time.
 
@@ -173,7 +177,7 @@ config = SecurityConfig(
 )
 ```
 
-The buffer/flush defaults (100 events, 30s) are safe. Do not raise `agent_buffer_size` toward thousands while shortening `agent_flush_interval` — see [the agent integration reference](references/agent-integration.md) for the 256 KiB ingestion cap and 413 split-or-drop behavior.
+The buffer/flush defaults (100 events, 30s) are safe. Do not raise `agent_buffer_size` toward thousands while shortening `agent_flush_interval`; see [the agent integration reference](references/agent-integration.md) for the 256 KiB ingestion cap and 413 split-or-drop behavior.
 
 ## Exports
 

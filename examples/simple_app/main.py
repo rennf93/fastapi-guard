@@ -244,6 +244,10 @@ async def custom_response_modifier(response: GuardResponse) -> GuardResponse:
     return response
 
 
+def demo_auth_verifier(request: GuardRequest, credential: str) -> dict[str, str]:
+    return {"user": "demo", "credential": credential}
+
+
 security_config = SecurityConfig(
     # IP Configuration
     blacklist=("192.168.100.0/24",),  # Example blacklisted subnet
@@ -280,6 +284,10 @@ security_config = SecurityConfig(
     # Custom Hooks
     custom_request_check=custom_request_check,
     custom_response_modifier=custom_response_modifier,
+    # Authentication verifier (guard-core 3.13.0+): require_auth/api_key_auth
+    # fail-closed with 401 unless a verifier resolves. This demo verifier
+    # approves any presented credential and returns a principal.
+    auth_verifier=demo_auth_verifier,
     # Security Headers Configuration
     security_headers={
         "enabled": True,

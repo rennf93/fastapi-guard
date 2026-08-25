@@ -99,7 +99,7 @@ config = SecurityConfig(
 app.add_middleware(SecurityMiddleware, config=config)
 ```
 
-For production, wire `guard.lifespan.guard_lifespan` into `FastAPI(lifespan=...)` so initialization runs at app startup instead of on the first request — see [Eager initialization](https://rennf93.github.io/fastapi-guard/latest/tutorial/first-steps/#eager-initialization-with-fastapi-lifespan).
+For production, wire `guard.lifespan.guard_lifespan` into `FastAPI(lifespan=...)` so initialization runs at app startup instead of on the first request, see [Eager initialization](https://rennf93.github.io/fastapi-guard/latest/tutorial/first-steps/#eager-initialization-with-fastapi-lifespan).
 
 ---
 
@@ -110,7 +110,9 @@ Apply security rules at the endpoint level with composable decorators:
 ```python
 from guard import SecurityConfig, SecurityDecorator
 
-config = SecurityConfig()
+config = SecurityConfig(
+    auth_verifier=lambda request, credential: {"user": "demo"} if credential else None,
+)
 guard = SecurityDecorator(config)
 
 
@@ -122,6 +124,8 @@ guard = SecurityDecorator(config)
 async def process_payment():
     return {"status": "ok"}
 ```
+
+`require_auth` and `api_key_auth` require a verifier (per-route `verifier=` or global `SecurityConfig.auth_verifier`); without one the request is rejected with 401. For a presence-only `Authorization` header gate, use `require_authorization_header(scheme="bearer")` instead. See [the authentication tutorial](https://rennf93.github.io/fastapi-guard/latest/tutorial/decorators/authentication/) for the full migration.
 
 **Available decorator categories:**
 
@@ -190,7 +194,7 @@ stats = middleware.agent_stats
 #  "transport_stats": {"circuit_breaker_state": "CLOSED", ...}, ...}
 ```
 
-When the agent is disabled or failed to initialize, the property returns `{"enabled": False}`. Read it on each scrape — it reflects live counters and is not cached.
+When the agent is disabled or failed to initialize, the property returns `{"enabled": False}`. Read it on each scrape; it reflects live counters and is not cached.
 
 ---
 
@@ -223,7 +227,7 @@ Published under the [`@guardcore`](https://www.npmjs.com/org/guardcore) npm scop
 
 ### Rust
 
-Published on crates.io. **🚧 Placeholder crates — implementation in progress.**
+Published on crates.io. **🚧 Placeholder crates: implementation in progress.**
 
 | Package | Role | crates.io |
 |---|---|---|
@@ -237,16 +241,16 @@ Published on crates.io. **🚧 Placeholder crates — implementation in progress
 
 | Package | Role | PyPI |
 |---|---|---|
-| [guard-core-mcp](https://github.com/rennf93/guard-core-mcp) | MCP server — config validation, docs search, detection sandbox | [![PyPI](https://img.shields.io/pypi/v/guard-core-mcp)](https://pypi.org/project/guard-core-mcp/) |
+| [guard-core-mcp](https://github.com/rennf93/guard-core-mcp) | MCP server: config validation, docs search, detection sandbox | [![PyPI](https://img.shields.io/pypi/v/guard-core-mcp)](https://pypi.org/project/guard-core-mcp/) |
 
-An MCP server that answers questions about FastAPI Guard from the version **installed in your project**, rather than from a model's memory of it. It validates a config against the real `SecurityConfig` model — catching silently-ignored typos like `redis_failopen` — looks up any field's type, default and description, searches the bundled docs, and runs a payload through the real detection engine to show whether it would be blocked and by which pattern.
+An MCP server that answers questions about FastAPI Guard from the version **installed in your project**, rather than from a model's memory of it. It validates a config against the real `SecurityConfig` model (catching silently-ignored typos like `redis_failopen`), looks up any field's type, default and description, searches the bundled docs, and runs a payload through the real detection engine to show whether it would be blocked and by which pattern.
 
 ```bash
 uv add --dev guard-core-mcp
 claude mcp add guard-core -- uv run guard-core-mcp
 ```
 
-Install it into the same environment as FastAPI Guard — it introspects what is actually installed there, so an isolated run (`uvx`) has nothing to read.
+Install it into the same environment as FastAPI Guard; it introspects what is actually installed there, so an isolated run (`uvx`) has nothing to read.
 
 ---
 

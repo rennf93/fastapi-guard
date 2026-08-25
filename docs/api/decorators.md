@@ -105,9 +105,12 @@ Provides authentication and authorization decorators.
 **Available Decorators:**
 
 - `@guard_deco.require_https()` - Force HTTPS
-- `@guard_deco.require_auth(type="bearer")` - Require authentication
-- `@guard_deco.api_key_auth(header_name="X-API-Key")` - API key authentication
+- `@guard_deco.require_auth(type="bearer", verifier=None)` - Require authentication. `verifier` is a callable `verifier(request, credential) -> Principal | None` that validates the credential and returns a principal; if omitted, the global `SecurityConfig.auth_verifier` is used; if neither is set, the request is rejected with 401 fail-closed. The principal is stashed on `request.state.auth_principal`. Mutually exclusive with `require_authorization_header`.
+- `@guard_deco.api_key_auth(header_name="X-API-Key", verifier=None)` - API key authentication. `verifier` resolves the same way as `require_auth` (per-route, then `SecurityConfig.auth_verifier`, then 401 fail-closed). Mutually exclusive with `require_authorization_header`.
+- `@guard_deco.require_authorization_header(scheme="bearer")` - Presence-only header gate. Checks that the `Authorization` header is present and starts with the given scheme. Documented as NOT authentication: no verifier is consulted and no principal is stashed. Mutually exclusive with `require_auth` and `api_key_auth` (combining raises `ValueError` at decoration time). This is the renamed old behavior of `require_auth`.
 - `@guard_deco.require_headers(headers={})` - Require specific headers
+
+`SecurityConfig.auth_verifier` is the global default verifier for every `require_auth` and `api_key_auth` route that does not pass its own `verifier=`. In ASGI it may be sync or async.
 
 . RateLimitingMixin
 ---------------------
