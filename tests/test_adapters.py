@@ -130,15 +130,6 @@ async def test_starlette_guard_request_headers_items_dedupe_repeated_lines() -> 
     }
 
 
-async def test_starlette_guard_request_headers_supports_plain_mapping() -> None:
-    from unittest.mock import Mock
-
-    mock_request = Mock()
-    mock_request.headers = {"content-length": "200"}
-    guard_request = StarletteGuardRequest(mock_request)
-    assert guard_request.headers.get("content-length") == "200"
-
-
 async def test_starlette_guard_request_query_params() -> None:
     scope = {
         "type": "http",

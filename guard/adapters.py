@@ -62,10 +62,7 @@ class StarletteGuardRequest:
 
     @cached_property
     def headers(self) -> Mapping[str, str]:
-        headers = self._request.headers
-        if hasattr(headers, "getlist"):
-            return _join_repeated_header_lines(headers)
-        return headers
+        return _join_repeated_header_lines(self._request.headers)
 
     @property
     def query_params(self) -> Mapping[str, str]:
