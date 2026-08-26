@@ -33,6 +33,11 @@ def add_status_route(
         )
         return
 
+    if dependencies:
+        raise TypeError(
+            f"dependencies require a FastAPI app; add_status_route received {type(app)}"
+        )
+
     app.add_route(
         path, guard_initialization_status, methods=["GET"], include_in_schema=False
     )

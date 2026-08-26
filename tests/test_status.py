@@ -105,3 +105,26 @@ def test_add_status_route_on_plain_starlette_app_uses_add_route() -> None:
     add_status_route(app)
 
     assert any(getattr(r, "path", None) == "/_guard/status" for r in app.routes)
+
+
+def test_add_status_route_starlette_app_with_dependencies_raises_type_error() -> None:
+    config = SecurityConfig(enable_redis=False)
+    app = Starlette()
+    app.add_middleware(SecurityMiddleware, config=config)
+
+    def deny() -> None:
+        raise HTTPException(status_code=401)
+
+    with pytest.raises(TypeError):
+        add_status_route(app, dependencies=[Depends(deny)])
+
+
+def test_add_status_route_starlette_app_with_none_dependencies_still_registers() -> (
+    None
+):
+    config = SecurityConfig(enable_redis=False)
+    app = Starlette()
+    app.add_middleware(SecurityMiddleware, config=config)
+    add_status_route(app, dependencies=None)
+
+    assert any(getattr(r, "path", None) == "/_guard/status" for r in app.routes)
