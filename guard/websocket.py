@@ -1,6 +1,6 @@
 import logging
-from collections.abc import Coroutine, Mapping
-from typing import Any, cast
+from collections.abc import Awaitable, Callable, Coroutine, Mapping
+from typing import Any, NamedTuple, cast
 
 from guard_core import check_rate_limit_by_ip, ip_ban_manager, is_ip_allowed
 from guard_core.exceptions import GuardRedisError
@@ -13,9 +13,37 @@ from starlette.exceptions import WebSocketException
 from starlette.websockets import WebSocket
 
 from guard.adapters import _join_repeated_header_lines
-from guard.lifespan import _find_security_config
+from guard.lifespan import _find_security_config, _find_security_redis_handler
 
 logger = logging.getLogger("guard_core")
+
+
+class WebSocketCloseReason(NamedTuple):
+    code: int
+    reason: str
+
+
+WS_CLOSE_IP_BANNED = WebSocketCloseReason(status.WS_1008_POLICY_VIOLATION, "IP banned")
+WS_CLOSE_IP_NOT_ALLOWED = WebSocketCloseReason(
+    status.WS_1008_POLICY_VIOLATION, "IP not allowed"
+)
+WS_CLOSE_RATE_LIMIT_EXCEEDED = WebSocketCloseReason(
+    status.WS_1008_POLICY_VIOLATION, "Rate limit exceeded"
+)
+WS_CLOSE_CLIENT_ADDRESS_UNKNOWN = WebSocketCloseReason(
+    status.WS_1008_POLICY_VIOLATION, "Client address could not be determined"
+)
+WS_CLOSE_SECURITY_CHECK_FAILED = WebSocketCloseReason(
+    status.WS_1013_TRY_AGAIN_LATER, "Security check failed"
+)
+
+WS_CLOSE_REASONS: tuple[WebSocketCloseReason, ...] = (
+    WS_CLOSE_IP_BANNED,
+    WS_CLOSE_IP_NOT_ALLOWED,
+    WS_CLOSE_RATE_LIMIT_EXCEEDED,
+    WS_CLOSE_CLIENT_ADDRESS_UNKNOWN,
+    WS_CLOSE_SECURITY_CHECK_FAILED,
+)
 
 
 class _WebSocketGuardRequest:
@@ -89,27 +117,25 @@ async def _guarded_redis_call(
                 check_name,
             )
             raise WebSocketException(
-                code=status.WS_1013_TRY_AGAIN_LATER,
-                reason="Security check failed",
+                code=WS_CLOSE_SECURITY_CHECK_FAILED.code,
+                reason=WS_CLOSE_SECURITY_CHECK_FAILED.reason,
             ) from exc
         return default
 
 
-async def guard_websocket(websocket: WebSocket) -> None:
-    config = _find_security_config(websocket.scope.get("app"))
-    if config is None:
-        raise RuntimeError(
-            "guard_websocket requires SecurityMiddleware to be registered via "
-            "app.add_middleware(SecurityMiddleware, config=...)"
-        )
-
+async def _run_websocket_checks(
+    websocket: WebSocket,
+    config: SecurityConfig,
+    redis_handler: RedisManager | None,
+) -> None:
     guard_request: GuardRequest = _WebSocketGuardRequest(websocket)
     client_ip = await extract_client_ip(guard_request, config)
+    websocket.state.client_ip = client_ip
 
     if client_ip == UNKNOWN_CLIENT_IDENTITY and config.fail_secure:
         raise WebSocketException(
-            code=status.WS_1008_POLICY_VIOLATION,
-            reason="Client address could not be determined",
+            code=WS_CLOSE_CLIENT_ADDRESS_UNKNOWN.code,
+            reason=WS_CLOSE_CLIENT_ADDRESS_UNKNOWN.reason,
         )
 
     is_banned = await _guarded_redis_call(
@@ -120,18 +146,17 @@ async def guard_websocket(websocket: WebSocket) -> None:
     )
     if is_banned:
         raise WebSocketException(
-            code=status.WS_1008_POLICY_VIOLATION, reason="IP banned"
+            code=WS_CLOSE_IP_BANNED.code, reason=WS_CLOSE_IP_BANNED.reason
         )
 
     if not await is_ip_allowed(client_ip, config, config.geo_ip_handler):
         raise WebSocketException(
-            code=status.WS_1008_POLICY_VIOLATION, reason="IP not allowed"
+            code=WS_CLOSE_IP_NOT_ALLOWED.code, reason=WS_CLOSE_IP_NOT_ALLOWED.reason
         )
 
-    if client_ip == UNKNOWN_CLIENT_IDENTITY:
+    if client_ip == UNKNOWN_CLIENT_IDENTITY or config.whitelist:
         return
 
-    redis_handler = RedisManager(config) if config.enable_redis else None
     allowed = await _guarded_redis_call(
         check_rate_limit_by_ip(
             client_ip, config, redis_handler=redis_handler, endpoint_path="ws"
@@ -142,5 +167,35 @@ async def guard_websocket(websocket: WebSocket) -> None:
     )
     if not allowed:
         raise WebSocketException(
-            code=status.WS_1008_POLICY_VIOLATION, reason="Rate limit exceeded"
+            code=WS_CLOSE_RATE_LIMIT_EXCEEDED.code,
+            reason=WS_CLOSE_RATE_LIMIT_EXCEEDED.reason,
         )
+
+
+async def guard_websocket(websocket: WebSocket) -> None:
+    app = websocket.scope.get("app")
+    config = _find_security_config(app)
+    if config is None:
+        raise RuntimeError(
+            "guard_websocket requires SecurityMiddleware to be registered via "
+            "app.add_middleware(SecurityMiddleware, config=...)"
+        )
+    redis_handler = _find_security_redis_handler(app)
+    await _run_websocket_checks(websocket, config, redis_handler)
+
+
+def make_guard_websocket(
+    config: SecurityConfig,
+    redis_handler: RedisManager | None = None,
+) -> Callable[[WebSocket], Awaitable[None]]:
+    if config.enable_redis and redis_handler is None:
+        logger.warning(
+            "enable_redis=True but no redis_handler was given to "
+            "make_guard_websocket; the websocket rate limit uses the "
+            "in-memory store"
+        )
+
+    async def _guard_websocket_dependency(websocket: WebSocket) -> None:
+        await _run_websocket_checks(websocket, config, redis_handler)
+
+    return _guard_websocket_dependency

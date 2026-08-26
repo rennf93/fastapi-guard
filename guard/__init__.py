@@ -32,11 +32,34 @@ from guard_core import (
 )
 
 from guard.middleware import SecurityMiddleware as SecurityMiddleware
-from guard.websocket import guard_websocket as guard_websocket
+from guard.websocket import (
+    WS_CLOSE_CLIENT_ADDRESS_UNKNOWN as WS_CLOSE_CLIENT_ADDRESS_UNKNOWN,
+    WS_CLOSE_IP_BANNED as WS_CLOSE_IP_BANNED,
+    WS_CLOSE_IP_NOT_ALLOWED as WS_CLOSE_IP_NOT_ALLOWED,
+    WS_CLOSE_RATE_LIMIT_EXCEEDED as WS_CLOSE_RATE_LIMIT_EXCEEDED,
+    WS_CLOSE_REASONS as WS_CLOSE_REASONS,
+    WS_CLOSE_SECURITY_CHECK_FAILED as WS_CLOSE_SECURITY_CHECK_FAILED,
+    WebSocketCloseReason as WebSocketCloseReason,
+    guard_websocket as guard_websocket,
+    make_guard_websocket as make_guard_websocket,
+)
 
 try:
     __version__ = _pkg_version("fastapi-guard")
 except PackageNotFoundError:
     __version__ = "0.0.0+unknown"
 
-__all__ = ["__version__", "SecurityMiddleware", "guard_websocket", *guard_core.__all__]
+__all__ = [
+    "__version__",
+    "SecurityMiddleware",
+    "guard_websocket",
+    "make_guard_websocket",
+    "WebSocketCloseReason",
+    "WS_CLOSE_REASONS",
+    "WS_CLOSE_IP_BANNED",
+    "WS_CLOSE_IP_NOT_ALLOWED",
+    "WS_CLOSE_RATE_LIMIT_EXCEEDED",
+    "WS_CLOSE_CLIENT_ADDRESS_UNKNOWN",
+    "WS_CLOSE_SECURITY_CHECK_FAILED",
+    *guard_core.__all__,
+]

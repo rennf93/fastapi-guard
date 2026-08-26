@@ -3,6 +3,17 @@ Release Notes
 
 ___
 
+Unreleased
+----------
+
+- **Added** - `make_guard_websocket(config: SecurityConfig, redis_handler: RedisManager | None = None)` returns a `Depends`-ready WebSocket dependency bound to an explicit `SecurityConfig`, for a route on an app that never calls `app.add_middleware(SecurityMiddleware, config=...)`; `guard_websocket` is unchanged and still resolves its config from the registered middleware, raising `RuntimeError` without one. Both entry points share one private check coroutine, so every rule applies to both.
+- **Added** - `guard` exports module-level `(code, reason)` constants for the five WebSocket close outcomes `guard_websocket`/`make_guard_websocket` can emit (`WS_CLOSE_IP_BANNED`, `WS_CLOSE_IP_NOT_ALLOWED`, `WS_CLOSE_RATE_LIMIT_EXCEEDED`, `WS_CLOSE_CLIENT_ADDRESS_UNKNOWN`, `WS_CLOSE_SECURITY_CHECK_FAILED`, collected in `WS_CLOSE_REASONS`), documented as a stable contract in `docs/tutorial/websockets.md` that a close handler can key logging on.
+- **Added** - `websocket.state.client_ip` is now set to the resolved client identity (including `"unknown"`) immediately after resolution, before any check runs, so a route handler can read it after `accept()`.
+- **Fixed** - `guard_websocket` and `make_guard_websocket` now skip the rate-limit check for a client that passes a configured global `whitelist`, mirroring guard-core's HTTP rule (`RateLimitCheck.check` returns early once a request is resolved as whitelisted); previously a whitelisted WebSocket client could still be rate-limited.
+- **Fixed** - The websocket rate-limit check no longer constructs a `RedisManager` itself. `RedisManager` is a process-wide singleton; constructing one with a different `SecurityConfig` rebinds its connection for every other caller in the process, so `guard_websocket` previously risked overwriting the HTTP pipeline's own Redis manager, and `make_guard_websocket` on an app without `SecurityMiddleware` could construct an uninitialized manager and raise `GuardRedisError` on every connect. `guard_websocket` now resolves the middleware's already-initialized manager instead of constructing one; `make_guard_websocket` takes an optional `redis_handler` parameter and falls back to the in-memory store (logging one warning at dependency creation) when `enable_redis=True` and none is given.
+
+___
+
 v7.8.0 (2026-08-26)
 -------------------
 

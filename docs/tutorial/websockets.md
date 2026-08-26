@@ -50,6 +50,59 @@ On the first failing check, the connection is closed with WebSocket close code `
 
 If Redis is unreachable while `ip_ban_manager.is_ip_banned` or `check_rate_limit_by_ip` runs, `guard_websocket` follows the same `redis_fail_open` and `fail_secure` rules as the HTTP pipeline: `redis_fail_open=True` skips the failing check and treats it as passed; otherwise `fail_secure=True` (the default) refuses the handshake with close code `1013` (Try Again Later); otherwise the check is skipped and the error is logged.
 
+A client that passes `is_ip_allowed` while a global `SecurityConfig.whitelist` is configured is, by construction, a member of that whitelist; the rate-limit check is skipped for it entirely, mirroring the HTTP pipeline's own rule that a whitelisted request never reaches `RateLimitCheck`. A non-whitelisted client is still rejected by the allow-list check itself, before rate limiting would ever run.
+
+___
+
+The make_guard_websocket Factory
+---------------------------------
+
+`make_guard_websocket(config: SecurityConfig)` returns a dependency bound to that exact `SecurityConfig`, independent of `SecurityMiddleware` registration. It runs the identical checks as `guard_websocket`, in the same order, sharing one private implementation, so it is not a reduced or divergent code path -- it is the same guard, given its config directly instead of resolving it from the middleware.
+
+This is useful for a WebSocket route on an app that has no `SecurityMiddleware` at all (an app that guards WebSocket traffic only), or in tests that want to exercise the guard without standing up the full HTTP middleware:
+
+```python
+from fastapi import Depends, FastAPI, WebSocket
+
+from guard import SecurityConfig, make_guard_websocket
+
+app = FastAPI()
+
+config = SecurityConfig(blacklist=("203.0.113.9",))
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(
+    websocket: WebSocket, _: None = Depends(make_guard_websocket(config))
+) -> None:
+    await websocket.accept()
+    await websocket.send_text("connected")
+```
+
+`guard_websocket` keeps its existing contract: it still raises `RuntimeError` at connection time on an app without a registered `SecurityMiddleware`, even if `make_guard_websocket` is used elsewhere on that same app.
+
+___
+
+Redis-Backed Rate Limiting
+----------------------------
+
+`RedisManager` is a process-wide singleton; constructing one with a different `SecurityConfig` rebinds the connection for every other caller in the process, including the HTTP pipeline. Neither `guard_websocket` nor `make_guard_websocket` ever constructs a `RedisManager` themselves.
+
+`guard_websocket` resolves the already-initialized manager that `SecurityMiddleware` created for the same `SecurityConfig`; if `enable_redis=True` but that manager has not connected yet, the rate-limit check falls back to the in-memory store for that connection rather than forcing a connection or touching the singleton.
+
+`make_guard_websocket(config, redis_handler=None)` takes the manager explicitly instead: pass an already-initialized `RedisManager` to back the websocket rate limit with Redis, or leave it `None` to use the in-memory store. Passing `enable_redis=True` with no `redis_handler` logs one warning when the dependency is created (not on every connection) and then rate-limits in memory for the lifetime of that dependency:
+
+```python
+from guard import SecurityConfig, make_guard_websocket
+from guard_core.handlers.redis_handler import RedisManager
+
+config = SecurityConfig(redis_url="redis://localhost:6379", enable_redis=True)
+redis_handler = RedisManager(config)
+await redis_handler.initialize()
+
+dependency = make_guard_websocket(config, redis_handler=redis_handler)
+```
+
 ___
 
 Client Resolution
@@ -58,6 +111,48 @@ Client Resolution
 The client IP is resolved the same way as the HTTP pipeline: `websocket.client.host` if the connection has a peer, or `X-Forwarded-For` when the connecting peer is a trusted proxy (`trusted_proxies`, `trusted_proxy_depth`). A connection with no peer at all (a Unix domain socket, some serverless adapters) needs `"unix"` in `trusted_proxies` to resolve from `X-Forwarded-For`, exactly as for HTTP; see [Proxy Security](security/proxy-security.md#unix-sockets-and-serverless-adapters).
 
 When the client address still cannot be resolved, `guard_websocket` follows the same `fail_secure` setting as the HTTP pipeline: `fail_secure=True` (the default) closes the connection with code `1008` before running any further check; `fail_secure=False` runs the ban, allow-list, and blocked-country checks against identity `"unknown"` (allowed unless a whitelist or a country allow-list is configured) and skips the rate-limit check, since there is no real IP to key a rate-limit bucket on.
+
+___
+
+Close Code Contract
+--------------------
+
+`guard` exports module-level `(code, reason)` constants for every close outcome `guard_websocket`/`make_guard_websocket` can emit, and neither ever raises any pair outside this set. Log processing can key on the `reason` string directly, or import the constants:
+
+```python
+from guard import (
+    WS_CLOSE_CLIENT_ADDRESS_UNKNOWN,
+    WS_CLOSE_IP_BANNED,
+    WS_CLOSE_IP_NOT_ALLOWED,
+    WS_CLOSE_RATE_LIMIT_EXCEEDED,
+    WS_CLOSE_REASONS,
+    WS_CLOSE_SECURITY_CHECK_FAILED,
+    WebSocketCloseReason,
+)
+```
+
+Each constant is a `WebSocketCloseReason(code, reason)` named tuple; `WS_CLOSE_REASONS` collects all five.
+
+| Code | Reason                                    | Cause                                                     |
+| ---- | ------------------------------------------ | ---------------------------------------------------------- |
+| 1008 | `IP banned`                                | `ip_ban_manager.is_ip_banned` returned `True`.              |
+| 1008 | `IP not allowed`                           | `is_ip_allowed` returned `False` (whitelist/blacklist, blocked country, blocked cloud provider). |
+| 1008 | `Rate limit exceeded`                      | `check_rate_limit_by_ip` returned `False`.                  |
+| 1008 | `Client address could not be determined`   | No resolvable client identity and `fail_secure=True`.       |
+| 1013 | `Security check failed`                    | A Redis error during the ban or rate-limit check, with `redis_fail_open=False` and `fail_secure=True`. |
+
+Every close in this table happens before `accept()`, so the `reason` string reaches the server's own logs only, not the browser: uvicorn answers a pre-accept close with plain HTTP `403` and discards the WebSocket close code and reason entirely (uvicorn's `websockets_impl.py:296-303`), so the client sees a failed upgrade with status `403`, never the `(code, reason)` pair. Read the pair in the application's own logging, for example a handler around `WebSocketException`, not on the client.
+
+A Redis failure during `ip_ban_manager.is_ip_banned` follows `redis_fail_open` and `fail_secure` exactly as described above: with `redis_fail_open=False` and `fail_secure=False`, the failure is treated as "not banned", the same fail-open default the HTTP pipeline uses for this case; only `fail_secure=True` produces the `1013` close.
+
+`check_rate_limit_by_ip` (guard-core's `ratelimit_handler.py:80-86`) catches a Redis error internally, logs it, and falls back to the same per-process in-memory window used when `enable_redis=False`, on both the HTTP pipeline and here; it never raises. With more than one worker process, the effective limit while Redis is down is `rate_limit` multiplied by the worker count, since each process counts independently. The `1013` close therefore does not apply to the rate-limit check today; it is reachable only through the ban check.
+
+___
+
+Client IP on websocket.state
+------------------------------
+
+Immediately after the client identity is resolved, and before any check runs, `guard_websocket` and `make_guard_websocket` set `websocket.state.client_ip` to that resolved value -- including the literal string `"unknown"` when no client address could be determined and `fail_secure=False` let the connection proceed. A route handler can read `websocket.state.client_ip` after `accept()` to log or reuse the identity the guard already resolved, without re-deriving it from headers.
 
 ___
 

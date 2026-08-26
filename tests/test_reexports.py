@@ -17,6 +17,14 @@ def test_all_derives_from_guard_core_exports() -> None:
         "__version__",
         "SecurityMiddleware",
         "guard_websocket",
+        "make_guard_websocket",
+        "WebSocketCloseReason",
+        "WS_CLOSE_REASONS",
+        "WS_CLOSE_IP_BANNED",
+        "WS_CLOSE_IP_NOT_ALLOWED",
+        "WS_CLOSE_RATE_LIMIT_EXCEEDED",
+        "WS_CLOSE_CLIENT_ADDRESS_UNKNOWN",
+        "WS_CLOSE_SECURITY_CHECK_FAILED",
         *guard_core.__all__,
     }
 
