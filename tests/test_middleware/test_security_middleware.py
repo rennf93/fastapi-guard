@@ -391,11 +391,26 @@ async def test_custom_error_responses() -> None:
             {},
             True,
         ),
-        # NOTE: Request without client
         (
-            "no_client_info",
-            status.HTTP_200_OK,
+            "no_client_info_fail_secure_rejects",
+            status.HTTP_403_FORBIDDEN,
             {},
+            "/",
+            {},
+            False,
+        ),
+        (
+            "no_client_info_fail_secure_false_runs_as_unknown",
+            status.HTTP_200_OK,
+            {"fail_secure": False},
+            "/",
+            {},
+            False,
+        ),
+        (
+            "no_client_info_fail_secure_false_whitelist_still_rejects",
+            status.HTTP_403_FORBIDDEN,
+            {"fail_secure": False, "whitelist": ["10.0.0.0/8"]},
             "/",
             {},
             False,
@@ -459,7 +474,7 @@ async def test_custom_response_modifier_parameterized(
     async def excluded_path() -> dict[str, str]:
         return {"message": "Excluded Path"}
 
-    if test_scenario == "no_client_info":
+    if test_scenario.startswith("no_client_info"):
 
         async def receive() -> dict[str, str | bytes]:
             return {"type": "http.request", "body": b""}
@@ -468,7 +483,9 @@ async def test_custom_response_modifier_parameterized(
             "type": "http",
             "method": "GET",
             "path": "/",
-            "headers": [(k.encode(), v.encode()) for k, v in request_headers.items()],
+            "headers": [
+                (k.lower().encode(), v.encode()) for k, v in request_headers.items()
+            ],
             "query_string": b"",
             "server": ("testserver", 80),
             "scheme": "http",
@@ -505,6 +522,50 @@ async def test_custom_response_modifier_parameterized(
                 assert "detail" in response_json
             else:
                 assert expected_status_code < 400
+
+
+@pytest.mark.asyncio
+async def test_missing_client_unix_trusted_proxy_rate_limits_forwarded_ip() -> None:
+    """
+    A connection with no client_host (a Unix domain socket, or a serverless
+    adapter that never populates scope["client"]) resolves its identity from
+    X-Forwarded-For when "unix" is in trusted_proxies, and that resolved
+    identity is what rate limiting is keyed on.
+    """
+    app = FastAPI()
+    config = SecurityConfig(
+        enable_penetration_detection=False,
+        trusted_proxies=("unix",),
+        rate_limit=2,
+        rate_limit_window=60,
+        enable_rate_limiting=True,
+    )
+    middleware = SecurityMiddleware(app, config=config)
+
+    async def call_next(request: Request) -> Response:
+        return Response("ok", status_code=200)
+
+    async def receive() -> dict[str, str | bytes]:
+        return {"type": "http.request", "body": b""}
+
+    def make_scope() -> dict[str, Any]:
+        return {
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [(b"x-forwarded-for", b"203.0.113.9")],
+            "query_string": b"",
+            "server": ("testserver", 80),
+            "scheme": "http",
+        }
+
+    statuses = []
+    for _ in range(3):
+        request = Request(scope=make_scope(), receive=receive)
+        response = await middleware.dispatch(request, call_next)
+        statuses.append(response.status_code)
+
+    assert statuses == [200, 200, 429]
 
 
 @pytest.mark.asyncio
@@ -1132,7 +1193,6 @@ async def test_request_without_client(security_config: SecurityConfig) -> None:
             "query_string": b"",
             "server": ("testserver", 80),
             "scheme": "http",
-            # NOTE: No 'client' key here
         },
         receive=receive,
     )
@@ -1142,8 +1202,8 @@ async def test_request_without_client(security_config: SecurityConfig) -> None:
 
     response = await middleware.dispatch(request, mock_call_next)
 
-    assert call_next_called, "call_next should be called when client is None"
-    assert response.status_code == status.HTTP_200_OK
+    assert not call_next_called
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 @pytest.mark.asyncio
