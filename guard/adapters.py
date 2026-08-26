@@ -1,8 +1,10 @@
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, MutableMapping
+from functools import cached_property
 from typing import Any, cast
 
 from guard_core.protocols.request_protocol import GuardRequest
 from guard_core.protocols.response_protocol import GuardResponse
+from starlette.datastructures import Headers
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response, StreamingResponse
 from starlette.types import Message
@@ -15,6 +17,18 @@ async def _replay_then_continue(
         yield chunk
     async for chunk in stream:
         yield chunk
+
+
+def _join_repeated_header_lines(headers: Headers) -> Headers:
+    joined: dict[str, str] = {}
+    for key in headers.keys():
+        if key not in joined:
+            joined[key] = ", ".join(headers.getlist(key))
+    raw = [
+        (key.encode("latin-1"), value.encode("latin-1"))
+        for key, value in joined.items()
+    ]
+    return Headers(raw=raw)
 
 
 class StarletteGuardRequest:
@@ -46,9 +60,12 @@ class StarletteGuardRequest:
             return self._request.client.host
         return None
 
-    @property
+    @cached_property
     def headers(self) -> Mapping[str, str]:
-        return self._request.headers
+        headers = self._request.headers
+        if hasattr(headers, "getlist"):
+            return _join_repeated_header_lines(headers)
+        return headers
 
     @property
     def query_params(self) -> Mapping[str, str]:

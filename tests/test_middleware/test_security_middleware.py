@@ -19,6 +19,7 @@ from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 from redis.exceptions import RedisError
 from starlette.applications import Starlette
+from starlette.testclient import TestClient
 
 from guard.adapters import StarletteGuardRequest, StarletteGuardResponse
 from guard.middleware import SecurityMiddleware
@@ -93,6 +94,51 @@ async def test_ip_whitelist_blacklist() -> None:
 
         response = await client.get("/", headers={"X-Forwarded-For": "10.0.0.1"})
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.asyncio
+async def test_rate_limiting_is_keyed_on_the_joined_right_most_forwarded_entry() -> (
+    None
+):
+    """
+    A client that sends its own X-Forwarded-For line ahead of the real
+    proxy-appended one must not be able to rotate the left entry to evade
+    rate limiting; the right-most (depth=1) entry of the joined chain is
+    what guard-core resolves as the client.
+    """
+    import httpx2
+
+    app = FastAPI()
+    config = SecurityConfig(
+        enable_penetration_detection=False,
+        trusted_proxies=("10.0.0.1",),
+        trusted_proxy_depth=1,
+        rate_limit=3,
+        rate_limit_window=60,
+        enable_rate_limiting=True,
+    )
+    app.add_middleware(SecurityMiddleware, config=config)
+
+    @app.get("/")
+    async def read_root() -> dict[str, str]:
+        return {"message": "Hello World"}
+
+    with TestClient(app, client=("10.0.0.1", 5000)) as client:
+        statuses = []
+        for i in range(9):
+            request = httpx2.Request(
+                "GET",
+                "http://testserver/",
+                headers=[
+                    (b"host", b"testserver"),
+                    (b"x-forwarded-for", f"66.66.66.{i}".encode()),
+                    (b"x-forwarded-for", b"203.0.113.7"),
+                ],
+            )
+            statuses.append(client.send(request).status_code)
+
+    assert statuses[:3] == [200, 200, 200]
+    assert all(status == 429 for status in statuses[3:])
 
 
 @pytest.mark.asyncio
