@@ -92,6 +92,44 @@ async def test_starlette_guard_request_headers() -> None:
     assert guard_request.headers.get("x-custom") == "value"
 
 
+async def test_starlette_guard_request_headers_joins_repeated_field_lines() -> None:
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/",
+        "query_string": b"",
+        "headers": [
+            (b"x-forwarded-for", b"66.66.66.1"),
+            (b"x-forwarded-for", b"203.0.113.7"),
+        ],
+        "server": ("localhost", 8000),
+        "root_path": "",
+    }
+    request = Request(scope)
+    guard_request = StarletteGuardRequest(request)
+    assert guard_request.headers.get("x-forwarded-for") == "66.66.66.1, 203.0.113.7"
+
+
+async def test_starlette_guard_request_headers_items_dedupe_repeated_lines() -> None:
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/",
+        "query_string": b"",
+        "headers": [
+            (b"x-forwarded-for", b"66.66.66.1"),
+            (b"x-forwarded-for", b"203.0.113.7"),
+        ],
+        "server": ("localhost", 8000),
+        "root_path": "",
+    }
+    request = Request(scope)
+    guard_request = StarletteGuardRequest(request)
+    assert dict(guard_request.headers.items()) == {
+        "x-forwarded-for": "66.66.66.1, 203.0.113.7"
+    }
+
+
 async def test_starlette_guard_request_query_params() -> None:
     scope = {
         "type": "http",

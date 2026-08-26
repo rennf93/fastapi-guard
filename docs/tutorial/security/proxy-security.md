@@ -41,6 +41,24 @@ With the server's own handling off, its access log will show the proxy's address
 
 ___
 
+Unix Sockets and Serverless Adapters
+-------------------------------------
+
+Some deployments never populate `request.client`: a Unix domain socket has no peer address, and some serverless ASGI adapters (Mangum, on certain event shapes) also yield `client=None`. Since guard-core 3.14.0, FastAPI Guard rejects such a request with 403 (`fail_secure=True`, the default) or runs the pipeline with identity `"unknown"` (`fail_secure=False`, allowed unless a whitelist or a country allow-list is configured; blacklist, country, and cloud checks cannot match without an address; detection and the shared rate-limit bucket still apply), logging a one-time warning either way.
+
+If the connection is fronted by a reverse proxy that sets `X-Forwarded-For` (nginx over a Unix socket to uvicorn, for example), add the literal string `"unix"` to `trusted_proxies` so a peer-less connection is still treated as a trusted hop:
+
+```python
+config = SecurityConfig(
+    trusted_proxies=["unix"],
+    trusted_proxy_depth=1,
+)
+```
+
+With `"unix"` configured, guard-core reads `X-Forwarded-For` exactly as it would for a normal trusted proxy, resolving the real client for rate limiting, IP bans, and every other check. Without it, every request over that socket resolves to `"unknown"`.
+
+___
+
 Secure Configuration
 --------------------
 

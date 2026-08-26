@@ -116,6 +116,8 @@ add_status_route(app)  # GET /_guard/status
 
 Nothing is registered unless you call `add_status_route` yourself. The route is excluded from the OpenAPI schema by default; since the response reveals which cloud providers/geo-IP you block and roughly how populated those caches are, treat it like any other operational endpoint and restrict it at the network/reverse-proxy layer if that's more than your deployment wants to expose publicly.
 
+`add_status_route(app, path="/_guard/status", dependencies=None)` accepts a list of FastAPI dependencies (`dependencies=[Depends(require_admin)]`), applied the same way `APIRouter.add_api_route`'s own `dependencies` parameter is: a failing dependency rejects the request before `guard_initialization_status` runs. Only honored when `app` is a `FastAPI` instance; a plain Starlette app registers the route via `add_route` with no dependency support, as before, and passing dependencies to a non-FastAPI app raises `TypeError` instead of silently ignoring them.
+
 Agent Settings
 --------------
 

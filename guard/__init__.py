@@ -32,10 +32,11 @@ from guard_core import (
 )
 
 from guard.middleware import SecurityMiddleware as SecurityMiddleware
+from guard.websocket import guard_websocket as guard_websocket
 
 try:
     __version__ = _pkg_version("fastapi-guard")
 except PackageNotFoundError:
     __version__ = "0.0.0+unknown"
 
-__all__ = ["__version__", "SecurityMiddleware", *guard_core.__all__]
+__all__ = ["__version__", "SecurityMiddleware", "guard_websocket", *guard_core.__all__]

@@ -39,6 +39,7 @@ from fastapi import (
     APIRouter,
     BackgroundTasks,
     Body,
+    Depends,
     FastAPI,
     Header,
     HTTPException,
@@ -59,6 +60,7 @@ from guard import (
     SecurityDecorator,
     SecurityMiddleware,
     cloud_handler,
+    guard_websocket,
 )
 from guard.adapters import StarletteGuardResponse
 from guard.lifespan import make_lifespan
@@ -1620,7 +1622,9 @@ async def test_mixed_attack(payload: TestPayload) -> MessageResponse:
 
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket) -> None:
+async def websocket_endpoint(
+    websocket: WebSocket, _: None = Depends(guard_websocket)
+) -> None:
     await websocket.accept()
     try:
         while True:

@@ -16,6 +16,7 @@ def test_all_derives_from_guard_core_exports() -> None:
     assert set(guard.__all__) == {
         "__version__",
         "SecurityMiddleware",
+        "guard_websocket",
         *guard_core.__all__,
     }
 

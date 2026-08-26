@@ -7,6 +7,7 @@ from guard_core.decorators.base import RouteConfig
 from guard_core.detection_result import DetectionResult
 from guard_core.handlers.behavior_handler import BehaviorRule
 from guard_core.protocols import GuardResponse
+from starlette.datastructures import Headers
 
 from guard import SecurityConfig, SecurityDecorator
 from guard.adapters import StarletteGuardResponse
@@ -427,7 +428,7 @@ async def test_bypass_all_security_checks() -> None:
     mock_request.client.host = "127.0.0.1"
     mock_request.url.scheme = "http"
     mock_request.url.path = "/test"
-    mock_request.headers = {}
+    mock_request.headers = Headers(raw=[])
 
     async def mock_call_next(request: Request) -> Response:
         return Response("bypassed", status_code=200)
@@ -456,7 +457,7 @@ async def test_bypass_all_security_checks_with_custom_modifier() -> None:
     mock_request.client.host = "127.0.0.1"
     mock_request.url.scheme = "http"
     mock_request.url.path = "/test"
-    mock_request.headers = {}
+    mock_request.headers = Headers(raw=[])
 
     async def mock_call_next(request: Request) -> Response:
         return Response("bypassed", status_code=200)
@@ -473,14 +474,17 @@ async def test_bypass_all_security_checks_with_custom_modifier() -> None:
     "test_case,expected_status,description",
     [
         (
-            {"max_request_size": 100, "headers": {"content-length": "200"}},
+            {
+                "max_request_size": 100,
+                "headers": Headers(raw=[(b"content-length", b"200")]),
+            },
             413,
             "Test route-specific request size limits",
         ),
         (
             {
                 "allowed_content_types": ["application/json"],
-                "headers": {"content-type": "text/plain"},
+                "headers": Headers(raw=[(b"content-type", b"text/plain")]),
             },
             415,
             "Test route-specific content type filtering",
@@ -494,13 +498,16 @@ async def test_bypass_all_security_checks_with_custom_modifier() -> None:
                         )
                     )
                 ],
-                "headers": {},
+                "headers": Headers(raw=[]),
             },
             400,
             "Test custom validator returning a Response object",
         ),
         (
-            {"custom_validators": [AsyncMock(return_value=None)], "headers": {}},
+            {
+                "custom_validators": [AsyncMock(return_value=None)],
+                "headers": Headers(raw=[]),
+            },
             200,
             "Test custom validator returning None (allows request to proceed)",
         ),
@@ -557,7 +564,7 @@ async def test_route_specific_rate_limit_with_redis() -> None:
     mock_request.client.host = "127.0.0.1"
     mock_request.url.scheme = "http"
     mock_request.url.path = "/test"
-    mock_request.headers = {}
+    mock_request.headers = Headers(raw=[])
     mock_request.query_params = {}
     mock_request.state = SimpleNamespace(client_ip="127.0.0.1")
     mock_request.state.is_whitelisted = False

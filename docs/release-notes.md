@@ -10,6 +10,22 @@ Release Notes
 
 ___
 
+v7.8.0 (2026-08-26)
+-------------------
+
+Lockstep release tracking guard-core 3.14.0: missing-client rejection, forwarded-header joining, clean Redis-down responses, and WebSocket protection (v7.8.0)
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+- **Compatibility (dependency floor, breaking for anyone pinned below 3.14.0)** - `guard-core` changes from an unconstrained dependency to `guard-core>=3.14.0` in `pyproject.toml`. `pip install --upgrade fastapi-guard` alone could previously leave an older guard-core in place; against guard-core 3.12.0 that is an `ImportError` at `import guard` time (`check_ip_access`/`check_rate_limit_by_ip`/`is_ip_allowed`, added in 3.13.0). No upper bound; the floor moves with each lockstep release (fg #120).
+- **Security (GHSA-8xvm-856x-7hwp)** - `StarletteGuardRequest.headers` now joins repeated field lines (RFC 7230 5.2) before guard-core resolves the client from `X-Forwarded-For`; previously only the first line was visible, letting a client's own forged line hide the real proxy-appended one and rotate past rate limiting.
+- **Compatibility (GHSA-634g-4wr8-xwxv)** - A request with no client address is now rejected by default (`fail_secure=True`) instead of skipping the entire security pipeline; this is guard-core 3.14.0's own fix, fastapi-guard's test suite and docs are brought in line with it here. New `"unix"` `trusted_proxies` token for Unix-socket and serverless deployments.
+- **Fixed (#76)** - `SecurityMiddleware` no longer crashes with an unhandled 500 (or fails app startup) when Redis is unreachable at initialization. `dispatch` now catches `GuardRedisError` and returns a clean 503 with `Retry-After: 5`, retrying on the next request; the lifespan warmer logs and continues instead of crashing boot.
+- **Security (GHSA-63qv-gh36-52qf)** - New `guard_websocket` dependency (`Depends(guard_websocket)`) for `@app.websocket` routes: `SecurityMiddleware` never runs for WebSocket scopes (`BaseHTTPMiddleware` skips non-HTTP), so a banned or blacklisted IP, or one over its rate limit, previously reached `accept()` unchecked. The example app's "WebSocket protection" claim is now true. A Redis failure during the handshake now follows `redis_fail_open` and `fail_secure` the same way the HTTP pipeline does, instead of leaking an unhandled `GuardRedisError`; a fail-secure refusal closes the connection with code 1013.
+- **Added (guard-core #81 item 3)** - `add_status_route` now accepts `dependencies=[...]` (FastAPI apps only), so the opt-in `/_guard/status` route can be gated behind an existing auth dependency instead of relying solely on proxy-level restriction.
+- **Compatibility (lockstep)** - fastapi-guard 7.8.0 tracks guard-core 3.14.0. guard-core 3.14.0 is not yet published to PyPI as of this release commit; CI resolves `guard-core>=3.14.0` fresh from PyPI (`uv.lock` is gitignored) and will fail until it is. This commit is held locally, matching the pattern set by earlier lockstep releases, until guard-core 3.14.0 ships. See guard-core 3.14.0's release notes for the full engine-side list: bounded in-memory rate-limit and behavior-tracker stores, float anomaly statistics, a per-request scan value cap, the AzureCloud tag fix, GeoIP last-known-good on refresh failure, telemetry secret redaction, ban-address canonicalization, and new SSRF detection forms.
+
+___
+
 v7.7.0 (2026-08-24)
 -------------------
 

@@ -101,6 +101,10 @@ app.add_middleware(SecurityMiddleware, config=config)
 
 For production, wire `guard.lifespan.guard_lifespan` into `FastAPI(lifespan=...)` so initialization runs at app startup instead of on the first request, see [Eager initialization](https://rennf93.github.io/fastapi-guard/latest/tutorial/first-steps/#eager-initialization-with-fastapi-lifespan).
 
+A connection with no client address (a Unix domain socket, some serverless ASGI adapters) is rejected with 403 by default (`fail_secure=True`); set `fail_secure=False` to run the pipeline with identity `"unknown"` instead, allowed unless a whitelist or a country allow-list is configured (blacklist, country, and cloud checks cannot match without an address; detection and the shared rate-limit bucket still apply). Add the literal string `"unix"` to `trusted_proxies` to resolve the real client from `X-Forwarded-For` on such a connection, see [Proxy Security](https://rennf93.github.io/fastapi-guard/latest/tutorial/security/proxy-security/#unix-sockets-and-serverless-adapters).
+
+`SecurityMiddleware` protects HTTP requests only; it never runs for WebSocket connections. Secure a `@app.websocket` route explicitly with `Depends(guard_websocket)`, see [WebSockets](https://rennf93.github.io/fastapi-guard/latest/tutorial/websockets/).
+
 ---
 
 ## Per-Route Security Decorators

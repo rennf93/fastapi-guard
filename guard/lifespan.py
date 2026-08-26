@@ -2,6 +2,9 @@ from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import Any
 
+from guard_core.exceptions import GuardRedisError
+from guard_core.models import SecurityConfig
+
 from guard._decorator_adoption import resolve_app_state_decorator
 from guard._middleware_state import MiddlewareState, get_state, register_state
 from guard.middleware import SecurityMiddleware
@@ -21,6 +24,23 @@ def _find_security_middleware(app: Any) -> SecurityMiddleware | None:
                 return cls(app, **kwargs)
             except Exception:
                 return None
+    return None
+
+
+def _find_security_config(app: Any) -> SecurityConfig | None:
+    user_middleware = getattr(app, "user_middleware", None)
+    if not user_middleware:
+        return None
+    for entry in user_middleware:
+        cls = getattr(entry, "cls", None)
+        if cls is SecurityMiddleware:
+            kwargs = getattr(entry, "kwargs", None)
+            if kwargs is None:
+                kwargs = getattr(entry, "options", {})
+            config = kwargs.get("config")
+            if isinstance(config, SecurityConfig):
+                return config
+            return None
     return None
 
 
@@ -50,7 +70,15 @@ async def _warm_middleware_or_adopt(middleware: SecurityMiddleware, app: Any) ->
         middleware._adopt_warm_state(warm)
         middleware.mark_initialized()
         return
-    await middleware.initialize()
+    try:
+        await middleware.initialize()
+    except GuardRedisError as e:
+        middleware.logger.error(
+            "Redis unavailable during startup initialization: %s; the first "
+            "request will retry and return 503 until Redis is reachable",
+            e,
+        )
+        return
     middleware.mark_initialized()
     _register_state_from_middleware(middleware)
 
