@@ -1,8 +1,9 @@
 import pytest
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from guard_core.core.initialization import HandlerInitializer
 from guard_core.models import SecurityConfig
+from starlette.applications import Starlette
 
 from guard.middleware import SecurityMiddleware
 from guard.status import add_status_route
@@ -64,3 +65,43 @@ def test_status_route_returns_serialized_status() -> None:
     body = response.json()
     assert "cloud_providers" in body
     assert "geo_ip" in body
+
+
+def test_add_status_route_dependency_failure_rejects() -> None:
+    app = _app_with_middleware()
+
+    def deny() -> None:
+        raise HTTPException(status_code=401)
+
+    add_status_route(app, dependencies=[Depends(deny)])
+
+    with TestClient(app, client=("127.0.0.1", 12345)) as client:
+        response = client.get("/_guard/status")
+
+    assert response.status_code == 401
+
+
+@requires_initialization_status
+def test_add_status_route_dependency_success_returns_status_json() -> None:
+    app = _app_with_middleware()
+
+    def allow() -> None:
+        return None
+
+    add_status_route(app, dependencies=[Depends(allow)])
+
+    with TestClient(app, client=("127.0.0.1", 12345)) as client:
+        response = client.get("/_guard/status")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert "cloud_providers" in body
+
+
+def test_add_status_route_on_plain_starlette_app_uses_add_route() -> None:
+    config = SecurityConfig(enable_redis=False)
+    app = Starlette()
+    app.add_middleware(SecurityMiddleware, config=config)
+    add_status_route(app)
+
+    assert any(getattr(r, "path", None) == "/_guard/status" for r in app.routes)
