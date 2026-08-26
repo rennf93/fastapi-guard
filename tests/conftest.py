@@ -1,5 +1,5 @@
 import os
-from collections.abc import AsyncGenerator, Iterator
+from collections.abc import AsyncGenerator
 from pathlib import Path
 
 import pytest
@@ -13,16 +13,28 @@ from guard_core.handlers.suspatterns_handler import sus_patterns_handler
 from guard_core.models import SecurityConfig
 from pytest import TempPathFactory
 
-from guard._middleware_state import clear_state_registry
+from guard._middleware_state import _STATE_REGISTRY, clear_state_registry
 from guard.middleware import SecurityMiddleware
 
 IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
 
 
+async def _close_redis_handler(redis_handler: RedisManager) -> None:
+    try:
+        await redis_handler.close()
+    except RuntimeError as exc:
+        if "Event loop is closed" not in str(exc):
+            raise
+
+
 @pytest.fixture(autouse=True)
-def _clear_middleware_state_registry() -> Iterator[None]:
+async def _clear_middleware_state_registry() -> AsyncGenerator[None, None]:
     clear_state_registry()
     yield
+    for state in _STATE_REGISTRY.values():
+        redis_handler = state.handler_initializer.redis_handler
+        if isinstance(redis_handler, RedisManager):
+            await _close_redis_handler(redis_handler)
     clear_state_registry()
 
 
@@ -153,14 +165,18 @@ async def redis_cleanup() -> None:
 
 
 @pytest.fixture(autouse=True)
-async def reset_rate_limiter() -> None:
+async def reset_rate_limiter() -> AsyncGenerator[None, None]:
     config = SecurityConfig(
         redis_url=REDIS_URL,
         redis_prefix=REDIS_PREFIX,
         enable_redis=True,
     )
     rate_limit = rate_limit_handler(config)
+    previous_redis = rate_limit.redis_handler
+
     await rate_limit.reset()
+    if previous_redis is not None:
+        await previous_redis.close()
 
     fresh_redis = RedisManager(config)
     await fresh_redis.initialize()
@@ -174,6 +190,11 @@ async def reset_rate_limiter() -> None:
         await client.flushdb()
     finally:
         await client.aclose()
+
+    yield
+
+    await _close_redis_handler(fresh_redis)
+    rate_limit.redis_handler = None
 
 
 @pytest.fixture
