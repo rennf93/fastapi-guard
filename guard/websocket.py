@@ -82,7 +82,7 @@ async def _guarded_redis_call(
                 check_name,
             )
             return default
-        logger.error("Error in %s: %s", check_name, exc)
+        logger.error("Error in %s: %s", check_name, exc, exc_info=True)
         if config.fail_secure:
             logger.warning(
                 "Blocking websocket handshake due to %s error in fail-secure mode",
