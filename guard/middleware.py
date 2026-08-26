@@ -14,7 +14,7 @@ from guard_core.core.responses import ErrorResponseFactory, ResponseContext
 from guard_core.core.routing import RouteConfigResolver, RoutingContext
 from guard_core.core.validation import RequestValidator, ValidationContext
 from guard_core.decorators.base import BaseSecurityDecorator, RouteConfig
-from guard_core.exceptions import AgentPackageNotInstalledError
+from guard_core.exceptions import AgentPackageNotInstalledError, GuardRedisError
 from guard_core.handlers.cloud_handler import cloud_handler
 from guard_core.handlers.cors_handler import CorsHandler, is_preflight
 from guard_core.handlers.ratelimit_handler import RateLimitManager
@@ -537,10 +537,23 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self._inject_cors_headers(blocked, request.headers)
         return blocked
 
+    async def _redis_unavailable_response(self) -> Response:
+        guard_response = await self.create_error_response(
+            503, "Service temporarily unavailable"
+        )
+        guard_response.headers["Retry-After"] = "5"
+        return unwrap_response(guard_response)
+
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        await self._ensure_initialized(request)
+        try:
+            await self._ensure_initialized(request)
+        except GuardRedisError as e:
+            self.logger.error("Redis unavailable during initialization: %s", e)
+            response = await self._redis_unavailable_response()
+            self._inject_cors_headers(response, request.headers)
+            return response
 
         guard_request = StarletteGuardRequest(request)
         wrapped_call_next = wrap_call_next(call_next, request)

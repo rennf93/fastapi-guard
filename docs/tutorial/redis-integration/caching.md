@@ -47,6 +47,16 @@ When Redis is disabled (`enable_redis=False`):
 
 ___
 
+Startup Failure
+---------------
+
+If Redis is enabled (`enable_redis=True`, the default) but unreachable when `SecurityMiddleware` initializes, guard-core's `redis_fail_open` setting decides what happens:
+
+- `redis_fail_open=False` (the default): initialization raises, and every request gets a clean `503 Service temporarily unavailable` with a `Retry-After: 5` header until Redis becomes reachable, at which point the next request initializes successfully and starts serving normally. If a lifespan warmer (`guard_lifespan`, `make_lifespan`, `guard_startup`) is wired in, app startup itself still succeeds; the failure surfaces on the first request instead.
+- `redis_fail_open=True`: guard-core degrades to the same in-memory backends used when `enable_redis=False`, for the life of the process, instead of returning 503.
+
+___
+
 Connection Management
 ---------------------
 
