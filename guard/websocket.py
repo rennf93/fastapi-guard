@@ -1,8 +1,11 @@
-from collections.abc import Mapping
+import logging
+from collections.abc import Coroutine, Mapping
 from typing import Any, cast
 
 from guard_core import check_rate_limit_by_ip, ip_ban_manager, is_ip_allowed
+from guard_core.exceptions import GuardRedisError
 from guard_core.handlers.redis_handler import RedisManager
+from guard_core.models import SecurityConfig
 from guard_core.protocols.request_protocol import GuardRequest
 from guard_core.utils import UNKNOWN_CLIENT_IDENTITY, extract_client_ip
 from starlette import status
@@ -11,6 +14,8 @@ from starlette.websockets import WebSocket
 
 from guard.adapters import _join_repeated_header_lines
 from guard.lifespan import _find_security_config
+
+logger = logging.getLogger("guard_core")
 
 
 class _WebSocketGuardRequest:
@@ -62,6 +67,34 @@ class _WebSocketGuardRequest:
         return cast(dict[str, Any], self._websocket.scope)
 
 
+async def _guarded_redis_call(
+    awaitable: Coroutine[Any, Any, bool],
+    config: SecurityConfig,
+    check_name: str,
+    default: bool,
+) -> bool:
+    try:
+        return await awaitable
+    except GuardRedisError as exc:
+        if config.redis_fail_open:
+            logger.warning(
+                "Skipping %s: Redis unavailable, failing open (redis_fail_open=True)",
+                check_name,
+            )
+            return default
+        logger.error("Error in %s: %s", check_name, exc)
+        if config.fail_secure:
+            logger.warning(
+                "Blocking websocket handshake due to %s error in fail-secure mode",
+                check_name,
+            )
+            raise WebSocketException(
+                code=status.WS_1013_TRY_AGAIN_LATER,
+                reason="Security check failed",
+            ) from exc
+        return default
+
+
 async def guard_websocket(websocket: WebSocket) -> None:
     config = _find_security_config(websocket.scope.get("app"))
     if config is None:
@@ -79,7 +112,13 @@ async def guard_websocket(websocket: WebSocket) -> None:
             reason="Client address could not be determined",
         )
 
-    if await ip_ban_manager.is_ip_banned(client_ip):
+    is_banned = await _guarded_redis_call(
+        ip_ban_manager.is_ip_banned(client_ip),
+        config,
+        "ip_ban_manager.is_ip_banned",
+        default=False,
+    )
+    if is_banned:
         raise WebSocketException(
             code=status.WS_1008_POLICY_VIOLATION, reason="IP banned"
         )
@@ -93,8 +132,13 @@ async def guard_websocket(websocket: WebSocket) -> None:
         return
 
     redis_handler = RedisManager(config) if config.enable_redis else None
-    allowed = await check_rate_limit_by_ip(
-        client_ip, config, redis_handler=redis_handler, endpoint_path="ws"
+    allowed = await _guarded_redis_call(
+        check_rate_limit_by_ip(
+            client_ip, config, redis_handler=redis_handler, endpoint_path="ws"
+        ),
+        config,
+        "check_rate_limit_by_ip",
+        default=True,
     )
     if not allowed:
         raise WebSocketException(

@@ -1,10 +1,12 @@
 import asyncio
+import logging
 from collections.abc import MutableMapping
 from typing import Any
 
 import pytest
 from fastapi import Depends, FastAPI, WebSocket
 from fastapi.testclient import TestClient
+from guard_core.exceptions import GuardRedisError
 from guard_core.handlers import ratelimit_handler as ratelimit_handler_module
 from guard_core.handlers.ipban_handler import ip_ban_manager
 from guard_core.models import SecurityConfig
@@ -180,3 +182,95 @@ async def test_websocket_guard_request_exposes_the_full_protocol_surface() -> No
     assert guard_request.query_params["token"] == "abc"
     assert await guard_request.body() == b""
     assert guard_request.scope is scope
+
+
+async def _raise_ip_ban_redis_error(ip: str) -> bool:
+    raise GuardRedisError(503, "Redis operation failed")
+
+
+async def _raise_rate_limit_redis_error(*args: Any, **kwargs: Any) -> bool:
+    raise GuardRedisError(503, "Redis operation failed")
+
+
+def test_guard_websocket_skips_ip_ban_check_when_redis_fail_open(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setattr(ip_ban_manager, "is_ip_banned", _raise_ip_ban_redis_error)
+    config = SecurityConfig(
+        enable_redis=False,
+        enable_penetration_detection=False,
+        redis_fail_open=True,
+    )
+    app = _app_with_websocket(config)
+
+    with caplog.at_level(logging.WARNING):
+        with TestClient(app, client=("127.0.0.1", 12345)) as client:
+            with client.websocket_connect("/ws") as websocket:
+                assert websocket.receive_text() == "connected"
+
+    assert any(
+        "ip_ban_manager.is_ip_banned" in r.message and "failing open" in r.message
+        for r in caplog.records
+    )
+
+
+def test_guard_websocket_closes_with_1013_when_ip_ban_check_fails_secure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(ip_ban_manager, "is_ip_banned", _raise_ip_ban_redis_error)
+    config = SecurityConfig(
+        enable_redis=False,
+        enable_penetration_detection=False,
+        redis_fail_open=False,
+        fail_secure=True,
+    )
+    app = _app_with_websocket(config)
+
+    with TestClient(app, client=("127.0.0.1", 12345)) as client:
+        with pytest.raises(WebSocketDisconnect) as exc_info:
+            with client.websocket_connect("/ws"):
+                pass
+
+    assert exc_info.value.code == 1013
+
+
+def test_guard_websocket_skips_ip_ban_check_when_not_fail_secure(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setattr(ip_ban_manager, "is_ip_banned", _raise_ip_ban_redis_error)
+    config = SecurityConfig(
+        enable_redis=False,
+        enable_penetration_detection=False,
+        redis_fail_open=False,
+        fail_secure=False,
+    )
+    app = _app_with_websocket(config)
+
+    with caplog.at_level(logging.ERROR):
+        with TestClient(app, client=("127.0.0.1", 12345)) as client:
+            with client.websocket_connect("/ws") as websocket:
+                assert websocket.receive_text() == "connected"
+
+    assert any("ip_ban_manager.is_ip_banned" in r.message for r in caplog.records)
+
+
+def test_guard_websocket_closes_with_1013_when_rate_limit_check_fails_secure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "guard.websocket.check_rate_limit_by_ip", _raise_rate_limit_redis_error
+    )
+    config = SecurityConfig(
+        enable_redis=False,
+        enable_penetration_detection=False,
+        redis_fail_open=False,
+        fail_secure=True,
+    )
+    app = _app_with_websocket(config)
+
+    with TestClient(app, client=("127.0.0.1", 12345)) as client:
+        with pytest.raises(WebSocketDisconnect) as exc_info:
+            with client.websocket_connect("/ws"):
+                pass
+
+    assert exc_info.value.code == 1013

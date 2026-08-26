@@ -48,6 +48,8 @@ async def websocket_endpoint(
 
 On the first failing check, the connection is closed with WebSocket close code `1008` (Policy Violation) before `accept()` is ever called; the client sees the handshake rejected, not an accepted-then-closed connection.
 
+If Redis is unreachable while `ip_ban_manager.is_ip_banned` or `check_rate_limit_by_ip` runs, `guard_websocket` follows the same `redis_fail_open` and `fail_secure` rules as the HTTP pipeline: `redis_fail_open=True` skips the failing check and treats it as passed; otherwise `fail_secure=True` (the default) refuses the handshake with close code `1013` (Try Again Later); otherwise the check is skipped and the error is logged.
+
 ___
 
 Client Resolution
