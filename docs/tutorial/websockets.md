@@ -23,10 +23,13 @@ from fastapi import Depends, FastAPI, WebSocket
 from guard import SecurityConfig, SecurityMiddleware, guard_websocket
 
 app = FastAPI()
-app.add_middleware(SecurityMiddleware, config=SecurityConfig(
-    trusted_proxies=["10.0.0.1"],
-    blacklist=("203.0.113.9",),
-))
+app.add_middleware(
+    SecurityMiddleware,
+    config=SecurityConfig(
+        trusted_proxies=["10.0.0.1"],
+        blacklist=("203.0.113.9",),
+    ),
+)
 
 
 @app.websocket("/ws")
