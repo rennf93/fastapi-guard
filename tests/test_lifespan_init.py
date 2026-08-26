@@ -8,7 +8,12 @@ from fastapi import FastAPI
 from guard_core.models import SecurityConfig
 from starlette.middleware import Middleware
 
-from guard.lifespan import _find_security_middleware, guard_lifespan, make_lifespan
+from guard.lifespan import (
+    _find_security_config,
+    _find_security_middleware,
+    guard_lifespan,
+    make_lifespan,
+)
 from guard.middleware import SecurityMiddleware
 
 
@@ -220,3 +225,68 @@ async def test_find_security_middleware_returns_none_on_instantiation_failure() 
 
     instance = _find_security_middleware(app)
     assert instance is None
+
+
+@pytest.mark.asyncio
+async def test_find_security_config_returns_none_when_user_middleware_missing() -> None:
+    class FakeApp:
+        pass
+
+    config = _find_security_config(FakeApp())
+    assert config is None
+
+
+@pytest.mark.asyncio
+async def test_find_security_config_returns_none_with_only_other_middleware() -> None:
+    from starlette.middleware.cors import CORSMiddleware
+
+    app = FastAPI()
+    app.add_middleware(CORSMiddleware, allow_origins=["*"])
+
+    config = _find_security_config(app)
+    assert config is None
+
+
+@pytest.mark.asyncio
+async def test_find_security_config_skips_other_middleware() -> None:
+    from starlette.middleware.cors import CORSMiddleware
+
+    expected_config = SecurityConfig(enable_redis=False)
+    app = FastAPI()
+    app.add_middleware(CORSMiddleware, allow_origins=["*"])
+    app.add_middleware(SecurityMiddleware, config=expected_config)
+
+    config = _find_security_config(app)
+    assert config is expected_config
+
+
+@pytest.mark.asyncio
+async def test_find_security_config_falls_back_to_options_attr() -> None:
+    expected_config = SecurityConfig(enable_redis=False)
+    app = FastAPI()
+
+    class LegacyEntry:
+        cls = SecurityMiddleware
+        kwargs = None
+        options = {"config": expected_config}
+
+    app.user_middleware = cast(list[Middleware], [LegacyEntry()])
+
+    config = _find_security_config(app)
+    assert config is expected_config
+
+
+@pytest.mark.asyncio
+async def test_find_security_config_returns_none_for_non_security_config_value() -> (
+    None
+):
+    app = FastAPI()
+
+    class BrokenEntry:
+        cls = SecurityMiddleware
+        kwargs: dict[str, Any] = {"config": "not-a-valid-config"}
+
+    app.user_middleware = cast(list[Middleware], [BrokenEntry()])
+
+    config = _find_security_config(app)
+    assert config is None
