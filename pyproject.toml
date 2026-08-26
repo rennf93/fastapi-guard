@@ -37,7 +37,7 @@ keywords = [
 ]
 dependencies = [
     "fastapi",
-    "guard-core",
+    "guard-core>=3.14.0",
     "starlette",
     "uvicorn",
 ]
