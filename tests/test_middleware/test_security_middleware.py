@@ -137,6 +137,9 @@ async def test_rate_limiting_is_keyed_on_the_joined_right_most_forwarded_entry()
             )
             statuses.append(client.send(request).status_code)
 
+        assert client.portal is not None
+        client.portal.call(redis_handler(config).close)
+
     assert statuses[:3] == [200, 200, 200]
     assert all(status == 429 for status in statuses[3:])
 
