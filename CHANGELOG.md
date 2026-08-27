@@ -3,8 +3,11 @@ Release Notes
 
 ___
 
-Unreleased
-----------
+v7.8.1 (2026-08-27)
+-------------------
+
+Websocket guard follow-ups: whitelist parity, explicit-config factory, close-code contract, state.client_ip (v7.8.1)
+----------------------------------------------------------------------------------------------------------------------
 
 - **Added** - `make_guard_websocket(config: SecurityConfig, redis_handler: RedisManager | None = None)` returns a `Depends`-ready WebSocket dependency bound to an explicit `SecurityConfig`, for a route on an app that never calls `app.add_middleware(SecurityMiddleware, config=...)`; `guard_websocket` is unchanged and still resolves its config from the registered middleware, raising `RuntimeError` without one. Both entry points share one private check coroutine, so every rule applies to both.
 - **Added** - `guard` exports module-level `(code, reason)` constants for the five WebSocket close outcomes `guard_websocket`/`make_guard_websocket` can emit (`WS_CLOSE_IP_BANNED`, `WS_CLOSE_IP_NOT_ALLOWED`, `WS_CLOSE_RATE_LIMIT_EXCEEDED`, `WS_CLOSE_CLIENT_ADDRESS_UNKNOWN`, `WS_CLOSE_SECURITY_CHECK_FAILED`, collected in `WS_CLOSE_REASONS`), documented as a stable contract in `docs/tutorial/websockets.md` that a close handler can key logging on.
