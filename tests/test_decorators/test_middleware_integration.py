@@ -1,4 +1,3 @@
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -12,6 +11,23 @@ from starlette.datastructures import Headers
 from guard import SecurityConfig, SecurityDecorator
 from guard.adapters import StarletteGuardResponse
 from guard.middleware import SecurityMiddleware
+
+
+def _http_scope(
+    *, path: str = "/test", headers: list[tuple[bytes, bytes]] | None = None
+) -> dict:
+    return {
+        "type": "http",
+        "method": "GET",
+        "path": path,
+        "root_path": "",
+        "query_string": b"",
+        "headers": headers or [],
+        "client": ("127.0.0.1", 5555),
+        "scheme": "http",
+        "server": ("testserver", 80),
+        "state": {},
+    }
 
 
 async def test_set_decorator_handler() -> None:
@@ -424,11 +440,7 @@ async def test_bypass_all_security_checks() -> None:
     mock_route_config = RouteConfig()
     mock_route_config.bypassed_checks = {"all"}
 
-    mock_request = Mock()
-    mock_request.client.host = "127.0.0.1"
-    mock_request.url.scheme = "http"
-    mock_request.url.path = "/test"
-    mock_request.headers = Headers(raw=[])
+    mock_request = Request(_http_scope())
 
     async def mock_call_next(request: Request) -> Response:
         return Response("bypassed", status_code=200)
@@ -453,11 +465,7 @@ async def test_bypass_all_security_checks_with_custom_modifier() -> None:
     mock_route_config = RouteConfig()
     mock_route_config.bypassed_checks = {"all"}
 
-    mock_request = Mock()
-    mock_request.client.host = "127.0.0.1"
-    mock_request.url.scheme = "http"
-    mock_request.url.path = "/test"
-    mock_request.headers = Headers(raw=[])
+    mock_request = Request(_http_scope())
 
     async def mock_call_next(request: Request) -> Response:
         return Response("bypassed", status_code=200)
@@ -526,13 +534,8 @@ async def test_route_specific_middleware_validations(
         if attr != "headers":
             setattr(mock_route_config, attr, value)
 
-    mock_request = Mock()
-    mock_request.client.host = "127.0.0.1"
-    mock_request.url.scheme = "http"
-    mock_request.url.path = "/test"
-    mock_request.headers = test_case["headers"]
-    mock_request.query_params = {}
-    mock_request.state = SimpleNamespace(client_ip="127.0.0.1")
+    mock_request = Request(_http_scope(headers=test_case["headers"].raw))
+    mock_request.state.client_ip = "127.0.0.1"
 
     async def mock_call_next(request: Request) -> Response:
         return Response("ok", status_code=200)
@@ -560,13 +563,8 @@ async def test_route_specific_rate_limit_with_redis() -> None:
     mock_route_config.rate_limit = 5
     mock_route_config.rate_limit_window = 60
 
-    mock_request = Mock()
-    mock_request.client.host = "127.0.0.1"
-    mock_request.url.scheme = "http"
-    mock_request.url.path = "/test"
-    mock_request.headers = Headers(raw=[])
-    mock_request.query_params = {}
-    mock_request.state = SimpleNamespace(client_ip="127.0.0.1")
+    mock_request = Request(_http_scope())
+    mock_request.state.client_ip = "127.0.0.1"
     mock_request.state.is_whitelisted = False
 
     async def mock_call_next(request: Request) -> Response:

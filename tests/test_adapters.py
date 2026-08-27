@@ -31,6 +31,21 @@ async def test_starlette_guard_request_url_path() -> None:
     assert guard_request.url_path == "/test"
 
 
+async def test_starlette_guard_request_url_path_strips_root_path() -> None:
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/mounted/api/thing",
+        "query_string": b"",
+        "headers": [],
+        "server": ("localhost", 8000),
+        "root_path": "/mounted",
+    }
+    request = Request(scope)
+    guard_request = StarletteGuardRequest(request)
+    assert guard_request.url_path == "/api/thing"
+
+
 async def test_starlette_guard_request_method() -> None:
     scope = {
         "type": "http",

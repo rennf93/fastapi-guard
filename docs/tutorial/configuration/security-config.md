@@ -40,7 +40,7 @@ Core Security Settings
 | `rate_limit` | int | 10 | Maximum requests per `rate_limit_window` |
 | `rate_limit_window` | int | 60 | Rate limiting time window (seconds) |
 | `enforce_https` | bool | False | Whether to enforce HTTPS connections |
-| `exclude_paths` | list[str] | `["/docs", "/redoc", "/openapi.json", "/openapi.yaml", "/favicon.ico", "/static"]` | Paths exempted from detection and behavioral tracking; IP bans, blacklists, blocked countries, blocked cloud providers, and rate limits still apply |
+| `exclude_paths` | list[str] | `["/docs", "/redoc", "/openapi.json", "/openapi.yaml", "/favicon.ico", "/static"]` | Paths exempted from detection and behavioral tracking; IP bans, blacklists, blocked countries, blocked cloud providers, and rate limits still apply. Matched against the route-relative path (any ASGI `root_path` mount prefix stripped), the same path `endpoint_rate_limits` keys match against |
 
 Detection Engine Settings
 -------------------------

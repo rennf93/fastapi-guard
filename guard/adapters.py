@@ -7,6 +7,7 @@ from guard_core.protocols.response_protocol import GuardResponse
 from starlette.datastructures import Headers
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response, StreamingResponse
+from starlette.routing import get_route_path
 from starlette.types import Message
 
 
@@ -37,7 +38,7 @@ class StarletteGuardRequest:
 
     @property
     def url_path(self) -> str:
-        return self._request.url.path
+        return get_route_path(self._request.scope)
 
     @property
     def url_scheme(self) -> str:

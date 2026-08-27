@@ -196,6 +196,30 @@ async def test_websocket_guard_request_exposes_the_full_protocol_surface() -> No
     assert guard_request.scope is scope
 
 
+async def test_websocket_guard_request_url_path_strips_root_path() -> None:
+    async def receive() -> dict[str, Any]:
+        raise NotImplementedError
+
+    async def send(message: MutableMapping[str, Any]) -> None:
+        raise NotImplementedError
+
+    scope = {
+        "type": "websocket",
+        "path": "/mounted/ws",
+        "headers": [(b"host", b"testserver")],
+        "query_string": b"",
+        "scheme": "ws",
+        "server": ("testserver", 80),
+        "client": ("127.0.0.1", 12345),
+        "root_path": "/mounted",
+        "app": FastAPI(),
+    }
+    websocket = WebSocket(scope, receive=receive, send=send)
+    guard_request = _WebSocketGuardRequest(websocket)
+
+    assert guard_request.url_path == "/ws"
+
+
 async def _raise_ip_ban_redis_error(ip: str) -> bool:
     raise GuardRedisError(503, "Redis operation failed")
 

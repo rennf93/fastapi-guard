@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import time
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import ANY, AsyncMock, Mock, patch
 
@@ -2131,6 +2132,27 @@ async def test_resolve_route_no_app_routes() -> None:
     assert result is None
 
 
+async def test_resolve_route_returns_already_populated_scope_route() -> None:
+    app = FastAPI()
+    middleware = SecurityMiddleware(app, config=SecurityConfig())
+
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/whatever",
+        "query_string": b"",
+        "headers": [],
+        "server": ("localhost", 8000),
+        "root_path": "",
+        "app": app,
+        "route": "already-resolved",
+    }
+    from starlette.requests import Request as StarletteRequest
+
+    request = StarletteRequest(scope)
+    assert middleware._resolve_route(request) == "already-resolved"
+
+
 def _http_scope(app: Starlette, method: str, path: str) -> dict[str, Any]:
     return {
         "type": "http",
@@ -2476,6 +2498,25 @@ async def test_populate_guard_state_accepts_mount_to_routeless_app() -> None:
 
     assert not hasattr(guard_request.state, "guard_route_unresolved")
     assert not hasattr(guard_request.state, "guard_route_id")
+
+
+async def test_populate_guard_state_skips_endpoint_id_without_qualname() -> None:
+    app = FastAPI()
+    middleware = SecurityMiddleware(app, config=SecurityConfig())
+
+    class _CallableEndpoint:
+        pass
+
+    scope = _http_scope(app, "GET", "/whatever")
+    scope["route"] = SimpleNamespace(endpoint=_CallableEndpoint())
+
+    from starlette.requests import Request as StarletteRequest
+
+    request = StarletteRequest(scope)
+    guard_request = StarletteGuardRequest(request)
+    middleware._populate_guard_state(guard_request, request)
+
+    assert not hasattr(guard_request.state, "guard_endpoint_id")
 
 
 async def test_require_auth_enforced_on_deeply_nested_mounted_route() -> None:

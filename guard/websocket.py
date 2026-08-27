@@ -10,6 +10,7 @@ from guard_core.protocols.request_protocol import GuardRequest
 from guard_core.utils import UNKNOWN_CLIENT_IDENTITY, extract_client_ip
 from starlette import status
 from starlette.exceptions import WebSocketException
+from starlette.routing import get_route_path
 from starlette.websockets import WebSocket
 
 from guard.adapters import _join_repeated_header_lines
@@ -52,7 +53,7 @@ class _WebSocketGuardRequest:
 
     @property
     def url_path(self) -> str:
-        return self._websocket.url.path
+        return get_route_path(self._websocket.scope)
 
     @property
     def url_scheme(self) -> str:
