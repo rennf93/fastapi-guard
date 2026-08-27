@@ -3,6 +3,7 @@ from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import Any
 
 from guard_core.exceptions import GuardRedisError
+from guard_core.handlers.redis_handler import RedisManager
 from guard_core.models import SecurityConfig
 
 from guard._decorator_adoption import resolve_app_state_decorator
@@ -41,6 +42,16 @@ def _find_security_config(app: Any) -> SecurityConfig | None:
             if isinstance(config, SecurityConfig):
                 return config
             return None
+    return None
+
+
+def _find_security_redis_handler(app: Any) -> RedisManager | None:
+    config = _find_security_config(app)
+    if config is None or not config.enable_redis:
+        return None
+    instance = RedisManager._instance
+    if instance is not None and instance._redis is not None:
+        return instance
     return None
 
 
