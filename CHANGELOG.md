@@ -10,6 +10,7 @@ Unreleased
 ---------------------------------------------------------------
 
 - **Fixed** - `StarletteGuardRequest.url_path` and the WebSocket adapter's `_WebSocketGuardRequest.url_path` returned `request.url.path` / `websocket.url.path`, which under an ASGI `root_path` (`uvicorn --root-path`, or a mounted sub-app) includes the mount prefix. guard-core matches that value against `SecurityConfig.exclude_paths` and `endpoint_rate_limits` (an exact dict-key match) and passes it to `custom_request_check` hooks, so a key such as `/api/vault/login` never matched a request actually served at `/mounted/api/vault/login` and every path-keyed control silently stopped applying under a mount. Both adapters now return Starlette's own `get_route_path(scope)`, the same route-relative path Starlette's router already matches routes against.
+- **Compatibility** - If `exclude_paths` or `endpoint_rate_limits` keys currently include your `root_path` mount prefix (a workaround for the bug above), remove the prefix after upgrading: those keys now match the route-relative path and a prefixed key silently stops matching. The same applies to `custom_request_check` hooks that branch on `url_path`.
 
 ___
 
