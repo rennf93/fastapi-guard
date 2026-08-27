@@ -53,10 +53,7 @@ class _WebSocketGuardRequest:
 
     @property
     def url_path(self) -> str:
-        try:
-            return get_route_path(self._websocket.scope)
-        except (TypeError, KeyError):
-            return self._websocket.url.path
+        return get_route_path(self._websocket.scope)
 
     @property
     def url_scheme(self) -> str:

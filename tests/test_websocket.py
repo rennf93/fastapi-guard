@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from collections.abc import MutableMapping
-from typing import Any, cast
+from typing import Any
 
 import pytest
 from fastapi import Depends, FastAPI, WebSocket
@@ -218,20 +218,6 @@ async def test_websocket_guard_request_url_path_strips_root_path() -> None:
     guard_request = _WebSocketGuardRequest(websocket)
 
     assert guard_request.url_path == "/ws"
-
-
-async def test_websocket_guard_request_url_path_falls_back_when_scope_is_unusable() -> (
-    None
-):
-    class _StubURL:
-        path = "/fallback"
-
-    class _StubWebSocket:
-        scope = object()
-        url = _StubURL()
-
-    guard_request = _WebSocketGuardRequest(cast(WebSocket, _StubWebSocket()))
-    assert guard_request.url_path == "/fallback"
 
 
 async def _raise_ip_ban_redis_error(ip: str) -> bool:

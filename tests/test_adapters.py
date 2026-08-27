@@ -46,20 +46,6 @@ async def test_starlette_guard_request_url_path_strips_root_path() -> None:
     assert guard_request.url_path == "/api/thing"
 
 
-async def test_starlette_guard_request_url_path_falls_back_when_scope_is_unusable() -> (
-    None
-):
-    class _StubURL:
-        path = "/fallback"
-
-    class _StubRequest:
-        scope = object()
-        url = _StubURL()
-
-    guard_request = StarletteGuardRequest(cast(Request, _StubRequest()))
-    assert guard_request.url_path == "/fallback"
-
-
 async def test_starlette_guard_request_method() -> None:
     scope = {
         "type": "http",

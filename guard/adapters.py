@@ -38,10 +38,7 @@ class StarletteGuardRequest:
 
     @property
     def url_path(self) -> str:
-        try:
-            return get_route_path(self._request.scope)
-        except (TypeError, KeyError):
-            return self._request.url.path
+        return get_route_path(self._request.scope)
 
     @property
     def url_scheme(self) -> str:
