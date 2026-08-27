@@ -36,9 +36,9 @@ keywords = [
     "api-security",
 ]
 dependencies = [
-    "fastapi",
+    "fastapi>=0.109.0",
     "guard-core>=3.14.0",
-    "starlette",
+    "starlette>=0.35.0",
     "uvicorn",
 ]
 
