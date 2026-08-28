@@ -1,0 +1,31 @@
+name: Documentation
+description: Wrong, missing or unclear FastAPI Guard documentation
+title: "[DOCS] "
+labels: [documentation]
+body:
+  - type: input
+    id: value
+    attributes:
+      label: Value this delivers
+      description: One sentence a reader could witness once this is fixed.
+      placeholder: "The Redis page shows the exact config for a TLS connection."
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      description: URL of the page or section.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed text
+      render: markdown
