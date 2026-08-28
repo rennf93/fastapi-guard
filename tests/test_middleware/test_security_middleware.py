@@ -9,6 +9,7 @@ import pytest
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import JSONResponse
 from guard_core.detection_result import DetectionResult
+from guard_core.exceptions import GuardRedisError
 from guard_core.handlers.cloud_handler import cloud_handler
 from guard_core.handlers.ipinfo_handler import IPInfoManager
 from guard_core.handlers.ratelimit_handler import rate_limit_handler
@@ -1698,7 +1699,6 @@ async def test_rate_limiter_redis_errors(security_config_redis: SecurityConfig) 
     with (
         patch.object(handler.redis_handler, "get_connection") as mock_get_connection,
         patch.object(logging.Logger, "error") as mock_error,
-        patch.object(logging.Logger, "info") as mock_info,
     ):
         mock_conn = AsyncMock()
         mock_conn.__aenter__ = AsyncMock(
@@ -1708,15 +1708,25 @@ async def test_rate_limiter_redis_errors(security_config_redis: SecurityConfig) 
 
         handler.rate_limit_script_sha = "test_script_sha"
 
+        with pytest.raises(GuardRedisError):
+            await handler.check_rate_limit(
+                guard_request, "192.168.1.1", create_error_response
+            )
+
+        mock_error.assert_called_once()
+        assert "Redis rate limiting error" in mock_error.call_args[0][0]
+
+        mock_error.reset_mock()
+        config.redis_fail_open = True
+
         result = await handler.check_rate_limit(
             guard_request, "192.168.1.1", create_error_response
         )
 
         assert result is None
+        mock_error.assert_not_called()
 
-        mock_error.assert_called_once()
-        assert "Redis rate limiting error" in mock_error.call_args[0][0]
-        mock_info.assert_called_once_with("Falling back to in-memory rate limiting")
+        config.redis_fail_open = False
 
     with (
         patch.object(handler.redis_handler, "get_connection") as mock_get_connection,
@@ -1726,14 +1736,23 @@ async def test_rate_limiter_redis_errors(security_config_redis: SecurityConfig) 
         mock_conn.__aenter__ = AsyncMock(side_effect=Exception("Unexpected error"))
         mock_get_connection.return_value = mock_conn
 
+        with pytest.raises(GuardRedisError):
+            await handler.check_rate_limit(
+                guard_request, "192.168.1.1", create_error_response
+            )
+
+        mock_error.assert_called_once()
+        assert "Unexpected error in rate limiting" in mock_error.call_args[0][0]
+
+        mock_error.reset_mock()
+        config.redis_fail_open = True
+
         result = await handler.check_rate_limit(
             guard_request, "192.168.1.1", create_error_response
         )
 
         assert result is None
-
-        mock_error.assert_called_once()
-        assert "Unexpected error in rate limiting" in mock_error.call_args[0][0]
+        mock_error.assert_not_called()
 
 
 @pytest.mark.asyncio
