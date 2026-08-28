@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest an improvement to FastAPI Guard
+title: "[FEATURE] "
+labels: [enhancement]
+body:
+  - type: input
+    id: value
+    attributes:
+      label: Value this delivers
+      description: One sentence a user could witness once this exists.
+      placeholder: "A single decorator disables all detection for one endpoint."
+    validations:
+      required: true
+  - type: textarea
+    id: job
+    attributes:
+      label: The job you are trying to get done
+      description: The outcome you need, not the mechanism you imagine.
+    validations:
+      required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: How you work around it today
+  - type: textarea
+    id: example
+    attributes:
+      label: Example usage
+      description: Pseudocode of how you would like to use it.
+      render: python
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Similar features in other libraries, constraints, API implications.

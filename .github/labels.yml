@@ -89,3 +89,7 @@
 - name: "breaking-change"
   color: "B60205"
   description: "PR contains a backward-incompatible change"
+
+- name: "no-issue"
+  color: "EEEEEE"
+  description: "Chore or dependency PR that does not need an issue"

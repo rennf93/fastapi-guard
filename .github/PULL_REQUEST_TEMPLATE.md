@@ -1,16 +1,11 @@
+Delivers issue: #
+
+<!--- Every PR closes an open issue. Chores and dependency bumps take the `no-issue` label instead. -->
+
 Description
 ===========
 
 <!--- Describe your changes in detail -->
-
-___
-
-Related Issue
--------------
-
-<!--- If fixing a bug, there should be an issue describing it with steps to reproduce -->
-<!--- Please link to the issue here: -->
-Fixes #
 
 ___
 

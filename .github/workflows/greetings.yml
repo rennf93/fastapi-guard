@@ -26,17 +26,19 @@ jobs:
             A few pointers:
             - Read [CONTRIBUTING.md](../blob/master/CONTRIBUTING.md) for the bug-report and enhancement guidelines.
             - We follow the [Contributor Covenant Code of Conduct](../blob/master/CODE_OF_CONDUCT.md).
-            - **Security vulnerability?** Do **not** open a public issue — please follow [SECURITY.md](../blob/master/SECURITY.md) and use GitHub's private vulnerability reporting.
+            - **Security vulnerability?** Do **not** open a public issue - please follow [SECURITY.md](../blob/master/SECURITY.md) and use GitHub's private vulnerability reporting.
+            - Questions rather than a bug? Ask in Discord `#help`: https://discord.gg/ZW7ZJbjMkK
 
-            Thanks again — a maintainer will be with you soon.
+            Thanks again - a maintainer will be with you soon.
         pr_message: |
             Thanks for opening your first pull request on **fastapi-guard**!
 
             Quick checklist before review (most of these are enforced by CI, but worth a glance):
-            - [ ] `make lint` — `ruff format`, `ruff check`, `mypy`, and `vulture`
-            - [ ] `make test` — full test suite passes with 100% coverage
-            - [ ] `make security` — `bandit`, `safety`, and `pip-audit` all clean
-            - [ ] `make quality` — `radon` and `xenon` complexity thresholds respected
+            - [ ] The PR body says `Closes #N` for an open issue (the `issue-link` check enforces it); chores take the `no-issue` label
+            - [ ] `make lint` - `ruff format`, `ruff check`, `mypy`, and `vulture`
+            - [ ] `make test` - full test suite passes with 100% coverage
+            - [ ] `make security` - `bandit`, `safety`, and `pip-audit` all clean
+            - [ ] `make quality` - `radon` and `xenon` complexity thresholds respected
             - [ ] No `# noqa` / `# type: ignore` shortcuts; pre-existing violations in touched files are fixed
             - [ ] Added an entry under `## Unreleased` in [CHANGELOG.md](../blob/master/CHANGELOG.md)
             - [ ] If you touched a public API, updated the relevant page under `docs/`
@@ -44,4 +46,6 @@ jobs:
 
             See [CONTRIBUTING.md](../blob/master/CONTRIBUTING.md) for the full workflow and the [Code of Conduct](../blob/master/CODE_OF_CONDUCT.md) for the community standards we follow.
 
-            Welcome aboard — a maintainer will review shortly.
+            Questions while you work: Discord `#help`, https://discord.gg/ZW7ZJbjMkK
+
+            Welcome aboard - a maintainer will review shortly.
