@@ -543,6 +543,9 @@ async def test_guard_websocket_reuses_the_middlewares_redis_manager(
     )
 
     with TestClient(app, client=("127.0.0.1", 12345)) as client:
+        assert client.portal is not None
+        client.portal.call(RedisManager(config).initialize)
+
         with client.websocket_connect("/ws") as websocket:
             assert websocket.receive_text() == "connected"
 
@@ -621,7 +624,6 @@ async def test_make_guard_websocket_uses_the_given_redis_handler(
     config = security_config_redis
 
     redis_handler = RedisManager(config)
-    await redis_handler.initialize()
 
     captured: dict[str, Any] = {}
 
@@ -644,6 +646,9 @@ async def test_make_guard_websocket_uses_the_given_redis_handler(
         await websocket.send_text("connected")
 
     with TestClient(app, client=("127.0.0.1", 12345)) as client:
+        assert client.portal is not None
+        client.portal.call(redis_handler.initialize)
+
         with client.websocket_connect("/ws") as websocket:
             assert websocket.receive_text() == "connected"
 
@@ -651,7 +656,6 @@ async def test_make_guard_websocket_uses_the_given_redis_handler(
             with client.websocket_connect("/ws"):
                 pass
 
-        assert client.portal is not None
         client.portal.call(redis_handler.close)
 
     assert exc_info.value.code == 1008
