@@ -402,7 +402,7 @@ basic_router = APIRouter(prefix="/basic", tags=["Basic Features"])
     status_code=200,
     summary="Basic Root Endpoint",
     description=(
-        "Returns a simple message to verify the basic features router is operational."
+        "Returns a simple message to verify the basic features router is operational. "
         "Subject to global rate limiting configured in the security middleware."
     ),
     responses={429: {"description": "Rate limit exceeded"}},
@@ -418,8 +418,8 @@ async def basic_root() -> MessageResponse:
     summary="Client IP Information",
     description=(
         "Returns detailed information about the requesting client's IP address"
-        " including"
-        "geolocation data. In production, this would use a geo IP handler for accurate"
+        " including "
+        "geolocation data. In production, this would use a geo IP handler for accurate "
         "results."
     ),
     responses={429: {"description": "Rate limit exceeded"}},
@@ -449,7 +449,7 @@ async def get_ip_info(request: Request) -> IPInfoResponse:
     status_code=200,
     summary="Health Check",
     description=(
-        "Returns the service health status and current timestamp. This endpoint is"
+        "Returns the service health status and current timestamp. This endpoint is "
         "excluded from all security checks via the exclude_paths configuration."
     ),
 )
@@ -464,7 +464,7 @@ async def health_check() -> HealthResponse:
     summary="Echo Request Data",
     description=(
         "Echoes back the submitted request body along with the request headers, method,"
-        "and URL. Useful for debugging and verifying that requests pass through the"
+        " and URL. Useful for debugging and verifying that requests pass through the "
         "security middleware unmodified."
     ),
     responses={
@@ -495,7 +495,7 @@ access_router = APIRouter(prefix="/access", tags=["Access Control"])
     status_code=200,
     summary="IP Whitelist Enforcement",
     description=(
-        "Only allows access from specified IP addresses (127.0.0.1 and 10.0.0.0/8)."
+        "Only allows access from specified IP addresses (127.0.0.1 and 10.0.0.0/8). "
         "Demonstrates per-route IP whitelist using the guard decorator."
     ),
     responses={403: {"description": "IP not in whitelist"}},
@@ -511,7 +511,7 @@ async def ip_whitelist_only() -> MessageResponse:
     status_code=200,
     summary="IP Blacklist Enforcement",
     description=(
-        "Blocks access from specific IP ranges (192.168.1.0/24 and 172.16.0.0/12)."
+        "Blocks access from specific IP ranges (192.168.1.0/24 and 172.16.0.0/12). "
         "Demonstrates per-route IP blacklist using the guard decorator."
     ),
     responses={403: {"description": "IP is blacklisted"}},
@@ -527,7 +527,7 @@ async def ip_blacklist_demo() -> MessageResponse:
     status_code=200,
     summary="Country-Based Blocking",
     description=(
-        "Blocks access from specific countries (CN, RU, KP). Requires a configured geo"
+        "Blocks access from specific countries (CN, RU, KP). Requires a configured geo "
         "IP handler to resolve client IP addresses to country codes."
     ),
     responses={403: {"description": "Access denied from blocked country"}},
@@ -543,7 +543,7 @@ async def block_specific_countries() -> MessageResponse:
     status_code=200,
     summary="Country-Based Allowlist",
     description=(
-        "Only allows access from specific countries (US, CA, GB, AU). All other"
+        "Only allows access from specific countries (US, CA, GB, AU). All other "
         "countries are denied. Requires a configured geo IP handler."
     ),
     responses={403: {"description": "Access denied from non-allowed country"}},
@@ -559,7 +559,7 @@ async def allow_specific_countries() -> MessageResponse:
     status_code=200,
     summary="Block All Cloud Providers",
     description=(
-        "Blocks access from all known cloud provider IP ranges including AWS, GCP, and"
+        "Blocks access from all known cloud provider IP ranges including AWS, GCP, and "
         "Azure. Prevents automated access from cloud-hosted bots and scrapers."
     ),
     responses={403: {"description": "Access denied from cloud provider IP"}},
@@ -575,7 +575,7 @@ async def block_all_clouds() -> MessageResponse:
     status_code=200,
     summary="Block AWS IPs Only",
     description=(
-        "Blocks access specifically from AWS IP ranges while allowing other cloud"
+        "Blocks access specifically from AWS IP ranges while allowing other cloud "
         "providers. Demonstrates selective cloud provider blocking."
     ),
     responses={403: {"description": "Access denied from AWS IP range"}},
@@ -591,15 +591,15 @@ async def block_aws_only() -> MessageResponse:
     status_code=200,
     summary="Security Check Bypass",
     description=(
-        "Demonstrates bypassing specific security checks (rate_limit and geo_check) for"
+        "Demonstrates bypassing specific security checks (rate_limit and ip) for "
         "a particular endpoint while keeping all other security checks active."
     ),
 )
-@guard_decorator.bypass(["rate_limit", "geo_check"])
+@guard_decorator.bypass(["rate_limit", "ip"])
 async def bypass_specific_checks() -> MessageResponse:
     return MessageResponse(
-        message="This endpoint bypasses rate limiting and geo checks",
-        details={"bypassed_checks": ["rate_limit", "geo_check"]},
+        message="This endpoint bypasses rate limiting and IP/country/cloud checks",
+        details={"bypassed_checks": ["rate_limit", "ip"]},
     )
 
 
@@ -612,8 +612,8 @@ auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
     status_code=200,
     summary="HTTPS Enforcement",
     description=(
-        "Requires HTTPS connection to access this endpoint. Non-HTTPS requests are"
-        "rejected. Demonstrates per-route HTTPS enforcement independent of the global"
+        "Requires HTTPS connection to access this endpoint. Non-HTTPS requests are "
+        "rejected. Demonstrates per-route HTTPS enforcement independent of the global "
         "enforce_https setting."
     ),
     responses={403: {"description": "HTTPS required"}},
@@ -632,7 +632,7 @@ async def https_required_endpoint(request: Request) -> MessageResponse:
     status_code=200,
     summary="Bearer Token Authentication",
     description=(
-        "Requires a valid Bearer token in the Authorization header. Demonstrates the"
+        "Requires a valid Bearer token in the Authorization header. Demonstrates the "
         "guard decorator's built-in bearer token authentication enforcement."
     ),
     responses={401: {"description": "Missing or invalid Bearer token"}},
@@ -655,7 +655,7 @@ async def bearer_authentication(
     status_code=200,
     summary="API Key Authentication",
     description=(
-        "Requires a valid API key in the X-API-Key header. Demonstrates the guard"
+        "Requires a valid API key in the X-API-Key header. Demonstrates the guard "
         "decorator's API key authentication enforcement with a custom header name."
     ),
     responses={401: {"description": "Missing or invalid API key"}},
@@ -679,8 +679,8 @@ async def api_key_authentication(
     summary="Required Custom Headers",
     description=(
         "Requires specific headers (X-Custom-Header and X-Client-ID) to be present with"
-        "exact values. Demonstrates per-route header requirements for additional"
-        " request"
+        " exact values. Demonstrates per-route header requirements for additional"
+        " request "
         "validation."
     ),
     responses={403: {"description": "Required headers missing or invalid"}},
@@ -706,9 +706,9 @@ rate_router = APIRouter(prefix="/rate", tags=["Rate Limiting"])
     status_code=200,
     summary="Custom Rate Limit",
     description=(
-        "Applies a custom per-endpoint rate limit of 5 requests per 60 seconds,"
+        "Applies a custom per-endpoint rate limit of 5 requests per 60 seconds, "
         "overriding the global rate limit configuration. Demonstrates fine-grained rate"
-        "limiting control."
+        " limiting control."
     ),
     responses={429: {"description": "Rate limit exceeded (5 requests per 60 seconds)"}},
 )
@@ -726,8 +726,8 @@ async def custom_rate_limit() -> MessageResponse:
     status_code=200,
     summary="Strict Rate Limit",
     description=(
-        "Applies an extremely strict rate limit of 1 request per 10 seconds."
-        "Demonstrates how to protect sensitive or resource-intensive endpoints from"
+        "Applies an extremely strict rate limit of 1 request per 10 seconds. "
+        "Demonstrates how to protect sensitive or resource-intensive endpoints from "
         "rapid successive calls."
     ),
     responses={429: {"description": "Rate limit exceeded (1 request per 10 seconds)"}},
@@ -747,8 +747,8 @@ async def strict_rate_limit() -> MessageResponse:
     summary="Geographic Rate Limiting",
     description=(
         "Applies different rate limits based on the client's country of origin. US gets"
-        "100/min, CN gets 10/min, RU gets 20/min, and all others get 50/min. Requires a"
-        "configured geo IP handler."
+        " 100/min, CN gets 10/min, RU gets 20/min, and all others get 50/min. Requires"
+        " a configured geo IP handler."
     ),
     responses={429: {"description": "Country-specific rate limit exceeded"}},
 )
@@ -776,9 +776,9 @@ behavior_router = APIRouter(prefix="/behavior", tags=["Behavioral Analysis"])
     status_code=200,
     summary="Usage Pattern Monitoring",
     description=(
-        "Monitors endpoint usage and logs a warning if a single IP makes more than 10"
+        "Monitors endpoint usage and logs a warning if a single IP makes more than 10 "
         "calls within 5 minutes. Demonstrates non-blocking behavioral analysis with the"
-        "'log' action."
+        " 'log' action."
     ),
     responses={429: {"description": "Usage threshold exceeded"}},
 )
@@ -797,9 +797,9 @@ async def monitor_usage_patterns() -> MessageResponse:
     summary="Return Pattern Monitoring",
     description=(
         "Monitors response status codes and automatically bans an IP if it receives"
-        " more"
+        " more "
         "than 3 HTTP 404 responses within 60 seconds. Pass a status_code path parameter"
-        "to simulate different responses."
+        " to simulate different responses."
     ),
     responses={
         403: {"description": "IP banned due to excessive 404 responses"},
@@ -822,7 +822,7 @@ async def monitor_return_patterns(status_code: int) -> MessageResponse:
     summary="Suspicious Frequency Detection",
     description=(
         "Detects suspiciously high request frequency and applies throttling if requests"
-        "exceed 1 every 2 seconds within a 10-second window. Demonstrates"
+        " exceed 1 every 2 seconds within a 10-second window. Demonstrates "
         "frequency-based behavioral throttling."
     ),
     responses={429: {"description": "Request frequency too high, throttled"}},
@@ -842,8 +842,8 @@ async def detect_suspicious_frequency() -> MessageResponse:
     summary="Complex Behavioral Analysis",
     description=(
         "Applies multiple behavioral analysis rules simultaneously: frequency"
-        " throttling"
-        "(10 requests per 60 seconds) and return pattern banning (5 HTTP 404 responses"
+        " throttling "
+        "(10 requests per 60 seconds) and return pattern banning (5 HTTP 404 responses "
         "per 60 seconds). Demonstrates composable behavior rules."
     ),
     responses={
@@ -879,8 +879,8 @@ headers_router = APIRouter(prefix="/headers", tags=["Security Headers"])
     status_code=200,
     summary="Security Headers Overview",
     description=(
-        "Lists all security headers applied to every response by the middleware,"
-        "including CSP, HSTS, X-Frame-Options, and custom headers. Check browser"
+        "Lists all security headers applied to every response by the middleware, "
+        "including CSP, HSTS, X-Frame-Options, and custom headers. Check browser "
         "developer tools to inspect the actual response headers."
     ),
 )
@@ -910,8 +910,8 @@ async def security_headers_info() -> MessageResponse:
     status_code=200,
     summary="CSP Test Page",
     description=(
-        "Serves an HTML page that demonstrates Content Security Policy in action. The"
-        "page includes inline scripts and styles that may be blocked depending on CSP"
+        "Serves an HTML page that demonstrates Content Security Policy in action. The "
+        "page includes inline scripts and styles that may be blocked depending on CSP "
         "configuration. Check the browser console for CSP violation reports."
     ),
 )
@@ -1034,7 +1034,7 @@ async def security_headers_test_page() -> str:
     summary="CSP Violation Report Receiver",
     description=(
         "Receives Content Security Policy violation reports sent by browsers. Configure"
-        "the CSP report-uri directive to point to this endpoint for monitoring policy"
+        " the CSP report-uri directive to point to this endpoint for monitoring policy "
         "violations in production."
     ),
     responses={422: {"description": "Invalid CSP report format"}},
@@ -1066,7 +1066,7 @@ async def receive_csp_report(report: CspReportWrapper) -> MessageResponse:
     summary="X-Frame-Options Test Page",
     description=(
         "Serves an HTML page that demonstrates the X-Frame-Options header behavior. The"
-        "page has SAMEORIGIN framing policy, allowing iframe embedding from the same"
+        " page has SAMEORIGIN framing policy, allowing iframe embedding from the same "
         "origin but blocking external sites."
     ),
 )
@@ -1096,8 +1096,8 @@ async def frame_test() -> str:
     status_code=200,
     summary="HSTS Configuration Info",
     description=(
-        "Returns details about the HTTP Strict Transport Security configuration"
-        "including max-age, includeSubDomains, and preload settings. HSTS forces"
+        "Returns details about the HTTP Strict Transport Security configuration "
+        "including max-age, includeSubDomains, and preload settings. HSTS forces "
         "browsers to use HTTPS for all future requests to this domain."
     ),
 )
@@ -1121,7 +1121,7 @@ async def hsts_info() -> MessageResponse:
     summary="Request Security Analysis",
     description=(
         "Analyzes the incoming request's security-relevant headers (user-agent, origin,"
-        "referer, x-forwarded-for) and returns a summary of active security features"
+        " referer, x-forwarded-for) and returns a summary of active security features "
         "along with production recommendations."
     ),
 )
@@ -1167,8 +1167,8 @@ content_router = APIRouter(prefix="/content", tags=["Content Filtering"])
     status_code=200,
     summary="Bot User Agent Blocking",
     description=(
-        "Blocks requests from user agents containing 'bot', 'crawler', 'spider', or"
-        "'scraper'. Demonstrates per-route user agent filtering to prevent automated"
+        "Blocks requests from user agents containing 'bot', 'crawler', 'spider', or "
+        "'scraper'. Demonstrates per-route user agent filtering to prevent automated "
         "access."
     ),
     responses={403: {"description": "Bot user agent detected and blocked"}},
@@ -1184,7 +1184,7 @@ async def block_bots() -> MessageResponse:
     status_code=200,
     summary="JSON Content Type Filter",
     description=(
-        "Only accepts requests with Content-Type: application/json. All other content"
+        "Only accepts requests with Content-Type: application/json. All other content "
         "types are rejected. Demonstrates per-route content type enforcement."
     ),
     responses={415: {"description": "Unsupported content type"}},
@@ -1203,9 +1203,9 @@ async def json_content_only(data: dict[str, Any]) -> MessageResponse:
     status_code=200,
     summary="Request Size Limit",
     description=(
-        "Limits the request body size to 100KB. Requests exceeding this limit are"
+        "Limits the request body size to 100KB. Requests exceeding this limit are "
         "rejected before processing. Demonstrates per-route request size enforcement to"
-        "prevent large payload attacks."
+        " prevent large payload attacks."
     ),
     responses={413: {"description": "Request body exceeds 100KB size limit"}},
 )
@@ -1224,8 +1224,8 @@ async def limited_upload_size(data: dict[str, Any]) -> MessageResponse:
     summary="Referrer Validation",
     description=(
         "Requires the Referer header to match one of the allowed domains (example.com"
-        " or"
-        "app.example.com). Prevents access from unauthorized referring sites and helps"
+        " or "
+        "app.example.com). Prevents access from unauthorized referring sites and helps "
         "mitigate CSRF-like attacks."
     ),
     responses={403: {"description": "Invalid or missing referrer"}},
@@ -1257,9 +1257,9 @@ async def custom_validator(request: GuardRequest) -> GuardResponse | None:
     status_code=200,
     summary="Custom Request Validation",
     description=(
-        "Applies a custom validator function that inspects the request before"
+        "Applies a custom validator function that inspects the request before "
         "processing. The example validator checks the user agent for suspicious"
-        " patterns"
+        " patterns "
         "and rejects matching requests."
     ),
     responses={403: {"description": "Custom validation failed"}},
@@ -1281,8 +1281,8 @@ advanced_router = APIRouter(prefix="/advanced", tags=["Advanced Features"])
     status_code=200,
     summary="Business Hours Access Control",
     description=(
-        "Restricts access to business hours only (09:00-17:00 UTC). Requests outside"
-        "this time window are rejected. Demonstrates time-based access control for"
+        "Restricts access to business hours only (09:00-17:00 UTC). Requests outside "
+        "this time window are rejected. Demonstrates time-based access control for "
         "sensitive endpoints."
     ),
     responses={
@@ -1304,7 +1304,7 @@ async def business_hours_only() -> MessageResponse:
     summary="Weekend Access Control",
     description=(
         "Demonstrates time-window-based access control configured for all-day access."
-        " In"
+        " In "
         "practice, this would need custom logic to restrict access to weekends only."
     ),
     responses={403: {"description": "Access denied outside configured time window"}},
@@ -1323,8 +1323,8 @@ async def weekend_endpoint() -> MessageResponse:
     status_code=200,
     summary="Honeypot Bot Detection",
     description=(
-        "Detects bots by checking for hidden honeypot fields (honeypot_field,"
-        "trap_input, hidden_field) in the request body. Legitimate users with proper"
+        "Detects bots by checking for hidden honeypot fields (honeypot_field, "
+        "trap_input, hidden_field) in the request body. Legitimate users with proper "
         "forms will never fill these fields, but automated bots typically do."
     ),
     responses={403: {"description": "Bot detected via honeypot field"}},
@@ -1344,8 +1344,8 @@ async def honeypot_detection(payload: TestPayload) -> MessageResponse:
     summary="Enhanced Suspicious Pattern Detection",
     description=(
         "Enables enhanced suspicious pattern detection for this endpoint. The"
-        " middleware"
-        "analyzes query parameters and request patterns for SQL injection, XSS, path"
+        " middleware "
+        "analyzes query parameters and request patterns for SQL injection, XSS, path "
         "traversal, and other attack signatures."
     ),
     responses={403: {"description": "Suspicious pattern detected in request"}},
@@ -1370,8 +1370,8 @@ admin_router = APIRouter(prefix="/admin", tags=["Admin & Utilities"])
     summary="Unban IP Address",
     description=(
         "Removes a specific IP address from the ban list. Restricted to localhost"
-        " access"
-        "only. The unban operation runs as a background task to avoid blocking the"
+        " access "
+        "only. The unban operation runs as a background task to avoid blocking the "
         "response."
     ),
     responses={
@@ -1396,8 +1396,8 @@ async def unban_ip_address(
     status_code=200,
     summary="Security Statistics",
     description=(
-        "Returns comprehensive security statistics including total requests, blocked"
-        "requests, banned IPs, rate-limited IPs, suspicious activities, and active"
+        "Returns comprehensive security statistics including total requests, blocked "
+        "requests, banned IPs, rate-limited IPs, suspicious activities, and active "
         "security rules. Restricted to localhost access only."
     ),
     responses={
@@ -1439,9 +1439,9 @@ async def get_security_stats() -> StatsResponse:
     status_code=200,
     summary="Clear Security Caches",
     description=(
-        "Clears all security-related caches including rate limit counters, IP ban"
+        "Clears all security-related caches including rate limit counters, IP ban "
         "records, and geo lookup cache. Restricted to localhost access only. Useful for"
-        "resetting state during testing or after configuration changes."
+        " resetting state during testing or after configuration changes."
     ),
     responses={
         403: {"description": "Access denied, admin endpoint restricted to localhost"}
@@ -1461,8 +1461,8 @@ async def clear_security_cache() -> MessageResponse:
     status_code=200,
     summary="Toggle Emergency Mode",
     description=(
-        "Enables or disables emergency mode which blocks all incoming requests except"
-        "those from whitelisted IPs. Restricted to localhost access only. Use this"
+        "Enables or disables emergency mode which blocks all incoming requests except "
+        "those from whitelisted IPs. Restricted to localhost access only. Use this "
         "during active attacks or security incidents."
     ),
     responses={
@@ -1486,7 +1486,7 @@ async def toggle_emergency_mode(
     status_code=200,
     summary="Cloud Provider IP Range Status",
     description=(
-        "Returns per-provider cloud IP range refresh status including the configured"
+        "Returns per-provider cloud IP range refresh status including the configured "
         "refresh interval and last update timestamps for each provider."
     ),
     responses={
@@ -1516,8 +1516,8 @@ test_router = APIRouter(prefix="/test", tags=["Security Testing"])
     status_code=200,
     summary="XSS Detection Test",
     description=(
-        "Accepts a payload string to test the middleware's cross-site scripting (XSS)"
-        "detection capabilities. Malicious payloads containing script tags or event"
+        "Accepts a payload string to test the middleware's cross-site scripting (XSS) "
+        "detection capabilities. Malicious payloads containing script tags or event "
         "handlers should be caught and blocked by the penetration detection engine."
     ),
     responses={403: {"description": "XSS attack pattern detected and blocked"}},
@@ -1537,8 +1537,8 @@ async def test_xss_detection(
     status_code=200,
     summary="SQL Injection Detection Test",
     description=(
-        "Accepts a query parameter to test the middleware's SQL injection detection"
-        "capabilities. Payloads containing SQL keywords like UNION SELECT, DROP TABLE,"
+        "Accepts a query parameter to test the middleware's SQL injection detection "
+        "capabilities. Payloads containing SQL keywords like UNION SELECT, DROP TABLE, "
         "or OR 1=1 should be caught and blocked."
     ),
     responses={403: {"description": "SQL injection pattern detected and blocked"}},
@@ -1559,8 +1559,8 @@ async def test_sql_injection(
     summary="Path Traversal Detection Test",
     description=(
         "Accepts a file path parameter to test the middleware's path traversal"
-        " detection"
-        "capabilities. Paths containing sequences like ../ or attempting to access"
+        " detection "
+        "capabilities. Paths containing sequences like ../ or attempting to access "
         "/etc/passwd should be caught and blocked."
     ),
     responses={403: {"description": "Path traversal pattern detected and blocked"}},
@@ -1578,9 +1578,9 @@ async def test_path_traversal(file_path: str) -> MessageResponse:
     status_code=200,
     summary="Command Injection Detection Test",
     description=(
-        "Accepts a command string to test the middleware's OS command injection"
+        "Accepts a command string to test the middleware's OS command injection "
         "detection capabilities. Payloads containing shell metacharacters like ;, |, or"
-        "backticks should be caught and blocked."
+        " backticks should be caught and blocked."
     ),
     responses={403: {"description": "Command injection pattern detected and blocked"}},
 )
@@ -1599,9 +1599,9 @@ async def test_command_injection(
     status_code=200,
     summary="Mixed Attack Vector Test",
     description=(
-        "Accepts a structured payload with multiple fields to test simultaneous"
-        "detection of XSS, SQL injection, path traversal, command injection, and"
-        "honeypot triggers. Demonstrates the middleware's ability to detect combined"
+        "Accepts a structured payload with multiple fields to test simultaneous "
+        "detection of XSS, SQL injection, path traversal, command injection, and "
+        "honeypot triggers. Demonstrates the middleware's ability to detect combined "
         "attack vectors."
     ),
     responses={
@@ -1649,8 +1649,8 @@ async def websocket_endpoint(
     status_code=200,
     summary="API Root",
     description=(
-        "Returns API information including the version, list of available security"
-        "features, documentation URL, and a route map of all available endpoints"
+        "Returns API information including the version, list of available security "
+        "features, documentation URL, and a route map of all available endpoints "
         "organized by feature category."
     ),
     responses={429: {"description": "Rate limit exceeded"}},

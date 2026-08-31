@@ -13,7 +13,7 @@ router = APIRouter(prefix="/access", tags=["Access Control"])
     summary="IP Whitelist Enforcement",
     description=(
         "Only allows access from whitelisted IP addresses or CIDR ranges. Requests from"
-        "all other IPs are rejected with 403."
+        " all other IPs are rejected with 403."
     ),
     responses={403: {"description": "IP not in whitelist"}},
 )
@@ -28,7 +28,7 @@ async def ip_whitelist_only() -> MessageResponse:
     status_code=200,
     summary="IP Blacklist Enforcement",
     description=(
-        "Blocks access from blacklisted IP addresses or CIDR ranges. All other IPs are"
+        "Blocks access from blacklisted IP addresses or CIDR ranges. All other IPs are "
         "allowed through."
     ),
     responses={403: {"description": "IP is blacklisted"}},
@@ -44,7 +44,7 @@ async def ip_blacklist_demo() -> MessageResponse:
     status_code=200,
     summary="Country Blocking",
     description=(
-        "Blocks requests originating from specified countries using ISO 3166-1 alpha-2"
+        "Blocks requests originating from specified countries using ISO 3166-1 alpha-2 "
         "codes. Geo IP lookup is performed against a local MaxMind database."
     ),
     responses={403: {"description": "Country is blocked"}},
@@ -61,7 +61,7 @@ async def block_specific_countries() -> MessageResponse:
     summary="Country Allowlist",
     description=(
         "Only allows requests from specified countries. All other countries are"
-        " blocked."
+        " blocked. "
         "Uses local MaxMind database for geo IP resolution."
     ),
     responses={403: {"description": "Country not in allowlist"}},
@@ -78,7 +78,7 @@ async def allow_specific_countries() -> MessageResponse:
     summary="Block All Cloud Providers",
     description=(
         "Blocks requests originating from AWS, GCP, and Azure IP ranges. Cloud IP"
-        " ranges"
+        " ranges "
         "are refreshed hourly and matched in-memory via CIDR."
     ),
     responses={403: {"description": "Request from cloud provider IP"}},
@@ -94,7 +94,7 @@ async def block_all_clouds() -> MessageResponse:
     status_code=200,
     summary="Block AWS Only",
     description=(
-        "Blocks requests originating from AWS IP ranges while allowing GCP and Azure."
+        "Blocks requests originating from AWS IP ranges while allowing GCP and Azure. "
         "Demonstrates selective cloud provider blocking."
     ),
     responses={403: {"description": "Request from AWS IP range"}},
@@ -110,14 +110,14 @@ async def block_aws_only() -> MessageResponse:
     status_code=200,
     summary="Bypass Specific Checks",
     description=(
-        "Demonstrates selectively bypassing security checks on a per-route basis. This"
-        "endpoint skips rate limiting and geo checks while all other security checks"
-        "remain active."
+        "Demonstrates selectively bypassing security checks on a per-route basis. This "
+        "endpoint skips rate limiting and IP/country/cloud checks while all other "
+        "security checks remain active."
     ),
 )
-@guard.bypass(["rate_limit", "geo_check"])
+@guard.bypass(["rate_limit", "ip"])
 async def bypass_specific_checks() -> MessageResponse:
     return MessageResponse(
-        message="This endpoint bypasses rate limiting and geo checks",
-        details={"bypassed_checks": ["rate_limit", "geo_check"]},
+        message="This endpoint bypasses rate limiting and IP/country/cloud checks",
+        details={"bypassed_checks": ["rate_limit", "ip"]},
     )
