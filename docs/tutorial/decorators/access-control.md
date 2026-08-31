@@ -172,7 +172,7 @@ Selectively disable specific security checks for certain routes:
 | `rate_limit` | Global, endpoint, route and geo rate limiting |
 | `penetration` | Detection engine / suspicious activity |
 
-Unknown tokens are ignored, so a typo leaves the check fully enforced rather than raising. There is no country-only token: country blocking is bypassed by `ip`, which also lifts the global IP whitelist and blacklist for that route.
+An unknown token is ignored and logged as a warning naming it, so a typo leaves the check fully enforced rather than raising. There is no country-only token: country blocking is bypassed by `ip`, which also lifts the global IP whitelist and blacklist for that route.
 
 . Bypass Specific Checks
 ----------------------
