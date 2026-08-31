@@ -3378,7 +3378,7 @@
 </tr>
 </tbody>
 </table>
-<p>Unknown tokens are ignored, so a typo leaves the check fully enforced rather than raising. There is no country-only token: country blocking is bypassed by <code>ip</code>, which also lifts the global IP whitelist and blacklist for that route.</p>
+<p>An unknown token is ignored and logged as a warning naming it, so a typo leaves the check fully enforced rather than raising. There is no country-only token: country blocking is bypassed by <code>ip</code>, which also lifts the global IP whitelist and blacklist for that route.</p>
 <h2 id="bypass-specific-checks">. Bypass Specific Checks<a class="headerlink" href="#bypass-specific-checks" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/api/health"</span><span class="p">)</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">bypass</span><span class="p">([</span><span class="s2">"rate_limit"</span><span class="p">,</span> <span class="s2">"ip"</span><span class="p">])</span>  <span class="c1"># Bypass rate limiting and IP checks</span>
