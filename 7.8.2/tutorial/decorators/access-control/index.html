@@ -1138,6 +1138,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#valid-bypass-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        . Valid Bypass Tokens
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#bypass-specific-checks" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2988,6 +2999,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#valid-bypass-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        . Valid Bypass Tokens
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#bypass-specific-checks" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3321,6 +3343,42 @@
 <hr />
 <h2 id="bypassing-security-checks">Bypassing Security Checks<a class="headerlink" href="#bypassing-security-checks" title="Permanent link">&para;</a></h2>
 <p>Selectively disable specific security checks for certain routes:</p>
+<h2 id="valid-bypass-tokens">. Valid Bypass Tokens<a class="headerlink" href="#valid-bypass-tokens" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Skips</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>all</code></td>
+<td>The entire security pipeline for the route</td>
+</tr>
+<tr>
+<td><code>ip_ban</code></td>
+<td>The standing banned-IP check</td>
+</tr>
+<tr>
+<td><code>ip</code></td>
+<td>Global IP whitelist/blacklist, blocked countries and blocked clouds</td>
+</tr>
+<tr>
+<td><code>clouds</code></td>
+<td>The cloud provider check</td>
+</tr>
+<tr>
+<td><code>rate_limit</code></td>
+<td>Global, endpoint, route and geo rate limiting</td>
+</tr>
+<tr>
+<td><code>penetration</code></td>
+<td>Detection engine / suspicious activity</td>
+</tr>
+</tbody>
+</table>
+<p>Unknown tokens are ignored, so a typo leaves the check fully enforced rather than raising. There is no country-only token: country blocking is bypassed by <code>ip</code>, which also lifts the global IP whitelist and blacklist for that route.</p>
 <h2 id="bypass-specific-checks">. Bypass Specific Checks<a class="headerlink" href="#bypass-specific-checks" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/api/health"</span><span class="p">)</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">bypass</span><span class="p">([</span><span class="s2">"rate_limit"</span><span class="p">,</span> <span class="s2">"ip"</span><span class="p">])</span>  <span class="c1"># Bypass rate limiting and IP checks</span>
@@ -3341,9 +3399,9 @@
 </span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">"metrics"</span><span class="p">:</span> <span class="s2">"data"</span><span class="p">}</span>
 </span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
 </span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="c1"># Public API documentation - bypass geographic restrictions</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="c1"># Public API documentation - bypass IP, country and cloud restrictions</span>
 </span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/docs-public"</span><span class="p">)</span>
-</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">bypass</span><span class="p">([</span><span class="s2">"countries"</span><span class="p">,</span> <span class="s2">"clouds"</span><span class="p">])</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="nd">@guard_deco</span><span class="o">.</span><span class="n">bypass</span><span class="p">([</span><span class="s2">"ip"</span><span class="p">])</span>
 </span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">public_docs</span><span class="p">():</span>
 </span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">"docs"</span><span class="p">:</span> <span class="s2">"public documentation"</span><span class="p">}</span>
 </span></code></pre></div>
