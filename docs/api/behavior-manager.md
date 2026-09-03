@@ -95,8 +95,8 @@ For `return_pattern` rules, the following pattern formats are supported:
 
 - **ban**: Ban the IP address
 - **log**: Log the incident
-- **alert**: Send an alert notification
-- **throttle**: Apply rate limiting
+- **alert**: Log the incident at critical level
+- **throttle**: Log the incident only; does not delay, rate-limit, or block the request
 
 . Example Rules
 ---------------
