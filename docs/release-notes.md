@@ -10,6 +10,23 @@ Release Notes
 
 ___
 
+v8.0.0 (2026-09-03)
+-------------------
+
+Lockstep with guard-core 4.0.0: log_activity assertions, timestamp serialisation, unban wiring, throttle docs, hsts None guard (v8.0.0)
+---------------------------------------------------------------------------------------------------------------------------------------
+
+- **Compatibility (dependency floor, breaking for anyone pinned below 4.0.0)** - `guard-core` floor moves from `>=3.14.0` to `>=4.0.0` in `pyproject.toml`, no upper bound. guard-core 4.0.0 carries breaking changes of its own (grammar-based secret redaction, `require_headers()` now enforces an exact value match for any configured value other than `"required"`, `excluded_detection_headers` no longer fully silences a header) which do not require any change in this release's own code or tests, since fastapi-guard's `require_headers()` usage in its examples and tests only ever exercises the presence-only `"required"` value or sends a header value matching what is configured, and neither fastapi-guard's code nor its tests set `excluded_detection_headers`. See the guard-core 4.0.0 changelog for the full engine-side list.
+- **Requires (lockstep)** - fastapi-guard 8.0.0 tracks guard-core 4.0.0. guard-core 4.0.0 is not yet published to PyPI as of this release commit; CI resolves `guard-core>=4.0.0` fresh from PyPI (`uv.lock` is gitignored) and will fail until it is. This release is held locally, matching the pattern set by earlier lockstep releases, until guard-core 4.0.0 ships.
+- **Tests** - `test_cloud_ip_blocking_with_logging` and `test_passive_mode_penetration_detection` (`tests/test_middleware/test_security_middleware.py`) pinned the full `log_activity()` call via `assert_any_call`, which broke against guard-core >=3.16.0's added `on_block`/`sensitive_headers`/`sensitive_params`/`sensitive_body_fields` keyword arguments. Both now check only the kwargs each test cares about as a subset of the actual call (`assert_log_activity_called_with`), tolerating any further keyword arguments guard-core adds.
+- **Fixed (examples)** - `http_exception_handler` and `general_exception_handler` (`examples/advanced_app/app/main.py`) dumped `ErrorResponse` with `model_dump()`, leaving `timestamp` as a raw `datetime` that `JSONResponse` cannot encode, turning every error response (for example `/behavior/return-monitor/404`) into an unhandled 500. Both now use `model_dump(mode="json")`.
+- **Fixed (examples)** - `/admin/unban-ip` (`examples/advanced_app/app/routes/admin.py`) only logged the unban and never called guard-core's IP ban manager, so a banned IP stayed banned. The route now calls `ip_ban_manager.unban_ip(ip)`.
+- **Documentation (examples)** - `action="throttle"` only logs the violation; guard-core never blocks or delays the request for it. Corrected the `/behavior/suspicious-frequency` and `/behavior/behavior-rules` route descriptions and dropped the fabricated `429` response entries that promised otherwise, and corrected the matching lines in `docs/tutorial/decorators/behavioral.md` and `docs/api/behavior-manager.md`.
+- **Documentation (examples)** - `/behavior/usage-monitor`'s `responses` entry named a `"block"` action that does not exist in guard-core (the route uses `action="log"` and never returns 429); the entry is removed. `alert` was documented as sending a notification; it is a critical-level log call, same as any other action's telemetry event. Corrected in `examples/advanced_app/app/routes/behavioral.py` and `docs/api/behavior-manager.md`.
+- **Fixed** - `SecurityMiddleware._configure_security_headers` (`guard/middleware.py`) called `headers_config.get("hsts", {}).get("max_age")`, which raised `AttributeError` on every request when `security_headers={"hsts": None, ...}` was passed explicitly, since `.get("hsts", {})` returns `None`, not `{}`, for a key present with an explicit `None` value. Now falls back to `{}` the same way guard-core's own `security_headers_handler` treats a missing `hsts` block. guard-core 4.0.0 separately fixes the same class of bug on its own singleton (a stale `hsts`/`csp`/`cors` configuration surviving a reconfigure), so this guard is defense in depth against both the old and the fixed guard-core behavior.
+
+___
+
 v7.8.2 (2026-08-27)
 -------------------
 
