@@ -39,6 +39,7 @@ from guard.websocket import (
     WS_CLOSE_RATE_LIMIT_EXCEEDED as WS_CLOSE_RATE_LIMIT_EXCEEDED,
     WS_CLOSE_REASONS as WS_CLOSE_REASONS,
     WS_CLOSE_SECURITY_CHECK_FAILED as WS_CLOSE_SECURITY_CHECK_FAILED,
+    WS_CLOSE_SUSPICIOUS_ACTIVITY as WS_CLOSE_SUSPICIOUS_ACTIVITY,
     WebSocketCloseReason as WebSocketCloseReason,
     guard_websocket as guard_websocket,
     make_guard_websocket as make_guard_websocket,
@@ -61,5 +62,6 @@ __all__ = [
     "WS_CLOSE_RATE_LIMIT_EXCEEDED",
     "WS_CLOSE_CLIENT_ADDRESS_UNKNOWN",
     "WS_CLOSE_SECURITY_CHECK_FAILED",
+    "WS_CLOSE_SUSPICIOUS_ACTIVITY",
     *guard_core.__all__,
 ]

@@ -56,6 +56,38 @@ The system checks for various attack patterns including:
 
 ___
 
+Excluding Parameters, Headers and Body Fields
+---------------------------------------------
+
+Every query parameter, header and JSON body field is scanned against every pattern. Some values look like attacks by design: an OAuth `redirect_uri` on `/authorize` is a full URL, and for native and MCP clients it is a loopback one (`http://127.0.0.1:<port>/callback`, `http://localhost:<port>/callback`), which the `ssrf` category matches. Rather than moving the whole path into `exclude_paths` and losing the other checks with it, exclude just that field:
+
+```python
+config = SecurityConfig(
+    enable_penetration_detection=True,
+    # OAuth redirect targets are validated against the registered client, not fetched
+    excluded_detection_params={"redirect_uri"},
+)
+```
+
+The same exists for headers and JSON body keys (`excluded_detection_headers`, `excluded_detection_body_fields`); names are matched case-insensitively, and body keys at any nesting depth. To limit the exclusion to one route, use the decorator instead of the global setting:
+
+```python
+from guard import SecurityDecorator
+
+guard_deco = SecurityDecorator(config)
+app.state.guard_decorator = guard_deco  # the middleware reads route decorators from here
+
+
+@guard_deco.detection_exclusion(params={"redirect_uri", "post_logout_redirect_uri"})
+@app.get("/oauth/authorize")
+async def authorize():
+    ...
+```
+
+Everything else on the request is still scanned.
+
+___
+
 Enhanced Detection Features
 ---------------------------
 

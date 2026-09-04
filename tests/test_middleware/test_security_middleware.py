@@ -3,7 +3,7 @@ import logging
 import time
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import ANY, AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi import FastAPI, Request, Response, status
@@ -25,6 +25,13 @@ from starlette.testclient import TestClient
 
 from guard.adapters import StarletteGuardRequest, StarletteGuardResponse
 from guard.middleware import SecurityMiddleware
+
+
+def assert_log_activity_called_with(mock_log: Mock, **expected_kwargs: Any) -> None:
+    assert any(
+        expected_kwargs.items() <= call.kwargs.items()
+        for call in mock_log.call_args_list
+    ), f"No call to {mock_log} had kwargs matching {expected_kwargs}"
 
 
 @pytest.mark.asyncio
@@ -1027,9 +1034,8 @@ async def test_cloud_ip_blocking_with_logging() -> None:
 
         response = await middleware.dispatch(request, mock_call_next)
 
-        mock_log.assert_any_call(
-            ANY,
-            middleware.logger,
+        assert_log_activity_called_with(
+            mock_log,
             log_type="suspicious",
             reason="Blocked cloud provider IP: 13.59.255.255",
             level="WARNING",
@@ -1363,9 +1369,8 @@ async def test_passive_mode_penetration_detection() -> None:
 
         assert mock_detect.called, "get_cached_detection_result should be called"
 
-        mock_log.assert_any_call(
-            ANY,
-            middleware.logger,
+        assert_log_activity_called_with(
+            mock_log,
             log_type="suspicious",
             reason="Suspicious activity detected: 192.168.1.1",
             passive_mode=True,

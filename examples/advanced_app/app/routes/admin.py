@@ -5,7 +5,7 @@ from fastapi import APIRouter, BackgroundTasks, Body
 
 from app.models import MessageResponse, StatsResponse
 from app.security import guard, security_config
-from guard import cloud_handler
+from guard import cloud_handler, ip_ban_manager
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,7 @@ async def unban_ip_address(
     ip: str = Body(...),
     background_tasks: BackgroundTasks = BackgroundTasks(),  # noqa: B008
 ) -> MessageResponse:
+    await ip_ban_manager.unban_ip(ip)
     background_tasks.add_task(logger.info, f"Unbanning IP: {ip}")
     return MessageResponse(
         message=f"IP {ip} has been unbanned",
