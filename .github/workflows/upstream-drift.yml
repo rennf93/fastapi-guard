@@ -1,0 +1,92 @@
+name: Upstream Drift
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  upstream-drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+
+    steps:
+      - name: Checkout fastapi-guard
+        uses: actions/checkout@v7
+
+      - name: Checkout guard-core@master
+        uses: actions/checkout@v7
+        with:
+          repository: rennf93/guard-core
+          ref: master
+          path: guard-core-upstream
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        run: |
+          pip install uv
+
+      - name: Build the guard-core wheel from guard-core@master
+        run: |
+          cd guard-core-upstream
+          uv build --wheel --out-dir dist
+
+      - name: Install the fastapi-guard dev environment
+        run: |
+          uv sync --extra dev
+
+      - name: Force-install the guard-core@master wheel over the resolved one
+        run: |
+          wheel=$(ls guard-core-upstream/dist/*.whl)
+          uv pip install --python .venv/bin/python --no-deps --force-reinstall "$wheel"
+          .venv/bin/python -c "import guard_core; print(guard_core.__version__); print(guard_core.__file__)"
+
+      - name: Run the fastapi-guard test suite against guard-core@master
+        run: |
+          IPINFO_TOKEN='${{ secrets.IPINFO_TOKEN }}' REDIS_URL='redis://localhost:6379' REDIS_PREFIX='test:fastapi_guard:' uv run --no-sync pytest -v --cov=guard --cov-branch
+
+      - name: Notify Upstream Drift Failure on Slack
+        if: failure()
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Failed'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'FastAPI Guard - Upstream Drift - Py${{ matrix.python-version }}'
+          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
+          AUTHOR_ICON: ':skull:'
+          TITLE: 'Upstream Drift Gate Failed - Py${{ matrix.python-version }}'
+          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
+          MESSAGE: |
+            .
+            fastapi-guard@master no longer passes its test suite against
+            guard-core@master.
+
+            Matrix:
+              Python: ${{ matrix.python-version }}
+
+            Run:
+              ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            .
+          COLOR: danger
