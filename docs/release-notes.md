@@ -10,7 +10,7 @@ Release Notes
 
 ___
 
-v8.0.0 (2026-09-03)
+v8.0.0 (2026-09-04)
 -------------------
 
 Lockstep with guard-core 4.0.0: log_activity assertions, timestamp serialisation, unban wiring, throttle docs, hsts None guard (v8.0.0)
