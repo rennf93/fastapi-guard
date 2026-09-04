@@ -124,6 +124,20 @@ def search(query: str):
     return {"results": "Search results for your query"}
 ```
 
+. Exclude a Single Parameter
+--------------------------
+
+When one field is the only false positive, keep detection on and exclude just that field. An OAuth `redirect_uri` is the usual case: on `/authorize` it carries a full URL, and for native and MCP clients a loopback one, which the `ssrf` category matches.
+
+```python
+@guard_deco.detection_exclusion(params={"redirect_uri"})
+@app.get("/oauth/authorize")
+def authorize(redirect_uri: str):
+    return {"status": "redirecting"}
+```
+
+`headers` and `body_fields` take the same shape. The global equivalents are `excluded_detection_params`, `excluded_detection_headers` and `excluded_detection_body_fields` on `SecurityConfig`.
+
 ___
 
 Combining Advanced Decorators
