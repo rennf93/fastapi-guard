@@ -114,7 +114,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
         content=ErrorResponse(
             detail=exc.detail,
             error_code=f"HTTP_{exc.status_code}",
-        ).model_dump(),
+        ).model_dump(mode="json"),
     )
 
 
@@ -126,5 +126,5 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
         content=ErrorResponse(
             detail="Internal server error",
             error_code="INTERNAL_ERROR",
-        ).model_dump(),
+        ).model_dump(mode="json"),
     )

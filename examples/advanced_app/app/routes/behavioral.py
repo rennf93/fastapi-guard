@@ -16,7 +16,6 @@ router = APIRouter(prefix="/behavior", tags=["Behavioral Analysis"])
         "Monitors request frequency per client. Logs a warning when a client exceeds 10"
         "calls within a 5-minute window. Does not block requests."
     ),
-    responses={429: {"description": "Usage limit exceeded (if action is block)"}},
 )
 @guard.usage_monitor(max_calls=10, window=300, action="log")
 async def monitor_usage_patterns() -> MessageResponse:
@@ -56,9 +55,9 @@ async def monitor_return_patterns(status_code: int) -> MessageResponse:
     summary="Suspicious Frequency Detection",
     description=(
         "Detects clients sending requests faster than 1 every 2 seconds (0.5 Hz) within"
-        "a 10-second window. Throttles suspicious clients rather than banning them."
+        "a 10-second window. The throttle action only logs the violation; it does not"
+        "block or delay the request."
     ),
-    responses={429: {"description": "Throttled due to suspicious request frequency"}},
 )
 @guard.suspicious_frequency(max_frequency=0.5, window=10, action="throttle")
 async def detect_suspicious_frequency() -> MessageResponse:
@@ -74,13 +73,12 @@ async def detect_suspicious_frequency() -> MessageResponse:
     status_code=200,
     summary="Complex Behavior Analysis",
     description=(
-        "Applies multiple behavioral rules simultaneously: frequency-based throttling"
-        "(10 requests/min) and return pattern monitoring (5 or more 404s/min triggers a"
-        "ban)."
+        "Applies multiple behavioral rules simultaneously: frequency-based throttle"
+        "logging (10 requests/min, log only, no blocking) and return pattern"
+        "monitoring (5 or more 404s/min triggers a ban)."
     ),
     responses={
         403: {"description": "Banned due to suspicious return patterns"},
-        429: {"description": "Throttled due to high request frequency"},
     },
 )
 @guard.behavior_analysis(

@@ -281,7 +281,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         security_headers_manager.enabled = True
         headers_config = config.security_headers
-        hsts_config = headers_config.get("hsts", {})
+        hsts_config = headers_config.get("hsts") or {}
 
         security_headers_manager.configure(
             enabled=headers_config.get("enabled", True),

@@ -1,4 +1,6 @@
+import importlib
 import os
+import sys
 from collections.abc import AsyncGenerator
 from pathlib import Path
 
@@ -17,6 +19,19 @@ from guard._middleware_state import _STATE_REGISTRY, clear_state_registry
 from guard.middleware import SecurityMiddleware
 
 IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
+
+ADVANCED_APP_DIR = Path(__file__).resolve().parents[1] / "examples" / "advanced_app"
+
+
+@pytest.fixture
+def advanced_app_main(monkeypatch: pytest.MonkeyPatch) -> object:
+    monkeypatch.setenv(
+        "REDIS_URL", os.environ.get("REDIS_URL", "redis://localhost:6379")
+    )
+    monkeypatch.syspath_prepend(str(ADVANCED_APP_DIR))
+    sys.modules.pop("app", None)
+    sys.modules.pop("app.main", None)
+    return importlib.import_module("app.main")
 
 
 async def _close_redis_handler(redis_handler: RedisManager) -> None:

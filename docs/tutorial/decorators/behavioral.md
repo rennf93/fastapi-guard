@@ -294,11 +294,13 @@ def monitored_endpoint():
 . Throttle Action
 ---------------
 
+`action="throttle"` only logs the violation; it does not delay, rate-limit, or block the request.
+
 ```python
 @guard_deco.suspicious_frequency(max_frequency=2.0, window=300, action="throttle")
-def throttled_endpoint():
-    # Apply rate limiting when threshold exceeded
-    return {"data": "throttled access"}
+def logged_frequency_endpoint():
+    # Logs a warning when threshold exceeded, request still proceeds
+    return {"data": "monitored access"}
 ```
 
 . Log Action
@@ -436,8 +438,7 @@ Error Handling
 Behavioral decorators integrate with middleware error handling:
 
 - **403 Forbidden**: When action is "ban"
-- **429 Too Many Requests**: When action is "throttle"
-- **Logging**: When action is "log" or "alert"
+- **Logging only, no blocking**: When action is "log", "throttle", or "alert" (the request still proceeds)
 
 . Custom Error Messages
 ---------------------
@@ -446,7 +447,6 @@ Behavioral decorators integrate with middleware error handling:
 config = SecurityConfig(
     custom_error_responses={
         403: "Behavioral analysis detected suspicious activity",
-        429: "Request frequency too high - throttled",
     }
 )
 ```
@@ -509,7 +509,7 @@ Verifying it works
 Once the decorator is wired (see [Enabling behavioral decorators](#enabling-behavioral-decorators)), confirm rules are firing end to end:
 
 - **Trip a low-threshold rule.** Set a deliberately small threshold — e.g. `@guard_deco.usage_monitor(max_calls=2, window=60, action="log")` — and call the route a few times. On the threshold breach the engine's `BehavioralProcessor` emits a `decorator_violation` event.
-- **Observe the outcome.** What you see depends on the rule's `action`: `log` writes a log line, `throttle` delays, and `ban` returns `403`. With the Guard Agent enabled, the `decorator_violation` events are also shipped to your dashboard, so you can confirm a rule fired even when its action is `log`.
+- **Observe the outcome.** What you see depends on the rule's `action`: `log` and `throttle` write a log line and let the request proceed, and `ban` returns `403`. With the Guard Agent enabled, the `decorator_violation` events are also shipped to your dashboard, so you can confirm a rule fired even when its action is `log` or `throttle`.
 - **Trial safely with passive mode.** Set `passive_mode=True` on the `SecurityConfig` to run behavioral rules in log-only mode: violations are recorded with the `[PASSIVE MODE]` prefix instead of blocking, so you can validate thresholds against production traffic before enforcing. See [Security Monitoring](../security/monitoring.md).
 
 If a route's rule never fires, the wiring step is almost always the cause — verify `app.state.guard_decorator` is set to the same decorator that decorates the route.
