@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket
 from fastapi.responses import JSONResponse
 
 from app.models import ErrorResponse, RootResponse
@@ -21,7 +21,7 @@ from app.routes import (
     test_router,
 )
 from app.security import guard, security_config
-from guard import SecurityMiddleware
+from guard import SecurityMiddleware, guard_websocket
 from guard.lifespan import make_lifespan
 
 logging.basicConfig(
@@ -128,3 +128,13 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
             error_code="INTERNAL_ERROR",
         ).model_dump(mode="json"),
     )
+
+
+@app.websocket("/ws")
+async def websocket_echo(
+    websocket: WebSocket, _: None = Depends(guard_websocket)
+) -> None:
+    await websocket.accept()
+    message = await websocket.receive_text()
+    await websocket.send_text(message)
+    await websocket.close()

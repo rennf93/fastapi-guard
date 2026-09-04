@@ -1,0 +1,75 @@
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "${LIVE_SMOKE_NGINX_PORT:-8089}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      fastapi-guard-example:
+        condition: service_healthy
+
+  fastapi-guard-example:
+    build:
+      context: .
+    expose:
+      - "8000"
+    environment:
+      - "REDIS_URL=redis://redis:6379"
+      - "REDIS_PREFIX=smoke:"
+      - "IPINFO_TOKEN=test_token"
+      - "WEB_CONCURRENCY=1"
+      - "SMOKE_CONFIG_PATH=/smoke/config-${LIVE_SMOKE_PROJECT:-fastapi-guard-live-smoke}.json"
+      - "SMOKE_ON_BLOCK_LOG=/tmp/smoke-on-block.jsonl"
+      - "SMOKE_ON_ERROR_LOG=/smoke/on_error.jsonl"
+      - "LOGFIRE_TOKEN=pylf_v1_us_smoketesttoken00000000000000000000"
+      - "LOGFIRE_SEND_TO_LOGFIRE=true"
+      - "LOGFIRE_BASE_URL=http://otlp-stub:4318"
+    volumes:
+      - ./scenario_data:/smoke
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    depends_on:
+      redis:
+        condition: service_healthy
+      agent-stub:
+        condition: service_started
+      otlp-stub:
+        condition: service_started
+
+  agent-stub:
+    image: python:3.12-slim
+    working_dir: /agent
+    volumes:
+      - ../agent_stub.py:/agent/agent_stub.py:ro
+    command: ["python", "/agent/agent_stub.py"]
+    expose:
+      - "8090"
+    ports:
+      - "${LIVE_SMOKE_AGENT_PORT:-8091}:8090"
+
+  otlp-stub:
+    image: python:3.12-slim
+    working_dir: /otlp
+    volumes:
+      - ../otlp_stub.py:/otlp/otlp_stub.py:ro
+    command: ["python", "/otlp/otlp_stub.py"]
+    expose:
+      - "4318"
+    ports:
+      - "${LIVE_SMOKE_OTLP_STUB_PORT:-8092}:4318"
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save "" --loglevel warning
+    ports:
+      - "${LIVE_SMOKE_REDIS_PORT:-16379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
