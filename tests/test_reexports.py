@@ -25,6 +25,7 @@ def test_all_derives_from_guard_core_exports() -> None:
         "WS_CLOSE_RATE_LIMIT_EXCEEDED",
         "WS_CLOSE_CLIENT_ADDRESS_UNKNOWN",
         "WS_CLOSE_SECURITY_CHECK_FAILED",
+        "WS_CLOSE_SUSPICIOUS_ACTIVITY",
         *guard_core.__all__,
     }
 

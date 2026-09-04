@@ -45,6 +45,7 @@ async def websocket_endpoint(
 1. `ip_ban_manager.is_ip_banned` -- is the resolved client IP currently banned.
 2. `is_ip_allowed` -- whitelist/blacklist, blocked countries, blocked cloud providers.
 3. `check_rate_limit_by_ip` -- a rate-limit bucket isolated from the HTTP pipeline's own bucket for the same IP (keyed by `endpoint_path="ws"`), Redis-backed when `enable_redis=True`, in-memory otherwise.
+4. Penetration detection -- the handshake's headers, cookies, query string and path are scanned by guard-core's `SuspiciousActivityCheck`, the same detection guard-core's HTTP pipeline runs on a request, honouring `enable_penetration_detection`, `passive_mode`, `exclude_paths` and the whitelist and auto-ban rules above; there is no body to scan on a handshake.
 
 On the first failing check, the connection is closed with WebSocket close code `1008` (Policy Violation) before `accept()` is ever called; the client sees the handshake rejected, not an accepted-then-closed connection.
 
@@ -127,11 +128,12 @@ from guard import (
     WS_CLOSE_RATE_LIMIT_EXCEEDED,
     WS_CLOSE_REASONS,
     WS_CLOSE_SECURITY_CHECK_FAILED,
+    WS_CLOSE_SUSPICIOUS_ACTIVITY,
     WebSocketCloseReason,
 )
 ```
 
-Each constant is a `WebSocketCloseReason(code, reason)` named tuple; `WS_CLOSE_REASONS` collects all five.
+Each constant is a `WebSocketCloseReason(code, reason)` named tuple; `WS_CLOSE_REASONS` collects all six.
 
 | Code | Reason                                    | Cause                                                     |
 | ---- | ------------------------------------------ | ---------------------------------------------------------- |
@@ -139,7 +141,8 @@ Each constant is a `WebSocketCloseReason(code, reason)` named tuple; `WS_CLOSE_R
 | 1008 | `IP not allowed`                           | `is_ip_allowed` returned `False` (whitelist/blacklist, blocked country, blocked cloud provider). |
 | 1008 | `Rate limit exceeded`                      | `check_rate_limit_by_ip` returned `False`.                  |
 | 1008 | `Client address could not be determined`   | No resolvable client identity and `fail_secure=True`.       |
-| 1013 | `Security check failed`                    | A Redis error during the ban or rate-limit check, with `redis_fail_open=False` and `fail_secure=True`. |
+| 1013 | `Security check failed`                    | A Redis error during the ban or rate-limit check, or during detection, with `redis_fail_open=False` and `fail_secure=True`. |
+| 1008 | `Suspicious activity detected`             | guard-core's `SuspiciousActivityCheck` flagged the handshake in active mode (`passive_mode=False`). |
 
 Every close in this table happens before `accept()`, so the `reason` string reaches the server's own logs only, not the browser: uvicorn answers a pre-accept close with plain HTTP `403` and discards the WebSocket close code and reason entirely (uvicorn's `websockets_impl.py:296-303`), so the client sees a failed upgrade with status `403`, never the `(code, reason)` pair. Read the pair in the application's own logging, for example a handler around `WebSocketException`, not on the client.
 
@@ -159,4 +162,4 @@ ___
 Scope
 -----
 
-`guard_websocket` does not run penetration detection, security headers, HTTPS enforcement, or any per-route decorator; those are HTTP-pipeline concepts with no WebSocket equivalent. It requires `SecurityMiddleware` to already be registered on the app (`app.add_middleware(SecurityMiddleware, config=...)`); calling it without that raises `RuntimeError` at connection time.
+`guard_websocket` scans the handshake for penetration attempts the same way the HTTP pipeline scans a request, but it does not run security headers, HTTPS enforcement, or any per-route decorator; those are HTTP-pipeline concepts with no WebSocket equivalent. It requires `SecurityMiddleware` to already be registered on the app (`app.add_middleware(SecurityMiddleware, config=...)`); calling it without that raises `RuntimeError` at connection time.

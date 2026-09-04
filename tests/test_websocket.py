@@ -1,24 +1,31 @@
 import asyncio
 import logging
-from collections.abc import MutableMapping
+from collections.abc import Generator, MutableMapping
 from typing import Any
 
 import pytest
 from fastapi import Depends, FastAPI, WebSocket
 from fastapi.testclient import TestClient
 from guard_core import check_rate_limit_by_ip as real_check_rate_limit_by_ip
+from guard_core.core.events import SecurityEventBus
 from guard_core.exceptions import GuardRedisError
 from guard_core.handlers import ratelimit_handler as ratelimit_handler_module
 from guard_core.handlers.ipban_handler import ip_ban_manager
+from guard_core.handlers.ipinfo_handler import IPInfoManager
 from guard_core.handlers.redis_handler import RedisManager
 from guard_core.models import SecurityConfig
 from starlette.exceptions import WebSocketException
 from starlette.websockets import WebSocketDisconnect
 
+from guard import websocket as websocket_module
 from guard.middleware import SecurityMiddleware
 from guard.websocket import (
+    WS_CLOSE_IP_BANNED,
     WS_CLOSE_REASONS,
+    WS_CLOSE_SECURITY_CHECK_FAILED,
+    WS_CLOSE_SUSPICIOUS_ACTIVITY,
     WebSocketCloseReason,
+    _WebSocketDetectionMiddleware,
     _WebSocketGuardRequest,
     guard_websocket,
     make_guard_websocket,
@@ -29,6 +36,26 @@ from guard.websocket import (
 def _reset_by_ip_rate_limit_state() -> None:
     ratelimit_handler_module._by_ip_request_timestamps.clear()
     ratelimit_handler_module._by_ip_autoban_counts.clear()
+
+
+@pytest.fixture(autouse=True)
+def _reset_ws_detection_middleware_cache() -> Generator[None, None, None]:
+    websocket_module._ws_detection_middlewares.clear()
+    yield
+    websocket_module._ws_detection_middlewares.clear()
+
+
+@pytest.fixture
+def captured_events(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
+    events: list[dict[str, Any]] = []
+    original = SecurityEventBus.send_middleware_event
+
+    async def _capture(self: SecurityEventBus, *args: Any, **kwargs: Any) -> None:
+        events.append(kwargs)
+        await original(self, *args, **kwargs)
+
+    monkeypatch.setattr(SecurityEventBus, "send_middleware_event", _capture)
+    return events
 
 
 def _app_with_websocket(config: SecurityConfig) -> FastAPI:
@@ -321,8 +348,9 @@ def test_ws_close_reasons_pins_the_exact_code_reason_pair_set() -> None:
         WebSocketCloseReason(1008, "Rate limit exceeded"),
         WebSocketCloseReason(1008, "Client address could not be determined"),
         WebSocketCloseReason(1013, "Security check failed"),
+        WebSocketCloseReason(1008, "Suspicious activity detected"),
     }
-    assert len(WS_CLOSE_REASONS) == 5
+    assert len(WS_CLOSE_REASONS) == 6
 
 
 def test_guard_websocket_skips_rate_limit_when_client_is_whitelisted() -> None:
@@ -695,3 +723,445 @@ async def test_make_guard_websocket_never_mutates_the_redis_singletons_config(
     assert RedisManager._instance is owner_manager
     assert RedisManager._instance.config is owner_config
     await owner_manager.close()
+
+
+def test_guard_websocket_rejects_script_tag_in_query_param_when_active() -> None:
+    config = SecurityConfig(enable_redis=False, enable_penetration_detection=True)
+    app = _app_with_websocket(config)
+
+    with TestClient(app, client=("127.0.0.1", 20001)) as client:
+        with pytest.raises(WebSocketDisconnect) as exc_info:
+            with client.websocket_connect("/ws?q=<script>alert(1)</script>"):
+                pass
+
+    assert exc_info.value.code == WS_CLOSE_SUSPICIOUS_ACTIVITY.code
+    assert exc_info.value.reason == WS_CLOSE_SUSPICIOUS_ACTIVITY.reason
+
+
+def test_guard_websocket_rejects_script_tag_in_header_when_active() -> None:
+    config = SecurityConfig(enable_redis=False, enable_penetration_detection=True)
+    app = _app_with_websocket(config)
+
+    with TestClient(app, client=("127.0.0.1", 20002)) as client:
+        with pytest.raises(WebSocketDisconnect) as exc_info:
+            with client.websocket_connect(
+                "/ws", headers={"X-Evil": "<script>alert(1)</script>"}
+            ):
+                pass
+
+    assert exc_info.value.code == WS_CLOSE_SUSPICIOUS_ACTIVITY.code
+    assert exc_info.value.reason == WS_CLOSE_SUSPICIOUS_ACTIVITY.reason
+
+
+def test_guard_websocket_rejects_script_tag_in_cookie_when_active() -> None:
+    config = SecurityConfig(enable_redis=False, enable_penetration_detection=True)
+    app = _app_with_websocket(config)
+
+    with TestClient(app, client=("127.0.0.1", 20003)) as client:
+        with pytest.raises(WebSocketDisconnect) as exc_info:
+            with client.websocket_connect(
+                "/ws", headers={"Cookie": "session=abc; x=<script>alert(1)</script>"}
+            ):
+                pass
+
+    assert exc_info.value.code == WS_CLOSE_SUSPICIOUS_ACTIVITY.code
+    assert exc_info.value.reason == WS_CLOSE_SUSPICIOUS_ACTIVITY.reason
+
+
+def test_guard_websocket_logs_and_accepts_script_tag_in_query_param_when_passive(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    config = SecurityConfig(
+        enable_redis=False, enable_penetration_detection=True, passive_mode=True
+    )
+    app = _app_with_websocket(config)
+
+    with caplog.at_level(logging.WARNING):
+        with TestClient(app, client=("127.0.0.1", 20004)) as client:
+            with client.websocket_connect(
+                "/ws?q=<script>alert(1)</script>"
+            ) as websocket:
+                assert websocket.receive_text() == "connected"
+
+    assert any("[PASSIVE MODE]" in r.message for r in caplog.records)
+
+
+def test_guard_websocket_logs_and_accepts_script_tag_in_header_when_passive(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    config = SecurityConfig(
+        enable_redis=False, enable_penetration_detection=True, passive_mode=True
+    )
+    app = _app_with_websocket(config)
+
+    with caplog.at_level(logging.WARNING):
+        with TestClient(app, client=("127.0.0.1", 20005)) as client:
+            with client.websocket_connect(
+                "/ws", headers={"X-Evil": "<script>alert(1)</script>"}
+            ) as websocket:
+                assert websocket.receive_text() == "connected"
+
+    assert any("[PASSIVE MODE]" in r.message for r in caplog.records)
+
+
+def test_guard_websocket_logs_and_accepts_script_tag_in_cookie_when_passive(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    config = SecurityConfig(
+        enable_redis=False, enable_penetration_detection=True, passive_mode=True
+    )
+    app = _app_with_websocket(config)
+
+    with caplog.at_level(logging.WARNING):
+        with TestClient(app, client=("127.0.0.1", 20006)) as client:
+            with client.websocket_connect(
+                "/ws", headers={"Cookie": "session=abc; x=<script>alert(1)</script>"}
+            ) as websocket:
+                assert websocket.receive_text() == "connected"
+
+    assert any("[PASSIVE MODE]" in r.message for r in caplog.records)
+
+
+def test_guard_websocket_redacts_sensitive_query_param_when_attack_detected(
+    caplog: pytest.LogCaptureFixture,
+    captured_events: list[dict[str, Any]],
+) -> None:
+    captured_on_block: list[dict[str, Any]] = []
+    config = SecurityConfig(
+        enable_redis=False,
+        enable_penetration_detection=True,
+        log_sensitive_params=frozenset({"password"}),
+        log_sensitive_headers=frozenset({"password"}),
+        on_block=lambda request, payload: captured_on_block.append(payload),
+    )
+    app = _app_with_websocket(config)
+
+    with caplog.at_level(logging.WARNING):
+        with TestClient(app, client=("127.0.0.1", 20007)) as client:
+            with pytest.raises(WebSocketDisconnect) as exc_info:
+                with client.websocket_connect(
+                    "/ws?password=SUPERSECRET&x=<script>alert(1)</script>"
+                ):
+                    pass
+
+    assert exc_info.value.code == WS_CLOSE_SUSPICIOUS_ACTIVITY.code
+    assert exc_info.value.reason == WS_CLOSE_SUSPICIOUS_ACTIVITY.reason
+    assert not any("SUPERSECRET" in r.message for r in caplog.records)
+    assert not any("SUPERSECRET" in str(event) for event in captured_events)
+    assert captured_on_block
+    assert not any("SUPERSECRET" in str(payload) for payload in captured_on_block)
+
+
+def test_guard_websocket_redacts_sensitive_header_when_attack_detected(
+    caplog: pytest.LogCaptureFixture,
+    captured_events: list[dict[str, Any]],
+) -> None:
+    captured_on_block: list[dict[str, Any]] = []
+    config = SecurityConfig(
+        enable_redis=False,
+        enable_penetration_detection=True,
+        log_sensitive_params=frozenset({"password"}),
+        log_sensitive_headers=frozenset({"password"}),
+        on_block=lambda request, payload: captured_on_block.append(payload),
+    )
+    app = _app_with_websocket(config)
+
+    with caplog.at_level(logging.WARNING):
+        with TestClient(app, client=("127.0.0.1", 20008)) as client:
+            with pytest.raises(WebSocketDisconnect) as exc_info:
+                with client.websocket_connect(
+                    "/ws",
+                    headers={
+                        "Password": "SUPERSECRET",
+                        "X-Evil": "<script>alert(1)</script>",
+                    },
+                ):
+                    pass
+
+    assert exc_info.value.code == WS_CLOSE_SUSPICIOUS_ACTIVITY.code
+    assert exc_info.value.reason == WS_CLOSE_SUSPICIOUS_ACTIVITY.reason
+    assert not any("SUPERSECRET" in r.message for r in caplog.records)
+    assert not any("SUPERSECRET" in str(event) for event in captured_events)
+    assert captured_on_block
+    assert not any("SUPERSECRET" in str(payload) for payload in captured_on_block)
+
+
+def test_guard_websocket_redacts_sensitive_cookie_when_attack_detected(
+    caplog: pytest.LogCaptureFixture,
+    captured_events: list[dict[str, Any]],
+) -> None:
+    captured_on_block: list[dict[str, Any]] = []
+    config = SecurityConfig(
+        enable_redis=False,
+        enable_penetration_detection=True,
+        log_sensitive_params=frozenset({"password"}),
+        log_sensitive_headers=frozenset({"password"}),
+        on_block=lambda request, payload: captured_on_block.append(payload),
+    )
+    app = _app_with_websocket(config)
+
+    with caplog.at_level(logging.WARNING):
+        with TestClient(app, client=("127.0.0.1", 20009)) as client:
+            with pytest.raises(WebSocketDisconnect) as exc_info:
+                with client.websocket_connect(
+                    "/ws",
+                    headers={
+                        "Cookie": (
+                            "session=abc; password=SUPERSECRET; "
+                            "x=<script>alert(1)</script>"
+                        )
+                    },
+                ):
+                    pass
+
+    assert exc_info.value.code == WS_CLOSE_SUSPICIOUS_ACTIVITY.code
+    assert exc_info.value.reason == WS_CLOSE_SUSPICIOUS_ACTIVITY.reason
+    assert not any("SUPERSECRET" in r.message for r in caplog.records)
+    assert not any("SUPERSECRET" in str(event) for event in captured_events)
+    assert captured_on_block
+    assert not any("SUPERSECRET" in str(payload) for payload in captured_on_block)
+
+
+def test_guard_websocket_skips_detection_for_excluded_path() -> None:
+    config = SecurityConfig(
+        enable_redis=False,
+        enable_penetration_detection=True,
+        exclude_paths=["/ws"],
+    )
+    app = _app_with_websocket(config)
+
+    with TestClient(app, client=("127.0.0.1", 20010)) as client:
+        with client.websocket_connect("/ws?q=<script>alert(1)</script>") as websocket:
+            assert websocket.receive_text() == "connected"
+
+
+def test_guard_websocket_skips_detection_for_whitelisted_ip() -> None:
+    config = SecurityConfig(
+        enable_redis=False,
+        enable_penetration_detection=True,
+        whitelist=("127.0.0.1",),
+    )
+    app = _app_with_websocket(config)
+
+    with TestClient(app, client=("127.0.0.1", 20011)) as client:
+        with client.websocket_connect("/ws?q=<script>alert(1)</script>") as websocket:
+            assert websocket.receive_text() == "connected"
+
+
+def test_guard_websocket_auto_bans_ip_after_repeated_suspicious_activity() -> None:
+    config = SecurityConfig(
+        enable_redis=False,
+        enable_penetration_detection=True,
+        enable_ip_banning=True,
+        auto_ban_threshold=2,
+        auto_ban_duration=60,
+    )
+    app = _app_with_websocket(config)
+
+    with TestClient(app, client=("203.0.113.77", 20012)) as client:
+        for _ in range(2):
+            with pytest.raises(WebSocketDisconnect) as exc_info:
+                with client.websocket_connect("/ws?q=<script>alert(1)</script>"):
+                    pass
+            assert exc_info.value.code == WS_CLOSE_SUSPICIOUS_ACTIVITY.code
+
+        with pytest.raises(WebSocketDisconnect) as exc_info:
+            with client.websocket_connect("/ws?q=<script>alert(1)</script>"):
+                pass
+
+    assert exc_info.value.code == 1008
+    assert exc_info.value.reason == "IP banned"
+
+
+def test_make_guard_websocket_rejects_script_tag_without_middleware() -> None:
+    config = SecurityConfig(enable_redis=False, enable_penetration_detection=True)
+    app = _app_with_factory_websocket(config)
+
+    with TestClient(app, client=("127.0.0.1", 20013)) as client:
+        with pytest.raises(WebSocketDisconnect) as exc_info:
+            with client.websocket_connect("/ws?q=<script>alert(1)</script>"):
+                pass
+
+    assert exc_info.value.code == WS_CLOSE_SUSPICIOUS_ACTIVITY.code
+    assert exc_info.value.reason == WS_CLOSE_SUSPICIOUS_ACTIVITY.reason
+
+
+def test_websocket_detection_middleware_resolves_geo_ip_handler_for_country_rules() -> (
+    None
+):
+    handler = IPInfoManager("test-token", None)
+    config = SecurityConfig(
+        enable_redis=False,
+        blocked_countries=frozenset({"CN"}),
+        geo_ip_handler=handler,
+    )
+
+    middleware = _WebSocketDetectionMiddleware(config)
+
+    assert middleware.geo_ip_handler is handler
+
+
+def test_websocket_detection_middleware_has_no_geo_ip_handler_by_default() -> None:
+    config = SecurityConfig(enable_redis=False)
+
+    middleware = _WebSocketDetectionMiddleware(config)
+
+    assert middleware.geo_ip_handler is None
+
+
+async def test_websocket_detection_middleware_refresh_cloud_ip_ranges_noop() -> None:
+    config = SecurityConfig(enable_redis=False)
+    middleware = _WebSocketDetectionMiddleware(config)
+
+    await middleware.refresh_cloud_ip_ranges()
+
+
+async def _raise_detection_redis_error(*args: Any, **kwargs: Any) -> Any:
+    raise GuardRedisError(503, "Redis operation failed")
+
+
+def test_guard_websocket_closes_with_1013_when_detection_fails_secure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "guard_core.core.checks.helpers.detect_penetration_attempt",
+        _raise_detection_redis_error,
+    )
+    config = SecurityConfig(
+        enable_redis=False,
+        enable_penetration_detection=True,
+        redis_fail_open=False,
+        fail_secure=True,
+    )
+    app = _app_with_websocket(config)
+
+    with TestClient(app, client=("127.0.0.1", 20016)) as client:
+        with pytest.raises(WebSocketDisconnect) as exc_info:
+            with client.websocket_connect("/ws"):
+                pass
+
+    assert exc_info.value.code == WS_CLOSE_SECURITY_CHECK_FAILED.code
+    assert exc_info.value.reason == WS_CLOSE_SECURITY_CHECK_FAILED.reason
+
+
+def test_guard_websocket_shares_auto_ban_counter_with_http_pipeline() -> None:
+    config = SecurityConfig(
+        enable_redis=False,
+        enable_penetration_detection=True,
+        enable_ip_banning=True,
+        auto_ban_threshold=5,
+        auto_ban_duration=60,
+    )
+    app = FastAPI()
+    app.add_middleware(SecurityMiddleware, config=config)
+
+    @app.get("/http")
+    async def http_endpoint() -> dict[str, bool]:
+        return {"ok": True}
+
+    @app.websocket("/ws")
+    async def websocket_endpoint(
+        websocket: WebSocket, _: None = Depends(guard_websocket)
+    ) -> None:
+        await websocket.accept()
+        await websocket.send_text("connected")
+
+    with TestClient(app, client=("198.51.100.201", 20017)) as client:
+        for _ in range(3):
+            response = client.get("/http?q=<script>alert(1)</script>")
+            assert response.status_code == 400
+
+        for _ in range(2):
+            with pytest.raises(WebSocketDisconnect) as exc_info:
+                with client.websocket_connect("/ws?q=<script>alert(1)</script>"):
+                    pass
+            assert exc_info.value.code == WS_CLOSE_SUSPICIOUS_ACTIVITY.code
+
+        with pytest.raises(WebSocketDisconnect) as exc_info:
+            with client.websocket_connect("/ws?q=<script>alert(1)</script>"):
+                pass
+
+    assert exc_info.value.code == WS_CLOSE_IP_BANNED.code
+    assert exc_info.value.reason == WS_CLOSE_IP_BANNED.reason
+
+
+def test_make_guard_websocket_keeps_its_own_bucket_without_middleware() -> None:
+    config = SecurityConfig(
+        enable_redis=False,
+        enable_penetration_detection=True,
+        enable_ip_banning=True,
+        auto_ban_threshold=5,
+        auto_ban_duration=60,
+    )
+    app = FastAPI()
+
+    @app.websocket("/ws")
+    async def websocket_endpoint(
+        websocket: WebSocket, _: None = Depends(make_guard_websocket(config))
+    ) -> None:
+        await websocket.accept()
+        await websocket.send_text("connected")
+
+    with TestClient(app, client=("198.51.100.202", 20018)) as client:
+        for _ in range(3):
+            with pytest.raises(WebSocketDisconnect) as exc_info:
+                with client.websocket_connect("/ws?q=<script>alert(1)</script>"):
+                    pass
+            assert exc_info.value.code == WS_CLOSE_SUSPICIOUS_ACTIVITY.code
+
+    detection_middleware = websocket_module._get_ws_detection_middleware(config)
+    assert detection_middleware.suspicious_request_counts["198.51.100.202"]
+
+
+def test_guard_websocket_ignores_http_pipeline_without_a_detection_check() -> None:
+    config = SecurityConfig(enable_redis=False, enable_penetration_detection=False)
+    app = FastAPI()
+    app.add_middleware(SecurityMiddleware, config=config)
+
+    @app.get("/http")
+    async def http_endpoint() -> dict[str, bool]:
+        return {"ok": True}
+
+    @app.websocket("/ws")
+    async def websocket_endpoint(
+        websocket: WebSocket, _: None = Depends(guard_websocket)
+    ) -> None:
+        await websocket.accept()
+        await websocket.send_text("connected")
+
+    with TestClient(app, client=("127.0.0.1", 20019)) as client:
+        assert client.get("/http").status_code == 200
+        with client.websocket_connect("/ws") as websocket:
+            assert websocket.receive_text() == "connected"
+
+
+def test_resolve_shared_suspicious_counts_returns_none_without_a_matching_check() -> (
+    None
+):
+    from types import SimpleNamespace
+
+    from guard_core.core.checks.pipeline import SecurityCheckPipeline
+
+    from guard._middleware_state import MiddlewareState, register_state
+
+    config = SecurityConfig(enable_redis=False)
+    register_state(
+        config,
+        None,
+        MiddlewareState(
+            security_pipeline=SecurityCheckPipeline([]),
+            composite_handler=None,
+            event_bus=None,
+            metrics_collector=None,
+            response_factory=None,
+            validator=None,
+            bypass_handler=None,
+            behavioral_processor=None,
+            handler_initializer=SimpleNamespace(redis_handler=None),
+            agent_handler=None,
+        ),
+    )
+
+    result = websocket_module._resolve_shared_suspicious_counts(FastAPI(), config)
+
+    assert result is None
