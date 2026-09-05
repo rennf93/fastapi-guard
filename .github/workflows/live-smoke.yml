@@ -1,0 +1,75 @@
+name: Live Smoke
+
+on:
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      LIVE_SMOKE_PROJECT: fastapi-guard-live-smoke
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.10'
+
+      - name: Install uv
+        run: |
+          pip install uv
+
+      - name: Install dependencies
+        run: |
+          uv sync --extra dev
+
+      - name: Build the fastapi-guard wheel from this checkout
+        run: |
+          uv build --wheel --out-dir tests/live_smoke/stack/wheels
+
+      - name: Copy the example app for the live-smoke stack
+        run: |
+          uv run python tests/live_smoke/copy_example_app.py
+
+      - name: Patch the example app for scenario-driven config overrides
+        run: |
+          uv run python tests/live_smoke/patch_example_config.py
+
+      - name: Bring the live-smoke stack up
+        run: |
+          cd tests/live_smoke/stack
+          docker compose -p "$LIVE_SMOKE_PROJECT" up --build --wait
+
+      - name: Run the live-smoke driver
+        shell: bash
+        env:
+          LIVE_SMOKE: '1'
+          REDIS_URL: redis://localhost:16379
+          REDIS_PREFIX: 'test:fastapi_guard:'
+        run: |
+          mkdir -p tests/live_smoke/live-smoke-report
+          uv run pytest tests/live_smoke -m live_smoke -v \
+            --junitxml=tests/live_smoke/live-smoke-report/junit.xml \
+            2>&1 | tee tests/live_smoke/live-smoke-report/driver.log
+
+      - name: Bring the live-smoke stack down
+        if: always()
+        run: |
+          cd tests/live_smoke/stack
+          docker compose -p "$LIVE_SMOKE_PROJECT" down -v --remove-orphans
+
+      - name: Upload live-smoke report and container logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: live-smoke-report
+          path: tests/live_smoke/live-smoke-report/
+          if-no-files-found: warn

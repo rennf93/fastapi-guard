@@ -1,0 +1,5 @@
+stack/app/
+stack/wheels/*.whl
+stack/scenario_data/*
+!stack/scenario_data/.keep
+live-smoke-report/

@@ -117,7 +117,7 @@ allow-direct-references = true
 
 [tool.ruff]
 target-version = "py310"
-exclude = ["vulture_whitelist.py", ".venv"]
+exclude = ["vulture_whitelist.py", ".venv", "tests/live_smoke/stack/app"]
 
 [tool.ruff.lint]
 select = [
@@ -166,7 +166,7 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
-exclude = ["vulture_whitelist.py", ".venv", "manual_testing", "ZZZ"]
+exclude = ["vulture_whitelist.py", ".venv", "manual_testing", "ZZZ", "tests/live_smoke/stack/app"]
 
 
 [tool.pymarkdown.system]
@@ -213,7 +213,7 @@ enabled = false
 
 [tool.vulture]
 paths = ["guard", "tests", "vulture_whitelist.py"]
-exclude = ["**/conftest.py", ".venv"]
+exclude = ["**/conftest.py", ".venv", "tests/live_smoke/stack/app"]
 min_confidence = 100
 ignore_decorators = [
     "@app.route",

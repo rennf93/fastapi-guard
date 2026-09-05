@@ -75,13 +75,13 @@ The same exists for headers and JSON body keys (`excluded_detection_headers`, `e
 from guard import SecurityDecorator
 
 guard_deco = SecurityDecorator(config)
-app.state.guard_decorator = guard_deco  # the middleware reads route decorators from here
+# the middleware reads route decorators from here
+app.state.guard_decorator = guard_deco
 
 
 @guard_deco.detection_exclusion(params={"redirect_uri", "post_logout_redirect_uri"})
 @app.get("/oauth/authorize")
-async def authorize():
-    ...
+async def authorize(): ...
 ```
 
 Everything else on the request is still scanned.
