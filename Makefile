@@ -234,6 +234,18 @@ high-load-stress-test:
 	@docker compose down --rmi all --remove-orphans -v
 	@docker system prune -f
 
+# Live smoke test
+.PHONY: live-smoke
+live-smoke:
+	@mkdir -p tests/live_smoke/stack/wheels && find tests/live_smoke/stack/wheels -name 'fastapi_guard-*.whl' -delete
+	@uv build --wheel --out-dir tests/live_smoke/stack/wheels
+	@uv run python tests/live_smoke/copy_example_app.py
+	@uv run python tests/live_smoke/patch_example_config.py
+	@LIVE_SMOKE=1 uv run pytest tests/live_smoke -m live_smoke -v; \
+	STATUS=$$?; \
+	(cd tests/live_smoke/stack && docker compose -p fastapi-guard-live-smoke down -v --remove-orphans) >/dev/null 2>&1; \
+	exit $$STATUS
+
 # Serve docs
 .PHONY: serve-docs
 serve-docs:

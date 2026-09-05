@@ -53,8 +53,8 @@ async def _clear_middleware_state_registry() -> AsyncGenerator[None, None]:
     clear_state_registry()
 
 
-REDIS_URL = str(os.getenv("REDIS_URL"))
-REDIS_PREFIX = str(os.getenv("REDIS_PREFIX"))
+REDIS_URL = os.getenv("REDIS_URL") or "redis://localhost:6379"
+REDIS_PREFIX = os.getenv("REDIS_PREFIX") or "test:fastapi_guard:"
 
 
 @pytest.fixture(autouse=True)

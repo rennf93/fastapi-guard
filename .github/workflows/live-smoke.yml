@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    env:
+      LIVE_SMOKE_PROJECT: fastapi-guard-live-smoke
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -43,12 +46,14 @@ jobs:
       - name: Bring the live-smoke stack up
         run: |
           cd tests/live_smoke/stack
-          docker compose -p fastapi-guard-live-smoke up --build --wait
+          docker compose -p "$LIVE_SMOKE_PROJECT" up --build --wait
 
       - name: Run the live-smoke driver
         shell: bash
         env:
           LIVE_SMOKE: '1'
+          REDIS_URL: redis://localhost:16379
+          REDIS_PREFIX: 'test:fastapi_guard:'
         run: |
           mkdir -p tests/live_smoke/live-smoke-report
           uv run pytest tests/live_smoke -m live_smoke -v \
@@ -59,7 +64,7 @@ jobs:
         if: always()
         run: |
           cd tests/live_smoke/stack
-          docker compose -p fastapi-guard-live-smoke down -v --remove-orphans
+          docker compose -p "$LIVE_SMOKE_PROJECT" down -v --remove-orphans
 
       - name: Upload live-smoke report and container logs
         if: always()

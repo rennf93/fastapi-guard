@@ -210,7 +210,9 @@ class Stack:
     def _flush_smoke_state(self) -> None:
         client = make_redis_client()
         try:
-            client.flushdb()
+            keys = list(client.scan_iter(match="smoke:*"))
+            if keys:
+                client.delete(*keys)
         finally:
             client.close()
 
