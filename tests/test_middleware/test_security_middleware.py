@@ -792,6 +792,12 @@ async def test_excluded_paths() -> None:
         assert response.status_code == status.HTTP_200_OK
 
 
+async def _await_scheduled_cloud_refresh() -> None:
+    task = cloud_handler._refresh_task
+    if task is not None and not task.done():
+        await task
+
+
 @pytest.mark.asyncio
 async def test_cloud_ip_blocking_with_refresh() -> None:
     """Test cloud IP blocking with refresh functionality"""
@@ -835,6 +841,7 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
             return Response("OK")
 
         await middleware.dispatch(request, mock_call_next)
+        await _await_scheduled_cloud_refresh()
         mock_refresh.assert_called_once()
 
         mock_refresh.reset_mock()
@@ -854,6 +861,7 @@ async def test_cloud_ip_blocking_with_refresh() -> None:
         patch.object(cloud_handler, "is_cloud_ip", return_value=False),
     ):
         await middleware.dispatch(request, mock_call_next)
+        await _await_scheduled_cloud_refresh()
         assert mock_refresh_async.await_count >= 1
 
 
