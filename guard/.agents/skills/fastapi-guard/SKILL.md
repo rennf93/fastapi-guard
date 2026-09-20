@@ -21,6 +21,15 @@ Security middleware for FastAPI: IP filtering, rate limiting, signature-based at
 * Passive mode: `passive_mode=True` logs but never blocks; see [Passive Mode](#passive-mode).
 * Guard Agent telemetry: `enable_agent=True` plus the `agent_*` fields; see [the agent integration reference](references/agent-integration.md).
 
+## Installation
+
+```bash
+uv add fastapi-guard                # or: pip install fastapi-guard
+pip install "fastapi-guard[agent]"  # optional: guard-agent SaaS telemetry
+```
+
+The import package is `guard` (distribution name `fastapi-guard`). Supports Python 3.10-3.14.
+
 ## Setup
 
 ```python
@@ -179,6 +188,14 @@ config = SecurityConfig(
 
 The buffer/flush defaults (100 events, 30s) are safe. Do not raise `agent_buffer_size` toward thousands while shortening `agent_flush_interval`; see [the agent integration reference](references/agent-integration.md) for the 256 KiB ingestion cap and 413 split-or-drop behavior.
 
+## Footguns
+
+* **Keep `agent_buffer_size` small.** The SaaS ingestion endpoint caps request bodies at 256 KiB. A large buffer that flushes a giant batch triggers a 413 and forces a split-or-drop cascade; do not raise `agent_buffer_size` toward thousands while shortening `agent_flush_interval`. The defaults (100 events, 30s) are safe.
+* **Two middleware instances sharing one `SecurityConfig` do not necessarily share a pipeline.** Shared state is keyed on both the config instance and the resolved decorator handler; two apps decorating different routes must not share a pipeline, or the second would silently inherit checks the first app's routes eliminated. See [Setup](#setup).
+* **`route_resolution_strict=True` turns unknown paths into 500s, not 404s.** Requests to paths the app does not serve cannot resolve a route, so strict mode rejects them; enable it only when every request must be attributable to a known route.
+* **`require_auth`/`api_key_auth` without a verifier 401s fail-closed.** Supply `verifier=` per route or `SecurityConfig.auth_verifier` globally. `require_authorization_header(scheme=...)` is presence-only, is NOT authentication, and cannot be combined with either.
+* **`passive_mode=True` never blocks.** Every check logs and emits events but lets the request pass; do not assume protection while trialing rules in passive mode.
+
 ## Exports
 
 `guard` re-exports the public surface from `guard_core`: `SecurityMiddleware`, `SecurityConfig`, `SecurityDecorator`, `RouteConfig`, `BehaviorRule`, `BehaviorTracker`, `IPBanManager`, `IPInfoManager`, `RateLimitManager`, `RedisManager`, `RedisHandlerProtocol`, `GeoIPHandler`, `GuardRequest`, `GuardResponse`, `GuardResponseFactory`, `SecurityHeadersManager`, `CloudManager`, and the singletons `cloud_handler`, `ip_ban_manager`, `rate_limit_handler`, `redis_handler`, `security_headers_manager`, `sus_patterns_handler`.
@@ -189,3 +206,13 @@ The buffer/flush defaults (100 events, 30s) are safe. Do not raise `agent_buffer
 * Playground: <https://playground.guard-core.com>
 * Dashboard: <https://app.guard-core.com>
 * Use `uv` for package management and Ruff for linting when applicable.
+
+## Related Projects
+
+* [guard-core](https://github.com/rennf93/guard-core): framework-agnostic security engine this adapter wraps.
+* [flaskapi-guard](https://github.com/rennf93/flaskapi-guard): Flask extension adapter (sync mirror).
+* [djapi-guard](https://github.com/rennf93/djapi-guard): Django middleware adapter (sync mirror).
+* [tornadoapi-guard](https://github.com/rennf93/tornadoapi-guard): Tornado handler/middleware adapter.
+* [guard-agent](https://github.com/rennf93/guard-agent): telemetry client used by `enable_agent=True`.
+* [guard-core-mcp](https://github.com/rennf93/guard-core-mcp): MCP server for config validation and docs search.
+* [guard-core-app](https://github.com/rennf93/guard-core-app): SaaS platform the agent reports to.
