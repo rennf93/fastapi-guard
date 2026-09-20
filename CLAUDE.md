@@ -1,5 +1,4 @@
 # AGENTS.md
-
 Guidance for AI agents (including Claude Code) working in this repository.
 
 ## Project Overview
