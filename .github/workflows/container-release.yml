@@ -33,28 +33,6 @@ jobs:
             echo "IS_RELEASE=false" >> $GITHUB_ENV
           fi
 
-      - name: Send Initial Slack Message
-        id: send_initial_slack_release
-        uses: rennf93/good-comms@master
-        with:
-          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
-          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
-          STATUS: 'Started'
-          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
-          AUTHOR_NAME: 'FastAPI Guard - Containerized Release'
-          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
-          AUTHOR_ICON: ':whale:'
-          TITLE: 'Containerized Release Started'
-          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
-          MESSAGE: |
-              .
-              *${{ env.IS_RELEASE == 'true' && format('NEW VERSION v{0}', env.VERSION) || 'EXAMPLE CODE CHANGES' }} TRIGGERED CONTAINERIZED RELEASE!*
-
-              Commit:
-              ${{ github.event.head_commit.message }}
-              .
-          COLOR: warning
-
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
@@ -95,58 +73,3 @@ jobs:
             docker push ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:${{ env.VERSION }}
           fi
 
-      - name: Notify Success on Slack Channel
-        uses: rennf93/good-comms@master
-        with:
-          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
-          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
-          STATUS: 'Success'
-          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
-          AUTHOR_NAME: 'FastAPI Guard - Containerized Release'
-          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
-          AUTHOR_ICON: ':gem:'
-          TITLE: 'Containerized Release Successful'
-          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/pkgs/container/fastapi-guard'
-          MESSAGE: |
-            .
-            *Containerized Release ${{ env.IS_RELEASE == 'true' && format('v{0}', env.VERSION) || '(from code changes)' }} Published to GHCR!*
-            .
-            Example App: `ghcr.io/${{ github.repository_owner }}/fastapi-guard-example:latest`
-            ${{ env.IS_RELEASE == 'true' && format('Version tag: `ghcr.io/{0}/fastapi-guard-example:{1}`', github.repository_owner, env.VERSION) || '' }}
-
-            Commit message:
-              ${{ github.event.head_commit.message }}
-
-            Commit URL:
-              ${{ github.event.head_commit.url }}
-            .
-          COLOR: good
-          SLACK_THREAD_TS: ${{ steps.send_initial_slack_release.outputs.SLACK_THREAD_TS }}
-
-      - name: Send Failure Notification to Slack
-        if: failure()
-        uses: rennf93/good-comms@master
-        with:
-          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
-          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
-          STATUS: 'Failed'
-          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
-          AUTHOR_NAME: 'FastAPI Guard - Containerized Release'
-          AUTHOR_LINK: 'https://github.com/rennf93/fastapi-guard'
-          AUTHOR_ICON: ':skull:'
-          TITLE: 'Containerized Release Failed'
-          TITLE_LINK: 'https://github.com/rennf93/fastapi-guard/actions'
-          MESSAGE: |
-            .
-            *Containerized Release ${{ env.IS_RELEASE == 'true' && format('v{0}', env.VERSION) || '(from code changes)' }} Failed!*
-            .
-            Containerized Release failed for commit:
-              ${{ github.event.head_commit.message }}
-
-            Commit URL:
-              ${{ github.event.head_commit.url }}
-
-            Please check the logs for more details.
-            .
-          COLOR: danger
-          SLACK_THREAD_TS: ${{ steps.send_initial_slack_release.outputs.SLACK_THREAD_TS }}
