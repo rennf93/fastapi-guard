@@ -10,6 +10,20 @@ Release Notes
 
 ___
 
+v8.0.1 (2026-09-23)
+-------------------
+
+CI hardening, live smoke suite, agent docs; guard-core 4.0.4 tracking (v8.0.1)
+------------------------------------------------------------------------------
+
+- **CI** - Added a DockSec container scan with SARIF upload to the pipeline (#138) and removed the Slack notification steps from all workflows.
+- **CI** - New live smoke suite (`tests/live_smoke/`): a Docker Compose stack (nginx, gunicorn, Redis) running the full example app is exercised against PRs, and a nightly upstream drift gate builds the suite against guard-core master so engine-side regressions surface before a release instead of after (#134).
+- **Fixed (tests)** - `test_cloud_ip_blocking_with_logging` (`tests/test_middleware/test_security_middleware.py`) now awaits the scheduled background cloud-IP refresh before asserting instead of relying on a stale Redis handler left behind by another test to suspend the dispatch (#136).
+- **Documentation** - Added `AGENTS.md`/`CLAUDE.md` agent guidance and extended the fastapi-guard package skill.
+- **Compatibility** - No production code changed: the delta since 8.0.0 is CI, tests and docs only, hence the patch bump. The `guard-core>=4.0.0` floor is unchanged and this release tracks the guard-core 4.0.4 engine.
+
+___
+
 v8.0.0 (2026-09-04)
 -------------------
 
