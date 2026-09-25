@@ -408,7 +408,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             sub_routes = self._sub_routes(r)
             if not sub_routes:
                 return r
-            mounted = getattr(r, "app", None)
+            # A Mount with middleware keeps the mounted app, whose routes these are, in
+            # _base_app and the middleware-wrapped one in app.
+            mounted = getattr(r, "_base_app", getattr(r, "app", None))
             found = self._match_router(
                 sub_routes,
                 child_scope,

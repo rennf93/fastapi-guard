@@ -1,6 +1,9 @@
 import pytest
 from fastapi import APIRouter, FastAPI
 from httpx import ASGITransport, AsyncClient
+from starlette.middleware import Middleware
+from starlette.middleware.gzip import GZipMiddleware
+from starlette.routing import Mount
 
 from guard import SecurityConfig, SecurityDecorator
 from guard.middleware import SecurityMiddleware
@@ -29,6 +32,7 @@ def _app(
     app = FastAPI(redirect_slashes=redirect_slashes)
     router = APIRouter(prefix="/api")
     mounted = FastAPI(redirect_slashes=mounted_redirect_slashes)
+    wrapped = FastAPI(redirect_slashes=mounted_redirect_slashes)
 
     @app.post("/triggers/{trigger_id}")
     @decorator.bypass(["penetration"])
@@ -50,8 +54,16 @@ def _app(
     async def deep(deep_id: str) -> dict[str, str]:
         return {"id": deep_id}
 
+    @wrapped.post("/deep/{deep_id}")
+    @decorator.bypass(["penetration"])
+    async def wrapped_deep(deep_id: str) -> dict[str, str]:
+        return {"id": deep_id}
+
     app.include_router(router)
     app.mount("/sub", mounted)
+    app.router.routes.append(
+        Mount("/wrapped", app=wrapped, middleware=[Middleware(GZipMiddleware)])
+    )
     app.add_middleware(SecurityMiddleware, config=config)
     app.state.guard_decorator = decorator
     return app
@@ -72,6 +84,7 @@ async def _post(app: FastAPI, path: str, body: dict[str, str]) -> tuple[int, str
         ("/items", "/items/"),
         ("/api/things/1/", "/api/things/1"),
         ("/sub/deep/1/", "/sub/deep/1"),
+        ("/wrapped/deep/1/", "/wrapped/deep/1"),
     ],
 )
 async def test_other_slash_form_gets_the_route_config(
@@ -94,6 +107,7 @@ async def test_path_without_a_route_in_either_form_keeps_the_global_checks() -> 
         (False, True, "/api/things/1/", (400, "")),
         (False, True, "/sub/deep/1/", (307, "http://test/sub/deep/1")),
         (True, False, "/sub/deep/1/", (400, "")),
+        (True, False, "/wrapped/deep/1/", (400, "")),
     ],
 )
 async def test_each_router_decides_with_its_own_redirect_slashes(
