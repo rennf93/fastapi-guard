@@ -29,7 +29,7 @@ from guard_core.utils import (
 )
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response as StarletteResponse
-from starlette.routing import Match
+from starlette.routing import Match, get_route_path
 from starlette.types import ASGIApp
 
 from guard.adapters import (
@@ -361,7 +361,19 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         routes = getattr(app, "routes", None)
         if not routes:
             return None
-        return self._match_route(routes, request.scope, set())
+        route = self._match_route(routes, request.scope, set())
+        if route is not None:
+            return route
+        # Starlette's router answers a path no route matches with a 307 to the same
+        # path with the trailing slash toggled, when a route matches there, so that
+        # route's decorator config is the one that governs this request.
+        route_path = get_route_path(request.scope)
+        router = getattr(app, "router", None)
+        if route_path == "/" or not getattr(router, "redirect_slashes", False):
+            return None
+        path = request.scope["path"]
+        toggled = path.rstrip("/") if route_path.endswith("/") else f"{path}/"
+        return self._match_route(routes, {**request.scope, "path": toggled}, set())
 
     def _match_route(self, routes: Any, scope: Any, seen: set[Any]) -> Any:
         # This middleware is a BaseHTTPMiddleware, so it runs before the router
