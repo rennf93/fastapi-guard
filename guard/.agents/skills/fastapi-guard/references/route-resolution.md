@@ -18,6 +18,8 @@ Two `SecurityMiddleware` instances that share one `SecurityConfig` object share 
 
 `True`: the request is blocked when the route cannot be resolved. Use this when every request must be attributable to a known route so a resolution failure cannot silently skip per-route checks.
 
+A path that differs from a route's path only by a trailing slash resolves to that route when the app's router has `redirect_slashes` (the FastAPI default), since Starlette answers it with a 307 to that route. It gets the route's decorator config in both modes.
+
 ```python
 from guard import SecurityConfig
 

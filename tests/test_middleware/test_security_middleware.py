@@ -21,6 +21,7 @@ from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 from redis.exceptions import RedisError
 from starlette.applications import Starlette
+from starlette.routing import Match
 from starlette.testclient import TestClient
 
 from guard.adapters import StarletteGuardRequest, StarletteGuardResponse
@@ -2298,7 +2299,7 @@ async def test_resolve_route_matches_prefixed_included_router_route() -> None:
     assert route.endpoint is reconnect
 
 
-async def test_route_full_match_handles_missing_and_raising_matches() -> None:
+async def test_route_match_handles_missing_and_raising_matches() -> None:
     app = FastAPI()
     middleware = SecurityMiddleware(app, config=SecurityConfig())
 
@@ -2309,8 +2310,8 @@ async def test_route_full_match_handles_missing_and_raising_matches() -> None:
         def matches(self, scope: Any) -> Any:
             raise RuntimeError("boom")
 
-    assert middleware._route_full_match(_NoMatches(), {}) == (False, {})
-    assert middleware._route_full_match(_RaisingMatches(), {}) == (False, {})
+    assert middleware._route_match(_NoMatches(), {}) == (Match.NONE, {})
+    assert middleware._route_match(_RaisingMatches(), {}) == (Match.NONE, {})
 
 
 async def test_match_route_stops_on_self_nesting_router() -> None:
@@ -2350,14 +2351,14 @@ async def test_match_route_visits_duplicate_mount_subtrees_once(
     middleware = SecurityMiddleware(root, config=SecurityConfig())
 
     calls = 0
-    original = middleware._route_full_match
+    original = middleware._route_match
 
-    def counting_match(route: Any, scope: Any) -> tuple[bool, Any]:
+    def counting_match(route: Any, scope: Any) -> tuple[Match, Any]:
         nonlocal calls
         calls += 1
         return original(route, scope)
 
-    monkeypatch.setattr(middleware, "_route_full_match", counting_match)
+    monkeypatch.setattr(middleware, "_route_match", counting_match)
 
     from starlette.requests import Request as StarletteRequest
 
