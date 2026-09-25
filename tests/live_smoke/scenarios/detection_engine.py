@@ -1,4 +1,6 @@
 import json
+import random
+import zlib
 
 import httpx
 
@@ -407,4 +409,42 @@ def suspicious_detection_decorator_blocks_flagged_route(ctx: ScenarioContext) ->
     attack = ctx.client.get("/advanced/suspicious-patterns", params={"query": _XSS})
     assert attack.status_code == 400, (
         f"suspicious_detection did not flag an attack payload: {attack.status_code}"
+    )
+
+
+def _compressed_fragment_upload(client: httpx.Client) -> httpx.Response:
+    rng = random.Random(9)
+    junk = zlib.compress(bytes(rng.getrandbits(8) for _ in range(16384)), 9)
+    payload = junk + b"\x001 OR 1=1\x00"
+    return client.post(
+        "/test/sql-injection?query=hello",
+        files={"file": ("data.bin", payload, "application/octet-stream")},
+    )
+
+
+@scenario(
+    covers={"detection_binary_min_run_length"},
+    config={**_BASE, "detection_binary_min_run_length": 16},
+)
+def detection_binary_min_run_length_default_skips_compressed_fragment(
+    ctx: ScenarioContext,
+) -> None:
+    response = _compressed_fragment_upload(ctx.client)
+    assert response.status_code == 200, (
+        "detection_binary_min_run_length=16 still pattern-matched a short "
+        f"fragment inside a binary-dense upload: {response.status_code}"
+    )
+
+
+@scenario(
+    covers={"detection_binary_min_run_length"},
+    config={**_BASE, "detection_binary_min_run_length": 4},
+)
+def detection_binary_min_run_length_lowered_restores_fragment_detection(
+    ctx: ScenarioContext,
+) -> None:
+    response = _compressed_fragment_upload(ctx.client)
+    assert response.status_code == 400, (
+        "detection_binary_min_run_length=4 did not restore detection of a "
+        f"short fragment inside a binary-dense upload: {response.status_code}"
     )
