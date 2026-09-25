@@ -18,7 +18,10 @@ from pytest import TempPathFactory
 from guard._middleware_state import _STATE_REGISTRY, clear_state_registry
 from guard.middleware import SecurityMiddleware
 
-IPINFO_TOKEN = str(os.getenv("IPINFO_TOKEN"))
+# CI on fork PRs cannot read secrets, so fall back to a dummy token: the suite
+# mocks all IPInfo HTTP traffic and IPInfoManager only requires a non-empty
+# token at construction.
+IPINFO_TOKEN = os.getenv("IPINFO_TOKEN") or "test_token"
 
 ADVANCED_APP_DIR = Path(__file__).resolve().parents[1] / "examples" / "advanced_app"
 
