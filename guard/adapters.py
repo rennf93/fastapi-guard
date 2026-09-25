@@ -164,7 +164,7 @@ class StarletteGuardResponse:
 class StarletteResponseFactory:
     def create_response(self, content: str, status_code: int) -> StarletteGuardResponse:
         return StarletteGuardResponse(
-            Response(content=content, status_code=status_code)
+            Response(content=content, status_code=status_code, media_type="text/plain")
         )
 
     def create_redirect_response(
