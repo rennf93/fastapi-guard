@@ -87,5 +87,5 @@ jobs:
 
       - name: Run tests
         run: |
-          IPINFO_TOKEN='${{ secrets.IPINFO_TOKEN }}' REDIS_URL='redis://localhost:6379' REDIS_PREFIX='test:fastapi_guard:' uv run pytest -v --cov=guard --cov-branch
+          IPINFO_TOKEN='${{ secrets.IPINFO_TOKEN || 'test_token' }}' REDIS_URL='redis://localhost:6379' REDIS_PREFIX='test:fastapi_guard:' uv run pytest -v --cov=guard --cov-branch
 
