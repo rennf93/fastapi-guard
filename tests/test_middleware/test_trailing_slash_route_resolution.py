@@ -18,12 +18,17 @@ def _config(**overrides: object) -> SecurityConfig:
     )
 
 
-def _app(*, redirect_slashes: bool = True, **overrides: object) -> FastAPI:
+def _app(
+    *,
+    redirect_slashes: bool = True,
+    mounted_redirect_slashes: bool = True,
+    **overrides: object,
+) -> FastAPI:
     config = _config(**overrides)
     decorator = SecurityDecorator(config)
     app = FastAPI(redirect_slashes=redirect_slashes)
     router = APIRouter(prefix="/api")
-    mounted = FastAPI()
+    mounted = FastAPI(redirect_slashes=mounted_redirect_slashes)
 
     @app.post("/triggers/{trigger_id}")
     @decorator.bypass(["penetration"])
@@ -82,10 +87,27 @@ async def test_path_without_a_route_in_either_form_keeps_the_global_checks() -> 
     assert await _post(_app(), "/missing/", ATTACK_BODY) == (400, "")
 
 
-async def test_no_route_config_when_the_router_does_not_redirect() -> None:
-    app = _app(redirect_slashes=False)
+@pytest.mark.parametrize(
+    ("redirect_slashes", "mounted_redirect_slashes", "path", "expected"),
+    [
+        (False, True, "/triggers/abc/", (400, "")),
+        (False, True, "/api/things/1/", (400, "")),
+        (False, True, "/sub/deep/1/", (307, "http://test/sub/deep/1")),
+        (True, False, "/sub/deep/1/", (400, "")),
+    ],
+)
+async def test_each_router_decides_with_its_own_redirect_slashes(
+    redirect_slashes: bool,
+    mounted_redirect_slashes: bool,
+    path: str,
+    expected: tuple[int, str],
+) -> None:
+    app = _app(
+        redirect_slashes=redirect_slashes,
+        mounted_redirect_slashes=mounted_redirect_slashes,
+    )
 
-    assert await _post(app, "/triggers/abc/", ATTACK_BODY) == (400, "")
+    assert await _post(app, path, ATTACK_BODY) == expected
 
 
 @pytest.mark.parametrize(

@@ -361,19 +361,30 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         routes = getattr(app, "routes", None)
         if not routes:
             return None
-        route = self._match_route(routes, request.scope, set())
-        if route is not None:
+        redirect_slashes = getattr(
+            getattr(app, "router", app), "redirect_slashes", False
+        )
+        return self._match_router(routes, request.scope, set(), redirect_slashes)
+
+    def _match_router(
+        self, routes: Any, scope: Any, seen: set[Any], redirect_slashes: bool
+    ) -> Any:
+        # Starlette's router answers a path none of its routes match with a 307 to the
+        # same path with the trailing slash toggled, when a route matches there, so that
+        # route's decorator config is the one that governs this request. Each router
+        # decides with its own redirect_slashes: a mounted app for the paths under its
+        # mount, the including app for an included router's routes.
+        route = self._match_route(routes, scope, seen)
+        if route is not None or not redirect_slashes:
             return route
-        # Starlette's router answers a path no route matches with a 307 to the same
-        # path with the trailing slash toggled, when a route matches there, so that
-        # route's decorator config is the one that governs this request.
-        route_path = get_route_path(request.scope)
-        router = getattr(app, "router", None)
-        if route_path == "/" or not getattr(router, "redirect_slashes", False):
+        route_path = get_route_path(scope)
+        if route_path == "/" or any(
+            self._route_match(r, scope)[0] != Match.NONE for r in routes
+        ):
             return None
-        path = request.scope["path"]
+        path = scope["path"]
         toggled = path.rstrip("/") if route_path.endswith("/") else f"{path}/"
-        return self._match_route(routes, {**request.scope, "path": toggled}, set())
+        return self._match_route(routes, {**scope, "path": toggled}, seen)
 
     def _match_route(self, routes: Any, scope: Any, seen: set[Any]) -> Any:
         # This middleware is a BaseHTTPMiddleware, so it runs before the router
@@ -385,8 +396,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if not self._first_visit(seen, routes, scope):
             return None
         for r in routes:
-            matched, child = self._route_full_match(r, scope)
-            if not matched:
+            match, child = self._route_match(r, scope)
+            if match != Match.FULL:
                 continue
             r = self._unwrap_candidate(r)
             if getattr(r, "endpoint", None) is not None:
@@ -397,7 +408,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             sub_routes = self._sub_routes(r)
             if not sub_routes:
                 return r
-            found = self._match_route(sub_routes, child_scope, seen)
+            mounted = getattr(r, "app", None)
+            found = self._match_router(
+                sub_routes,
+                child_scope,
+                seen,
+                getattr(getattr(mounted, "router", mounted), "redirect_slashes", False),
+            )
             if found is not None:
                 return found
         return None
@@ -425,15 +442,15 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             or route
         )
 
-    def _route_full_match(self, route: Any, scope: Any) -> tuple[bool, Any]:
+    def _route_match(self, route: Any, scope: Any) -> tuple[Match, Any]:
         matches = getattr(route, "matches", None)
         if matches is None:
-            return False, {}
+            return Match.NONE, {}
         try:
             match, child = matches(scope)
         except Exception:
-            return False, {}
-        return match == Match.FULL, child
+            return Match.NONE, {}
+        return match, child
 
     def _sub_routes(self, route: Any) -> Any:
         # FastAPI's _IncludedRouter keeps sub-routes un-prefixed and only applies the
