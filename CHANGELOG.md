@@ -3,6 +3,14 @@ Release Notes
 
 ___
 
+Unreleased
+----------
+
+Live smoke: exempt_ips scenario (release prep for the guard-core exempt_ips engine release)
+-------------------------------------------------------------------------------------------
+
+- **Tests** - New `tests/live_smoke/scenarios/exempt_ips.py` covering the guard-core `exempt_ips` skip-list end to end through the live stack, required before the next fastapi-guard release tracks the guard-core release that ships the field (PR #118). Three scenarios: an exempt IP (the stack's fixed client IP, resolved from nginx's `X-Real-IP`) exceeding `rate_limit` 2 keeps getting 200 across the crossing while the pipeline writes no rate-limit bucket for it at all (`smoke:rate_limit:rate:<ip>` stays absent in Redis, pinning that the exempt skip sits ahead of the limiter), a penetration-detection payload from the exempt IP still gets 400 (exemption is not immunity); the same limit without `exempt_ips` throttles the identical request sequence at the crossing with 429 and leaves exactly the bucket the exempt run never wrote (the two scenarios form the exempt/non-exempt contrast the single-client harness expresses through paired configs); and an IP that is both exempt and blacklisted gets 403 (blacklist beats exemption). The scenario file is live now but red against PyPI guard-core (< 4.1.0): the config override key is ignored by the older engine's pydantic model, so the exempt scenario's no-throttle assertions fail until the guard-core release ships - matching the documented lockstep hold pattern (the v8.0.0 release was held until guard-core 4.0.0 shipped). Verified live against a locally built guard-core 4.1.0 wheel: `LIVE_SMOKE_ONLY_MODULES=exempt_ips` green (3/3 scenarios), full-module completeness check green.
+
 v8.0.1 (2026-09-23)
 -------------------
 
