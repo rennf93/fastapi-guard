@@ -1,6 +1,6 @@
 [project]
 name = "fastapi_guard"
-version = "8.0.1"
+version = "8.0.2"
 description = "Production-ready security middleware for FastAPI — IP filtering, rate limiting, penetration detection, and 20+ per-route security decorators."
 authors = [
     {name = "Renzo Franceschini", email = "rennf93@users.noreply.github.com"}
@@ -37,7 +37,7 @@ keywords = [
 ]
 dependencies = [
     "fastapi>=0.109.0",
-    "guard-core>=4.0.0",
+    "guard-core>=4.1.0",
     "starlette>=0.35.0",
     "uvicorn",
 ]
