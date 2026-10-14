@@ -1,6 +1,6 @@
 site_name: FastAPI Guard
 site_description: Security middleware for FastAPI applications
-site_url: https://guard-core.github.io/fastapi-guard/latest/
+site_url: https://guard-core.github.io/fastapi-guard/
 repo_name: Guard-Core/fastapi-guard
 repo_url: https://github.com/Guard-Core/fastapi-guard
 edit_uri: edit/master/docs/
