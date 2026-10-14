@@ -5,6 +5,7 @@ import itertools
 from typing import Any
 
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from httpx import ASGITransport, AsyncClient
 
 from guard import PureASGISecurityMiddleware, SecurityConfig
@@ -437,3 +438,210 @@ def test_non_http_scopes_pass_through():
     middleware = PureASGISecurityMiddleware(ProbeApp(), config=_base_config())
     asyncio.run(middleware.__call__({"type": "lifespan"}, lambda: None, lambda _: None))
     assert calls == ["lifespan"]
+
+
+class _FakeAgent:
+    def __init__(self) -> None:
+        self.metrics: list[Any] = []
+
+    async def send_metric(self, metric: Any) -> None:
+        self.metrics.append(metric)
+
+
+def _metrics_app(config: SecurityConfig, agent: _FakeAgent) -> FastAPI:
+    from starlette.responses import StreamingResponse
+
+    app = FastAPI()
+    mw_holder: dict[str, Any] = {}
+
+    class Spy(PureASGISecurityMiddleware):
+        def __init__(self, app_, *, config):
+            super().__init__(app_, config=config)
+            self._engine.metrics_collector.agent_handler = agent
+            mw_holder["mw"] = self
+
+    app.add_middleware(Spy, config=config)
+
+    @app.get("/ok")
+    async def ok():
+        return {"ok": True}
+
+    @app.get("/boom")
+    async def boom():
+        return JSONResponse({"e": 1}, status_code=503)
+
+    @app.get("/stream")
+    async def stream():
+        async def gen():
+            for i in range(3):
+                yield f"chunk{i}".encode()
+
+        return StreamingResponse(gen())
+
+    return app
+
+
+def _metric_summary(agent: _FakeAgent) -> list[tuple[str, str | None]]:
+    return [(m.metric_type, m.tags.get("status")) for m in agent.metrics]
+
+
+def test_pure_asgi_emits_request_metrics_once():
+    agent = _FakeAgent()
+    config = _base_config(agent_enable_metrics=True)
+
+    async def runner():
+        transport = ASGITransport(
+            app=_metrics_app(config, agent), client=(_unique_ip(), 50000)
+        )
+        async with AsyncClient(transport=transport, base_url="http://t") as client:
+            assert (await client.get("/ok")).status_code == 200
+
+    asyncio.run(runner())
+    assert sorted(_metric_summary(agent)) == [
+        ("request_count", None),
+        ("response_time", "200"),
+    ]
+    rt = next(m for m in agent.metrics if m.metric_type == "response_time")
+    assert rt.value >= 0
+
+
+def test_pure_asgi_emits_error_rate_for_5xx():
+    agent = _FakeAgent()
+    config = _base_config(agent_enable_metrics=True)
+
+    async def runner():
+        transport = ASGITransport(
+            app=_metrics_app(config, agent), client=(_unique_ip(), 50000)
+        )
+        async with AsyncClient(transport=transport, base_url="http://t") as client:
+            assert (await client.get("/boom")).status_code == 503
+
+    asyncio.run(runner())
+    assert sorted(_metric_summary(agent)) == [
+        ("error_rate", "503"),
+        ("request_count", None),
+        ("response_time", "503"),
+    ]
+
+
+def test_pure_asgi_streaming_unbuffered_and_counted_once():
+    agent = _FakeAgent()
+    config = _base_config(agent_enable_metrics=True)
+    bodies: list[bytes] = []
+
+    async def runner():
+        mw = _metrics_app(config, agent)
+        sent: list[dict[str, Any]] = []
+
+        delivered = False
+
+        async def receive():
+            nonlocal delivered
+            if not delivered:
+                delivered = True
+                return {"type": "http.request", "body": b"", "more_body": False}
+            await asyncio.Event().wait()  # client stays connected
+
+        async def send(message):
+            sent.append(message)
+
+        scope = {
+            "type": "http",
+            "asgi": {"version": "3.0"},
+            "http_version": "1.1",
+            "method": "GET",
+            "path": "/stream",
+            "raw_path": b"/stream",
+            "query_string": b"",
+            "headers": [],
+            "client": (_unique_ip(), 50000),
+            "server": ("t", 80),
+            "scheme": "http",
+            "root_path": "",
+        }
+        await mw(scope, receive, send)
+        bodies.extend(
+            m["body"] for m in sent if m["type"] == "http.response.body" and m["body"]
+        )
+
+    asyncio.run(runner())
+    assert bodies == [b"chunk0", b"chunk1", b"chunk2"]
+    assert _metric_summary(agent).count(("request_count", None)) == 1
+
+
+def test_pure_asgi_no_metrics_when_downstream_sends_no_response():
+    agent = _FakeAgent()
+    config = _base_config(agent_enable_metrics=True)
+
+    async def silent_app(scope, receive, send):
+        return None
+
+    async def runner():
+        mw = PureASGISecurityMiddleware(silent_app, config=config)
+        mw._engine.metrics_collector.agent_handler = agent
+
+        async def receive():
+            return {"type": "http.request", "body": b"", "more_body": False}
+
+        async def send(message):
+            pass
+
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/x",
+            "raw_path": b"/x",
+            "query_string": b"",
+            "headers": [],
+            "client": (_unique_ip(), 50000),
+            "server": ("t", 80),
+            "scheme": "http",
+            "root_path": "",
+        }
+        await mw(scope, receive, send)
+
+    asyncio.run(runner())
+    assert agent.metrics == []
+
+
+def test_pure_asgi_response_time_stops_at_response_start(monkeypatch):
+    import guard.asgi as asgi_mod
+
+    agent = _FakeAgent()
+    config = _base_config(agent_enable_metrics=True)
+    clock = {"now": 100.0}
+    monkeypatch.setattr(asgi_mod.time, "time", lambda: clock["now"])
+
+    async def slow_body_app(scope, receive, send):
+        clock["now"] += 2.0
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        clock["now"] += 50.0
+        await send({"type": "http.response.body", "body": b"x"})
+
+    async def runner():
+        mw = PureASGISecurityMiddleware(slow_body_app, config=config)
+        mw._engine.metrics_collector.agent_handler = agent
+
+        async def receive():
+            return {"type": "http.request", "body": b"", "more_body": False}
+
+        async def send(message):
+            pass
+
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/x",
+            "raw_path": b"/x",
+            "query_string": b"",
+            "headers": [],
+            "client": (_unique_ip(), 50000),
+            "server": ("t", 80),
+            "scheme": "http",
+            "root_path": "",
+        }
+        await mw(scope, receive, send)
+
+    asyncio.run(runner())
+    rt = next(m for m in agent.metrics if m.metric_type == "response_time")
+    assert rt.value == 2.0
