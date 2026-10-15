@@ -15,7 +15,7 @@ The pure-ASGI metrics release: the pass-through path records request metrics lik
 
 ### Note
 
-- The `guard-core` dependency floor stays at `>=4.1.0`. The detection and dynamic rule fixes in guard-core 4.4.0 (Cookie header scanned per pair, the per-request scan budget, the semantic-only header opt-out and dynamic rule versions applied over the base config) reach this adapter by upgrading guard-core, for example `pip install -U guard-core`, with no change to this package.
+- The `guard-core` dependency floor rises from `>=4.1.0` to `>=4.4.0`, so upgrading fastapi-guard also brings the guard-core 4.4.0 detection and dynamic rule fixes (Cookie header scanned per pair, the per-request scan budget, the semantic-only header opt-out and dynamic rule versions applied over the base config).
 
 ### Chore
 
