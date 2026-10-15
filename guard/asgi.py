@@ -16,6 +16,9 @@ Response-side differences from `SecurityMiddleware`:
 
 - Security headers and CORS response headers are injected directly on the
   `http.response.start` message; responses stream through unbuffered.
+- Per-request metrics (request count, response time, error rate) are
+  emitted once the downstream app finishes the response. Response time is
+  measured until the response starts, the same as the classic middleware.
 - Decorator-driven response rules (return patterns) and
   `custom_response_modifier` need a materialized `Response` object and are
   only applied by the `BaseHTTPMiddleware`-based middleware.
@@ -95,10 +98,12 @@ class _HeaderInjectingSend:
         self._engine = engine
         self._request = request
         self.status_code: int | None = None
+        self.started_at: float | None = None
 
     async def __call__(self, message: Message) -> None:
         if message["type"] == "http.response.start":
             self.status_code = message["status"]
+            self.started_at = time.time()
             headers: dict[bytes, bytes] = {
                 key: value for key, value in message["headers"]
             }
@@ -211,6 +216,23 @@ class PureASGISecurityMiddleware:
 
         await self._call_downstream(
             scope, caching_receive.replay(), wrapped_send, start_time
+        )
+        await self._record_metrics(guard_request, wrapped_send, start_time)
+
+    async def _record_metrics(
+        self,
+        guard_request: StarletteGuardRequest,
+        wrapped_send: _HeaderInjectingSend,
+        start_time: float,
+    ) -> None:
+        # Collector only: process_response would re-apply headers and CORS.
+        # response_time stops at response start, like call_next in classic.
+        if wrapped_send.status_code is None or wrapped_send.started_at is None:
+            return
+        await self._engine.metrics_collector.collect_request_metrics(
+            guard_request,
+            wrapped_send.started_at - start_time,
+            wrapped_send.status_code,
         )
 
     def _build_call_next(
