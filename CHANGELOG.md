@@ -3,6 +3,26 @@ Release Notes
 
 ___
 
+v8.1.1 (2026-10-15)
+-------------------
+
+The pure-ASGI metrics release: the pass-through path records request metrics like the classic middleware (v8.1.1)
+-----------------------------------------------------------------------------------------------------------------
+
+### Fixed
+
+- **`PureASGISecurityMiddleware` records request metrics on the pass-through path** (fastapi-guard #163, #164). The pure-ASGI middleware now records request metrics when the response starts, matching the classic middleware: `response_time` stops at the response start, and the body is still streamed, never buffered. Tests cover allowed, error and streaming responses.
+
+### Note
+
+- The `guard-core` dependency floor rises from `>=4.1.0` to `>=4.4.0`, so upgrading fastapi-guard also brings the guard-core 4.4.0 detection and dynamic rule fixes (Cookie header scanned per pair, the per-request scan budget, the semantic-only header opt-out and dynamic rule versions applied over the base config).
+
+### Chore
+
+- The sponsor button points at the maintainer's Sponsors page, the mkdocs `site_url` drops `/latest/` so canonical URLs resolve, the family Discord relay workflow was added, and the `upload-sarif` action was bumped (fastapi-guard #158, #159, #161, #162).
+
+___
+
 v8.1.0 (2026-10-10)
 -------------------
 

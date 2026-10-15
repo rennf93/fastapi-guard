@@ -177,3 +177,72 @@ def sync_body_read_max_concurrent_serializes_reads(ctx: ScenarioContext) -> None
         f"max_concurrent=1 should serialize the two reads; B started at "
         f"{b_start:.2f}s, before A finished at {a_end:.2f}s: {events}"
     )
+
+
+_SCAN_BUDGET_PROBE = """
+import asyncio
+import logging
+import types
+
+logging.disable(logging.CRITICAL)
+
+from guard_core._utils import detection_scan
+from guard_core.models import SecurityConfig
+from guard_core.utils import detect_penetration_attempt
+
+
+class _Clock:
+    now = 0.0
+
+    @classmethod
+    def tick(cls):
+        cls.now += 1.0
+        return cls.now
+
+
+detection_scan._thread_cpu_seconds = _Clock.tick
+
+
+class _Request:
+    headers = {}
+    url_path = "/"
+    url_scheme = "http"
+    url_full = "http://smoke/"
+    method = "GET"
+    client_host = "203.0.113.9"
+    scope = {}
+    state = types.SimpleNamespace()
+    query_params = {"q": "select name from the users table where the quick brown fox"}
+
+    async def body(self):
+        return b""
+
+
+async def main():
+    config = SecurityConfig(detection_max_scan_seconds=0.1)
+    result = await detect_penetration_attempt(_Request(), config)
+    print(f"SMOKE_SCAN_BUDGET_PROBE threat={result.is_threat} "
+          f"info={result.trigger_info!r}", flush=True)
+
+
+asyncio.run(main())
+"""
+
+
+@scenario(
+    covers={"detection_max_scan_seconds"},
+    config={**COMPILER_TIMEOUT_CONFIG, "detection_max_scan_seconds": 0.1},
+)
+def detection_max_scan_seconds_flags_a_request_that_exhausts_the_budget(
+    ctx: ScenarioContext,
+) -> None:
+    result = run_in_app_container(_SCAN_BUDGET_PROBE, timeout=20.0)
+    output = result.stdout + result.stderr
+
+    assert "SMOKE_SCAN_BUDGET_PROBE" in output, (
+        f"the detection_max_scan_seconds probe did not complete; output: {output!r}"
+    )
+    assert "threat=True" in output and "scan_time_budget_exhausted" in output, (
+        "detection_max_scan_seconds=0.1 did not flag a request whose regex CPU "
+        f"time exceeded the budget; probe output: {output!r}"
+    )

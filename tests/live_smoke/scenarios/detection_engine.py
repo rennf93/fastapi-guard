@@ -448,3 +448,34 @@ def detection_binary_min_run_length_lowered_restores_fragment_detection(
         "detection_binary_min_run_length=4 did not restore detection of a "
         f"short fragment inside a binary-dense upload: {response.status_code}"
     )
+
+
+_JWT_COOKIE = (
+    "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+    "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ."
+    "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+)
+
+
+@scenario(
+    covers={"excluded_semantic_detection_headers"},
+    config={
+        **_BASE,
+        "detection_semantic_threshold": 0.3,
+        "excluded_semantic_detection_headers": ["cookie"],
+    },
+)
+def excluded_semantic_detection_headers_skip_only_semantic_scoring(
+    ctx: ScenarioContext,
+) -> None:
+    listed = ctx.client.get("/basic/ip", headers={"cookie": _JWT_COOKIE})
+    assert listed.status_code == 200, (
+        "excluded_semantic_detection_headers=['cookie'] still flagged a JWT "
+        f"session cookie semantically: {listed.status_code}"
+    )
+
+    unlisted = ctx.client.get("/basic/ip", headers={"x-session": _JWT_COOKIE})
+    assert unlisted.status_code == 400, (
+        "a header not in excluded_semantic_detection_headers lost its "
+        f"semantic analysis: {unlisted.status_code}"
+    )
