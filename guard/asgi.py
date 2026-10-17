@@ -19,17 +19,19 @@ Response-side differences from `SecurityMiddleware`:
 - Per-request metrics (request count, response time, error rate) are
   emitted once the downstream app finishes the response. Response time is
   measured until the response starts, the same as the classic middleware.
-- Decorator-driven response rules (return patterns) and
-  `custom_response_modifier` need a materialized `Response` object and are
-  only applied by the `BaseHTTPMiddleware`-based middleware.
+- Decorator-driven response rules (return patterns) need a materialized
+  `Response` object and are only applied by the `BaseHTTPMiddleware`-based
+  middleware. On bypassed routes the downstream response is
+  handed to guard-core as a streaming `Response` (never buffered), so
+  `custom_response_modifier` runs there as it does in the classic middleware.
 
 The downstream app receives a replaying receive channel, so both guard and
 the application can read the request body.
 """
 
+import asyncio
 import time
-from collections.abc import Awaitable, Callable
-from typing import Any
+from collections.abc import AsyncGenerator
 
 from fastapi import Response
 from guard_core.exceptions import GuardRedisError
@@ -37,6 +39,7 @@ from guard_core.handlers.security_headers_handler import security_headers_manage
 from guard_core.models import SecurityConfig
 from guard_core.utils import extract_client_ip
 from starlette.requests import Request
+from starlette.responses import StreamingResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from guard.adapters import StarletteGuardRequest, wrap_call_next
@@ -181,12 +184,45 @@ class PureASGISecurityMiddleware:
             await self._send_response(preflight, request, wrapped_send._send)
             return
 
-        call_next = self._build_call_next(scope, caching_receive, wrapped_send)
+        downstream: _InlineDownstream | _StreamedDownstream
+        if engine.config.custom_response_modifier is None:
+            downstream = _InlineDownstream(
+                self, scope, caching_receive, request, wrapped_send._send
+            )
+        else:
+            downstream = _StreamedDownstream(self, scope, caching_receive)
+        try:
+            await self._screen_after_preflight(
+                request,
+                guard_request,
+                caching_receive,
+                wrapped_send,
+                scope,
+                start_time,
+                downstream,
+            )
+        finally:
+            await downstream.close()
+
+    async def _screen_after_preflight(
+        self,
+        request: Request,
+        guard_request: StarletteGuardRequest,
+        caching_receive: _BodyCachingReceive,
+        wrapped_send: _HeaderInjectingSend,
+        scope: Scope,
+        start_time: float,
+        downstream: "_InlineDownstream | _StreamedDownstream",
+    ) -> None:
+        engine = self._engine
+        call_next = wrap_call_next(downstream.call_next, request)
         passthrough = await engine._handle_passthrough(
-            request, guard_request, wrap_call_next(call_next, request)
+            request, guard_request, call_next
         )
         if passthrough is not None:
-            await self._send_response(passthrough, request, wrapped_send._send)
+            await self._send_downstream_response(
+                passthrough, request, wrapped_send._send, downstream
+            )
             return
 
         client_ip = await extract_client_ip(
@@ -195,13 +231,12 @@ class PureASGISecurityMiddleware:
         route_config = engine.route_resolver.get_route_config(guard_request)
 
         bypass = await engine._handle_security_bypass(
-            request,
-            guard_request,
-            wrap_call_next(call_next, request),
-            route_config,
+            request, guard_request, call_next, route_config
         )
         if bypass is not None:
-            await self._send_response(bypass, request, wrapped_send._send)
+            await self._send_downstream_response(
+                bypass, request, wrapped_send._send, downstream
+            )
             return
 
         blocked = await engine._handle_pipeline_block(request, guard_request)
@@ -235,40 +270,6 @@ class PureASGISecurityMiddleware:
             wrapped_send.status_code,
         )
 
-    def _build_call_next(
-        self,
-        scope: Scope,
-        caching_receive: _BodyCachingReceive,
-        wrapped_send: _HeaderInjectingSend,
-    ) -> Callable[[Request], Awaitable[Response]]:
-        """Buffered downstream call for the bypass/passthrough helpers, which
-        expect a materialized `Response`. Only bypassed routes take this
-        path; the regular flow streams instead."""
-
-        async def call_next(request: Request) -> Response:
-            captured: dict[str, Any] = {"status": 500, "headers": [], "body": b""}
-
-            async def capturing_send(message: Message) -> None:
-                if message["type"] == "http.response.start":
-                    captured["status"] = message["status"]
-                    captured["headers"] = list(message["headers"])
-                elif message["type"] == "http.response.body":  # pragma: no branch
-                    captured["body"] += message.get("body", b"")
-
-            await self._call_downstream(
-                scope, caching_receive.replay(), capturing_send, time.time()
-            )
-            return Response(
-                status_code=captured["status"],
-                headers=dict(
-                    (key.decode("latin-1"), value.decode("latin-1"))
-                    for key, value in captured["headers"]
-                ),
-                content=captured["body"],
-            )
-
-        return call_next
-
     async def _call_downstream(
         self,
         scope: Scope,
@@ -281,18 +282,31 @@ class PureASGISecurityMiddleware:
             "Request processed in %.4fs", time.time() - start_time
         )
 
+    async def _send_downstream_response(
+        self,
+        response: Response,
+        request: Request,
+        send: Send,
+        downstream: "_InlineDownstream | _StreamedDownstream",
+    ) -> None:
+        if isinstance(response, _ResponseAlreadySent):
+            return
+        await self._send_response(response, request, send)
+        await downstream.raise_failure_after_response_sent()
+
     async def _send_response(
         self, response: Response, request: Request, send: Send
     ) -> None:
-        """Send a guard-generated blocking response, with CORS headers
-        applied the same way the classic dispatch applies them."""
+        """Send a response, with CORS headers applied the same way the
+        classic dispatch applies them. A streaming response (the downstream
+        app on a bypassed or excluded route) is forwarded chunk by chunk;
+        guard-generated responses go out as a single body message."""
         if self._engine._cors_handler is not None:
             cors_headers = self._engine._cors_handler.build_response_headers(
                 request.headers
             )
             for key, value in cors_headers.items():
                 response.headers.setdefault(key, value)
-        body = getattr(response, "body", b"") or b""
         await send(
             {
                 "type": "http.response.start",
@@ -300,7 +314,215 @@ class PureASGISecurityMiddleware:
                 "headers": list(response.raw_headers),
             }
         )
-        await send({"type": "http.response.body", "body": body})
+        body_iterator = getattr(response, "body_iterator", None)
+        if body_iterator is None:
+            body = getattr(response, "body", b"") or b""
+            await send({"type": "http.response.body", "body": body})
+            return
+        async for chunk in body_iterator:
+            if not isinstance(chunk, bytes | memoryview):
+                chunk = chunk.encode(response.charset)
+            await send({"type": "http.response.body", "body": chunk, "more_body": True})
+        await send({"type": "http.response.body", "body": b"", "more_body": False})
+
+
+class _ResponseAlreadySent(Response):
+    """Returned by `_InlineDownstream.call_next`: the downstream response
+    already went to the client, there is nothing left to send."""
+
+
+class _InlineDownstream:
+    """Bypass `call_next` for the default configuration (no
+    `custom_response_modifier`): nothing may touch the response, so the
+    downstream app runs right here with a `send` that goes straight to the
+    client. No task, no handoff, no per-chunk overhead; an app exception or a
+    client disconnect behaves exactly as on the regular path."""
+
+    def __init__(
+        self,
+        middleware: "PureASGISecurityMiddleware",
+        scope: Scope,
+        caching_receive: _BodyCachingReceive,
+        request: Request,
+        send: Send,
+    ) -> None:
+        self._middleware = middleware
+        self._scope = scope
+        self._caching_receive = caching_receive
+        self._request = request
+        self._send = send
+        self._response_started = False
+
+    async def call_next(self, request: Request) -> Response:
+        await self._middleware._call_downstream(
+            self._scope,
+            self._caching_receive.replay(),
+            self._send_with_cors_headers,
+            time.time(),
+        )
+        if not self._response_started:
+            raise RuntimeError("No response returned.")
+        return _ResponseAlreadySent()
+
+    async def _send_with_cors_headers(self, message: Message) -> None:
+        if message["type"] == "http.response.start":
+            self._response_started = True
+            message = {**message, "headers": self._headers_with_cors(message)}
+        await self._send(message)
+
+    def _headers_with_cors(self, start: Message) -> list[tuple[bytes, bytes]]:
+        headers = list(start["headers"])
+        cors_handler = self._middleware._engine._cors_handler
+        if cors_handler is None:
+            return headers
+        # Guard's CORS headers replace the app's of the same name, as
+        # `_inject_cors_headers` does for the classic bypass response.
+        cors = {
+            name.encode("latin-1").lower(): value.encode("latin-1")
+            for name, value in cors_handler.build_response_headers(
+                self._request.headers
+            ).items()
+        }
+        kept = [(name, value) for name, value in headers if name.lower() not in cors]
+        return kept + list(cors.items())
+
+    async def raise_failure_after_response_sent(self) -> None:
+        return None
+
+    async def close(self) -> None:
+        return None
+
+
+class _StreamedDownstream:
+    """Runs the downstream app for the bypass helper and hands its response
+    back as a streaming `Response`, following Starlette's
+    `BaseHTTPMiddleware.call_next` (starlette/middleware/base.py:97-188): the
+    app's `send` waits until the consumer took its message, like the
+    zero-buffer memory stream Starlette uses, so at most one chunk is in
+    flight. `call_next` returns once `http.response.start` is through (status
+    and the raw header list, repeated headers kept).
+
+    One deliberate difference: Starlette runs the app inside an anyio task
+    group, whose cancel scope can cancel the app's awaits. Here the app runs
+    as a plain asyncio task that nothing cancels: a client disconnect reaches
+    it only through its own `receive` (http.disconnect) or, once the consumer
+    stops reading, as an OSError on its next `send` (which Starlette's
+    StreamingResponse turns into ClientDisconnect). Limit: asyncio only.
+    """
+
+    def __init__(
+        self,
+        middleware: "PureASGISecurityMiddleware",
+        scope: Scope,
+        caching_receive: _BodyCachingReceive,
+    ) -> None:
+        self._middleware = middleware
+        # The app must stream file bodies through this handoff: the
+        # `http.response.pathsend` message carries no body to hand over.
+        extensions = scope.get("extensions") or {}
+        self._scope = {
+            **scope,
+            "extensions": {
+                name: value
+                for name, value in extensions.items()
+                if name != "http.response.pathsend"
+            },
+        }
+        self._caching_receive = caching_receive
+        self._task: asyncio.Task[None] | None = None
+        self._failure: Exception | None = None
+        self._body_fully_streamed = False
+        self._consumer_gone = False
+        # (message, taken) pairs; the app's send awaits `taken`, so the queue
+        # never holds more than one. None marks the end of the app's run.
+        self._handoff: asyncio.Queue[tuple[Message, asyncio.Future[None]] | None] = (
+            asyncio.Queue()
+        )
+
+    async def call_next(self, request: Request) -> Response:
+        self._task = asyncio.create_task(self._run_downstream())
+        message = await self._take_response_start()
+        response = StreamingResponse(self._stream_body(), status_code=message["status"])
+        response.raw_headers = list(message["headers"])
+        return response
+
+    async def _take_response_start(self) -> Message:
+        while (message := await self._take_next_message()) is not None:
+            if message["type"] == "http.response.start":
+                return message
+        if self._failure is not None:
+            raise self._take_failure()
+        raise RuntimeError("No response returned.")
+
+    def _take_failure(self) -> Exception:
+        # Handing the exception over (instead of keeping it on self) breaks
+        # the cycle self -> exception -> traceback -> frame -> self, which
+        # would keep the response and the app's generators alive until the
+        # cyclic GC runs.
+        failure, self._failure = self._failure, None
+        assert failure is not None
+        return failure
+
+    async def _take_next_message(self) -> Message | None:
+        item = await self._handoff.get()
+        if item is None:
+            return None
+        message, taken = item
+        taken.set_result(None)
+        return message
+
+    async def _run_downstream(self) -> None:
+        try:
+            await self._middleware._call_downstream(
+                self._scope,
+                self._caching_receive.replay(),
+                self._send_to_consumer,
+                time.time(),
+            )
+        except Exception as exc:
+            self._failure = exc
+        finally:
+            self._handoff.put_nowait(None)
+
+    async def _send_to_consumer(self, message: Message) -> None:
+        if self._consumer_gone:
+            raise OSError("response consumer is gone")
+        taken: asyncio.Future[None] = asyncio.get_running_loop().create_future()
+        self._handoff.put_nowait((message, taken))
+        await taken
+
+    async def _stream_body(self) -> AsyncGenerator[bytes, None]:
+        while (message := await self._take_next_message()) is not None:
+            if message["type"] != "http.response.body":
+                continue
+            body = message.get("body", b"")
+            if body:
+                yield body
+            if not message.get("more_body", False):
+                break
+        self._body_fully_streamed = True
+
+    async def raise_failure_after_response_sent(self) -> None:
+        """The app may still run after its last body message (background
+        work); wait for it and surface its exception like the classic
+        middleware does. A response nobody streamed to its end (a modifier
+        replaced it) is released by `close` instead."""
+        if self._task is not None and self._body_fully_streamed:
+            await self._task
+            if self._failure is not None:
+                raise self._take_failure()
+
+    async def close(self) -> None:
+        """Release the app if nobody consumed its response to the end, then
+        wait for its task so none is left pending."""
+        self._consumer_gone = True
+        while not self._handoff.empty():
+            item = self._handoff.get_nowait()
+            if item is not None and not item[1].done():
+                item[1].set_exception(OSError("response consumer is gone"))
+        if self._task is not None:
+            await self._task
+        self._failure = None
 
 
 class _NullApp:

@@ -10,6 +10,20 @@ Release Notes
 
 ___
 
+v8.1.2 (2026-10-17)
+-------------------
+
+The bypass streaming release: `PureASGISecurityMiddleware` streams `bypass(["all"])` routes instead of buffering them (v8.1.2)
+-----------------------------------------------------------------------------------------------------------------------------
+
+- **Security** - **`PureASGISecurityMiddleware` no longer holds the whole response of a `@bypass(["all"])` route in memory** (GHSA-xwr6-8f76-24g4, reported by @hsnyus-09). In 8.1.0 and 8.1.1 the pure-ASGI middleware collected every body chunk of a bypassed route before sending the first byte, copying the buffer on each chunk, so one request to a public bypassed route that streams a large or endless body (downloads, exports, server-sent events) could exhaust the worker's memory and CPU, and streamed responses never reached the client. Bypassed routes now stream chunk by chunk: without a `custom_response_modifier` the application's messages go straight to the client, and with one the modifier receives a streaming response, as it does under the classic `SecurityMiddleware`. The classic middleware was not affected.
+
+- **Fixed** - On bypassed routes of the pure-ASGI middleware, repeated response headers (such as two `Set-Cookie`) are kept instead of collapsing to the last one, and a `FileResponse` keeps its body under servers that support the `http.response.pathsend` extension.
+
+- **Note** - On a pure-ASGI bypassed route, `custom_response_modifier` now receives a streaming response, as under the classic middleware, so reading `response.body` there fails: guard-core logs the error and sends the response unmodified. Use `await response.read_body_prefix(n)` to look at the body; it works on both middlewares.
+
+___
+
 v8.1.1 (2026-10-15)
 -------------------
 
