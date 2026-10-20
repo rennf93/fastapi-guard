@@ -3,48 +3,24 @@ name: CodeQL
 on:
   push:
     branches: [master]
-    paths:
-      - 'compose.yml'
-      - 'data/**'
-      - 'Dockerfile'
-      - 'examples/**'
-      - 'guard/**'
-      - 'mypy.ini'
-      - '.pre-commit-config.yaml'
-      - 'pyproject.toml'
-      - 'pytest.ini'
-      - 'reqs.pip'
-      - 'tests/**'
   pull_request:
     branches: [master]
-    paths:
-      - 'compose.yml'
-      - 'data/**'
-      - 'Dockerfile'
-      - 'examples/**'
-      - 'guard/**'
-      - 'mypy.ini'
-      - '.pre-commit-config.yaml'
-      - 'pyproject.toml'
-      - 'pytest.ini'
-      - 'reqs.pip'
-      - 'tests/**'
   schedule:
     - cron: '0 0 * * 1'
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
-  analyze:
-    name: Analyze
+  # One job for every language, so the required check context is exactly `code-ql` (a matrix would suffix it
+  # with the language).
+  code-ql:
+    name: code-ql
     runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read
       security-events: write
-
-    strategy:
-      matrix:
-        language: [python]
 
     steps:
       - name: Checkout code
@@ -53,11 +29,10 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
-          languages: ${{ matrix.language }}
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
+          languages: python,actions
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
-
+        with:
+          # The category of the earlier `analyze` job, so the existing analyses and alerts carry over.
+          category: .github/workflows/code-ql.yml:analyze/language:python
