@@ -18,7 +18,7 @@ USER 10001
 
 COPY --chown=app:app pyproject.toml uv.lock* README.md /app/
 
-RUN uv sync --extra dev --frozen
+RUN uv sync --extra dev
 
 ENV PATH="/app/.venv/bin:$PATH"
 

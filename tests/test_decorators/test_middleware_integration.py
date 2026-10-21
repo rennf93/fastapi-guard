@@ -1,3 +1,4 @@
+import os
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -11,6 +12,8 @@ from starlette.datastructures import Headers
 from guard import SecurityConfig, SecurityDecorator
 from guard.adapters import StarletteGuardResponse
 from guard.middleware import SecurityMiddleware
+
+REDIS_URL = os.getenv("REDIS_URL") or "redis://localhost:6379"
 
 
 def _http_scope(
@@ -553,7 +556,7 @@ async def test_route_specific_middleware_validations(
 
 async def test_route_specific_rate_limit_with_redis() -> None:
     app = FastAPI()
-    config = SecurityConfig(enable_redis=True, redis_url="redis://localhost:6379")
+    config = SecurityConfig(enable_redis=True, redis_url=REDIS_URL)
     middleware = SecurityMiddleware(app, config=config)
 
     mock_redis_handler = Mock()
