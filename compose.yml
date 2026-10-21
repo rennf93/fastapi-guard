@@ -27,6 +27,8 @@ services:
           PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
       image: fastapi-guard-py${PYTHON_VERSION:-3.10}
       command: pytest -v --cov=.
+      healthcheck:
+        disable: true
       environment:
         - REDIS_URL=redis://redis:6379
         - REDIS_PREFIX=${REDIS_PREFIX:-"test:fastapi_guard:"}

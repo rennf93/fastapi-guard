@@ -5,10 +5,12 @@ on:
     branches: [master]
     paths:
       - 'Dockerfile'
+      - '**/Dockerfile'
       - '.github/workflows/docksec.yml'
   pull_request:
     paths:
       - 'Dockerfile'
+      - '**/Dockerfile'
       - '.github/workflows/docksec.yml'
   schedule:
     - cron: '0 6 * * 1'
